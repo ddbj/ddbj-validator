@@ -1,0 +1,94 @@
+COMMON	SUBMITTER		ab_name	Mishima,H.
+			ab_name	Robertson,G.R.
+			contact	Hanako Mishima
+			email	mishima@ddbj.nig.ac.jp
+			institute	National Institute of Genetics
+			department	DNA Data Bank of Japan
+			country	Japan
+			state	Shizuoka
+			city	Mishima
+			street	Yata 1111
+			zip	411-8540
+	REFERENCE		title	Mouse Genome Sequencing
+			ab_name	Robertson,G.R.
+			ab_name	Mishima,H.
+			year	2026
+			status	Unpublished
+seq1	source	1..102	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			note	ANN1280 pass
+seq2	source	1..102	organism	Escherichia coli
+			mol_type	genomic DNA
+			geo_loc_name	Japan:Shizuoka, Mishima
+			sex	male
+			note	ANN1280 fail
+seq3	source	1..102	organism	Escherichia coli
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			culture_collection	ATCC:1
+			note	ANN1290 pass
+seq4	source	1..102	organism	Escherichia coli
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			culture_collection	ATCCC:1
+			note	ANN1290 fail
+seq5	source	1..102	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			specimen_voucher	ATCC:1
+			note	ANN1320 pass
+seq6	source	1..102	organism	Escherichia coli
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			specimen_voucher	ATCC:1
+			note	ANN1320 fail
+seq7	source	1..102	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			specimen_voucher	ATCC:1
+			note	ANN1330 pass
+seq8	source	1..102	organism	Escherichia coli
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			specimen_voucher	ATCC:C:D:1
+			note	ANN1330 fail
+seq9	source	1..102	organism	Escherichia coli
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			bio_material	ATCC:1
+			note	ANN1350 pass
+seq10	source	1..102	organism	Escherichia coli
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			bio_material	ATCC:C:D:1
+			note	ANN1350 fail
+seq11	source	1..102	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			bio_material	ATCC:1
+			culture_collection	NBRC:1
+			note	ANN1365 pass
+seq12	source	1..102	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			bio_material	ATCC:1
+			culture_collection	ATCC:1
+			note	ANN1365 fail
+seq13	source	1..102	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			specimen_voucher	Personal:Collection:1
+			note	ANN1330 pass

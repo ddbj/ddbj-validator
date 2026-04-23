@@ -1,0 +1,78 @@
+COMMON	SUBMITTER		ab_name	Mishima,H.
+			ab_name	Robertson,G.R.
+			contact	Hanako Mishima
+			email	mishima@ddbj.nig.ac.jp
+			institute	National Institute of Genetics
+			department	DNA Data Bank of Japan
+			country	Japan
+			state	Shizuoka
+			city	Mishima
+			street	Yata 1111
+			zip	411-8540
+	REFERENCE		title	Mouse Genome Sequencing
+			ab_name	Robertson,G.R.
+			ab_name	Mishima,H.
+			year	2026
+			status	Unpublished
+seq1	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+	CDS	16..105	transl_table	1
+			product	hypothetical protein
+			transl_except	(pos:19..21,aa:See)
+			note	AXS6410 fail
+seq2	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+	CDS	16..105	transl_table	1
+			product	hypothetical protein
+			codon_start	4
+			note	AXS6420 fail
+seq3	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+	CDS	16..105	transl_table	1
+			product	hypothetical protein
+			codon_start	1
+			transl_except	(pos:19..21,aa:Sec)
+			transl_except	(pos:20..22,aa:Sec)
+			note	AXS6430 fail
+seq4	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+	CDS	16..105	transl_table	1
+			product	hypothetical protein
+			codon_start	1
+			transl_except	(pos:20..22,aa:Sec)
+			note	AXS6470 fail
+seq5	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+	CDS	16..105	transl_table	1
+			product	hypothetical protein
+			codon_start	1
+			transl_except	(pos:19..21,aa:Lys)
+			note	AXS6480 fail
+seq6	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+	CDS	16..105	transl_table	1
+			product	hypothetical protein
+			codon_start	1
+			transl_except	(pos:16..18,aa:Lys)
+			note	AXS6480 fail
+seq7	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+	CDS	16..105	transl_table	1
+			product	hypothetical protein
+			codon_start	1
+			transl_except	(pos:103..105,aa:Phe)
+			note	AXS6480 fail
+seq8	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+	CDS	16..105	transl_table	1
+			product	hypothetical protein
+			codon_start	1
+			transl_except	(pos:16..18,aa:Met)
+			note	AXS6480 pass
+seq9	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+	CDS	16..105	transl_table	1
+			product	hypothetical protein
+			codon_start	1
+			transl_except	(pos:103..105,aa:TERM)
+			note	AXS6480 pass

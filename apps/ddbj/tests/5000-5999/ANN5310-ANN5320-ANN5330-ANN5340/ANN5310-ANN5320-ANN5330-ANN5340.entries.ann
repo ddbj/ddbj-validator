@@ -1,0 +1,93 @@
+COMMON	SUBMITTER		ab_name	Mishima,H.
+			ab_name	Robertson,G.R.
+			contact	Hanako Mishima
+			email	mishima@ddbj.nig.ac.jp
+			institute	National Institute of Genetics
+			department	DNA Data Bank of Japan
+			country	Japan
+			state	Shizuoka
+			city	Mishima
+			street	Yata 1111
+			zip	411-8540
+	REFERENCE		title	Mouse Genome Sequencing
+			ab_name	Robertson,G.R.
+			ab_name	Mishima,H.
+			year	2026
+			status	Unpublished
+seq1	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2000-01-01
+			geo_loc_name	Japan
+	CDS	10..50	product	hypothetical protein
+	rRNA	40..80	product	18S ribosomal RNA
+			note	ANN5310 fail (rRNA overlaps with CDS)
+seq2	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2000-01-01
+			geo_loc_name	Japan
+	rRNA	10..50	product	18S ribosomal RNA
+	rRNA	40..80	product	28S ribosomal RNA
+			note	ANN5310 fail (rRNA overlaps with another rRNA)
+seq3	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2000-01-01
+			geo_loc_name	Japan
+	CDS	10..40	product	hypothetical protein
+	rRNA	41..80	product	18S ribosomal RNA
+			note	ANN5310 pass (no overlap)
+seq4	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2000-01-01
+			geo_loc_name	Japan
+	CDS	10..90	product	hypothetical protein
+	tRNA	40..60	product	tRNA-Leu
+			note	ANN5320 fail (tRNA is fully contained within CDS)
+seq5	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2000-01-01
+			geo_loc_name	Japan
+	CDS	10..50	product	hypothetical protein
+	tRNA	40..80	product	tRNA-Leu
+			note	ANN5320 pass (partially overlaps, not fully contained)
+seq6	source	1..120	organism	Mus musculus
+			mol_type	mRNA
+			collection_date	2000-01-01
+			geo_loc_name	Japan
+	CDS	complement(10..90)	product	hypothetical protein
+			note	ANN5330 fail (mRNA molecule cannot have CDS on minus strand)
+seq7	source	1..120	organism	Mus musculus
+			mol_type	mRNA
+			collection_date	2000-01-01
+			geo_loc_name	Japan
+	CDS	10..90	product	hypothetical protein
+			note	ANN5330 pass (plus strand on mRNA)
+seq8	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2000-01-01
+			geo_loc_name	Japan
+	CDS	complement(10..90)	product	hypothetical protein
+			note	ANN5330 pass (genomic DNA can have CDS on minus strand)
+seq9	source	1..120	organism	Mus musculus
+			mol_type	mRNA
+			collection_date	2000-01-01
+			geo_loc_name	Japan
+	CDS	join(10..40,60..90)	product	hypothetical protein
+			note	ANN5340 fail (mRNA molecule cannot have joined CDS)
+seq10	source	1..120	organism	Mus musculus
+			mol_type	transcribed RNA
+			collection_date	2000-01-01
+			geo_loc_name	Japan
+	CDS	join(10..40,60..90)	product	hypothetical protein
+			note	ANN5340 fail (transcribed RNA molecule cannot have joined CDS)
+seq11	source	1..120	organism	Mus musculus
+			mol_type	mRNA
+			collection_date	2000-01-01
+			geo_loc_name	Japan
+	CDS	10..90	product	hypothetical protein
+			note	ANN5340 pass (mRNA with continuous CDS)
+seq12	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2000-01-01
+			geo_loc_name	Japan
+	CDS	join(10..40,60..90)	product	hypothetical protein
+			note	ANN5340 pass (genomic DNA can have joined CDS)

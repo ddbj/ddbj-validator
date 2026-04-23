@@ -1,0 +1,6734 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "description": "DDBJ feature qualifier dictionary"
+  },
+  "cv_terms": {
+    "missing_terms": [
+      "missing",
+      "not applicable",
+      "not collected",
+      "not provided",
+      "restricted access"
+    ],
+    "missing_reporting_terms": [
+      "missing: control sample",
+      "missing: sample group",
+      "missing: synthetic construct",
+      "missing: lab stock",
+      "missing: third party data",
+      "missing: data agreement established pre-2023",
+      "missing: endangered species",
+      "missing: human-identifiable"
+    ],
+    "nucleic_acids": [
+      "a",
+      "c",
+      "g",
+      "t",
+      "m",
+      "r",
+      "w",
+      "s",
+      "y",
+      "k",
+      "v",
+      "h",
+      "d",
+      "b",
+      "n"
+    ],
+    "amino_acids": {
+      "Ala": {
+        "code": "A",
+        "type": "N"
+      },
+      "Arg": {
+        "code": "R",
+        "type": "N"
+      },
+      "Asn": {
+        "code": "N",
+        "type": "N"
+      },
+      "Asp": {
+        "code": "D",
+        "type": "N"
+      },
+      "Cys": {
+        "code": "C",
+        "type": "N"
+      },
+      "Gln": {
+        "code": "Q",
+        "type": "N"
+      },
+      "Glu": {
+        "code": "E",
+        "type": "N"
+      },
+      "Gly": {
+        "code": "G",
+        "type": "N"
+      },
+      "His": {
+        "code": "H",
+        "type": "N"
+      },
+      "Ile": {
+        "code": "I",
+        "type": "N"
+      },
+      "Leu": {
+        "code": "L",
+        "type": "N"
+      },
+      "Lys": {
+        "code": "K",
+        "type": "N"
+      },
+      "Met": {
+        "code": "M",
+        "type": "N"
+      },
+      "Phe": {
+        "code": "F",
+        "type": "N"
+      },
+      "Pro": {
+        "code": "P",
+        "type": "N"
+      },
+      "Ser": {
+        "code": "S",
+        "type": "N"
+      },
+      "Thr": {
+        "code": "T",
+        "type": "N"
+      },
+      "Trp": {
+        "code": "W",
+        "type": "N"
+      },
+      "Tyr": {
+        "code": "Y",
+        "type": "N"
+      },
+      "Val": {
+        "code": "V",
+        "type": "N"
+      },
+      "Sec": {
+        "code": "U",
+        "type": "P"
+      },
+      "Pyl": {
+        "code": "O",
+        "type": "P"
+      },
+      "Asx": {
+        "code": "B",
+        "type": "A"
+      },
+      "Glx": {
+        "code": "Z",
+        "type": "A"
+      },
+      "Xaa": {
+        "code": "X",
+        "type": "A"
+      },
+      "Xle": {
+        "code": "J",
+        "type": "A"
+      },
+      "TERM": {
+        "code": "*",
+        "type": "N"
+      },
+      "Aad": {
+        "code": "X",
+        "type": "M"
+      },
+      "bAad": {
+        "code": "X",
+        "type": "M"
+      },
+      "bAla": {
+        "code": "X",
+        "type": "M"
+      },
+      "Abu": {
+        "code": "X",
+        "type": "M"
+      },
+      "4Abu": {
+        "code": "X",
+        "type": "M"
+      },
+      "Acp": {
+        "code": "X",
+        "type": "M"
+      },
+      "Ahe": {
+        "code": "X",
+        "type": "M"
+      },
+      "Aib": {
+        "code": "X",
+        "type": "M"
+      },
+      "bAib": {
+        "code": "X",
+        "type": "M"
+      },
+      "Apm": {
+        "code": "X",
+        "type": "M"
+      },
+      "Dbu": {
+        "code": "X",
+        "type": "M"
+      },
+      "Des": {
+        "code": "X",
+        "type": "M"
+      },
+      "Dpm": {
+        "code": "X",
+        "type": "M"
+      },
+      "Dpr": {
+        "code": "X",
+        "type": "M"
+      },
+      "EtGly": {
+        "code": "X",
+        "type": "M"
+      },
+      "EtAsn": {
+        "code": "X",
+        "type": "M"
+      },
+      "Hyl": {
+        "code": "X",
+        "type": "M"
+      },
+      "aHyl": {
+        "code": "X",
+        "type": "M"
+      },
+      "3Hyp": {
+        "code": "X",
+        "type": "M"
+      },
+      "4Hyp": {
+        "code": "X",
+        "type": "M"
+      },
+      "Ide": {
+        "code": "X",
+        "type": "M"
+      },
+      "aIle": {
+        "code": "X",
+        "type": "M"
+      },
+      "MeGly": {
+        "code": "X",
+        "type": "M"
+      },
+      "MeIle": {
+        "code": "X",
+        "type": "M"
+      },
+      "MeLys": {
+        "code": "X",
+        "type": "M"
+      },
+      "MeVal": {
+        "code": "X",
+        "type": "M"
+      },
+      "Nva": {
+        "code": "X",
+        "type": "M"
+      },
+      "Nle": {
+        "code": "X",
+        "type": "M"
+      },
+      "Orn": {
+        "code": "X",
+        "type": "M"
+      },
+      "OTHER": {
+        "code": "X",
+        "type": "M"
+      }
+    },
+    "countries": [
+      "Afghanistan",
+      "Albania",
+      "Algeria",
+      "American Samoa",
+      "Andorra",
+      "Angola",
+      "Anguilla",
+      "Antarctica",
+      "Antigua and Barbuda",
+      "Arctic Ocean",
+      "Argentina",
+      "Armenia",
+      "Aruba",
+      "Ashmore and Cartier Islands",
+      "Atlantic Ocean",
+      "Australia",
+      "Austria",
+      "Azerbaijan",
+      "Bahamas",
+      "Bahrain",
+      "Baker Island",
+      "Baltic Sea",
+      "Bangladesh",
+      "Barbados",
+      "Bassas da India",
+      "Belarus",
+      "Belgian Congo",
+      "Belgium",
+      "Belize",
+      "Benin",
+      "Bermuda",
+      "Bhutan",
+      "Bolivia",
+      "Borneo",
+      "Bosnia and Herzegovina",
+      "Botswana",
+      "Bouvet Island",
+      "Brazil",
+      "British Guiana",
+      "British Virgin Islands",
+      "Brunei",
+      "Bulgaria",
+      "Burkina Faso",
+      "Burma",
+      "Burundi",
+      "Cambodia",
+      "Cameroon",
+      "Canada",
+      "Cape Verde",
+      "Cayman Islands",
+      "Central African Republic",
+      "Chad",
+      "Chile",
+      "China",
+      "Christmas Island",
+      "Clipperton Island",
+      "Cocos Islands",
+      "Colombia",
+      "Comoros",
+      "Cook Islands",
+      "Coral Sea Islands",
+      "Costa Rica",
+      "Cote d'Ivoire",
+      "Croatia",
+      "Cuba",
+      "Curacao",
+      "Cyprus",
+      "Czech Republic",
+      "Czechia",
+      "Czechoslovakia",
+      "Democratic Republic of the Congo",
+      "Denmark",
+      "Djibouti",
+      "Dominica",
+      "Dominican Republic",
+      "East Timor",
+      "Ecuador",
+      "Egypt",
+      "El Salvador",
+      "Equatorial Guinea",
+      "Eritrea",
+      "Estonia",
+      "Eswatini",
+      "Ethiopia",
+      "Europa Island",
+      "Falkland Islands (Islas Malvinas)",
+      "Faroe Islands",
+      "Fiji",
+      "Finland",
+      "Former Yugoslav Republic of Macedonia",
+      "France",
+      "French Guiana",
+      "French Polynesia",
+      "French Southern and Antarctic Lands",
+      "Gabon",
+      "Gambia",
+      "Gaza Strip",
+      "Georgia",
+      "Germany",
+      "Ghana",
+      "Gibraltar",
+      "Glorioso Islands",
+      "Greece",
+      "Greenland",
+      "Grenada",
+      "Guadeloupe",
+      "Guam",
+      "Guatemala",
+      "Guernsey",
+      "Guinea",
+      "Guinea-Bissau",
+      "Guyana",
+      "Haiti",
+      "Heard Island and McDonald Islands",
+      "Honduras",
+      "Hong Kong",
+      "Howland Island",
+      "Hungary",
+      "Iceland",
+      "India",
+      "Indian Ocean",
+      "Indonesia",
+      "Iran",
+      "Iraq",
+      "Ireland",
+      "Isle of Man",
+      "Israel",
+      "Italy",
+      "Jamaica",
+      "Jan Mayen",
+      "Japan",
+      "Jarvis Island",
+      "Jersey",
+      "Johnston Atoll",
+      "Jordan",
+      "Juan de Nova Island",
+      "Kazakhstan",
+      "Kenya",
+      "Kerguelen Archipelago",
+      "Kingman Reef",
+      "Kiribati",
+      "Korea",
+      "Kosovo",
+      "Kuwait",
+      "Kyrgyzstan",
+      "Laos",
+      "Latvia",
+      "Lebanon",
+      "Lesotho",
+      "Liberia",
+      "Libya",
+      "Liechtenstein",
+      "Line Islands",
+      "Lithuania",
+      "Luxembourg",
+      "Macau",
+      "Macedonia",
+      "Madagascar",
+      "Malawi",
+      "Malaysia",
+      "Maldives",
+      "Mali",
+      "Malta",
+      "Marshall Islands",
+      "Martinique",
+      "Mauritania",
+      "Mauritius",
+      "Mayotte",
+      "Mediterranean Sea",
+      "Mexico",
+      "Micronesia",
+      "Micronesia, Federated States of",
+      "Midway Islands",
+      "Moldova",
+      "Monaco",
+      "Mongolia",
+      "Montenegro",
+      "Montserrat",
+      "Morocco",
+      "Mozambique",
+      "Myanmar",
+      "Namibia",
+      "Nauru",
+      "Navassa Island",
+      "Nepal",
+      "Netherlands",
+      "Netherlands Antilles",
+      "New Caledonia",
+      "New Zealand",
+      "Nicaragua",
+      "Niger",
+      "Nigeria",
+      "Niue",
+      "Norfolk Island",
+      "North Korea",
+      "North Macedonia",
+      "North Sea",
+      "Northern Mariana Islands",
+      "Norway",
+      "Oman",
+      "Pacific Ocean",
+      "Pakistan",
+      "Palau",
+      "Palmyra Atoll",
+      "Panama",
+      "Papua New Guinea",
+      "Paracel Islands",
+      "Paraguay",
+      "Peru",
+      "Philippines",
+      "Pitcairn Islands",
+      "Poland",
+      "Portugal",
+      "Puerto Rico",
+      "Qatar",
+      "Republic of the Congo",
+      "Reunion",
+      "Romania",
+      "Ross Sea",
+      "Russia",
+      "Rwanda",
+      "Saint Barthelemy",
+      "Saint Helena",
+      "Saint Kitts and Nevis",
+      "Saint Lucia",
+      "Saint Martin",
+      "Saint Pierre and Miquelon",
+      "Saint Vincent and the Grenadines",
+      "Samoa",
+      "San Marino",
+      "Sao Tome and Principe",
+      "Saudi Arabia",
+      "Senegal",
+      "Serbia",
+      "Serbia and Montenegro",
+      "Seychelles",
+      "Siam",
+      "Sierra Leone",
+      "Singapore",
+      "Sint Maarten",
+      "Slovakia",
+      "Slovenia",
+      "Solomon Islands",
+      "Somalia",
+      "South Africa",
+      "South Georgia and the South Sandwich Islands",
+      "South Korea",
+      "South Sudan",
+      "Southern Ocean",
+      "Spain",
+      "Spratly Islands",
+      "Sri Lanka",
+      "State of Palestine",
+      "Sudan",
+      "Suriname",
+      "Svalbard",
+      "Swaziland",
+      "Sweden",
+      "Switzerland",
+      "Syria",
+      "Taiwan",
+      "Tajikistan",
+      "Tanzania",
+      "Tasman Sea",
+      "Thailand",
+      "The former Yugoslav Republic of Macedonia",
+      "Timor-Leste",
+      "Togo",
+      "Tokelau",
+      "Tonga",
+      "Trinidad and Tobago",
+      "Tromelin Island",
+      "Tunisia",
+      "Turkey",
+      "Turkiye",
+      "Turkmenistan",
+      "Turks and Caicos Islands",
+      "Tuvalu",
+      "Uganda",
+      "Ukraine",
+      "United Arab Emirates",
+      "United Kingdom",
+      "Uruguay",
+      "USA",
+      "USSR",
+      "Uzbekistan",
+      "Vanuatu",
+      "Venezuela",
+      "Viet Nam",
+      "Virgin Islands",
+      "Wake Island",
+      "Wallis and Futuna",
+      "West Bank",
+      "Western Sahara",
+      "Yemen",
+      "Yugoslavia",
+      "Zaire",
+      "Zambia",
+      "Zimbabwe"
+    ],
+    "historical_countries": [
+      "belgian congo",
+      "british guiana",
+      "burma",
+      "czech republic",
+      "czechoslovakia",
+      "east timor",
+      "former yugoslav republic of macedonia",
+      "korea",
+      "netherlands antilles",
+      "serbia and montenegro",
+      "siam",
+      "ussr",
+      "yugoslavia",
+      "zaire",
+      "macedonia",
+      "the former yugoslav republic of macedonia",
+      "swaziland",
+      "micronesia",
+      "turkey"
+    ]
+  },
+  "entries": {
+    "mandatory_features": {
+      "SUBMITTER": {
+        "rule_id": "ANN0225",
+        "level": "error",
+        "message": "'SUBMITTER' is required."
+      },
+      "source": {
+        "rule_id": "ANN1570",
+        "level": "error",
+        "message": "Missing required feature: 'source' is required for all entries."
+      }
+    },
+    "singleton_features": {
+      "SUBMITTER": {
+        "rule_id": "ANN2690",
+        "alternate_id": "JP1039",
+        "level": "warning",
+        "message": "'SUBMITTER' is duplicated."
+      },
+      "DIVISION": {
+        "rule_id": "ANN2690",
+        "alternate_id": "JP1039",
+        "level": "warning",
+        "message": "'DIVISION' is duplicated."
+      },
+      "TOPOLOGY": {
+        "rule_id": "ANN2690",
+        "alternate_id": "JP1039",
+        "level": "warning",
+        "message": "'TOPOLOGY' is duplicated."
+      },
+      "DATE": {
+        "rule_id": "ANN2690",
+        "alternate_id": "JP1039",
+        "level": "warning",
+        "message": "'DATE' is duplicated."
+      },
+      "DATATYPE": {
+        "rule_id": "ANN2690",
+        "alternate_id": "JP1039",
+        "level": "warning",
+        "message": "'DATATYPE' is duplicated."
+      },
+      "ACCESSION": {
+        "rule_id": "ANN2690",
+        "alternate_id": "JP1039",
+        "level": "warning",
+        "message": "'ACCESSION' is duplicated."
+      },
+      "VERSION": {
+        "rule_id": "ANN2690",
+        "alternate_id": "JP1039",
+        "level": "warning",
+        "message": "'VERSION' is duplicated."
+      },
+      "ORGANISM": {
+        "rule_id": "ANN2690",
+        "alternate_id": "JP1039",
+        "level": "warning",
+        "message": "'ORGANISM' is duplicated."
+      },
+      "ENTRY_STATUS": {
+        "rule_id": "ANN2690",
+        "alternate_id": "JP1039",
+        "level": "warning",
+        "message": "'ENTRY_STATUS' is duplicated."
+      },
+      "MGA": {
+        "rule_id": "ANN2690",
+        "alternate_id": "JP1039",
+        "level": "warning",
+        "message": "'MGA' is duplicated."
+      },
+      "DBLINK": {
+        "rule_id": "ANN2690",
+        "alternate_id": "JP1039",
+        "level": "warning",
+        "message": "'DBLINK' is duplicated."
+      },
+      "SUBCONTACT": {
+        "rule_id": "ANN2690",
+        "alternate_id": "JP1039",
+        "level": "warning",
+        "message": "'SUBCONTACT' is duplicated."
+      }
+    }
+  },
+  "features": {
+    "3'UTR": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "standard_name",
+        "trans_splicing"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in '3'UTR' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in '3'UTR' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in '3'UTR' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in '3'UTR' feature."
+        },
+        "trans_splicing": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'trans_splicing' qualifier is found in '3'UTR' feature."
+        }
+      }
+    },
+    "5'UTR": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "standard_name",
+        "trans_splicing"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in '5'UTR' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in '5'UTR' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in '5'UTR' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in '5'UTR' feature."
+        },
+        "trans_splicing": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'trans_splicing' qualifier is found in '5'UTR' feature."
+        }
+      }
+    },
+    "CDS": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "EC_number",
+        "allele",
+        "artificial_location",
+        "circular_RNA",
+        "citation",
+        "codon_start",
+        "db_xref",
+        "exception",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "number",
+        "old_locus_tag",
+        "operon",
+        "product",
+        "protein_id",
+        "pseudo",
+        "pseudogene",
+        "ribosomal_slippage",
+        "standard_name",
+        "trans_splicing",
+        "transcript_id",
+        "transl_except",
+        "transl_table",
+        "translation"
+      ],
+      "singleton_qualifiers": {
+        "artificial_location": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'artificial_location' qualifier is found in 'CDS' feature."
+        },
+        "circular_RNA": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'circular_RNA' qualifier is found in 'CDS' feature."
+        },
+        "codon_start": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'codon_start' qualifier is found in 'CDS' feature."
+        },
+        "exception": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'exception' qualifier is found in 'CDS' feature."
+        },
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'CDS' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'CDS' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'CDS' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'CDS' feature."
+        },
+        "number": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'number' qualifier is found in 'CDS' feature."
+        },
+        "operon": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'operon' qualifier is found in 'CDS' feature."
+        },
+        "product": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'product' qualifier is found in 'CDS' feature."
+        },
+        "protein_id": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'protein_id' qualifier is found in 'CDS' feature."
+        },
+        "pseudo": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudo' qualifier is found in 'CDS' feature."
+        },
+        "pseudogene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudogene' qualifier is found in 'CDS' feature."
+        },
+        "ribosomal_slippage": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'ribosomal_slippage' qualifier is found in 'CDS' feature."
+        },
+        "trans_splicing": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'trans_splicing' qualifier is found in 'CDS' feature."
+        },
+        "transcript_id": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'transcript_id' qualifier is found in 'CDS' feature."
+        },
+        "transl_table": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'transl_table' qualifier is found in 'CDS' feature."
+        },
+        "translation": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'translation' qualifier is found in 'CDS' feature."
+        }
+      }
+    },
+    "C_region": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "product",
+        "pseudo",
+        "pseudogene",
+        "standard_name",
+        "transcript_id"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'C_region' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'C_region' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'C_region' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'C_region' feature."
+        },
+        "product": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'product' qualifier is found in 'C_region' feature."
+        },
+        "pseudo": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudo' qualifier is found in 'C_region' feature."
+        },
+        "pseudogene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudogene' qualifier is found in 'C_region' feature."
+        },
+        "transcript_id": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'transcript_id' qualifier is found in 'C_region' feature."
+        }
+      }
+    },
+    "D-loop": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'D-loop' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'D-loop' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'D-loop' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'D-loop' feature."
+        }
+      }
+    },
+    "D_segment": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "product",
+        "pseudo",
+        "pseudogene",
+        "standard_name",
+        "transcript_id"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'D_segment' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'D_segment' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'D_segment' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'D_segment' feature."
+        },
+        "product": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'product' qualifier is found in 'D_segment' feature."
+        },
+        "pseudo": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudo' qualifier is found in 'D_segment' feature."
+        },
+        "pseudogene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudogene' qualifier is found in 'D_segment' feature."
+        },
+        "transcript_id": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'transcript_id' qualifier is found in 'D_segment' feature."
+        }
+      }
+    },
+    "J_segment": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "product",
+        "pseudo",
+        "pseudogene",
+        "standard_name",
+        "transcript_id"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'J_segment' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'J_segment' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'J_segment' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'J_segment' feature."
+        },
+        "product": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'product' qualifier is found in 'J_segment' feature."
+        },
+        "pseudo": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudo' qualifier is found in 'J_segment' feature."
+        },
+        "pseudogene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudogene' qualifier is found in 'J_segment' feature."
+        },
+        "transcript_id": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'transcript_id' qualifier is found in 'J_segment' feature."
+        }
+      }
+    },
+    "N_region": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "product",
+        "pseudo",
+        "pseudogene",
+        "standard_name",
+        "transcript_id"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'N_region' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'N_region' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'N_region' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'N_region' feature."
+        },
+        "product": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'product' qualifier is found in 'N_region' feature."
+        },
+        "pseudo": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudo' qualifier is found in 'N_region' feature."
+        },
+        "pseudogene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudogene' qualifier is found in 'N_region' feature."
+        },
+        "transcript_id": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'transcript_id' qualifier is found in 'N_region' feature."
+        }
+      }
+    },
+    "STS": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "standard_name"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'STS' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'STS' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'STS' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'STS' feature."
+        }
+      }
+    },
+    "S_region": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "product",
+        "pseudo",
+        "pseudogene",
+        "standard_name"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'S_region' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'S_region' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'S_region' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'S_region' feature."
+        },
+        "product": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'product' qualifier is found in 'S_region' feature."
+        },
+        "pseudo": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudo' qualifier is found in 'S_region' feature."
+        },
+        "pseudogene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudogene' qualifier is found in 'S_region' feature."
+        }
+      }
+    },
+    "V_region": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "product",
+        "pseudo",
+        "pseudogene",
+        "standard_name",
+        "transcript_id"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'V_region' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'V_region' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'V_region' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'V_region' feature."
+        },
+        "product": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'product' qualifier is found in 'V_region' feature."
+        },
+        "pseudo": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudo' qualifier is found in 'V_region' feature."
+        },
+        "pseudogene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudogene' qualifier is found in 'V_region' feature."
+        },
+        "transcript_id": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'transcript_id' qualifier is found in 'V_region' feature."
+        }
+      }
+    },
+    "V_segment": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "product",
+        "pseudo",
+        "pseudogene",
+        "standard_name",
+        "transcript_id"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'V_segment' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'V_segment' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'V_segment' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'V_segment' feature."
+        },
+        "product": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'product' qualifier is found in 'V_segment' feature."
+        },
+        "pseudo": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudo' qualifier is found in 'V_segment' feature."
+        },
+        "pseudogene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudogene' qualifier is found in 'V_segment' feature."
+        },
+        "transcript_id": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'transcript_id' qualifier is found in 'V_segment' feature."
+        }
+      }
+    },
+    "assembly_gap": {
+      "mandatory_qualifiers": {
+        "estimated_length": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'estimated_length' qualifier is required for 'assembly_gap' feature."
+        },
+        "gap_type": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'gap_type' qualifier is required for 'assembly_gap' feature."
+        }
+      },
+      "optional_qualifiers": [
+        "linkage_evidence"
+      ],
+      "singleton_qualifiers": {
+        "estimated_length": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'estimated_length' qualifier is found in 'assembly_gap' feature."
+        },
+        "gap_type": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gap_type' qualifier is found in 'assembly_gap' feature."
+        }
+      }
+    },
+    "centromere": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "citation",
+        "db_xref",
+        "experiment",
+        "inference",
+        "note",
+        "standard_name"
+      ],
+      "singleton_qualifiers": {}
+    },
+    "exon": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "EC_number",
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "number",
+        "old_locus_tag",
+        "product",
+        "pseudo",
+        "pseudogene",
+        "standard_name",
+        "trans_splicing"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'exon' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'exon' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'exon' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'exon' feature."
+        },
+        "number": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'number' qualifier is found in 'exon' feature."
+        },
+        "product": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'product' qualifier is found in 'exon' feature."
+        },
+        "pseudo": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudo' qualifier is found in 'exon' feature."
+        },
+        "pseudogene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudogene' qualifier is found in 'exon' feature."
+        },
+        "trans_splicing": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'trans_splicing' qualifier is found in 'exon' feature."
+        }
+      }
+    },
+    "gap": {
+      "mandatory_qualifiers": {
+        "estimated_length": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'estimated_length' qualifier is required for 'gap' feature."
+        }
+      },
+      "optional_qualifiers": [
+        "experiment",
+        "inference",
+        "map",
+        "note"
+      ],
+      "singleton_qualifiers": {
+        "estimated_length": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'estimated_length' qualifier is found in 'gap' feature."
+        },
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'gap' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'gap' feature."
+        }
+      }
+    },
+    "iDNA": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "number",
+        "old_locus_tag",
+        "standard_name"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'iDNA' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'iDNA' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'iDNA' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'iDNA' feature."
+        },
+        "number": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'number' qualifier is found in 'iDNA' feature."
+        }
+      }
+    },
+    "intron": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "number",
+        "old_locus_tag",
+        "pseudo",
+        "pseudogene",
+        "standard_name",
+        "trans_splicing"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'intron' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'intron' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'intron' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'intron' feature."
+        },
+        "number": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'number' qualifier is found in 'intron' feature."
+        },
+        "pseudo": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudo' qualifier is found in 'intron' feature."
+        },
+        "pseudogene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudogene' qualifier is found in 'intron' feature."
+        },
+        "trans_splicing": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'trans_splicing' qualifier is found in 'intron' feature."
+        }
+      }
+    },
+    "mRNA": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "artificial_location",
+        "circular_RNA",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "operon",
+        "product",
+        "pseudo",
+        "pseudogene",
+        "standard_name",
+        "trans_splicing",
+        "transcript_id"
+      ],
+      "singleton_qualifiers": {
+        "artificial_location": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'artificial_location' qualifier is found in 'mRNA' feature."
+        },
+        "circular_RNA": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'circular_RNA' qualifier is found in 'mRNA' feature."
+        },
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'mRNA' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'mRNA' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'mRNA' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'mRNA' feature."
+        },
+        "operon": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'operon' qualifier is found in 'mRNA' feature."
+        },
+        "product": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'product' qualifier is found in 'mRNA' feature."
+        },
+        "pseudo": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudo' qualifier is found in 'mRNA' feature."
+        },
+        "pseudogene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudogene' qualifier is found in 'mRNA' feature."
+        },
+        "trans_splicing": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'trans_splicing' qualifier is found in 'mRNA' feature."
+        },
+        "transcript_id": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'transcript_id' qualifier is found in 'mRNA' feature."
+        }
+      }
+    },
+    "mat_peptide": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "EC_number",
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "product",
+        "pseudo",
+        "pseudogene",
+        "standard_name"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'mat_peptide' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'mat_peptide' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'mat_peptide' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'mat_peptide' feature."
+        },
+        "product": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'product' qualifier is found in 'mat_peptide' feature."
+        },
+        "pseudo": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudo' qualifier is found in 'mat_peptide' feature."
+        },
+        "pseudogene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudogene' qualifier is found in 'mat_peptide' feature."
+        }
+      }
+    },
+    "misc_RNA": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "operon",
+        "product",
+        "pseudo",
+        "pseudogene",
+        "standard_name",
+        "trans_splicing",
+        "transcript_id"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'misc_RNA' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'misc_RNA' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'misc_RNA' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'misc_RNA' feature."
+        },
+        "operon": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'operon' qualifier is found in 'misc_RNA' feature."
+        },
+        "product": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'product' qualifier is found in 'misc_RNA' feature."
+        },
+        "pseudo": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudo' qualifier is found in 'misc_RNA' feature."
+        },
+        "pseudogene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudogene' qualifier is found in 'misc_RNA' feature."
+        },
+        "trans_splicing": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'trans_splicing' qualifier is found in 'misc_RNA' feature."
+        },
+        "transcript_id": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'transcript_id' qualifier is found in 'misc_RNA' feature."
+        }
+      }
+    },
+    "misc_binding": {
+      "mandatory_qualifiers": {
+        "bound_moiety": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'bound_moiety' qualifier is required for 'misc_binding' feature."
+        }
+      },
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag"
+      ],
+      "singleton_qualifiers": {
+        "bound_moiety": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'bound_moiety' qualifier is found in 'misc_binding' feature."
+        },
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'misc_binding' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'misc_binding' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'misc_binding' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'misc_binding' feature."
+        }
+      }
+    },
+    "misc_difference": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "clone",
+        "db_xref",
+        "experiment",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "phenotype",
+        "replace",
+        "standard_name"
+      ],
+      "singleton_qualifiers": {
+        "clone": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'clone' qualifier is found in 'misc_difference' feature."
+        },
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'misc_difference' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'misc_difference' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'misc_difference' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'misc_difference' feature."
+        },
+        "phenotype": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'phenotype' qualifier is found in 'misc_difference' feature."
+        },
+        "replace": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'replace' qualifier is found in 'misc_difference' feature."
+        }
+      }
+    },
+    "misc_feature": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "number",
+        "old_locus_tag",
+        "phenotype",
+        "product",
+        "pseudo",
+        "pseudogene",
+        "standard_name"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'misc_feature' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'misc_feature' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'misc_feature' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'misc_feature' feature."
+        },
+        "number": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'number' qualifier is found in 'misc_feature' feature."
+        },
+        "phenotype": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'phenotype' qualifier is found in 'misc_feature' feature."
+        },
+        "product": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'product' qualifier is found in 'misc_feature' feature."
+        },
+        "pseudo": {
+          "rule_id": "ANN3190", 
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudo' qualifier is found in 'misc_feature' feature."
+        },
+        "pseudogene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudogene' qualifier is found in 'misc_feature' feature."
+        }
+      }
+    },
+    "misc_recomb": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "recombination_class",
+        "standard_name"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'misc_recomb' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'misc_recomb' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'misc_recomb' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'misc_recomb' feature."
+        },
+        "recombination_class": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'recombination_class' qualifier is found in 'misc_recomb' feature."
+        }
+      }
+    },
+    "misc_structure": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "standard_name"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'misc_structure' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'misc_structure' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'misc_structure' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'misc_structure' feature."
+        }
+      }
+    },
+    "mobile_element": {
+      "mandatory_qualifiers": {
+        "mobile_element_type": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'mobile_element_type' qualifier is required for 'mobile_element' feature."
+        }
+      },
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "rpt_family",
+        "standard_name"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'mobile_element' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'mobile_element' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'mobile_element' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'mobile_element' feature."
+        },
+        "mobile_element_type": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'mobile_element_type' qualifier is found in 'mobile_element' feature."
+        },
+        "rpt_family": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'rpt_family' qualifier is found in 'mobile_element' feature."
+        }
+      }
+    },
+    "modified_base": {
+      "mandatory_qualifiers": {
+        "mod_base": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'mod_base' qualifier is required for 'modified_base' feature."
+        }
+      },
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "frequency",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'modified_base' feature."
+        },
+        "frequency": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'frequency' qualifier is found in 'modified_base' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'modified_base' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'modified_base' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'modified_base' feature."
+        },
+        "mod_base": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'mod_base' qualifier is found in 'modified_base' feature."
+        }
+      }
+    },
+    "ncRNA": {
+      "mandatory_qualifiers": {
+        "ncRNA_class": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'ncRNA_class' qualifier is required for 'ncRNA' feature."
+        }
+      },
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "operon",
+        "product",
+        "pseudo",
+        "pseudogene",
+        "standard_name",
+        "trans_splicing",
+        "transcript_id"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'ncRNA' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'ncRNA' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'ncRNA' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'ncRNA' feature."
+        },
+        "ncRNA_class": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'ncRNA_class' qualifier is found in 'ncRNA' feature."
+        },
+        "operon": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'operon' qualifier is found in 'ncRNA' feature."
+        },
+        "product": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'product' qualifier is found in 'ncRNA' feature."
+        },
+        "pseudo": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudo' qualifier is found in 'ncRNA' feature."
+        },
+        "pseudogene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudogene' qualifier is found in 'ncRNA' feature."
+        },
+        "trans_splicing": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'trans_splicing' qualifier is found in 'ncRNA' feature."
+        },
+        "transcript_id": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'transcript_id' qualifier is found in 'ncRNA' feature."
+        }
+      },
+      "expected_sequence_lengths": [
+        {
+          "if_qualifier": "ncRNA_class",
+          "has_value": "lncRNA",
+          "bounds": { "min": 201, "max": null },
+          "rule_id": "ANN2625",
+          "message": "Unexpected lncRNA length. ({length} bp, expected: >200 bp)"
+        }
+      ]
+    },
+    "old_sequence": {},
+    "operon": {
+      "mandatory_qualifiers": {
+        "operon": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'operon' qualifier is required for 'operon' feature."
+        }
+      },
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "inference",
+        "map",
+        "note",
+        "phenotype",
+        "pseudo",
+        "pseudogene",
+        "standard_name"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'operon' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'operon' feature."
+        },
+        "operon": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'operon' qualifier is found in 'operon' feature."
+        },
+        "phenotype": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'phenotype' qualifier is found in 'operon' feature."
+        },
+        "pseudo": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudo' qualifier is found in 'operon' feature."
+        },
+        "pseudogene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudogene' qualifier is found in 'operon' feature."
+        }
+      }
+    },
+    "oriT": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "bound_moiety",
+        "citation",
+        "db_xref",
+        "direction",
+        "experiment",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "rpt_family",
+        "rpt_type",
+        "rpt_unit_range",
+        "rpt_unit_seq",
+        "standard_name"
+      ],
+      "singleton_qualifiers": {
+        "bound_moiety": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'bound_moiety' qualifier is found in 'oriT' feature."
+        },
+        "direction": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'direction' qualifier is found in 'oriT' feature."
+        },
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'oriT' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'oriT' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'oriT' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'oriT' feature."
+        },
+        "rpt_family": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'rpt_family' qualifier is found in 'oriT' feature."
+        }
+      }
+    },
+    "polyA_site": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'polyA_site' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'polyA_site' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'polyA_site' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'polyA_site' feature."
+        }
+      }
+    },
+    "precursor_RNA": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "operon",
+        "product",
+        "standard_name",
+        "trans_splicing",
+        "transcript_id"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'precursor_RNA' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'precursor_RNA' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'precursor_RNA' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'precursor_RNA' feature."
+        },
+        "operon": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'operon' qualifier is found in 'precursor_RNA' feature."
+        },
+        "product": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'product' qualifier is found in 'precursor_RNA' feature."
+        },
+        "trans_splicing": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'trans_splicing' qualifier is found in 'precursor_RNA' feature."
+        },
+        "transcript_id": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'transcript_id' qualifier is found in 'precursor_RNA' feature."
+        }
+      }
+    },
+    "prim_transcript": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "operon",
+        "standard_name",
+        "transcript_id"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'prim_transcript' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'prim_transcript' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'prim_transcript' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'prim_transcript' feature."
+        },
+        "operon": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'operon' qualifier is found in 'prim_transcript' feature."
+        },
+        "transcript_id": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'transcript_id' qualifier is found in 'prim_transcript' feature."
+        }
+      }
+    },
+    "primer_bind": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "PCR_conditions",
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "standard_name"
+      ],
+      "singleton_qualifiers": {
+        "PCR_conditions": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'PCR_conditions' qualifier is found in 'primer_bind' feature."
+        },
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'primer_bind' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'primer_bind' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'primer_bind' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'primer_bind' feature."
+        }
+      }
+    },
+    "propeptide": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "product",
+        "pseudo",
+        "pseudogene",
+        "standard_name"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'propeptide' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'propeptide' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'propeptide' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'propeptide' feature."
+        },
+        "product": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'product' qualifier is found in 'propeptide' feature."
+        },
+        "pseudo": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudo' qualifier is found in 'propeptide' feature."
+        },
+        "pseudogene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudogene' qualifier is found in 'propeptide' feature."
+        }
+      }
+    },
+    "protein_bind": {
+      "mandatory_qualifiers": {
+        "bound_moiety": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'bound_moiety' qualifier is required for 'protein_bind' feature."
+        }
+      },
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "operon",
+        "standard_name"
+      ],
+      "singleton_qualifiers": {
+        "bound_moiety": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'bound_moiety' qualifier is found in 'protein_bind' feature."
+        },
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'protein_bind' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'protein_bind' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'protein_bind' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'protein_bind' feature."
+        },
+        "operon": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'operon' qualifier is found in 'protein_bind' feature."
+        }
+      }
+    },
+    "rRNA": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "operon",
+        "product",
+        "pseudo",
+        "pseudogene",
+        "standard_name",
+        "transcript_id"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'rRNA' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'rRNA' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'rRNA' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'rRNA' feature."
+        },
+        "operon": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'operon' qualifier is found in 'rRNA' feature."
+        },
+        "product": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'product' qualifier is found in 'rRNA' feature."
+        },
+        "pseudo": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudo' qualifier is found in 'rRNA' feature."
+        },
+        "pseudogene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudogene' qualifier is found in 'rRNA' feature."
+        },
+        "transcript_id": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'transcript_id' qualifier is found in 'rRNA' feature."
+        }
+      },
+      "expected_sequence_lengths": [
+        {
+          "product": "5S",
+          "bounds": { "min": 100, "max": 120 }
+        },
+        {
+          "product": "16S",
+          "bounds": { "min": 1300, "max": 1600 }
+        },
+        {
+          "product": "23S",
+          "bounds": { "min": 2700, "max": 3000 }
+        },
+        {
+          "product": "28S",
+          "bounds": { "min": 3000, "max": 5000 }
+        },
+        {
+          "product": "5.8S",
+          "bounds": { "min": 150, "max": 170 }
+        },
+        {
+          "product": "18S",
+          "bounds": { "min": 1600, "max": 2000 }
+        },
+        {
+          "product": "25S",
+          "bounds": { "min": 3300, "max": 3500 }
+        },
+        {
+          "product": "26S",
+          "bounds": { "min": 3300, "max": 3500 }
+        }
+      ]
+    },
+    "regulatory": {
+      "mandatory_qualifiers": {
+        "regulatory_class": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'regulatory_class' qualifier is required for 'regulatory' feature."
+        }
+      },
+      "optional_qualifiers": [
+        "allele",
+        "bound_moiety",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "operon",
+        "phenotype",
+        "pseudo",
+        "pseudogene",
+        "standard_name"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'regulatory' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'regulatory' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'regulatory' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'regulatory' feature."
+        },
+        "operon": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'operon' qualifier is found in 'regulatory' feature."
+        },
+        "phenotype": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'phenotype' qualifier is found in 'regulatory' feature."
+        },
+        "pseudo": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudo' qualifier is found in 'regulatory' feature."
+        },
+        "pseudogene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudogene' qualifier is found in 'regulatory' feature."
+        },
+        "regulatory_class": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'regulatory_class' qualifier is found in 'regulatory' feature."
+        }
+      }
+    },
+    "rep_origin": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "direction",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "standard_name"
+      ],
+      "singleton_qualifiers": {
+        "direction": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'direction' qualifier is found in 'rep_origin' feature."
+        },
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'rep_origin' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'rep_origin' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'rep_origin' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'rep_origin' feature."
+        }
+      }
+    },
+    "repeat_region": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "rpt_family",
+        "rpt_type",
+        "rpt_unit_range",
+        "rpt_unit_seq",
+        "satellite",
+        "standard_name"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'repeat_region' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'repeat_region' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'repeat_region' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'repeat_region' feature."
+        },
+        "rpt_family": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'rpt_family' qualifier is found in 'repeat_region' feature."
+        },
+        "satellite": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'satellite' qualifier is found in 'repeat_region' feature."
+        }
+      }
+    },
+    "sig_peptide": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "product",
+        "pseudo",
+        "pseudogene",
+        "standard_name"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'sig_peptide' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'sig_peptide' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'sig_peptide' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'sig_peptide' feature."
+        },
+        "product": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'product' qualifier is found in 'sig_peptide' feature."
+        },
+        "pseudo": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudo' qualifier is found in 'sig_peptide' feature."
+        },
+        "pseudogene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudogene' qualifier is found in 'sig_peptide' feature."
+        }
+      }
+    },
+    "source": {
+      "mandatory_qualifiers": {
+        "mol_type": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'mol_type' qualifier is required for 'source' feature."
+        },
+        "organism": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'organism' qualifier is required for 'source' feature."
+        },
+        "collection_date": {
+          "rule_id": "ANN1210",
+          "alternate_id": "BLP0023",
+          "level": "error",
+          "message": "collection_date is required"
+        },
+        "geo_loc_name": {
+          "rule_id": "ANN1220",
+          "alternate_id": "BLP0033",
+          "level": "error",
+          "message": "geo_loc_name is required"
+        }
+      },
+      "optional_qualifiers": [
+        "PCR_primers",
+        "altitude",
+        "bio_material",
+        "cell_line",
+        "cell_type",
+        "chromosome",
+        "citation",
+        "clone",
+        "collected_by",
+        "collection_date",
+        "cultivar",
+        "culture_collection",
+        "db_xref",
+        "dev_stage",
+        "ecotype",
+        "environmental_sample",
+        "ff_definition",
+        "focus",
+        "geo_loc_name",
+        "germline",
+        "haplogroup",
+        "haplotype",
+        "host",
+        "isolate",
+        "isolation_source",
+        "lab_host",
+        "lat_lon",
+        "macronuclear",
+        "map",
+        "mating_type",
+        "metagenome_source",
+        "note",
+        "organelle",
+        "plasmid",
+        "proviral",
+        "rearranged",
+        "segment",
+        "serotype",
+        "serovar",
+        "sex",
+        "specimen_voucher",
+        "strain",
+        "submitter_seqid",
+        "tissue_type",
+        "transgenic",
+        "type_material"
+      ],
+      "sample_qualifiers": [
+        "mol_type",
+        "organism",
+        "collection_date",
+        "geo_loc_name",
+        "altitude",
+        "bio_material",
+        "cell_line",
+        "cell_type",
+        "collected_by",
+        "cultivar",
+        "culture_collection",
+        "dev_stage",
+        "ecotype",
+        "haplogroup",
+        "haplotype",
+        "host",
+        "isolate",
+        "isolation_source",
+        "lab_host",
+        "lat_lon",
+        "mating_type",
+        "organelle",
+        "serotype",
+        "serovar",
+        "sex",
+        "specimen_voucher",
+        "strain",
+        "tissue_type"
+      ],      
+      "singleton_qualifiers": {
+        "altitude": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'altitude' qualifier is found in 'source' feature."
+        },
+        "cell_line": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'cell_line' qualifier is found in 'source' feature."
+        },
+        "cell_type": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'cell_type' qualifier is found in 'source' feature."
+        },
+        "chromosome": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'chromosome' qualifier is found in 'source' feature."
+        },
+        "clone": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'clone' qualifier is found in 'source' feature."
+        },
+        "collected_by": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'collected_by' qualifier is found in 'source' feature."
+        },
+        "collection_date": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'collection_date' qualifier is found in 'source' feature."
+        },
+        "cultivar": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'cultivar' qualifier is found in 'source' feature."
+        },
+        "dev_stage": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'dev_stage' qualifier is found in 'source' feature."
+        },
+        "ecotype": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'ecotype' qualifier is found in 'source' feature."
+        },
+        "environmental_sample": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'environmental_sample' qualifier is found in 'source' feature."
+        },
+        "ff_definition": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'ff_definition' qualifier is found in 'source' feature."
+        },
+        "focus": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'focus' qualifier is found in 'source' feature."
+        },
+        "geo_loc_name": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'geo_loc_name' qualifier is found in 'source' feature."
+        },
+        "germline": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'germline' qualifier is found in 'source' feature."
+        },
+        "haplogroup": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'haplogroup' qualifier is found in 'source' feature."
+        },
+        "haplotype": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'haplotype' qualifier is found in 'source' feature."
+        },
+        "host": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'host' qualifier is found in 'source' feature."
+        },
+        "isolate": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'isolate' qualifier is found in 'source' feature."
+        },
+        "isolation_source": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'isolation_source' qualifier is found in 'source' feature."
+        },
+        "lab_host": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'lab_host' qualifier is found in 'source' feature."
+        },
+        "lat_lon": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'lat_lon' qualifier is found in 'source' feature."
+        },
+        "macronuclear": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'macronuclear' qualifier is found in 'source' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'source' feature."
+        },
+        "mating_type": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'mating_type' qualifier is found in 'source' feature."
+        },
+        "metagenome_source": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'metagenome_source' qualifier is found in 'source' feature."
+        },
+        "mol_type": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'mol_type' qualifier is found in 'source' feature."
+        },
+        "organelle": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'organelle' qualifier is found in 'source' feature."
+        },
+        "organism": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'organism' qualifier is found in 'source' feature."
+        },
+        "plasmid": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'plasmid' qualifier is found in 'source' feature."
+        },
+        "proviral": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'proviral' qualifier is found in 'source' feature."
+        },
+        "rearranged": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'rearranged' qualifier is found in 'source' feature."
+        },
+        "segment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'segment' qualifier is found in 'source' feature."
+        },
+        "serotype": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'serotype' qualifier is found in 'source' feature."
+        },
+        "serovar": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'serovar' qualifier is found in 'source' feature."
+        },
+        "sex": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'sex' qualifier is found in 'source' feature."
+        },
+        "strain": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'strain' qualifier is found in 'source' feature."
+        },
+        "submitter_seqid": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'submitter_seqid' qualifier is found in 'source' feature."
+        },
+        "tissue_type": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'tissue_type' qualifier is found in 'source' feature."
+        },
+        "transgenic": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'transgenic' qualifier is found in 'source' feature."
+        }
+      }
+    },
+    "stem_loop": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "operon",
+        "standard_name"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'stem_loop' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'stem_loop' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'stem_loop' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'stem_loop' feature."
+        },
+        "operon": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'operon' qualifier is found in 'stem_loop' feature."
+        }
+      }
+    },
+    "sub_species": {},
+    "tRNA": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "anticodon",
+        "circular_RNA",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "operon",
+        "product",
+        "pseudo",
+        "pseudogene",
+        "standard_name",
+        "trans_splicing",
+        "transcript_id"
+      ],
+      "singleton_qualifiers": {
+        "anticodon": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'anticodon' qualifier is found in 'tRNA' feature."
+        },
+        "circular_RNA": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'circular_RNA' qualifier is found in 'tRNA' feature."
+        },
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'tRNA' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'tRNA' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'tRNA' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'tRNA' feature."
+        },
+        "operon": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'operon' qualifier is found in 'tRNA' feature."
+        },
+        "product": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'product' qualifier is found in 'tRNA' feature."
+        },
+        "pseudo": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudo' qualifier is found in 'tRNA' feature."
+        },
+        "pseudogene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudogene' qualifier is found in 'tRNA' feature."
+        },
+        "trans_splicing": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'trans_splicing' qualifier is found in 'tRNA' feature."
+        },
+        "transcript_id": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'transcript_id' qualifier is found in 'tRNA' feature."
+        }
+      },
+      "expected_sequence_lengths": [
+        { "bounds": { "min": 50, "max": 150 } }
+      ]
+    },
+    "telomere": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "citation",
+        "db_xref",
+        "experiment",
+        "inference",
+        "note",
+        "rpt_type",
+        "rpt_unit_range",
+        "rpt_unit_seq",
+        "standard_name"
+      ],
+      "singleton_qualifiers": {}
+    },
+    "tmRNA": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "product",
+        "pseudo",
+        "pseudogene",
+        "standard_name",
+        "tag_peptide",
+        "transcript_id"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'tmRNA' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'tmRNA' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'tmRNA' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'tmRNA' feature."
+        },
+        "product": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'product' qualifier is found in 'tmRNA' feature."
+        },
+        "pseudo": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudo' qualifier is found in 'tmRNA' feature."
+        },
+        "pseudogene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudogene' qualifier is found in 'tmRNA' feature."
+        },
+        "transcript_id": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'transcript_id' qualifier is found in 'tmRNA' feature."
+        }
+      },
+      "expected_sequence_lengths": [
+        { "bounds": { "min": 300, "max": 400 } }
+      ]
+    },
+    "transit_peptide": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "function",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "product",
+        "pseudo",
+        "pseudogene",
+        "standard_name"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'transit_peptide' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'transit_peptide' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'transit_peptide' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'transit_peptide' feature."
+        },
+        "product": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'product' qualifier is found in 'transit_peptide' feature."
+        },
+        "pseudo": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudo' qualifier is found in 'transit_peptide' feature."
+        },
+        "pseudogene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pseudogene' qualifier is found in 'transit_peptide' feature."
+        }
+      }
+    },
+    "unsure": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "replace"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'unsure' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'unsure' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'unsure' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'unsure' feature."
+        },
+        "replace": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'replace' qualifier is found in 'unsure' feature."
+        }
+      }
+    },
+    "variation": {
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "allele",
+        "citation",
+        "db_xref",
+        "experiment",
+        "frequency",
+        "gene",
+        "gene_synonym",
+        "inference",
+        "locus_tag",
+        "map",
+        "note",
+        "old_locus_tag",
+        "phenotype",
+        "product",
+        "replace",
+        "standard_name"
+      ],
+      "singleton_qualifiers": {
+        "experiment": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'experiment' qualifier is found in 'variation' feature."
+        },
+        "frequency": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'frequency' qualifier is found in 'variation' feature."
+        },
+        "gene": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'gene' qualifier is found in 'variation' feature."
+        },
+        "locus_tag": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'locus_tag' qualifier is found in 'variation' feature."
+        },
+        "map": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'map' qualifier is found in 'variation' feature."
+        },
+        "phenotype": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'phenotype' qualifier is found in 'variation' feature."
+        },
+        "product": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'product' qualifier is found in 'variation' feature."
+        },
+        "replace": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'replace' qualifier is found in 'variation' feature."
+        }
+      },
+      "variety": {}
+    },
+    "SUBMITTER": {
+      "feature_type": "metadata_field",
+      "field_place": [
+        "COMMON",
+        "ENTRY"
+      ],
+      "singleton_feature": {
+        "rule_id": "ANN0645",
+        "level": "error",
+        "message": "More than one SUBMITTER is not allowed."
+      },
+      "mandatory_qualifiers": {
+        "email": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'email' is required for 'SUBMITTER'."
+        },
+        "institute": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'institute' is required for 'SUBMITTER'."
+        },
+        "country": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'country' is required for 'SUBMITTER'."
+        },
+        "street": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'street' is required for 'SUBMITTER'."
+        }
+      },
+      "allow_both_sections": true,
+      "either_one_mandatory_qualifiers": [
+        {
+          "choices": [
+            "ab_name",
+            "consrtm"
+          ],
+          "rule_id": "ANN0340",
+          "level": "error",
+          "message": "SUBMITTER must have at least one author (ab_name) or consrtm."
+        }
+      ],      
+      "optional_qualifiers": [
+        "url",
+        "phext",
+        "fax",
+        "city",
+        "state",
+        "zip",
+        "contact",
+        "department",
+        "consrtm",
+        "ab_name",
+        "email_pub",
+        "fax_pub",
+        "phone_pub",
+        "phone"
+      ],
+      "singleton_qualifiers": {
+        "url": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'url' in 'SUBMITTER'."
+        },
+        "phext": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'phext' in 'SUBMITTER'."
+        },
+        "fax": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'fax' in 'SUBMITTER'."
+        },
+        "city": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'city' in 'SUBMITTER'."
+        },
+        "state": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'state' in 'SUBMITTER'."
+        },
+        "country": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'country' in 'SUBMITTER'."
+        },
+        "zip": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'zip' in 'SUBMITTER'."
+        },
+        "contact": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'contact' in 'SUBMITTER'."
+        },
+        "department": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'department' in 'SUBMITTER'."
+        },
+        "institute": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'institute' in 'SUBMITTER'."
+        },
+        "email_pub": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'email_pub' in 'SUBMITTER'."
+        },
+        "fax_pub": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'fax_pub' in 'SUBMITTER'."
+        },
+        "phone_pub": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'phone_pub' in 'SUBMITTER'."
+        },
+        "phone": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'phone' in 'SUBMITTER'."
+        }
+      }
+    },
+    "REFERENCE": {
+      "feature_type": "metadata_field",
+      "field_place": [
+        "COMMON",
+        "ENTRY"
+      ],
+      "allow_both_sections": true,
+      "mandatory_qualifiers": {
+        "title": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'title' is required for 'REFERENCE'."
+        },
+        "status": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'status' is required for 'REFERENCE'"
+        }
+      },
+      "either_one_mandatory_qualifiers": [
+        {
+          "choices": [
+            "ab_name",
+            "consrtm"
+          ],
+          "rule_id": "ANN0340",
+          "level": "error",
+          "message": "REFERENCE must have at least one author (ab_name) or consrtm."
+        }
+      ],
+      "optional_qualifiers": [
+        "journal",
+        "volume",
+        "issue",
+        "start_page",
+        "end_page",
+        "consrtm",
+        "ab_name",
+        "pb_type",
+        "ui",
+        "media",
+        "doi",
+        "year"
+      ],
+      "singleton_qualifiers": {
+        "title": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'title' in 'REFERENCE'."
+        },
+        "journal": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'journal' in 'REFERENCE'."
+        },
+        "volume": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'volume' in 'REFERENCE'."
+        },
+        "issue": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'issue' in 'REFERENCE'."
+        },
+        "start_page": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'start_page' in 'REFERENCE'."
+        },
+        "end_page": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'end_page' in 'REFERENCE'."
+        },
+        "pb_type": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'pb_type' in 'REFERENCE'."
+        },
+        "ui": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'ui' in 'REFERENCE'."
+        },
+        "media": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'media' in 'REFERENCE'."
+        },
+        "doi": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'doi' in 'REFERENCE'."
+        },
+        "year": {
+          "rule_id": "ANN3190",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'year' in 'REFERENCE'."
+        }
+      }
+    },
+    "COMMENT": {
+      "feature_type": "metadata_field",
+      "field_place": [
+        "COMMON",
+        "ENTRY"
+      ],
+      "allow_both_sections": true,
+      "singleton_feature": {
+        "rule_id": "ANN0645",
+        "level": "error",
+        "message": "More than one COMMENT is not allowed."
+      },
+      "mandatory_qualifiers": {
+        "line": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'line' qualifier is required for 'COMMENT' feature."
+        }
+      },
+      "optional_qualifiers": [],
+      "singleton_qualifiers": {}
+    },
+    "ST_COMMENT": {
+      "feature_type": "metadata_field",
+      "field_place": [
+        "COMMON",
+        "ENTRY"
+      ],
+      "singleton_feature": {
+        "rule_id": "ANN0645",
+        "level": "error",
+        "message": "More than one ST_COMMENT is not allowed."
+      },
+      "mandatory_qualifiers": {
+        "tagset_id": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'tagset_id' qualifier is required for 'ST_COMMENT' feature."
+        }
+      },
+      "optional_qualifiers": [
+        "Finishing Goal",
+        "Current Finishing Status",
+        "Assembly Method",
+        "Assembly Name",
+        "Genome Coverage",
+        "Sequencing Technology",
+        "Coverage",
+        "Diploid"
+      ],
+      "singleton_qualifiers": {
+        "Finishing Goal": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'Finishing Goal' is found in 'ST_COMMENT'."
+        },
+        "Current Finishing Status": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'Current Finishing Status' is found in 'ST_COMMENT'."
+        },
+        "Assembly Method": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'Assembly Method' is found in 'ST_COMMENT'."
+        },
+        "Assembly Name": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'Assembly Name' is found in 'ST_COMMENT'."
+        },
+        "Genome Coverage": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'Genome Coverage' is found in 'ST_COMMENT'."
+        },
+        "Sequencing Technology": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'Sequencing Technology' is found in 'ST_COMMENT'."
+        },
+        "Coverage": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'Coverage' is found in 'ST_COMMENT'."
+        },
+        "Diploid": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'Diploid' is found in 'ST_COMMENT'."
+        }
+      }
+    },
+    "DIVISION": {
+      "feature_type": "metadata_field",
+      "field_place": [
+        "COMMON"
+      ],
+      "singleton_feature": {
+        "rule_id": "ANN0645",
+        "level": "error",
+        "message": "More than one DIVISION is not allowed."
+      },
+      "mandatory_qualifiers": {
+        "division": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'division' qualifier is required for 'DIVISION' feature."
+        }
+      },
+      "optional_qualifiers": [],
+      "singleton_qualifiers": {
+        "division": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'division' is found in 'DIVISION'."
+        }
+      }
+    },
+    "TOPOLOGY": {
+      "feature_type": "metadata_field",
+      "field_place": [
+        "COMMON",
+        "ENTRY"
+      ],
+      "singleton_feature": {
+        "rule_id": "ANN0645",
+        "level": "error",
+        "message": "More than one TOPOLOGY is not allowed."
+      },
+      "field_type": "value-less",
+      "mandatory_qualifiers": {
+        "circular": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'circular' qualifier is required for 'TOPOLOGY' feature."
+        }
+      },
+      "optional_qualifiers": [],
+      "singleton_qualifiers": {
+        "circular": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'circular' is found in 'TOPOLOGY'."
+        }
+      }
+    },
+    "KEYWORD": {
+      "feature_type": "metadata_field",
+      "field_place": [
+        "COMMON",
+        "ENTRY"
+      ],
+      "singleton_feature": {
+        "rule_id": "ANN0645",
+        "level": "error",
+        "message": "More than one KEYWORD is not allowed."
+      },
+      "mandatory_qualifiers": {
+        "keyword": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'keyword' qualifier is required for 'KEYWORD' feature."
+        }
+      },
+      "optional_qualifiers": [],
+      "singleton_qualifiers": {}
+    },
+    "DATE": {
+      "feature_type": "metadata_field",
+      "field_place": [
+        "COMMON"
+      ],
+      "singleton_feature": {
+        "rule_id": "ANN0645",
+        "level": "error",
+        "message": "More than one DATE is not allowed."
+      },
+      "mandatory_qualifiers": {
+        "hold_date": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'hold_date' qualifier is required for 'DATE' feature."
+        }
+      },
+      "optional_qualifiers": [],
+      "singleton_qualifiers": {
+        "hold_date": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'hold_date' in 'DATE'."
+        }        
+      }
+    },
+    "DATATYPE": {
+      "feature_type": "metadata_field",
+      "field_place": [
+        "COMMON"
+      ],
+      "singleton_feature": {
+        "rule_id": "ANN0645",
+        "level": "error",
+        "message": "More than one DATATYPE is not allowed."
+      },
+      "mandatory_qualifiers": {
+        "type": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'type' qualifier is required for 'DATATYPE'."
+        }
+      },
+      "optional_qualifiers": [],
+      "singleton_qualifiers": {
+        "type": {
+          "rule_id": "ANN0645",
+          "alternate_id": "",
+          "level": "error",
+          "message": "More than one DATATYPE is not allowed."
+        }        
+      }
+    },
+    "PRIMARY_CONTIG": {
+      "feature_type": "metadata_field",
+      "field_place": [
+        "COMMON"
+      ],
+      "singleton_feature": {
+        "rule_id": "ANN0645",
+        "level": "error",
+        "message": "More than one PRIMARY_CONTIG is not allowed."
+      },
+      "mandatory_qualifiers": {
+        "entry": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'entry' qualifier is required for 'PRIMARY_CONTIG'."
+        },
+        "primary_bases": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'primary_bases' qualifier is required for 'PRIMARY_CONTIG'."
+        }
+      },
+      "optional_qualifiers": [
+        "complement"
+      ],
+      "singleton_qualifiers": {}
+    },
+    "SUBCONTACT": {
+      "feature_type": "metadata_field",
+      "field_place": [
+        "COMMON"
+      ],
+      "singleton_feature": {
+        "rule_id": "ANN0645",
+        "level": "error",
+        "message": "More than one SUBCONTACT is not allowed."
+      },
+      "mandatory_qualifiers": {
+        "name": {
+          "rule_id": "ANN3050",
+          "alternate_id": "JP0074, JP0184",
+          "level": "error",
+          "message": "'name' qualifier is required for 'SUBCONTACT'."
+        }
+      },
+      "optional_qualifiers": [],
+      "singleton_qualifiers": {}
+    },
+    "DBLINK": {
+      "feature_type": "metadata_field",
+      "field_place": [
+        "COMMON",
+        "ENTRY"
+      ],
+      "allow_both_sections": true,
+      "singleton_feature": {
+        "rule_id": "ANN0645",
+        "level": "error",
+        "message": "More than one DBLINK is not allowed."
+      },
+      "mandatory_qualifiers": {},
+      "optional_qualifiers": [
+        "project",
+        "biosample",
+        "trace assembly archive",
+        "sequence read archive"
+      ],
+      "singleton_qualifiers": {
+        "project": {
+          "rule_id": "ANN3191",
+          "alternate_id": "JP0122",
+          "level": "error",
+          "message": "More than one 'project' is found in 'DBLINK'."
+        }
+      }
+    }
+  },
+  "qualifiers": {
+    "type": {
+      "qualifier_type": "metadata_field"
+    },
+    "division": {
+      "qualifier_type": "metadata_field"
+    },
+    "keyword": {
+      "qualifier_type": "metadata_field",
+      "unique_values": true,
+      "unique_scope": "entry",
+      "unique_rule": {
+        "rule_id": "ANN0670",
+        "level": "error",
+        "message": "Duplicate keyword."
+      },
+      "allowed_values": [
+        "EST",
+        "STS",
+        "GSS",
+        "fis (full insert sequence)",
+        "HTG",
+        "HTGS_PHASE0",
+        "HTGS_PHASE1",
+        "HTGS_PHASE2",
+        "HTGS_DRAFT",
+        "HTGS_FULLTOP",
+        "HTGS_ACTIVEFIN",
+        "HTC",
+        "oligo capping",
+        "CAP trapper",
+        "FLI_CDNA",
+        "Third Party Data",
+        "TPA",
+        "WGS",
+        "MGA",
+        "CAGE (Cap Analysis Gene Expression)",
+        "ENV",
+        "paired end tag",
+        "SELEX-SAGE",
+        "TPA:inferential",
+        "TPA:experimental",
+        "BARCODE",
+        "5'-end sequence (5'-EST)",
+        "3'-end sequence (3'-EST)",
+        "unspecified EST",
+        "TSA",
+        "Transcriptome Shotgun Assembly",
+        "HTGS_PHASE3",
+        "HTGS_ENRICHED",
+        "HTGS_POOLED_CLONE",
+        "HTGS_POOLED_MULTICLONE",
+        "UNORDERED",
+        "TPA:assembly",
+        "STANDARD_DRAFT",
+        "HIGH_QUALITY_DRAFT",
+        "IMPROVED_HIGH_QUALITY_DRAFT",
+        "ANNOTATION_GRADE",
+        "NON_CONTIGUOUS_FINISHED",
+        "TPA:specialist_db",
+        "TLS",
+        "Targeted Locus Study",
+        "Metagenome Assembled Genome",
+        "MAG"
+      ],
+      "value_rule": {
+        "rule_id": "ANN3290",
+        "alternate_id": "JP0177, JP0178",
+        "level": "error",
+        "message": "Value not defined in controlled values 'keyword'."
+      },
+      "format_pattern": "^[^;]*$",
+      "format_rule": {
+        "rule_id": "ANN0185",
+        "level": "error",
+        "message": "Semicolons (;) are not allowed."
+      }
+    },
+    "email": {
+      "qualifier_type": "metadata_field",
+      "format_pattern": "^[A-Za-z0-9_.\\+-]+@[A-Za-z0-9-]+\\.[A-Za-z0-9-.]+$",
+      "format_rule": {
+        "rule_id": "ANN0185",
+        "level": "error",
+        "message": "Invalid email address format."
+      },
+      "unique_values": true,
+      "unique_scope": "entry",
+      "unique_rule": {
+        "rule_id": "ANN0670",
+        "level": "error",
+        "message": "Duplicate email."
+      }
+    },
+    "institute": {
+      "qualifier_type": "metadata_field",
+      "unique_values": true,
+      "unique_scope": "entry",
+      "unique_rule": {
+        "rule_id": "ANN0670",
+        "level": "error",
+        "message": "Duplicate institute."
+      }
+    },
+    "city": {
+      "qualifier_type": "metadata_field",
+      "unique_values": true,
+      "unique_scope": "entry",
+      "unique_rule": {
+        "rule_id": "ANN0670",
+        "level": "error",
+        "message": "Duplicate city."
+      }
+    },
+    "street": {
+      "qualifier_type": "metadata_field",
+      "unique_values": true,
+      "unique_scope": "entry",
+      "unique_rule": {
+        "rule_id": "ANN0670",
+        "level": "error",
+        "message": "Duplicate street."
+      }
+    },
+    "zip": {
+      "qualifier_type": "metadata_field",
+      "unique_values": true,
+      "unique_scope": "entry",
+      "unique_rule": {
+        "rule_id": "ANN0670",
+        "level": "error",
+        "message": "Duplicate zip."
+      }
+    },
+    "country": {
+      "qualifier_type": "metadata_field",
+      "unique_values": true,
+      "unique_scope": "entry",
+      "unique_rule": {
+        "rule_id": "ANN0670",
+        "level": "error",
+        "message": "Duplicate country."
+      }
+    },
+    "title": {
+      "qualifier_type": "metadata_field",
+      "unique_values": true,
+      "unique_scope": "entry",
+      "unique_rule": {
+        "rule_id": "ANN0670",
+        "level": "error",
+        "message": "Duplicate title."
+      }
+    },
+    "line": {
+      "qualifier_type": "metadat  a_field",
+      "format_pattern": "^[^\\\\]*$",
+      "format_rule": {
+        "rule_id": "ANN0186", 
+        "level": "error",
+        "message": "Backslash (\\) is not allowed."
+      }
+    },
+    "tagset_id": {
+      "qualifier_type": "metadata_field",
+      "allowed_values": [
+        "Genome-Assembly-Data",
+        "Assembly-Data"
+      ],
+      "value_rule": {
+        "rule_id": "ANN3290",
+        "alternate_id": "JP0177, JP0178",
+        "level": "error",
+        "message": "Value not defined in controlled values 'tagset_id'."
+      }
+    },
+    "Assembly Method": {
+      "qualifier_type": "metadata_field"
+    },
+    "Genome Coverage": {
+      "qualifier_type": "metadata_field"
+    },
+    "hold_date": {
+      "qualifier_type": "metadata_field",
+      "format_pattern": "^20\\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\\d|3[01])$",
+      "format_rule": {
+        "rule_id": "ANN0185",
+        "level": "error",
+        "message": "Invalid date format. Expected YYYYMMDD starting with 20XX."
+      },
+      "unique_values": true,
+      "unique_rule": {
+        "rule_id": "ANN0670",
+        "level": "error",
+        "message": "Duplicate hold_date."
+      }
+    },
+    "circular": {
+      "field_type": "value-less",
+      "unique_values": true,
+      "unique_scope": "entry",
+      "unique_rule": {
+        "rule_id": "ANN0670",
+        "level": "error",
+        "message": "Duplicate hold_date."
+      }
+    },
+    "entry": {
+      "qualifier_type": "metadata_field"
+    },
+    "primary_bases": {
+      "qualifier_type": "metadata_field"
+    },
+    "name": {
+      "qualifier_type": "metadata_field"
+    },
+    "url": {
+      "qualifier_type": "metadata_field",
+      "unique_values": true,
+      "unique_scope": "entry",
+      "unique_rule": {
+        "rule_id": "ANN0670",
+        "level": "error",
+        "message": "Duplicate url."
+      }
+    },
+    "phext": {
+      "qualifier_type": "metadata_field",
+      "unique_values": true,
+      "unique_scope": "entry",
+      "unique_rule": {
+        "rule_id": "ANN0670",
+        "level": "error",
+        "message": "Duplicate phext."
+      }
+    },
+    "fax": {
+      "qualifier_type": "metadata_field",
+      "unique_values": true,
+      "unique_scope": "entry",
+      "unique_rule": {
+        "rule_id": "ANN0670",
+        "level": "error",
+        "message": "Duplicate fax."
+      }
+    },
+    "state": {
+      "qualifier_type": "metadata_field",
+      "unique_values": true,
+      "unique_scope": "entry",
+      "unique_rule": {
+        "rule_id": "ANN0670",
+        "level": "error",
+        "message": "Duplicate state."
+      }
+    },
+    "contact": {
+      "qualifier_type": "metadata_field",
+      "unique_values": true,
+      "unique_scope": "entry",
+      "unique_rule": {
+        "rule_id": "ANN0670",
+        "level": "error",
+        "message": "Duplicate contact."
+      }
+    },
+    "department": {
+      "qualifier_type": "metadata_field",
+      "unique_values": true,
+      "unique_scope": "entry",
+      "unique_rule": {
+        "rule_id": "ANN0670",
+        "level": "error",
+        "message": "Duplicate department."
+      }
+    },
+    "consrtm": {
+      "qualifier_type": "metadata_field",
+      "unique_values": true,
+      "unique_scope": "feature",
+      "unique_rule": {
+        "rule_id": "ANN0670",
+        "level": "error",
+        "message": "Duplicate 'consrtm'."
+      }
+    },
+    "ab_name": {
+      "qualifier_type": "metadata_field",
+      "unique_values": true,
+      "unique_scope": "feature",
+      "unique_rule": {
+        "rule_id": "ANN0670",
+        "level": "error",
+        "message": "Duplicate 'ab_name'."
+      }      
+    },
+    "email_pub": {
+      "qualifier_type": "metadata_field",
+      "field_type": "value-less"
+    },
+    "fax_pub": {
+      "qualifier_type": "metadata_field",
+      "field_type": "value-less"
+    },
+    "phone_pub": {
+      "qualifier_type": "metadata_field",
+      "field_type": "value-less"
+    },
+    "phone": {
+      "qualifier_type": "metadata_field"
+    },
+    "journal": {
+      "qualifier_type": "metadata_field"
+    },
+    "volume": {
+      "qualifier_type": "metadata_field"
+    },
+    "issue": {
+      "qualifier_type": "metadata_field"
+    },
+    "start_page": {
+      "qualifier_type": "metadata_field"
+    },
+    "end_page": {
+      "qualifier_type": "metadata_field"
+    },
+    "pb_type": {
+      "qualifier_type": "metadata_field"
+    },
+    "ui": {
+      "qualifier_type": "metadata_field"
+    },
+    "media": {
+      "qualifier_type": "metadata_field"
+    },
+    "doi": {
+      "qualifier_type": "metadata_field"
+    },
+    "year": {
+      "qualifier_type": "metadata_field"
+    },
+    "complement": {
+      "qualifier_type": "metadata_field",
+      "field_type": "value-less"
+    },
+    "project": {
+      "qualifier_type": "metadata_field",
+      "format_pattern": "^PRJ(DA|DB|NA|EA|EB)[1-9]\\d*$",
+      "format_rule": {
+        "rule_id": "ANN0465",
+        "alternate_id": "",
+        "level": "error",
+        "message": "Invalid BioProject accession number format."
+      },
+      "unique_values": true,
+      "unique_scope": "entry",
+      "unique_rule": {
+        "rule_id": "ANN0670",
+        "level": "error",
+        "message": "Duplicate BioProject accessions."
+      }      
+    },
+    "biosample": {
+      "qualifier_type": "metadata_field",
+      "format_pattern": "^SAM([DN]\\d{8}|E[AG]\\d+)$",
+      "format_rule": {
+        "rule_id": "ANN0465",
+        "alternate_id": "",
+        "level": "error",
+        "message": "Invalid BioSample accession number format."
+      },
+      "unique_values": true,
+      "unique_scope": "entry",
+      "unique_rule": {
+        "rule_id": "ANN0670",
+        "level": "error",
+        "message": "Duplicate BioSample accessions."
+      }
+    },
+    "trace assembly archive": {
+      "qualifier_type": "metadata_field",
+      "format_pattern": "^\\d+$",
+      "format_rule": {
+        "rule_id": "ANN0465",
+        "alternate_id": "",
+        "level": "error",
+        "message": "Invalid Trace Archive accession number format."
+      },
+      "unique_values": true,
+      "unique_scope": "entry",
+      "unique_rule": {
+        "rule_id": "ANN0670",
+        "level": "error",
+        "message": "Duplicate Trace Archive accessions."
+      }      
+    },
+    "sequence read archive": {
+      "qualifier_type": "metadata_field",
+      "format_pattern": "^(DR[RZ]\\d{6}|[SE]RR\\d{6,8})$",
+      "format_rule": {
+        "rule_id": "ANN0465",
+        "alternate_id": "",
+        "level": "error",
+        "message": "Invalid SRA accession number format."
+      },
+      "unique_values": true,
+      "unique_scope": "entry",
+      "unique_rule": {
+        "rule_id": "ANN0670",
+        "level": "error",
+        "message": "Duplicate SRA accessions."
+      }      
+    },
+    "Finishing Goal": {
+      "qualifier_type": "metadata_field"
+    },
+    "Current Finishing Status": {
+      "qualifier_type": "metadata_field"
+    },
+    "Assembly Name": {
+      "qualifier_type": "metadata_field"
+    },
+    "Sequencing Technology": {
+      "qualifier_type": "metadata_field"
+    },
+    "Coverage": {
+      "qualifier_type": "metadata_field"
+    },
+    "status": {
+      "qualifier_type": "metadata_field",
+      "allowed_values": [
+        "Published",
+        "In Press",
+        "Published Only in Database",
+        "In Preparation",
+        "Unpublished",
+        "In Press with E-pub",
+        "Pure E-pub"
+      ],
+      "value_rule": {
+        "rule_id": "ANN3290",
+        "alternate_id": "JP0177, JP0178",
+        "level": "error",
+        "message": "Value not defined in controlled values publication 'status'."
+      }
+    },
+    "EC_number": {
+      "max_length": 4000
+    },
+    "PCR_conditions": {
+      "max_length": 4000
+    },
+    "PCR_primers": {
+      "max_length": 4000,
+      "format_pattern": "^(?:fwd_name:\\s*[^,]+,\\s*)?fwd_seq:\\s*[a-z]+(?:,\\s*(?:rev_name:\\s*[^,]+,\\s*)?rev_seq:\\s*[a-z]+)?$",
+      "format_rule": {
+        "rule_id": "ANN3340",
+        "alternate_id": "BLP0105",
+        "level": "warning",
+        "message": "Sequences of PCR_primers qualifier must be in lower-case"
+      }
+    },
+    "allele": {
+      "max_length": 4000
+    },
+    "altitude": {
+      "max_length": 4000
+    },
+    "anticodon": {
+      "max_length": 4000,
+      "format_pattern": "^\\(\\s*pos:(.+?)\\s*,\\s*aa:([a-zA-Z]+)(?:\\s*,\\s*seq:([a-zA-Z]+))?\\s*\\)$",
+      "format_rule": {
+        "rule_id": "ANN2700",
+        "level": "error",
+        "message": "Invalid 'anticodon' format. Expected '(pos:<location>,aa:<amino_acid>)'."
+      }
+    },
+    "artificial_location": {
+      "allowed_values": [
+        "heterogenous population sequenced",
+        "low-quality sequence region"
+      ],
+      "value_rule": {
+        "rule_id": "ANN3290",
+        "alternate_id": "JP0177, JP0178",
+        "level": "error",
+        "message": "Value not defined in controlled values 'artificial_location' qualifier."
+      },
+      "max_length": 4000
+    },
+    "bio_material": {
+      "max_length": 4000
+    },
+    "bound_moiety": {
+      "max_length": 4000
+    },
+    "cell_line": {
+      "max_length": 4000
+    },
+    "cell_type": {
+      "max_length": 4000
+    },
+    "chromosome": {
+      "max_length": 4000
+    },
+    "circular_RNA": {
+      "field_type": "value-less"
+    },
+    "citation": {
+      "format_pattern": "^\\d+$",
+      "format_rule": {
+        "rule_id": "ANN0465",
+        "alternate_id": "",
+        "level": "error",
+        "message": "Invalid citation format."
+      }
+    },
+    "clone": {
+      "max_length": 4000
+    },
+    "clone_lib": {},
+    "collected_by": {
+      "max_length": 4000
+    },
+    "codon_start": {
+      "format_pattern": "^\\d+$",
+      "format_rule": {
+        "rule_id": "ANN0465",
+        "alternate_id": "",
+        "level": "error",
+        "message": "Invalid codon_start format."
+      }        
+    },
+    "collection_date": {
+      "max_length": 4000,
+      "format_pattern": "^(?:\\d{4}(?:-\\d{2}(?:-\\d{2}(?:T\\d{2}:\\d{2}(?::\\d{2}(?:\\.\\d+)?)?(?:Z|[+-]\\d{2}:\\d{2})?)?)?)?|(?:\\d{2}-)?[A-Za-z]{3}-\\d{4})(?:/(?:\\d{4}(?:-\\d{2}(?:-\\d{2}(?:T\\d{2}:\\d{2}(?::\\d{2}(?:\\.\\d+)?)?(?:Z|[+-]\\d{2}:\\d{2})?)?)?)?|(?:\\d{2}-)?[A-Za-z]{3}-\\d{4}))?$",
+      "format_rule": {
+        "rule_id": "ANN1230",
+        "alternate_id": "BS_R0007",
+        "level": "warning",
+        "message": "Invalid collection date format."
+      }
+    },
+    "cultivar": {
+      "max_length": 4000
+    },
+    "culture_collection": {
+      "max_length": 4000
+    },
+    "compare": {},
+    "db_xref": {
+      "allowed_values": [
+        "AceView/WormGenes",
+        "ATCC",
+        "ATCC(dna)",
+        "ATCC(in host)",
+        "BEI",
+        "BOLD",
+        "CDD",
+        "dbEST",
+        "dbSNP",
+        "dbSTS",
+        "ENSEMBL",
+        "FANTOM_DB",
+        "FBOL",
+        "FLYBASE",
+        "GDB",
+        "GeneDB",
+        "GeneID",
+        "GOA",
+        "H-InvDB",
+        "HGNC",
+        "IMGT/GENE-DB",
+        "IMGT/HLA",
+        "IMGT/LIGM",
+        "InterPro",
+        "ISHAM-ITS",
+        "JCM",
+        "MarpolBase",
+        "MGI",
+        "MIM",
+        "NBRC",
+        "NextDB",
+        "Osa1",
+        "PDB",
+        "PFAM",
+        "PIR",
+        "RAP-DB",
+        "RGD",
+        "UniProtKB/Swiss-Prot",
+        "UniProtKB/TrEMBL",
+        "VGNC",
+        "WormBase"
+      ],
+      "value_rule": {
+        "rule_id": "ANN3290",
+        "alternate_id": "JP0177, JP0178",
+        "level": "error",
+        "message": "Value not defined in controlled values 'db_xref' qualifier."
+      },
+      "max_length": 4000,
+      "format_pattern": "^[^:]+:\\S+$",
+      "format_rule": {
+        "rule_id": "ANN0185",
+        "level": "error",
+        "message": "Invalid db_xref format. Expected 'DB:ID'."
+      }
+    },
+    "dev_stage": {
+      "max_length": 4000
+    },
+    "direction": {
+      "allowed_values": [
+        "left",
+        "right",
+        "both"
+      ],
+      "value_rule": {
+        "rule_id": "ANN3290",
+        "alternate_id": "JP0177, JP0178",
+        "level": "error",
+        "message": "Value not defined in controlled values 'direction' qualifier."
+      }
+    },
+    "ecotype": {
+      "max_length": 4000
+    },
+    "environmental_sample": {
+      "field_type": "value-less",
+      "allowed_divisions": [
+        "ENV"
+      ],
+      "division_rule_id": "ANN1800"
+    },
+    "estimated_length": {
+      "allowed_values": [
+        "known",
+        "unknown"
+      ],
+      "value_rule": {
+        "rule_id": "ANN3290",
+        "alternate_id": "JP0177, JP0178",
+        "level": "error",
+        "message": "Value not defined in controlled values 'estimated_length' qualifier."
+      },
+      "max_length": 4000
+    },
+    "exception": {
+      "allowed_values": [
+        "RNA editing",
+        "reasons given in citation",
+        "rearrangement required for product",
+        "annotated by transcript or proteomic data"
+      ],
+      "value_rule": {
+        "rule_id": "ANN3290",
+        "alternate_id": "JP0177, JP0178",
+        "level": "error",
+        "message": "Value not defined in controlled values 'exception' qualifier."
+      },
+      "max_length": 4000
+    },
+    "experiment": {
+      "max_length": 1000
+    },
+    "ff_definition": {
+      "max_length": 250
+    },
+    "focus": {
+      "field_type": "value-less"
+    },
+    "frequency": {
+      "max_length": 4000
+    },
+    "function": {
+      "max_length": 4000
+    },
+    "gap_type": {
+      "allowed_values": [
+        "between scaffolds",
+        "contamination",
+        "within scaffold",
+        "telomere",
+        "centromere",
+        "short arm",
+        "heterochromatin",
+        "repeat within scaffold",
+        "repeat between scaffolds",
+        "unknown"
+      ],
+      "value_rule": {
+        "rule_id": "ANN3290",
+        "alternate_id": "JP0177, JP0178",
+        "level": "error",
+        "message": "Value not defined in controlled values 'gap_type' qualifier."
+      },
+      "max_length": 4000
+    },
+    "gene": {
+      "max_length": 4000
+    },
+    "gene_synonym": {
+      "max_length": 4000
+    },
+    "geo_loc_name": {
+      "max_length": 4000
+    },
+    "germline": {
+      "field_type": "value-less"
+    },
+    "haplogroup": {
+      "max_length": 4000
+    },
+    "haplotype": {
+      "max_length": 4000
+    },
+    "host": {
+      "max_length": 4000
+    },
+    "identified_by": {},
+    "inference": {
+      "allowed_values": [
+        "similar to sequence",
+        "similar to AA sequence",
+        "similar to DNA sequence",
+        "similar to RNA sequence",
+        "similar to RNA sequence, mRNA",
+        "similar to RNA sequence, EST",
+        "similar to RNA sequence, other RNA",
+        "profile",
+        "nucleotide motif",
+        "protein motif",
+        "ab initio prediction",
+        "non-experimental evidence, no additional details recorded",
+        "alignment",
+        "similar to sequence (same species)",
+        "similar to AA sequence (same species)",
+        "similar to DNA sequence (same species)",
+        "similar to RNA sequence (same species)",
+        "similar to RNA sequence, mRNA (same species)",
+        "similar to RNA sequence, EST (same species)",
+        "similar to RNA sequence, other RNA (same species)",
+        "domain architecture",
+        "ortholog evidence"
+      ],
+      "value_rule": {
+        "rule_id": "ANN3290",
+        "alternate_id": "JP0177, JP0178",
+        "level": "error",
+        "message": "Value not defined in controlled values 'inference' qualifier."
+      },
+      "max_length": 4000
+    },
+    "isolate": {
+      "max_length": 4000
+    },
+    "isolation_source": {
+      "max_length": 4000
+    },
+    "lab_host": {
+      "max_length": 4000
+    },
+    "lat_lon": {
+      "max_length": 4000,
+      "format_pattern": "^\\d+(\\.\\d+)?\\s+[NS]\\s+\\d+(\\.\\d+)?\\s+[EW]$",
+      "format_rule": {
+        "rule_id": "ANN1270",
+        "level": "warning",
+        "message": "Invalid lat_lon format. Expected format: d[d.dddd] N|S d[dd.dddd] E|W (e.g., 35.6 N 139.7 E)."
+      }
+    },
+    "linkage_evidence": {
+      "allowed_values": [
+        "paired-ends",
+        "align genus",
+        "align xgenus",
+        "align trnscpt",
+        "within clone",
+        "clone contig",
+        "map",
+        "strobe",
+        "unspecified",
+        "pcr",
+        "proximity ligation"
+      ],
+      "value_rule": {
+        "rule_id": "ANN3290",
+        "alternate_id": "JP0177, JP0178",
+        "level": "error",
+        "message": "Value not defined in controlled values 'linkage_evidence' qualifier."
+      },
+      "max_length": 4000
+    },
+    "locus_tag": {
+      "max_length": 4000
+    },
+    "macronuclear": {
+      "field_type": "value-less",
+      "allowed_divisions": [
+        "INV"
+      ],
+      "division_rule_id": "ANN1460"
+    },
+    "map": {
+      "max_length": 4000
+    },
+    "mating_type": {
+      "max_length": 4000
+    },
+    "metagenome_source": {
+      "max_length": 4000
+    },
+    "mobile_element_type": {
+      "allowed_values": [
+        "transposon",
+        "retrotransposon",
+        "integron",
+        "insertion sequence",
+        "non-LTR retrotransposon",
+        "SINE",
+        "MITE",
+        "LINE",
+        "other"
+      ],
+      "value_rule": {
+        "rule_id": "ANN3290",
+        "alternate_id": "JP0177, JP0178",
+        "level": "error",
+        "message": "Value not defined in controlled values 'mobile_element_type' qualifier."
+      },
+      "max_length": 4000
+    },
+    "mod_base": {
+      "allowed_values": [
+        "ac4c",
+        "chm5u",
+        "cm",
+        "cmnm5s2u",
+        "cmnm5u",
+        "dhu",
+        "fm",
+        "gal q",
+        "gm",
+        "i",
+        "i6a",
+        "m1a",
+        "m1f",
+        "m1g",
+        "m1i",
+        "m22g",
+        "m2a",
+        "m2g",
+        "m3c",
+        "m4c",
+        "m5c",
+        "m5u",
+        "m6a",
+        "m7g",
+        "mam5u",
+        "mam5s2u",
+        "man q",
+        "mcm5s2u",
+        "mcm5u",
+        "mo5u",
+        "ms2i6a",
+        "ms2t6a",
+        "mt6a",
+        "mv",
+        "o5u",
+        "osyw",
+        "p",
+        "q",
+        "s2c",
+        "s2t",
+        "s2u",
+        "s4u",
+        "t6a",
+        "tm",
+        "um",
+        "yw",
+        "x",
+        "OTHER"
+      ],
+      "value_rule": {
+        "rule_id": "ANN3290",
+        "alternate_id": "JP0177, JP0178",
+        "level": "error",
+        "message": "Value not defined in controlled values 'mod_base' qualifier."
+      },
+      "max_length": 4000
+    },
+    "mol_type": {
+      "allowed_values": [
+        "genomic DNA",
+        "genomic RNA",
+        "mRNA",
+        "tRNA",
+        "rRNA",
+        "other RNA",
+        "other DNA",
+        "unassigned DNA",
+        "unassigned RNA",
+        "viral cRNA",
+        "transcribed RNA"
+      ],
+      "value_rule": {
+        "rule_id": "ANN3290",
+        "alternate_id": "JP0177, JP0178",
+        "level": "error",
+        "message": "Value not defined in controlled values 'mol_type' qualifier."
+      },
+      "max_length": 4000
+    },
+    "ncRNA_class": {
+      "allowed_values": [
+        "antisense_RNA",
+        "autocatalytically_spliced_intron",
+        "circRNA",
+        "guide_RNA",
+        "hammerhead_ribozyme",
+        "lncRNA",
+        "miRNA",
+        "other",
+        "piRNA",
+        "pre_miRNA",
+        "rasiRNA",
+        "ribozyme",
+        "RNase_MRP_RNA",
+        "RNase_P_RNA",
+        "scaRNA",
+        "scRNA",
+        "siRNA",
+        "snoRNA",
+        "snRNA",
+        "SRP_RNA",
+        "telomerase_RNA",
+        "vault_RNA",
+        "Y_RNA"
+      ],
+      "value_rule": {
+        "rule_id": "ANN3290",
+        "alternate_id": "JP0177, JP0178",
+        "level": "error",
+        "message": "Value not defined in controlled values 'ncRNA_class' qualifier."
+      },
+      "max_length": 4000
+    },
+    "note": {
+      "max_length": 4000
+    },
+    "number": {
+      "max_length": 4000
+    },
+    "old_locus_tag": {
+      "max_length": 4000
+    },
+    "operon": {
+      "max_length": 4000
+    },
+    "organelle": {
+      "allowed_values": [
+        "mitochondrion",
+        "nucleomorph",
+        "plastid",
+        "mitochondrion:kinetoplast",
+        "plastid:chloroplast",
+        "plastid:apicoplast",
+        "plastid:chromoplast",
+        "plastid:cyanelle",
+        "plastid:leucoplast",
+        "plastid:proplastid",
+        "hydrogenosome",
+        "chromatophore",
+        "nitroplast"
+      ],
+      "value_rule": {
+        "rule_id": "ANN3290",
+        "alternate_id": "JP0177, JP0178",
+        "level": "error",
+        "message": "Value not defined in controlled values 'organelle' qualifier."
+      },
+      "max_length": 4000
+    },
+    "organism": {
+      "max_length": 4000
+    },
+    "partial": {},
+    "phenotype": {
+      "max_length": 4000,
+      "format_pattern": "^[^\"]*$"
+    },
+    "plasmid": {
+      "max_length": 4000
+    },
+    "pop_variant" : {},
+    "product": {
+      "max_length": 4000
+    },
+    "protein_id": {
+      "max_length": 4000,
+      "format_pattern": "^[A-Z]{3}\\d{5}\\.\\d+$",
+      "format_rule": {
+        "rule_id": "ANN0185",
+        "level": "error",
+        "message": "Invalid protein_id format."
+      }
+    },
+    "proviral": {
+      "field_type": "value-less",
+      "allowed_divisions": [
+        "VRL",
+        "PHG"
+      ],
+      "division_rule_id": "ANN1450"
+    },
+    "pseudo": {
+      "field_type": "value-less"
+    },
+    "pseudogene": {
+      "allowed_values": [
+        "processed",
+        "unprocessed",
+        "unitary",
+        "allelic",
+        "unknown"
+      ],
+      "value_rule": {
+        "rule_id": "ANN3290",
+        "alternate_id": "JP0177, JP0178",
+        "level": "error",
+        "message": "Value not defined in controlled values 'pseudogene' qualifier."
+      },
+      "max_length": 4000
+    },
+    "rearranged": {
+      "field_type": "value-less"
+    },
+    "recombination_class": {
+      "allowed_values": [
+        "meiotic",
+        "mitotic",
+        "non_allelic_homologous",
+        "chromosome_breakpoint",
+        "other"
+      ],
+      "value_rule": {
+        "rule_id": "ANN3290",
+        "alternate_id": "JP0177, JP0178",
+        "level": "error",
+        "message": "Value not defined in controlled values 'recombination_class' qualifier."
+      },
+      "max_length": 4000
+    },
+    "regulatory_class": {
+      "allowed_values": [
+        "attenuator",
+        "CAAT_signal",
+        "DNase_I_hypersensitive_site",
+        "enhancer",
+        "enhancer_blocking_element",
+        "GC_signal",
+        "imprinting_control_region",
+        "insulator",
+        "locus_control_region",
+        "matrix_attachment_region",
+        "minus_10_signal",
+        "minus_35_signal",
+        "other",
+        "polyA_signal_sequence",
+        "promoter",
+        "recoding_stimulatory_region",
+        "recombination_enhancer",
+        "replication_regulatory_region",
+        "response_element",
+        "ribosome_binding_site",
+        "riboswitch",
+        "silencer",
+        "TATA_box",
+        "terminator",
+        "transcriptional_cis_regulatory_region",
+        "uORF"
+      ],
+      "value_rule": {
+        "rule_id": "ANN3290",
+        "alternate_id": "JP0177, JP0178",
+        "level": "error",
+        "message": "Value not defined in controlled values 'regulatory_class' qualifier."
+      },
+      "max_length": 4000
+    },
+    "replace": {
+      "max_length": 4000
+    },
+    "ribosomal_slippage": {
+      "field_type": "value-less"
+    },
+    "rpt_family": {
+      "max_length": 4000
+    },
+    "rpt_type": {
+      "allowed_values": [
+        "tandem",
+        "inverted",
+        "flanking",
+        "terminal",
+        "direct",
+        "dispersed",
+        "other",
+        "nested",
+        "long_terminal_repeat",
+        "non_ltr_retrotransposon_polymeric_tract",
+        "centromeric_repeat",
+        "telomeric_repeat",
+        "x_element_combinatorial_repeat",
+        "y_prime_element"
+      ],
+      "value_rule": {
+        "rule_id": "ANN3290",
+        "alternate_id": "JP0177, JP0178",
+        "level": "error",
+        "message": "Value not defined in controlled values 'rpt_type' qualifier."
+      },
+      "max_length": 4000
+    },
+    "rpt_unit_range": {
+      "max_length": 4000
+    },
+    "rpt_unit_seq": {
+      "max_length": 4000
+    },
+    "satellite": {
+      "allowed_values": [
+        "satellite",
+        "microsatellite",
+        "minisatellite"
+      ],
+      "value_rule": {
+        "rule_id": "ANN3290",
+        "alternate_id": "JP0177, JP0178",
+        "level": "error",
+        "message": "Value not defined in controlled values 'satellite' qualifier."
+      },
+      "max_length": 4000
+    },
+    "segment": {
+      "max_length": 4000
+    },
+    "serotype": {
+      "max_length": 4000
+    },
+    "serovar": {
+      "max_length": 4000
+    },
+    "sex": {
+      "max_length": 4000
+    },
+    "specimen_voucher": {
+      "max_length": 4000
+    },
+    "standard_name": {
+      "max_length": 4000
+    },
+    "strain": {
+      "max_length": 4000
+    },
+    "sub_clone": {},
+    "sub_strain": {},
+    "sub_species": {},
+    "submitter_seqid": {
+      "max_length": 4000
+    },
+    "tag_peptide": {
+      "max_length": 4000
+    },
+    "tissue_lib": {},
+    "tissue_type": {
+      "max_length": 4000
+    },
+    "trans_splicing": {
+      "field_type": "value-less"
+    },
+    "transcript_id": {
+      "max_length": 4000
+    },
+    "transgenic": {
+      "field_type": "value-less"
+    },
+    "transl_except": {
+      "max_length": 4000
+    },
+    "transl_table": {
+      "allowed_values": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "21",
+        "22",
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30",
+        "31",
+        "32",
+        "33"
+      ],
+      "value_rule": {
+        "rule_id": "ANN3290",
+        "alternate_id": "JP0177, JP0178",
+        "level": "error",
+        "message": "Value not defined in controlled values 'transl_table' qualifier."
+      }
+    },
+    "translation": {
+      "max_length": 50000
+    },
+    "type_material": {
+      "allowed_values": [
+        "type material",
+        "type strain",
+        "reference material",
+        "reference strain",
+        "neotype strain",
+        "holotype",
+        "isotype",
+        "paratype",
+        "neotype",
+        "epitype",
+        "syntype",
+        "isosyntype",
+        "lectotype",
+        "paralectotype",
+        "hapantotype",
+        "allotype",
+        "isoparatype",
+        "isoneotype",
+        "isolectotype",
+        "isoepitype",
+        "culture from reference material",
+        "culture from type material",
+        "culture from paratype",
+        "culture from neotype",
+        "culture from lectotype",
+        "culture from hapantotype",
+        "culture from isosyntype",
+        "culture from isotype",
+        "culture from isoparatype",
+        "culture from isoneotype",
+        "culture from isolectotype",
+        "culture from holotype",
+        "culture from epitype",
+        "culture from syntype",
+        "culture from isoepitype",
+        "pathotype strain"
+      ],
+      "value_rule": {
+        "rule_id": "ANN3290",
+        "alternate_id": "JP0177, JP0178",
+        "level": "error",
+        "message": "Value not defined in controlled values 'type_material' qualifier."
+      },
+      "max_length": 4000
+    },
+    "variety": {}
+  },
+  "rules": {
+    "mutual_exclusions": [
+      {
+        "qualifier_1": "exception",
+        "qualifier_2": "pseudo",
+        "rule_id": "ANN3150",
+        "alternate_id": "JP0117, JP1036",
+        "level": "error",
+        "message": "The 'exception' and 'pseudo' qualifiers cannot be used together in the same feature."
+      },
+      {
+        "qualifier_1": "exception",
+        "qualifier_2": "pseudogene",
+        "rule_id": "ANN3150",
+        "alternate_id": "JP0117, JP1036",
+        "level": "error",
+        "message": "The 'exception' and 'pseudogene' qualifiers cannot be used together in the same feature."
+      },
+      {
+        "qualifier_1": "bio_material",
+        "qualifier_2": "specimen_voucher",
+        "rule_id": "ANN3150",
+        "alternate_id": "JP0117, JP1036",
+        "level": "error",
+        "message": "The 'bio_material' and 'specimen_voucher' qualifiers cannot be used together in the same feature."
+      },
+      {
+        "qualifier_1": "bio_material",
+        "qualifier_2": "culture_collection",
+        "rule_id": "ANN3150",
+        "alternate_id": "JP0117, JP1036",
+        "level": "error",
+        "message": "The 'bio_material' and 'culture_collection' qualifiers cannot be used together in the same feature."
+      },
+      {
+        "qualifier_1": "pseudo",
+        "qualifier_2": "transl_except",
+        "rule_id": "ANN3150",
+        "alternate_id": "JP0117, JP1036",
+        "level": "error",
+        "message": "The 'pseudo' and 'transl_except' qualifiers cannot be used together in the same feature."
+      },
+      {
+        "qualifier_1": "pseudogene",
+        "qualifier_2": "transl_except",
+        "rule_id": "ANN3150",
+        "alternate_id": "JP0117, JP1036",
+        "level": "error",
+        "message": "The 'pseudogene' and 'transl_except' qualifiers cannot be used together in the same feature."
+      },
+      {
+        "qualifier_1": "pseudo",
+        "qualifier_2": "ribosomal_slippage",
+        "rule_id": "ANN3150",
+        "alternate_id": "JP0117, JP1036",
+        "level": "error",
+        "message": "The 'pseudo' and 'ribosomal_slippage' qualifiers cannot be used together in the same feature."
+      },
+      {
+        "qualifier_1": "pseudogene",
+        "qualifier_2": "ribosomal_slippage",
+        "rule_id": "ANN3150",
+        "alternate_id": "JP0117, JP1036",
+        "level": "error",
+        "message": "The 'pseudogene' and 'ribosomal_slippage' qualifiers cannot be used together in the same feature."
+      },
+      {
+        "qualifier_1": "pseudo",
+        "qualifier_2": "pseudogene",
+        "rule_id": "ANN3150",
+        "alternate_id": "JP0117, JP1036",
+        "level": "error",
+        "message": "The 'pseudo' and 'pseudogene' qualifiers cannot be used together in the same feature."
+      },
+      {
+        "qualifier_1": "pseudogene",
+        "qualifier_2": "transl_table",
+        "rule_id": "ANN3150",
+        "alternate_id": "JP0117, JP1036",
+        "level": "error",
+        "message": "The 'pseudogene' and 'transl_table' qualifiers cannot be used together in the same feature."
+      },
+      {
+        "qualifier_1": "pseudogene",
+        "qualifier_2": "codon_start",
+        "rule_id": "ANN3150",
+        "alternate_id": "JP0117, JP1036",
+        "level": "error",
+        "message": "The 'pseudogene' and 'codon_start' qualifiers cannot be used together in the same feature."
+      },
+      {
+        "qualifier_1": "pseudo",
+        "qualifier_2": "transl_table",
+        "rule_id": "ANN3150",
+        "alternate_id": "JP0117, JP1036",
+        "level": "error",
+        "message": "The 'pseudo' and 'transl_table' qualifiers cannot be used together in the same feature."
+      },
+      {
+        "qualifier_1": "pseudo",
+        "qualifier_2": "codon_start",
+        "rule_id": "ANN3150",
+        "alternate_id": "JP0117, JP1036",
+        "level": "error",
+        "message": "The 'pseudo' and 'codon_start' qualifiers cannot be used together in the same feature."
+      },
+      {
+        "qualifier_1": "environmental_sample",
+        "qualifier_2": "strain",
+        "rule_id": "ANN3150",
+        "alternate_id": "JP0117, JP1036",
+        "level": "error",
+        "message": "The 'environmental_sample' and 'strain' qualifiers cannot be used together in the same feature."
+      },
+      {
+        "qualifier_1": "focus",
+        "qualifier_2": "transgenic",
+        "rule_id": "ANN3150",
+        "alternate_id": "JP0117, JP1036",
+        "level": "error",
+        "message": "The 'focus' and 'transgenic' qualifiers cannot be used together in the same feature."
+      },
+      {
+        "qualifier_1": "germline",
+        "qualifier_2": "rearranged",
+        "rule_id": "ANN3150",
+        "alternate_id": "JP0117, JP1036",
+        "level": "warning",
+        "message": "The 'germline' and 'rearranged' qualifiers cannot be used together in the same feature outside of the Craniata (taxid=89593)."
+      }
+    ],
+    "required_dependencies": [
+      {
+        "if_present": "exception",
+        "requires": "translation",
+        "rule_id": "ANN3110",
+        "alternate_id": "JP0083, JP0172",
+        "level": "error",
+        "message": "Both 'exception' and 'translation' qualifiers must be present in the same feature."
+      },
+      {
+        "if_present": "translation",
+        "requires": "exception",
+        "rule_id": "ANN3110",
+        "alternate_id": "JP0083, JP0172",
+        "level": "error",
+        "message": "Both 'translation' and 'exception' qualifiers must be present in the same feature."
+      },
+      {
+        "if_present": "old_locus_tag",
+        "requires": "locus_tag",
+        "rule_id": "ANN3110",
+        "alternate_id": "JP0083, JP0172",
+        "level": "error",
+        "message": "Both 'old_locus_tag' and 'locus_tag' qualifiers must be present in the same feature."
+      },
+      {
+        "if_present": "email_pub",
+        "requires": "email",
+        "rule_id": "ANN3110",
+        "alternate_id": "JP0083, JP0172",
+        "level": "error",
+        "message": "Both 'email_pub' and 'email' qualifiers must be present in the same feature."
+      },
+      {
+        "if_present": "phone_pub",
+        "requires": "phone",
+        "rule_id": "ANN3110",
+        "alternate_id": "JP0083, JP0172",
+        "level": "error",
+        "message": "Both 'phone_pub' and 'phone' qualifiers must be present in the same feature."
+      },
+      {
+        "if_present": "fax_pub",
+        "requires": "fax",
+        "rule_id": "ANN3110",
+        "alternate_id": "JP0083, JP0172",
+        "level": "error",
+        "message": "Both 'fax_pub' and 'fax' qualifiers must be present in the same feature."
+      },
+      {
+        "if_present": "metagenome_source",
+        "requires": "environmental_sample",
+        "rule_id": "ANN3110",
+        "alternate_id": "JP0083, JP0172",
+        "level": "error",
+        "message": "Both 'metagenome_source' and 'environmental_sample' qualifiers must be present in the same feature."
+      },
+      {
+        "if_present": "environmental_sample",
+        "requires": "isolation_source",
+        "rule_id": "ANN3110",
+        "alternate_id": "JP0083, JP0172",
+        "level": "error",
+        "message": "Both 'environmental_sample' and 'isolation_source' qualifiers must be present in the same feature."
+      },
+      {
+        "if_present": "gene_synonym",
+        "requires": ["gene", "locus_tag"],
+        "rule_id": "ANN3110",
+        "alternate_id": "JP0083, JP0172",
+        "level": "error",
+        "message": "The 'gene_synonym' requires either the 'gene' or 'locus_tag' qualifier in the same feature."
+      }
+    ],
+    "value_mutual_exclusions": [],
+    "value_dependencies": [
+      {
+        "qualifier_1": "exception",
+        "value_1": "annotated by transcript or proteomic data",
+        "requires": "inference",
+        "rule_id": "ANN3165", 
+        "level": "error",
+        "message": "An 'inference' qualifier is required when 'exception'=\"annotated by transcript or proteomic data\"."
+      },
+      {
+        "qualifier_1": "mod_base",
+        "value_1": "OTHER",
+        "requires": "note",
+        "rule_id": "ANN3165",
+        "level": "error",
+        "message": "When 'mod_base=OTHER', a 'note' qualifier is required to specify the name of the modified base."
+      }
+    ]
+  },
+  "prohibited_features": [
+    "old_sequence",
+    "prim_transcript"
+  ],
+  "prohibited_qualifiers": [
+    "citation",
+    "clone_lib",
+    "compare",
+    "identified_by",
+    "partial",
+    "phenotype",
+    "pop_variant",
+    "protein_id",
+    "recombination_class",
+    "rpt_unit_range",
+    "standard_name",
+    "sub_clone",
+    "sub_strain",
+    "transcript_id",
+    "tissue_lib",
+    "sub_species",
+    "variety"
+  ],
+  "discouraged_features": [
+    "gene"
+  ],
+  "discouraged_qualifiers": [
+    "ff_definition",
+    "pseudo",
+    "translation",
+    "type_material"
+  ],
+  "datatypes": {
+    "WGS": {
+      "required_keywords": [
+        [
+          "WGS"
+        ],
+        [
+          "STANDARD_DRAFT",
+          "HIGH_QUALITY_DRAFT",
+          "IMPROVED_HIGH_QUALITY_DRAFT",
+          "ANNOTATION_GRADE",
+          "NON_CONTIGUOUS_FINISHED"
+        ]
+      ],
+      "required_qualifiers": [
+        "submitter_seqid"
+      ],
+      "required_tagset_id": "Genome-Assembly-Data",
+      "required_st_comments": [
+        "Sequencing Technology",
+        "Genome Coverage",
+        "Assembly Method"
+      ],
+      "required_moltype": [
+        "genomic DNA",
+        "genomic RNA",
+        "viral cRNA",
+        "other DNA",
+        "other RNA"
+      ],
+      "invalid_moltype": [
+        "mRNA"
+      ]
+    },
+    "TSA": {
+      "required_division": "TSA",
+      "required_keywords": [
+        [
+          "TSA"
+        ],
+        [
+          "Transcriptome Shotgun Assembly"
+        ]
+      ],
+      "required_tagset_id": "Assembly-Data",
+      "required_st_comments": [
+        "Sequencing Technology",
+        "Coverage",
+        "Assembly Method"
+      ],
+      "required_qualifiers": [
+        "submitter_seqid"
+      ],
+      "recommended_qualifiers": [
+        "tissue_type",
+        "dev_stage",
+        "mating_type",
+        "sex"
+      ],
+      "required_dblinks": [
+        "sequence read archive"
+      ],
+      "invalid_moltype": [
+        "genomic DNA",
+        "other DNA",
+        "unassigned DNA"
+      ]
+    },
+    "ENV": {
+      "required_division": "ENV",
+      "required_keywords": [
+        [
+          "ENV"
+        ]
+      ],
+      "required_qualifiers": [
+        "environmental_sample"
+      ]
+    },
+    "EST": {
+      "required_division": "EST",
+      "required_keywords": [
+        [
+          "EST"
+        ],
+        [
+          "5'-end sequence (5'-EST)",
+          "3'-end sequence (3'-EST)",
+          "unspecified EST"
+        ]
+      ],
+      "required_qualifiers": [
+        "clone"
+      ],
+      "recommended_qualifiers": [
+        "tissue_type",
+        "dev_stage",
+        "mating_type",
+        "sex"
+      ],
+      "invalid_moltype": [
+        "genomic DNA",
+        "other DNA",
+        "unassigned DNA"
+      ]
+    },
+    "GSS": {
+      "required_division": "GSS",
+      "required_keywords": [
+        [
+          "GSS"
+        ]
+      ],
+      "invalid_moltype": [
+        "mRNA"
+      ]
+    },
+    "HTG": {
+      "required_division": "HTG",
+      "allow_empty_keywords": true,
+      "required_keywords": [
+        [
+          "HTG"
+        ],
+        [
+          "HTGS_PHASE0",
+          "HTGS_PHASE1",
+          "HTGS_PHASE2"
+        ]
+      ],
+      "required_qualifiers": [
+        "clone"
+      ],
+      "invalid_moltype": [
+        "mRNA"
+      ]
+    },
+    "HTC": {
+      "required_division": "HTC",
+      "required_keywords": [
+        [
+          "FLI_CDNA",
+          "HTC"
+        ]
+      ],
+      "required_qualifiers": [
+        "clone"
+      ],
+      "recommended_qualifiers": [
+        "tissue_type",
+        "dev_stage",
+        "mating_type",
+        "sex"
+      ],
+      "invalid_moltype": [
+        "genomic DNA",
+        "other DNA",
+        "unassigned DNA"
+      ]
+    },
+    "TLS": {
+      "required_division": "TLS",
+      "required_keywords": [
+        [
+          "TLS"
+        ],
+        [
+          "Targeted Locus Study"
+        ]
+      ],
+      "required_qualifiers": [
+        "submitter_seqid"
+      ],
+      "required_dblinks": [
+        "sequence read archive"
+      ]
+    },
+    "MAG": {
+      "inherits": [
+        "ENV"
+      ],
+      "required_keywords": [
+        [
+          "MAG"
+        ],
+        [
+          "Metagenome Assembled Genome"
+        ]
+      ],
+      "required_qualifiers": [
+        "metagenome_source",
+        "environmental_sample",
+        "isolation_source",
+        "isolate"
+      ],
+      "required_st_comments": [
+        "Sequencing Technology",
+        "Genome Coverage",
+        "Assembly Method"
+      ],
+      "required_dblinks": [
+        "sequence read archive"
+      ],
+      "invalid_moltype": [
+        "mRNA"
+      ]
+    },
+    "SAG": {
+      "required_qualifiers": [
+        "isolation_source"
+      ],
+      "required_st_comments": [
+        "Sequencing Technology",
+        "Genome Coverage",
+        "Assembly Method"
+      ],
+      "invalid_moltype": [
+        "mRNA"
+      ]
+    },
+    "TPA": {
+      "required_keywords": [
+        [
+          "TPA"
+        ],
+        [
+          "Third Party Data"
+        ],
+        [
+          "TPA:assembly"
+        ]
+      ]
+    },
+    "TPA-WGS": {
+      "inherits": [
+        "TPA",
+        "WGS"
+      ],
+      "required_keywords": [
+        [
+          "TPA"
+        ],
+        [
+          "Third Party Data"
+        ],
+        [
+          "TPA:assembly"
+        ]
+      ],
+      "invalid_moltype": [
+        "mRNA"
+      ]
+    },
+    "TPA-TSA": {
+      "inherits": [
+        "TPA",
+        "TSA"
+      ],
+      "required_keywords": [
+        [
+          "TPA"
+        ],
+        [
+          "Third Party Data"
+        ],
+        [
+          "TPA:assembly"
+        ]
+      ],
+      "invalid_moltype": [
+        "genomic DNA",
+        "other DNA",
+        "unassigned DNA"
+      ]
+    },
+    "TPA-TLS": {
+      "inherits": [
+        "TPA",
+        "TLS"
+      ],
+      "required_keywords": [
+        [
+          "TPA"
+        ],
+        [
+          "Third Party Data"
+        ],
+        [
+          "TPA:assembly"
+        ]
+      ]
+    },
+    "MGA": {
+      "required_division": "MGA",
+      "required_keywords": [
+        [
+          "MGA"
+        ]
+      ]
+    },
+    "CON": {
+      "required_division": "CON",
+      "required_qualifiers": [
+        "submitter_seqid"
+      ],
+      "invalid_moltype": [
+        "mRNA"
+      ]
+    }
+  },
+  "divisions": {
+    "ENV": {
+      "div_type": "datatype",
+      "unsupported_qualifiers": []
+    },
+    "SYN": {
+      "div_type": "datatype",
+      "unsupported_qualifiers": []
+    },
+    "EST": {
+      "div_type": "datatype",
+      "unsupported_qualifiers": []
+    },
+    "GSS": {
+      "div_type": "datatype",
+      "unsupported_qualifiers": []
+    },
+    "HTC": {
+      "div_type": "datatype",
+      "unsupported_qualifiers": []
+    },
+    "HTG": {
+      "div_type": "datatype",
+      "unsupported_qualifiers": []
+    },
+    "TSA": {
+      "div_type": "datatype",
+      "unsupported_qualifiers": []
+    },
+    "CON": {
+      "div_type": "datatype",
+      "unsupported_qualifiers": []
+    },
+    "HUM": {
+      "div_type": "tax",
+      "unsupported_qualifiers": []
+    },
+    "PRI": {
+      "div_type": "tax",
+      "unsupported_qualifiers": []
+    },
+    "ROD": {
+      "div_type": "tax",
+      "unsupported_qualifiers": []
+    },
+    "MAM": {
+      "div_type": "tax",
+      "unsupported_qualifiers": []
+    },
+    "VRT": {
+      "div_type": "tax",
+      "unsupported_qualifiers": []
+    },
+    "INV": {
+      "div_type": "tax",
+      "unsupported_qualifiers": []
+    },
+    "PLN": {
+      "div_type": "tax",
+      "unsupported_qualifiers": [
+        "germline",
+        "rearranged"
+      ]
+    },
+    "BCT": {
+      "div_type": "tax",
+      "unsupported_qualifiers": [
+        "dev_stage",
+        "tissue_type",
+        "germline",
+        "rearranged"
+      ]
+    },
+    "VRL": {
+      "div_type": "tax",
+      "unsupported_qualifiers": [
+        "dev_stage",
+        "tissue_type",
+        "germline",
+        "rearranged"
+      ]
+    },
+    "PHG": {
+      "div_type": "tax",
+      "unsupported_qualifiers": [
+        "dev_stage",
+        "tissue_type",
+        "germline",
+        "rearranged"
+      ]
+    }
+  }
+}

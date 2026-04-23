@@ -1,0 +1,43 @@
+{
+  "external_db": [
+    {
+      "group_name": "GENOMIC",
+      "datatypes": [
+        "WGS", "TPA-WGS", "MAG", "SAG", "TLS", "HTG"
+      ],
+      "valid_library_source": [
+        "GENOMIC", "GENOMIC SINGLE CELL", "METAGENOMIC"
+      ],
+      "invalid_library_selection": [
+        "RT-PCR", "HMPR", "MF", "MSLL", "cDNA", "cDNA_randomPriming", "cDNA_oligo_dT",
+        "PolyA", "Oligo-dT", "Inverse rRNA", "ChIP", "MNase", "DNase",
+        "5-methylcytidine antibody", "MBD2 protein methyl-CpG binding domain",
+        "CAGE", "RACE"
+      ],
+      "invalid_library_strategy": [
+        "RNA-Seq", "ssRNA-seq", "miRNA-Seq", "ncRNA-Seq", "FL-cDNA", "EST",
+        "ATAC-seq", "RAD-Seq", "ChIP-Seq", "MNase-Seq",
+        "DNase-Hypersensitivity", "Bisulfite-Seq", "CTS", "MRE-Seq", "MeDIP-Seq",
+        "MBD-Seq", "NOMe-Seq", "RIP-Seq", "ChIA-PET", "Tethered Chromatin Conformation Capture"
+      ]
+    },
+    {
+      "group_name": "TRANSCRIPTOMIC",
+      "datatypes": [
+        "TSA", "TPA-TSA", "HTC", "EST"
+      ],
+      "valid_library_source": [
+        "TRANSCRIPTOMIC", "TRANSCRIPTOMIC SINGLE CELL", "VIRAL RNA"
+      ],
+      "invalid_library_selection": [
+        "HMPR", "MF", "MSLL", "Reduced Representation", "Restriction Digest", "MDA"
+      ],
+      "invalid_library_strategy": [
+        "WGS", "WGA", "WXS", "WCS", "RAD-Seq", "ChIP-Seq", "MNase-Seq",
+        "DNase-Hypersensitivity", "Bisulfite-Seq", "MRE-Seq", "MeDIP-Seq",
+        "Hi-C", "MBD-Seq", "Tn-Seq", "FAIRE-seq", "SELEX", "NOMe-Seq", "RIP-Seq",
+        "ChIA-PET", "Synthetic-Long-Read", "Tethered Chromatin Conformation Capture"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+COMMON	SUBMITTER		ab_name	Mishima,H.
+			ab_name	Robertson,G.R.
+			contact	Hanako Mishima
+			email	mishima@ddbj.nig.ac.jp
+			institute	National Institute of Genetics
+			department	DNA Data Bank of Japan
+			country	Japan
+			state	Shizuoka
+			city	Mishima
+			street	Yata 1111
+			zip	411-8540
+	REFERENCE		title	Mouse Genome Sequencing
+			ab_name	Robertson,G.R.
+			ab_name	Mishima,H.
+			year	2026
+			status	Unpublished
+seq1	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	CDS	1..120	product	test1
+			gene	test1gene
+			note	ANN2555 ANN2560 ANN2580 pass
+seq2	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			note	ANN2555 entry fail
+	mRNA	1..30	product	test1
+			gene	test1gene
+			locus_tag	LTP_0002
+	mRNA	40..60	product	test2
+			gene	test2gene
+			locus_tag	LTP_0002
+	CDS	40..60	product	test2
+			gene	test2gene
+			locus_tag	LTP_0002
+seq3	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			chromosome	chr1
+			note	ANN2560 fail
+seq4	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			plasmid	1
+			note	ANN2570 fail
+seq5	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	rRNA	<40..60	product	test2
+			gene	test2gene
+			locus_tag	LTP_0004
+			note	aligned only ...
+			note	ANN2580 pass
+seq6	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	rRNA	40..60	product	test2
+			gene	test2gene
+			locus_tag	LTP_0005
+			note	aligned only ...
+			note	ANN2580 fail

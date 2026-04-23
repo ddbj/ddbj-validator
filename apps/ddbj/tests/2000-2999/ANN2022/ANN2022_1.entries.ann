@@ -1,0 +1,48 @@
+COMMON	SUBMITTER		ab_name	Mishima,H.
+			ab_name	Robertson,G.R.
+			contact	Hanako Mishima
+			email	mishima@ddbj.nig.ac.jp
+			institute	National Institute of Genetics
+			department	DNA Data Bank of Japan
+			country	Japan
+			state	Shizuoka
+			city	Mishima
+			street	Yata 1111
+			zip	411-8540
+	REFERENCE		title	Mouse Genome Sequencing
+			ab_name	Robertson,G.R.
+			ab_name	Mishima,H.
+			year	2026
+			status	Unpublished
+seq1	source	1..300	organism	Mus musculus
+	CDS	join(10..100,100..200)	product	normal slippage 1
+			ribosomal_slippage	
+			note	ANN2022 pass
+seq2	source	1..300	organism	Mus musculus
+	CDS	join(10..100,99..200)	product	normal slippage 2
+			ribosomal_slippage	
+			note	ANN2022 pass
+seq3	source	1..300	organism	Mus musculus
+	CDS	join(10..100,102..200)	product	normal slippage 3
+			ribosomal_slippage	
+			note	ANN2022 pass
+seq4	source	1..300	organism	Mus musculus
+	CDS	join(10..100,103..200)	product	normal slippage 4
+			ribosomal_slippage	
+			note	ANN2022 pass
+seq5	source	1..300	organism	Mus musculus
+	CDS	join(10..100,98..200)	product	error slippage 1
+			ribosomal_slippage	
+			note	ANN2022 fail
+seq6	source	1..300	organism	Mus musculus
+	CDS	join(10..100,95..200)	product	error slippage 2
+			ribosomal_slippage	
+			note	ANN2022 fail
+seq7	source	1..300	organism	Mus musculus
+	CDS	join(10..100,104..200)	product	error slippage 3
+			ribosomal_slippage	
+			note	ANN2022 fail
+seq8	source	1..300	organism	Mus musculus
+	CDS	join(10..100,150..200)	product	error slippage 4
+			ribosomal_slippage	
+			note	ANN2022 fail

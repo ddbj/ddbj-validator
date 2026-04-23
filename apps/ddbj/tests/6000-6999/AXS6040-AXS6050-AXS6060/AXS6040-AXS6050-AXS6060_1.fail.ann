@@ -1,0 +1,46 @@
+COMMON	SUBMITTER		ab_name	Mishima,H.
+			ab_name	Robertson,G.R.
+			contact	Hanako Mishima
+			email	mishima@ddbj.nig.ac.jp
+			institute	National Institute of Genetics
+			department	DNA Data Bank of Japan
+			country	Japan
+			state	Shizuoka
+			city	Mishima
+			street	Yata 1111
+			zip	411-8540
+	REFERENCE		title	Mouse Genome Sequencing
+			ab_name	Robertson,G.R.
+			ab_name	Mishima,H.
+			year	2026
+			status	Unpublished
+seq1	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+	CDS	16..105	transl_table	1
+			product	hypothetical protein
+			note	AXS6040 fail (Invalid start codon 'ccc')
+seq2	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+	CDS	16..105	transl_table	1
+			product	hypothetical protein
+			note	AXS6050 fail (Invalid stop codon 'caa')
+seq3	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+	CDS	16..105	transl_table	1
+			product	hypothetical protein
+			note	AXS6060 fail (Internal stop codon 'taa' at pos 61..63)
+seq4	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+	CDS	16..105	transl_table	1
+			product	hypothetical protein
+			note	AXS6040 AXS6050 AXS6060 pass (Perfect CDS: atg...tga)
+seq5	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+	CDS	<16..105	transl_table	1
+			product	hypothetical protein
+			note	AXS6040 pass (Start codon is 'ccc', but 5' is incomplete)
+seq6	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+	CDS	16..>105	transl_table	1
+			product	hypothetical protein
+			note	AXS6050 pass (Stop codon is 'caa', but 3' is incomplete)

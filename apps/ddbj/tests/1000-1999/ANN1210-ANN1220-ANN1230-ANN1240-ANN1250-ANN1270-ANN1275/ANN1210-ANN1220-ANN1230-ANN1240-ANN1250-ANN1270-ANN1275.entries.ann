@@ -1,0 +1,94 @@
+COMMON	SUBMITTER		ab_name	Mishima,H.
+			ab_name	Robertson,G.R.
+			contact	Hanako Mishima
+			email	mishima@ddbj.nig.ac.jp
+			institute	National Institute of Genetics
+			department	DNA Data Bank of Japan
+			country	Japan
+			state	Shizuoka
+			city	Mishima
+			street	Yata 1111
+			zip	411-8540
+	REFERENCE		title	Mouse Genome Sequencing
+			ab_name	Robertson,G.R.
+			ab_name	Mishima,H.
+			year	2026
+			status	Unpublished
+seq1	source	1..102	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			note	ANN1210 pass
+seq2	source	1..102	organism	Mus musculus
+			mol_type	genomic DNA
+			geo_loc_name	Japan:Shizuoka, Mishima
+			note	ANN1210 fail
+seq3	source	1..102	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			note	ANN1220 pass
+seq4	source	1..102	organism	Mus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			note	ANN1220 fail
+seq5	source	1..102	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			note	ANN1230 pass
+seq6	source	1..102	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020/01/01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			note	ANN1230 fail
+seq7	source	1..102	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			note	ANN1240 pass
+seq8	source	1..102	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2040-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			note	ANN1240 fail
+seq9	source	1..102	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			note	ANN1250 pass
+seq10	source	1..102	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	japan:Shizuoka, Mishima
+			note	ANN1250 fail
+seq11	source	1..102	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			lat_lon	35.118978 N 138.937790 E
+			note	ANN1270 pass
+seq12	source	1..102	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			lat_lon	35.11897899999 N 138.937790 E
+			note	ANN1270 fail
+seq13	source	1..102	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			lat_lon	35.118978 N 138.937790 E
+			note	ANN1275 pass
+seq14	source	1..102	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			lat_lon	35.118978 N 138.937790 W
+			note	ANN1275 fail
+seq15	source	1..102	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Suruga-bay
+			lat_lon	35.08143644 N 138.7059535 E
+			note	ANN1275 fail

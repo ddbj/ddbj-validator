@@ -1,0 +1,33 @@
+COMMON	DATATYPE		type	WGS
+	KEYWORD		keyword	WGS
+			keyword	STANDARD_DRAFT
+	DBLINK		project	PRJDB5168
+			biosample	SAMD00061138
+			sequence read archive	DRR070708
+	ST_COMMENT		tagset_id	Genome-Assembly-Data
+			Assembly Method	Trinity v. r2012-10-05
+			Assembly Name	Mouse100
+			Genome Coverage	30x
+			Sequencing Technology	Illumina HiSeq
+	SUBMITTER		ab_name	Mishima,H.
+			ab_name	Robertson,G.R.
+			contact	Hanako Mishima
+			email	mishima@ddbj.nig.ac.jp
+			institute	National Institute of Genetics
+			department	DNA Data Bank of Japan
+			country	Japan
+			state	Shizuoka
+			city	Mishima
+			street	Yata 1111
+			zip	411-8540
+	REFERENCE		title	Mouse Genome Sequencing
+			ab_name	Robertson,G.R.
+			ab_name	Mishima,H.
+			year	2026
+			status	Unpublished
+seq1	source	1..120	organism	Mus musculus
+			mol_type	mRNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			tissue_type	brain
+			submitter_seqid	@@[entry]@@

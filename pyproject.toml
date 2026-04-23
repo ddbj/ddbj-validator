@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bsi-validator"
+version = "0.1.0"
+description = "BSI validation tools for DDBJ, BioProject, BioSample etc."
+dependencies = [
+    "biopython",
+    "psycopg2-binary",
+    "python-dateutil",
+    "python-dotenv",
+    "requests",
+    "intervaltree",
+    "geopandas",
+    "pyarrow"
+]
+
+[project.scripts]
+# ルートにある main.py のパス
+bsi-validator = "main:main"
+# dbs ではなく apps ディレクトリ配下を指定
+ddbj-validator = "apps.ddbj.cli:main"
+
+[tool.setuptools]
+# ルートにある main.py を単独モジュールとして認識させる
+py-modules = ["main"]
+
+[tool.setuptools.packages.find]
+# config や geo を除外し、Pythonパッケージとして認識させるディレクトリを限定する
+include = ["common*", "apps*"]

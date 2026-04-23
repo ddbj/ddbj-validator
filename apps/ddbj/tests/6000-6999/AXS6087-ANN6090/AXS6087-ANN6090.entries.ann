@@ -1,0 +1,52 @@
+COMMON	SUBMITTER		ab_name	Mishima,H.
+			ab_name	Robertson,G.R.
+			contact	Hanako Mishima
+			email	mishima@ddbj.nig.ac.jp
+			institute	National Institute of Genetics
+			department	DNA Data Bank of Japan
+			country	Japan
+			state	Shizuoka
+			city	Mishima
+			street	Yata 1111
+			zip	411-8540
+	REFERENCE		title	Mouse Genome Sequencing
+			ab_name	Robertson,G.R.
+			ab_name	Mishima,H.
+			year	2026
+			status	Unpublished
+seq1	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+	CDS	16..105	transl_table	1
+			exception	RNA editing            
+			translation	MGLVTEAPANSIQYWCDMVLPGERFRDAI
+			product	hypothetical protein
+			note	AXS6087 fail (Unnecessary exception, translation is already perfect)
+seq2	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+	CDS	16..105	transl_table	1
+			product	hypothetical protein
+			note	AXS6087 pass (Perfect CDS without exception)
+seq3	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+	CDS	16..105	transl_table	1
+			codon_start	2
+			product	hypothetical protein
+			note	ANN6090 fail (codon_start=2 on 5' complete CDS)
+seq4	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+	CDS	16..105	transl_table	1
+			codon_start	3
+			product	hypothetical protein
+			note	ANN6090 fail (codon_start=3 on 5' complete CDS)
+seq5	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+	CDS	16..105	transl_table	1
+			codon_start	1
+			product	hypothetical protein
+			note	ANN6090 pass (codon_start=1 on 5' complete CDS)
+seq6	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+	CDS	<16..105	transl_table	1
+			codon_start	2
+			product	hypothetical protein
+			note	ANN6090 pass (codon_start=2 is allowed for 5' incomplete CDS)

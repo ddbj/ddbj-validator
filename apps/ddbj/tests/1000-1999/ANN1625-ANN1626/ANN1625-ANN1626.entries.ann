@@ -1,0 +1,54 @@
+COMMON	SUBMITTER		ab_name	Mishima,H.
+			ab_name	Robertson,G.R.
+			contact	Hanako Mishima
+			email	mishima@ddbj.nig.ac.jp
+			institute	National Institute of Genetics
+			department	DNA Data Bank of Japan
+			country	Japan
+			state	Shizuoka
+			city	Mishima
+			street	Yata 1111
+			zip	411-8540
+	REFERENCE		title	Mouse Genome Sequencing
+			ab_name	Robertson,G.R.
+			ab_name	Mishima,H.
+			year	2026
+			status	Unpublished
+seq1	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	rRNA	10..80	product	rRNA test1
+	tRNA	85..115	product	tRNA test1
+seq2	source	1..120	organism	Mus musculus
+			mol_type	mRNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	rRNA	10..80	product	rRNA test1
+seq3	source	1..120	organism	Mus musculus
+			mol_type	mRNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	tRNA	85..115	product	tRNA test1
+seq4	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	CDS	10..81	product	rRNA test1
+	tRNA	85..115	product	tRNA test1
+seq5	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	CDS	10..81	product	rRNA test1
+	tRNA	85..115	product	tRNA test1
+seq6	source	1..120	organism	Mus musculus
+			mol_type	rRNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	CDS	10..81	product	rRNA test1
+seq7	source	1..120	organism	Mus musculus
+			mol_type	rRNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	tRNA	85..115	product	tRNA test1
