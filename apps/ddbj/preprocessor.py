@@ -33,7 +33,7 @@ def preprocess_files(ann_path_str: str, fasta_path_str: str) -> tuple[list, str,
     ann0170_count = 0
     ann0185_count = 0
     
-    with open(ann_path, 'r', encoding='utf-8') as f:
+    with open(ann_path, 'r', encoding='utf-8', errors='replace') as f:
         content = f.read()
         
     if '\r\n' in content:
@@ -126,7 +126,7 @@ def preprocess_files(ann_path_str: str, fasta_path_str: str) -> tuple[list, str,
     # =========================================================
     fasta_crlf_detected = False
     
-    with open(fasta_path, 'r', encoding='utf-8') as fin:
+    with open(fasta_path, 'r', encoding='utf-8', errors='replace') as fin:
         fasta_content = fin.read()
         if '\r\n' in fasta_content:
             fasta_crlf_detected = True

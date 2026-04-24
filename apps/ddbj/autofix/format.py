@@ -1,7 +1,7 @@
 import re
 from dateutil import parser, tz
 from Bio.SeqFeature import BeforePosition, AfterPosition
-from common.utils.features import get_features
+from apps.ddbj.utils.features import get_features
 
 # --- 定数と正規表現 ---
 _VALID_METHOD_PATTERN = re.compile(r"^.*?v\.\S.*$")

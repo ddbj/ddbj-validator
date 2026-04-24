@@ -4,7 +4,7 @@ from Bio.SeqFeature import CompoundLocation, BeforePosition, AfterPosition
 from Bio.Data import CodonTable
 from Bio.Seq import Seq
 from apps.ddbj.utils.location import get_introns_from_join
-from common.db_taxonomy import get_expected_transl_table
+from apps.ddbj.db_metadata import get_expected_transl_table
 from apps.ddbj.parser import _parse_location_string
 from intervaltree import IntervalTree
 from apps.ddbj.utils.translation import get_cds_translation_params, get_insdc_translation
@@ -558,25 +558,23 @@ class CDS_TRANSLATION_VALIDATOR(BaseRule):
 
             # parts の配列に依存せず、フィーチャー全体の最小(start)・最大(end)座標を使う
             if loc.strand == -1:
-                # マイナス鎖の場合、全体の最大座標(end)が 5' 末端、最小座標(start)が 3' 末端
                 is_5_complete = not isinstance(loc.end, AfterPosition)
                 is_3_complete = not isinstance(loc.start, BeforePosition)
             else:
-                # プラス鎖の場合、全体の最小座標(start)が 5' 末端、最大座標(end)が 3' 末端
                 is_5_complete = not isinstance(loc.start, BeforePosition)
                 is_3_complete = not isinstance(loc.end, AfterPosition)
 
             try:
-                seq = feature.extract(record.seq)
+                # ここで str() に変換し、純粋な文字列として保持
+                seq_str = str(feature.extract(record.seq))
             except Exception:
                 continue
                 
-            # ヘルパーから取得した codon_start を利用
-            cds_seq = seq[codon_start - 1:]
+            cds_seq = seq_str[codon_start - 1:]
             
             codons = []
             for i in range(0, len(cds_seq), 3):
-                codon = str(cds_seq[i:i+3]).upper()
+                codon = cds_seq[i:i+3].upper()
                 
                 if len(codon) == 3:
                     codons.append(codon)
@@ -584,12 +582,13 @@ class CDS_TRANSLATION_VALIDATOR(BaseRule):
                     if not is_3_complete:
                         padded_codon = codon.ljust(3, 'N')
                         try:
+                            # 翻訳は Seq オブジェクトが必要なので一時的に作成
                             aa = str(Seq(padded_codon).translate(table=table_id))
                             if aa != "X":
                                 codons.append(padded_codon)
                         except Exception:
                             pass
-                            
+                                                        
             if not codons:
                 continue
 
@@ -601,6 +600,16 @@ class CDS_TRANSLATION_VALIDATOR(BaseRule):
 
             location_str = getattr(feature, 'original_location', "")
 
+            # -------------------------------------------------------------
+            # CDS全体を「一括」で翻訳する (ループ内でのtranslate排除)
+            # -------------------------------------------------------------
+            valid_seq_str = "".join(codons)
+            try:
+                full_aa = str(Seq(valid_seq_str).translate(table=table_id))
+            except Exception:
+                full_aa = "X" * len(codons) # 万が一エラーになった場合のフォールバック
+
+            # 開始コドンのチェック
             if is_5_complete and codon_start == 1:
                 first_codon = codons[0]
                 if first_codon not in start_codons:
@@ -609,12 +618,10 @@ class CDS_TRANSLATION_VALIDATOR(BaseRule):
                     res["rule"], res["target"] = "AXS6040", "CDS"
                     results.append(res)
 
+            # 終止コドンのチェック (一括翻訳の結果を再利用)
             if is_3_complete:
                 last_codon = codons[-1]
-                try:
-                    is_stop = (str(Seq(last_codon).translate(table=table_id)) == "*")
-                except Exception:
-                    is_stop = False
+                is_stop = (full_aa[-1] == "*") if full_aa else False
 
                 if not is_stop:
                     # transl_except で aa:TERM が指定されている場合はエラーを回避
@@ -631,31 +638,25 @@ class CDS_TRANSLATION_VALIDATOR(BaseRule):
                         results.append(res)
                         
             has_transl_except = "transl_except" in feature.qualifiers
-            for i, codon in enumerate(codons):
-                try:
-                    aa = str(Seq(codon).translate(table=table_id))
-                except Exception:
-                    aa = "X"  
-                
-                # 1-basedのコドン(アミノ酸)位置を計算
+            
+            # 内部コドンのチェック (一括翻訳した full_aa を zip で回すだけ)
+            for i, (codon, aa) in enumerate(zip(codons, full_aa)):
                 codon_pos = i + 1
                 
                 if aa == "X":
-                    # "at codon {codon_pos}" を追加してメッセージをユニークにする
                     msg = f'Untranslatable codon "{codon}" detected in the sequence. These codons will be translated to \'X\' (unknown amino acids) after loading to the DDBJ database. (Found: {codon} at codon {codon_pos} in {location_str})'
                     res = self.feature_result(record, feature, msg, level="warning")
                     res["rule"], res["target"] = "AXS6030", "CDS"
                     results.append(res)
+                    
                 elif aa == "*":
                     if i < len(codons) - 1 and not has_transl_except:
-                        # こちらも同様に追加 (内部終止コドンも複数あった場合にまとめられないようにする)
                         msg = f'Internal stop codon within the CDS. (Found: {codon} at codon {codon_pos} in {location_str})'
                         res = self.feature_result(record, feature, msg, level="error")
                         res["rule"], res["target"] = "AXS6060", "CDS"
                         results.append(res)
 
         return results
-
                 
 TRANSL_EXCEPT_PATTERN = re.compile(r"^\(pos:(?P<pos>.+?),aa:(?P<aa>[a-zA-Z]+)\)$")
 

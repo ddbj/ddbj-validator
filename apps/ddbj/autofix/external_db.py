@@ -3,8 +3,8 @@ import re
 from pathlib import Path
 from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
-from common.db_taxonomy import get_expected_transl_table
-from common.utils.features import get_features
+from apps.ddbj.utils.features import get_features
+from apps.ddbj.db_metadata import get_expected_transl_table
 
 _SAMD_PATTERN = re.compile(r'(SAMD\d+)')
 
