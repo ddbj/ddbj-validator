@@ -2,7 +2,6 @@ import json
 from pathlib import Path
 from dataclasses import dataclass, field
 from apps.ddbj.db_metadata import fetch_valid_journals
-import geopandas as gpd
 
 @dataclass
 class ValidationContext:
@@ -27,10 +26,6 @@ class ValidationContext:
     ddbj_dict: dict = field(default_factory=dict)
     dra_crosscheck_dict: dict = field(default_factory=dict)
     dra_lib_meta: dict = field(default_factory=dict)
-
-    # 地理情報バリデーション用データ
-    geo_mapping: dict = field(default_factory=dict)
-    geo_df: gpd.GeoDataFrame = None
 
     # DBから取得した有効なジャーナル名のセットを保持するフィールド
     valid_journals: set = field(default_factory=set)
@@ -86,29 +81,6 @@ class ValidationContext:
                     code = line.split('\t', 1)[0].strip()
                     if code:
                         self.institution_codes[code.lower()] = code
-
-        # 4. 地理データとマッピングの読み込み (ANN1275用)
-        mapping_path = geo_dir / "insdc_geo_mapping.json"
-        if not self.geo_mapping:
-            if mapping_path.exists():
-                with open(mapping_path, "r", encoding="utf-8") as f:
-                    self.geo_mapping = json.load(f)
-            else:
-                print(f"[WARN] Geo mapping file not found at {mapping_path}")
-                self.geo_mapping = {}
-
-        parquet_path = geo_dir / "countries_50m.parquet"
-        if self.geo_df is None:
-            if parquet_path.exists():
-                try:
-                    self.geo_df = gpd.read_parquet(parquet_path)
-                    _ = self.geo_df.sindex  # 空間インデックス(R-tree)をメモリに強制展開
-                except Exception as e:
-                    print(f"[WARN] Failed to load geo_data: {e}")
-                    self.geo_df = None
-            else:
-                print(f"[WARN] GeoParquet file not found at {parquet_path}. Geo-location validation will be skipped.")
-                self.geo_df = None
 
     def load_valid_journals(self, journal_list, db_tax_conn):
         """

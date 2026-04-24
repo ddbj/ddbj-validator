@@ -15,7 +15,6 @@ from apps.ddbj.parser import _parse_location_string, LocationParseError, Locatio
 from collections import defaultdict
 from common.ncbi_api import check_ncbi_public_status
 from intervaltree import IntervalTree
-from shapely.geometry import Point
 
 POS_PATTERN = re.compile(r"pos:(.+?),aa:")
 
@@ -1565,25 +1564,81 @@ class ANN1275(BaseRule):
     is_file_level = False
 
     def __init__(self):
-        super().__init__()
         self._geo_cache = {}
         self.valid_land_names = None
         self.lat_lon_pattern = None 
+        self.geo_df = None
+        self.geo_mapping = None
+        self.Point = None  # shapely.geometry.Point 用
 
-    def _init_valid_land_names(self, context):
+    def _lazy_load_geo(self):
+        """遅延ロード: 対象のフィーチャーが見つかった時だけ重いモジュールとデータを読み込む"""
+        try:
+            import geopandas as gpd
+            from shapely.geometry import Point
+            self.Point = Point
+        except ImportError:
+            print("[WARN] geopandas or shapely is not installed. Geo-location validation will be skipped.")
+            return False
+
+        from pathlib import Path
+        import json
+
+        # プロジェクトルートからのパス解決
+        project_root = Path(__file__).resolve().parent.parent.parent.parent
+        geo_dir = project_root / "common" / "resources" / "geo"
+        parquet_path = geo_dir / "countries_50m.parquet"
+        mapping_path = geo_dir / "insdc_geo_mapping.json"
+
+        if not parquet_path.exists():
+            print(f"[WARN] GeoParquet file not found at {parquet_path}")
+            return False
+
+        try:
+            self.geo_df = gpd.read_parquet(parquet_path)
+            _ = self.geo_df.sindex  # インデックスの強制構築
+        except Exception as e:
+            print(f"[WARN] Failed to load geo_data: {e}")
+            return False
+
+        self.geo_mapping = {}
+        if mapping_path.exists():
+            with open(mapping_path, "r", encoding="utf-8") as f:
+                self.geo_mapping = json.load(f)
+
+        # valid_land_names の初期化
         names = set()
-        for ne_name in context.geo_df['name'].values:
-            if ne_name in context.geo_mapping:
-                for mapped_name in context.geo_mapping[ne_name]:
+        for ne_name in self.geo_df['name'].values:
+            if ne_name in self.geo_mapping:
+                for mapped_name in self.geo_mapping[ne_name]:
                     names.add(mapped_name.lower())
             else:
                 names.add(ne_name.lower())
         self.valid_land_names = names
 
+        return True
+
     def validate(self, record, context):
         results = []
-        if record.id == "COMMON" or getattr(context, 'geo_df', None) is None or getattr(context, 'geo_mapping', None) is None:
+        if record.id == "COMMON":
             return results
+
+        # 1. まず検証対象となる「lat_lon と geo_loc_name が両方存在するフィーチャー」を抽出する
+        target_features = []
+        for feat in self.get_features(record, "source"):
+            lat_lon_list = feat.qualifiers.get("lat_lon", [])
+            geo_loc_list = feat.qualifiers.get("geo_loc_name", [])
+            if lat_lon_list and geo_loc_list:
+                target_features.append((feat, lat_lon_list, geo_loc_list))
+
+        # 対象が一つも無ければ、即座に return (geo の重い処理を回避)
+        if not target_features:
+            return results
+
+        # 2. 対象が存在する場合のみ、初回1回だけ遅延ロードを実行する
+        if self.geo_df is None:
+            if not self._lazy_load_geo():
+                return results
 
         if self.lat_lon_pattern is None:
             pattern_str = context.ddbj_dict.get("qualifiers", {}).get("lat_lon", {}).get("format_pattern")
@@ -1592,13 +1647,8 @@ class ANN1275(BaseRule):
             else:
                 self.lat_lon_pattern = re.compile(r'^\d+(?:\.\d+)?\s+[NS]\s+\d+(?:\.\d+)?\s+[EW]$')
 
-        if self.valid_land_names is None:
-            self._init_valid_land_names(context)
-
-        for feat in self.get_features(record, "source"):
-            lat_lon_list = feat.qualifiers.get("lat_lon", [])
-            geo_loc_list = feat.qualifiers.get("geo_loc_name", [])
-
+        # 3. 検証ロジックの実行
+        for feat, lat_lon_list, geo_loc_list in target_features:
             for lat_lon_str, geo_loc_str in zip(lat_lon_list, geo_loc_list):
                 country_name = geo_loc_str.split(":")[0].strip()
                 country_lower = country_name.lower()
@@ -1617,13 +1667,13 @@ class ANN1275(BaseRule):
                     continue
 
                 lat, lon = parsed_coords
-                pt = Point(lon, lat)
+                pt = self.Point(lon, lat)  # 遅延ロードした Point を使用
 
                 # バッファ(約111km)で交差するポリゴンを検索
-                matches_df = context.geo_df[context.geo_df.intersects(pt.buffer(1.0))]
+                matches_df = self.geo_df[self.geo_df.intersects(pt.buffer(1.0))]
                 
                 # 距離を含めた詳細チェック
-                is_valid, hit_names, dist_km = self._check_matches(country_lower, matches_df, pt, context.geo_mapping)
+                is_valid, hit_names, dist_km = self._check_matches(country_lower, matches_df, pt)
 
                 self._geo_cache[cache_key] = (is_valid, hit_names, dist_km)
                 self._report_result(record, feat, lat_lon_str, country_name, is_valid, hit_names, dist_km, results)
@@ -1639,17 +1689,17 @@ class ANN1275(BaseRule):
         lon = float(parts[2]) * (-1 if parts[3] == 'W' else 1)
         return lat, lon
 
-    def _check_matches(self, country_lower, matches_df, pt, geo_mapping):
+    def _check_matches(self, country_lower, matches_df, pt):
         hit_names = []
-        matched_geometries = [] # 入力された国名に一致したポリゴン
+        matched_geometries = []
 
         for idx, row in matches_df.iterrows():
             ne_name = row['name']
             geom = row['geometry']
             
-            if ne_name in geo_mapping:
-                allowed = [m.lower() for m in geo_mapping[ne_name]]
-                hit_names.extend(geo_mapping[ne_name])
+            if ne_name in self.geo_mapping:
+                allowed = [m.lower() for m in self.geo_mapping[ne_name]]
+                hit_names.extend(self.geo_mapping[ne_name])
             else:
                 allowed = [ne_name.lower()]
                 hit_names.append(ne_name)
@@ -1661,7 +1711,6 @@ class ANN1275(BaseRule):
         dist_km = 0.0
 
         if is_valid:
-            # 一致した国のポリゴンと点との最短距離(度)を求め、kmに変換 (1度 ≒ 約111.13km)
             min_dist_deg = min([geom.distance(pt) for geom in matched_geometries])
             if min_dist_deg > 0:
                 dist_km = round(min_dist_deg * 111.13, 1)
@@ -1670,18 +1719,16 @@ class ANN1275(BaseRule):
 
     def _report_result(self, record, feat, lat_lon_str, country_name, is_valid, hit_names, dist_km, results):
         if not is_valid:
-            # エラー時 (他国に落ちた or 完全に外海)
             unique_hits = sorted(list(set(hit_names)))
             actual_loc = ", ".join(unique_hits) if unique_hits else "Ocean/Unmapped area"
             msg = f"Values provided for 'lat_lon' ({lat_lon_str}) and 'geo_loc_name' ({country_name}) contradict each other. Coordinates point to: {actual_loc}"
             results.append(self.feature_result(record, feat, msg, level="warning"))
             
         elif dist_km >= 1.0:
-            # 成功時：ただし海岸線から 1km 以上離れている場合 (地図の誤差等を考慮して1km未満は無視)
             msg = f"Coordinates ({lat_lon_str}) match '{country_name}' and located approximately {dist_km} km away from the nearest coastline."            
             results.append(self.feature_result(record, feat, msg, level="info"))
-                    
 
+            
 class ANN1280(BaseRule):
     rule_id = "ANN1280"
     alternate_id = "BS_R0059"
