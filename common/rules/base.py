@@ -55,7 +55,7 @@ class BaseRule:
     # ==============================================================
     # 既存の format_result をラップし、フィーチャーから自動でメタデータを取るメソッド
     # ==============================================================
-    def feature_result(self, record, feature, message, level="error", qualifier=""):
+    def feature_result(self, record, feature, message, level="error", qualifier="", **kwargs):
         """
         フィーチャーオブジェクトを渡すだけで、line_numberやlocationを自動補完して結果を生成する
         """
@@ -66,14 +66,15 @@ class BaseRule:
             feature_type=feature.type,
             qualifier=qualifier,
             location=getattr(feature, 'original_location', ""),
-            line_number=getattr(feature, 'line_number', None)
+            line_number=getattr(feature, 'line_number', None),
+            **kwargs  # 受け取った任意の追加引数(autofix等)を下へ流す
         )
 
-    def format_result(self, entry_id, message, level="warning", feature_type="", location="", qualifier="", line_number=None):
+    def format_result(self, entry_id, message, level="warning", feature_type="", location="", qualifier="", line_number=None, **kwargs):
         """
         エラー結果のフォーマットを統一するためのヘルパーメソッド
         """
-        return {
+        res = {
             "level": level,
             "rule": self.rule_id,
             "target": self.target,
@@ -84,3 +85,5 @@ class BaseRule:
             "line_number": line_number,
             "message": message
         }
+        res.update(kwargs)  # 受け取った任意の追加引数(autofix等)を辞書にマージ
+        return res

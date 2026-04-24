@@ -2212,6 +2212,7 @@ class ANN1830(BaseRule):
                     results.append(self.feature_result(record, feature, msg, level="error", qualifier="submitter_seqid"))
                     
         return results
+
         
 class ANN2010(BaseRule):
     rule_id = "ANN2010"
@@ -2228,53 +2229,60 @@ class ANN2010(BaseRule):
         "CONTIG", "ACCESSION", "ORGANISM", "VERSION", "ENTRY_STATUS"
     }
 
-    def validate_file(self, records, context, ann_path=None, seq_path=None):
+    # 引数に ann_lines=None を追加
+    def validate_file(self, records, context, ann_path=None, seq_path=None, ann_lines=None):
         results = []
-        if not ann_path:
+        if not ann_path and ann_lines is None:
             return results
 
         current_entry = None
 
         try:
-            with open(ann_path, "r", encoding="utf-8") as f:
-                for line_num_0, line in enumerate(f):
-                    line_num = line_num_0 + 1
-                    clean_line = line.rstrip("\r\n")
-                    
-                    if not clean_line or clean_line.isspace() or clean_line.startswith("#"):
-                        continue
+            # メモリ上のデータ(ann_lines)があればそれを使い、なければファイルを読む (errors='replace' を指定)
+            lines_to_process = ann_lines
+            if lines_to_process is None:
+                with open(ann_path, "r", encoding="utf-8", errors="replace") as f:
+                    lines_to_process = f.readlines()
 
-                    cols = clean_line.split("\t")
-                    if len(cols) < 3:
-                        continue 
+            for line_num_0, line in enumerate(lines_to_process):
+                line_num = line_num_0 + 1
+                clean_line = line.rstrip("\r\n")
+                
+                if not clean_line or clean_line.isspace() or clean_line.startswith("#"):
+                    continue
 
-                    entry_col = cols[0].strip()
-                    feature_col = cols[1].strip()
-                    location_col = cols[2].strip()
+                cols = clean_line.split("\t")
+                if len(cols) < 3:
+                    continue 
 
-                    if entry_col:
-                        current_entry = entry_col
+                entry_col = cols[0].strip()
+                feature_col = cols[1].strip()
+                location_col = cols[2].strip()
 
-                    if feature_col:
-                        if feature_col not in self.NO_LOCATION_FEATURES:
-                            if not location_col:
-                                msg = f"{self.description} (for feature '{feature_col}')"
-                                res = self.format_result(
-                                    entry_id=current_entry or "UNKNOWN", 
-                                    message=msg, 
-                                    level="fatal", 
-                                    feature_type=feature_col, 
-                                    line_number=line_num
-                                )
-                                res["rule"] = self.rule_id
-                                res["target"] = "file"
-                                results.append(res)
-                                
+                if entry_col:
+                    current_entry = entry_col
+
+                if feature_col:
+                    if feature_col not in self.NO_LOCATION_FEATURES:
+                        if not location_col:
+                            msg = f"{self.description} (for feature '{feature_col}')"
+                            res = self.format_result(
+                                entry_id=current_entry or "UNKNOWN", 
+                                message=msg, 
+                                level="fatal", 
+                                feature_type=feature_col, 
+                                line_number=line_num
+                            )
+                            res["rule"] = self.rule_id
+                            res["target"] = "file"
+                            results.append(res)
+                            
         except Exception as e:
             print(f"[WARN] Failed to read ANN for {self.rule_id} check: {e}")
 
-        return results        
+        return results
         
+                
 class ANN2030(BaseRule):
     rule_id = "ANN2030"
     alternate_id = "JP0123"
