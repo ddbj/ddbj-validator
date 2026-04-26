@@ -14,7 +14,8 @@ from apps.ddbj.db_metadata import (
     get_samds_from_records, get_projects_from_records, get_drrs_from_records, 
     fetch_biosample_data, fetch_biosample_submitters, fetch_biosample_smp_ids,
     fetch_bp_psubs, fetch_dra_refs, fetch_prjdb_by_psub, fetch_samd_by_smp_id,
-    fetch_dra_library_metadata, fetch_drr_status, get_journals_from_records
+    fetch_dra_library_metadata, fetch_drr_status, get_journals_from_records,
+    fast_extract_db_keys
 )
 from common.db_taxonomy import fetch_taxonomy_data
 from apps.ddbj.db_metadata import get_expected_transl_table, get_organisms_from_records
@@ -33,6 +34,213 @@ from common.ncbi_api import filter_target_accessions, check_ncbi_public_status
 from apps.ddbj.utils.translation import get_cds_translation_params, get_insdc_translation
 from apps.ddbj.utils.features import get_features
 
+
+# ============================================================================
+# ワーカー1: 1つのファイルセットに対する検証と Autofix 提案の生成を行う
+# ============================================================================
+def _validate_single_file_set(args):
+    (
+        ann_path, seq_path, context, tax_data, bs_data, is_web_mode, report_out_dir
+    ) = args
+
+    from apps.ddbj.preprocessor import preprocess_files
+    from apps.ddbj.parser import parse_ddbj_submission
+    
+    # ワーカー内でファイルを読み込み、パース
+    ann_lines, fasta_content, pre_warnings = preprocess_files(ann_path, seq_path)
+    records, parse_errors = parse_ddbj_submission(
+        fasta_content=fasta_content, 
+        ann_path=ann_path, 
+        ann_lines=ann_lines, 
+        ddbj_dict=context.ddbj_dict
+    )
+
+    # このプロセス（ファイル）専用に context をアップデート
+    context.analyze_records(records)
+    validator = Validator(context)
+
+    file_results = []
+    file_proposals = []
+    file_skipped_autofixes = []
+    file_updq_data = []
+
+    # プレ処理・パース時のエラーを結果に含める
+    file_results.extend(pre_warnings + parse_errors)
+
+    # バリデーション実行
+    val_results = validator.run(records, ann_path, seq_path, ann_lines=ann_lines, fasta_content=fasta_content)
+    file_results.extend(val_results)
+    
+    # Autofix提案の収集
+    for res in val_results:
+        if res.get("autofix") and "new_value" in res:
+            entry_name = res.get("entry", res.get("entry_id", ""))
+            qual_name = res.get("qualifier", "")
+            old_v = res.get("old_value")
+            new_v = res.get("new_value")
+            rule_id = res.get("rule", "ANN0000")
+            fix_target = res.get("fix_target", qual_name)
+            
+            if "updates" in res:
+                updates = res["updates"]
+            else:
+                if fix_target == "location":
+                    updates = [{"action": "update_location", "entry": entry_name, "feature_type": res.get("feature_type", ""), "old_value": old_v, "new_value": new_v}]
+                else:
+                    updates = [{"action": "update_qualifier", "entry": entry_name, "feature_type": res.get("feature_type", ""), "qualifier": qual_name, "old_value": old_v, "new_value": new_v}]
+
+            file_proposals.append({
+                "ann_path": ann_path,
+                "entry": entry_name,
+                "feature_type": res.get("feature_type", ""),
+                "qualifier": qual_name,
+                "target": fix_target,
+                "target_level": res.get("fix_target", "qualifier"), 
+                "positions": [{"entry": entry_name, "feature_id": res.get("line_number", "unknown")}],
+                "old_value": old_v,
+                "new_value": new_v,
+                "old": old_v,
+                "new": new_v,
+                "message": res.get("message", "Value will be fixed."),
+                "rule": rule_id,
+                "updates": updates
+            })
+                                     
+    if tax_data:
+        tax_proposals = propose_taxonomy_updates(records, tax_data, ann_path)
+        file_proposals.extend(tax_proposals)
+        for p in tax_proposals:
+            source_str = p.get("source_db", "")
+            match_type = source_str.split(", ")[-1] if ", " in source_str else "unknown"
+            for pos in p.get("positions", []):
+                file_results.append({
+                    "file": Path(ann_path).name,
+                    "full_path": str(ann_path),
+                    "rule": p.get("rule", "ANN1025"),
+                    "level": "WARNING",
+                    "entry": pos.get("entry", "ALL_ENTRIES"),
+                    "feature_type": "source",
+                    "target": "organism",
+                    "qualifier": "organism",
+                    "message": f"The organism name will be corrected to the scientific name in the Taxonomy database. (Found: '{p.get('old')}', Type: '{match_type}')",
+                    "line_number": pos.get("feature_id")
+                })
+                                                
+        file_proposals.extend(propose_transl_table_fixes(records, tax_data, ann_path))
+                        
+    if bs_data:
+        props, bs_warnings, skips = propose_qualifiers_updates(records, bs_data, ann_path)
+        file_proposals.extend(props)
+        file_skipped_autofixes.extend(skips)
+        file_results.extend(bs_warnings)
+
+    missing_reporting_terms_set = {m.lower() for m in context.cv_terms.get("missing_reporting_terms", [])}
+    date_fixes = propose_date_fixes(records, ann_path, allowed_missing_reporting_terms=missing_reporting_terms_set, existing_proposals=file_proposals)
+    file_proposals.extend(date_fixes)
+
+    hold_date_fixes = propose_hold_date_fixes(records, ann_path, existing_proposals=file_proposals)
+    file_proposals.extend(hold_date_fixes)
+                            
+    latlon_fixes = propose_latlon_fixes(records, ann_path, existing_proposals=file_proposals)
+    file_proposals.extend(latlon_fixes)
+
+    for p in latlon_fixes:
+        if "message" in p:
+            file_results.append({
+                "file": Path(ann_path).name, "full_path": str(ann_path),
+                "rule": p.get("rule"), "level": p.get("level", "WARNING").upper(),
+                "entry": p.get("entry"), "feature_type": p.get("feature_type", ""),
+                "target": p.get("target"), "qualifier": p.get("target"),
+                "message": p.get("message"), "line_number": p["positions"][0]["feature_id"] if p.get("positions") else None
+            })
+            
+    geo_loc_allowed_list = context.cv_terms.get("countries", [])
+    if geo_loc_allowed_list:
+        geo_loc_fixes = propose_geo_loc_name_fixes(records, ann_path, allowed_values=geo_loc_allowed_list, allowed_missing_reporting_terms=missing_reporting_terms_set, existing_proposals=file_proposals)
+        file_proposals.extend(geo_loc_fixes)
+                                                                         
+    if context.institution_codes:
+        culture_collection_fixes = propose_culture_collection_fixes(records, ann_path, allowed_map=context.institution_codes, existing_proposals=file_proposals)
+        file_proposals.extend(culture_collection_fixes)
+        
+    pcr_fixes = propose_pcr_primer_fixes(records, ann_path)
+    file_proposals.extend(pcr_fixes)
+
+    partial_loc_fixes = propose_partial_location_fixes(records, ann_path, tax_data)
+    file_proposals.extend(partial_loc_fixes)
+
+    whitespace_fixes = propose_location_whitespace_fixes(records, ann_path)
+    file_proposals.extend(whitespace_fixes)
+              
+    if is_web_mode:
+        for p in pcr_fixes:
+            acc = p["entry"].split('_')[0]
+            current = p["old"]
+            fixed = p["new"]
+            out_name = f"{Path(ann_path).parent.name}.updQ.txt" if report_out_dir == Path(ann_path).parent else f"{Path(ann_path).stem}.updQ.txt"
+            out_path = Path(ann_path).parent / out_name
+            file_updq_data.append((out_path, f">{acc}\tPCR_primers\t{current}\tPCR_primers\t{fixed}\n"))
+
+    return {
+        "results": file_results,
+        "proposals": file_proposals,
+        "skipped_autofixes": file_skipped_autofixes,
+        "updq_data": file_updq_data
+    }
+
+# ============================================================================
+# ワーカー2: Autofix 適用とファイル生成を行う
+# ============================================================================
+def _apply_autofix_worker(args):
+    ann_path, seq_path, file_updates, tax_data, cv_terms = args
+    
+    # 修正適用とAA FASTA出力のために再度読み込む
+    ann_lines, fasta_content, _ = preprocess_files(ann_path, seq_path)
+    records, _ = parse_ddbj_submission(fasta_content, ann_path, ann_lines, {})
+    
+    fixed_dir = Path(ann_path).parent / "fixed"
+    fixed_dir.mkdir(parents=True, exist_ok=True)
+    
+    # 1. FASTAファイル
+    fixed_fasta = fixed_dir / Path(seq_path).name 
+    fast_copy_and_fix_fasta(fasta_content, fixed_fasta)
+                
+    # 2. ANNファイル
+    original_ann_name = Path(ann_path).name
+    for ext in ANN_EXTENSIONS:
+        if original_ann_name.endswith(ext):
+            original_ann_name = original_ann_name[:-len(ext)] + ".ann"
+            break
+    else:
+        original_ann_name = Path(ann_path).with_suffix(".ann").name
+        
+    fixed_ann = fixed_dir / original_ann_name
+    
+    if file_updates:
+        write_autofix_to_file(ann_lines, file_updates, fixed_ann)
+    else:
+        write_clean_ann(ann_lines, fixed_ann)
+
+    # 3. アミノ酸配列 (AA FASTA) の出力
+    aa_dir = Path(ann_path).parent / "aa"
+    base_name = original_ann_name[:-4] if original_ann_name.endswith('.ann') else Path(original_ann_name).stem
+    aa_fasta_path = aa_dir / f"AA_{base_name}.faa"
+    
+    is_aa_written = write_aa_fasta(records, aa_fasta_path, tax_data, cv_terms)
+    
+    # メッセージを親プロセスに返す
+    msgs = []
+    if file_updates:
+        msgs.append(f"  => Auto-fixed ANN saved to: {fixed_ann}")
+    else:
+        msgs.append(f"  => Cleaned ANN saved to: {fixed_ann}")
+    msgs.append(f"  => Cleaned FASTA saved to: {fixed_fasta}")
+    if is_aa_written:
+        msgs.append(f"  => Translated AA FASTA saved to: {aa_fasta_path}")
+        
+    return "\n".join(msgs)
+    
+    
 def write_autofix_to_file(ann_lines, updates, out_path):
     """メモリ上のANNデータに対しAutofix（データ駆動）を適用し、直接fixedディレクトリへ出力する"""
     current_entry = ""
@@ -228,168 +436,6 @@ def fast_copy_and_fix_fasta(fasta_content, dst_fasta_path):
                 clean_seq += '\n//'
                 f.write(f">{header}\n{clean_seq}\n")
 
-# ============================================================================
-# ワーカー関数: 1つのファイルセットに対する検証と Autofix 提案の生成を行う
-# ============================================================================
-def _validate_single_file_set(args):
-    (
-        ann_path, seq_path, norm_ann, norm_seq, records, pre_warnings, parse_errors,
-        context, tax_data, bs_data, is_web_mode, report_out_dir
-    ) = args
-
-    # このプロセス（ファイル）専用に context をアップデート
-    context.analyze_records(records)
-    validator = Validator(context)
-
-    file_results = []
-    file_proposals = []
-    file_skipped_autofixes = []
-    file_updq_data = []
-
-    # バリデーション実行
-    val_results = validator.run(records, ann_path, seq_path, ann_lines=norm_ann, fasta_content=norm_seq)
-    file_results.extend(pre_warnings + parse_errors + val_results)
-    
-    # Autofix提案の収集
-    for res in val_results:
-        if res.get("autofix") and "new_value" in res:
-            entry_name = res.get("entry", res.get("entry_id", ""))
-            qual_name = res.get("qualifier", "")
-            old_v = res.get("old_value")
-            new_v = res.get("new_value")
-            rule_id = res.get("rule", "ANN0000")
-            fix_target = res.get("fix_target", qual_name)
-            
-            if "updates" in res:
-                updates = res["updates"]
-            else:
-                if fix_target == "location":
-                    updates = [{"action": "update_location", "entry": entry_name, "feature_type": res.get("feature_type", ""), "old_value": old_v, "new_value": new_v}]
-                else:
-                    updates = [{"action": "update_qualifier", "entry": entry_name, "feature_type": res.get("feature_type", ""), "qualifier": qual_name, "old_value": old_v, "new_value": new_v}]
-
-            file_proposals.append({
-                "ann_path": ann_path,
-                "entry": entry_name,
-                "feature_type": res.get("feature_type", ""),
-                "qualifier": qual_name,
-                "target": fix_target,
-                "target_level": res.get("fix_target", "qualifier"), 
-                "positions": [{"entry": entry_name, "feature_id": res.get("line_number", "unknown")}],
-                "old_value": old_v,
-                "new_value": new_v,
-                "old": old_v,
-                "new": new_v,
-                "message": res.get("message", "Value will be fixed."),
-                "rule": rule_id,
-                "updates": updates
-            })
-                                                                                                        
-    if tax_data:
-        tax_proposals = propose_taxonomy_updates(records, tax_data, ann_path)
-        file_proposals.extend(tax_proposals)
-        
-        for p in tax_proposals:
-            source_str = p.get("source_db", "")
-            match_type = source_str.split(", ")[-1] if ", " in source_str else "unknown"
-            
-            for pos in p.get("positions", []):
-                file_results.append({
-                    "file": Path(ann_path).name,
-                    "full_path": str(ann_path),
-                    "rule": p.get("rule", "ANN1025"),
-                    "level": "WARNING",
-                    "entry": pos.get("entry", "ALL_ENTRIES"),
-                    "feature_type": "source",
-                    "target": "organism",
-                    "qualifier": "organism",
-                    "message": f"The organism name will be corrected to the scientific name in the Taxonomy database. (Found: '{p.get('old')}', Type: '{match_type}')",
-                    "line_number": pos.get("feature_id")
-                })
-                                                
-        file_proposals.extend(propose_transl_table_fixes(records, tax_data, ann_path))
-                        
-    if bs_data:
-        props, bs_warnings, skips = propose_qualifiers_updates(records, bs_data, ann_path)
-        file_proposals.extend(props)
-        file_skipped_autofixes.extend(skips)
-        file_results.extend(bs_warnings)
-
-    missing_reporting_terms_set = {m.lower() for m in context.cv_terms.get("missing_reporting_terms", [])}
-    date_fixes = propose_date_fixes(
-        records, 
-        ann_path, 
-        allowed_missing_reporting_terms=missing_reporting_terms_set, 
-        existing_proposals=file_proposals
-    )
-    file_proposals.extend(date_fixes)
-
-    hold_date_fixes = propose_hold_date_fixes(
-        records, 
-        ann_path, 
-        existing_proposals=file_proposals
-    )
-    file_proposals.extend(hold_date_fixes)
-                            
-    latlon_fixes = propose_latlon_fixes(records, ann_path, existing_proposals=file_proposals)
-    file_proposals.extend(latlon_fixes)
-
-    for p in latlon_fixes:
-        if "message" in p:
-            file_results.append({
-                "file": Path(ann_path).name, "full_path": str(ann_path),
-                "rule": p.get("rule"), "level": p.get("level", "WARNING").upper(),
-                "entry": p.get("entry"), "feature_type": p.get("feature_type", ""),
-                "target": p.get("target"), "qualifier": p.get("target"),
-                "message": p.get("message"), "line_number": p["positions"][0]["feature_id"] if p.get("positions") else None
-            })
-            
-    geo_loc_allowed_list = context.cv_terms.get("countries", [])
-                
-    if geo_loc_allowed_list:
-        geo_loc_fixes = propose_geo_loc_name_fixes(
-            records, 
-            ann_path, 
-            allowed_values=geo_loc_allowed_list, 
-            allowed_missing_reporting_terms=missing_reporting_terms_set,
-            existing_proposals=file_proposals
-        )
-        file_proposals.extend(geo_loc_fixes)
-                                                                                        
-    if context.institution_codes:
-        culture_collection_fixes = propose_culture_collection_fixes(
-            records,
-            ann_path,
-            allowed_map=context.institution_codes,
-            existing_proposals=file_proposals
-        )
-        file_proposals.extend(culture_collection_fixes)
-        
-    pcr_fixes = propose_pcr_primer_fixes(records, ann_path)
-    file_proposals.extend(pcr_fixes)
-
-    partial_loc_fixes = propose_partial_location_fixes(records, ann_path, tax_data)
-    file_proposals.extend(partial_loc_fixes)
-
-    whitespace_fixes = propose_location_whitespace_fixes(records, ann_path)
-    file_proposals.extend(whitespace_fixes)
-                            
-    if is_web_mode:
-        for p in pcr_fixes:
-            acc = p["entry"].split('_')[0]
-            current = p["old"]
-            fixed = p["new"]
-            out_name = f"{Path(ann_path).parent.name}.updQ.txt" if report_out_dir == Path(ann_path).parent else f"{Path(ann_path).stem}.updQ.txt"
-            out_path = Path(ann_path).parent / out_name
-            file_updq_data.append((out_path, f">{acc}\tPCR_primers\t{current}\tPCR_primers\t{fixed}\n"))
-
-    return {
-        "results": file_results,
-        "proposals": file_proposals,
-        "skipped_autofixes": file_skipped_autofixes,
-        "updq_data": file_updq_data
-    }
-
 
 class ValidatorPipeline:
     def __init__(self, pairs, report_out_dir, is_web_mode, force_fix):
@@ -398,70 +444,47 @@ class ValidatorPipeline:
         self.is_web_mode = is_web_mode
         self.force_fix = force_fix
         
-        self.parsed_files = []
         self.all_interactive_proposals = []
         self.all_skipped_autofixes = []
         self.auto_updates_by_file = defaultdict(list)
         self.updq_data = defaultdict(list)
+        self.tax_data = {}
+        self.cv_terms = {}
 
     def run_validation(self):
         """フェーズ1: ファイルの検証と Autofix 提案の収集"""
-        parsed_files = []
-        all_samds, all_projects, all_drrs, all_organisms = set(), set(), set(), set()
-        all_journals = set()
+        all_samds, all_projects, all_drrs, all_organisms, all_journals = set(), set(), set(), set(), set()
+        ncbi_check_prjs, ncbi_check_sams, ncbi_check_sras = set(), set(), set()
         
-        # NCBI APIチェック専用の収集セット
-        ncbi_check_prjs = set()
-        ncbi_check_sams = set()
-        ncbi_check_sras = set()
+        # 1. 高速並列スキャン
+        print("\nScanning annotation files for DB queries...")
+        with ProcessPoolExecutor() as executor:
+            # 高速抽出ワーカーを並列実行
+            futures = [executor.submit(fast_extract_db_keys, ann, seq) for ann, seq in self.pairs]
+            for future in futures:
+                res = future.result()
+                all_samds.update(res["samds"])
+                all_projects.update(res["projects"])
+                all_drrs.update(res["drrs"])
+                all_organisms.update(res["organisms"])
+                all_journals.update(res["journals"])
+                ncbi_check_prjs.update(res["ncbi_check_prjs"])
+                ncbi_check_sams.update(res["ncbi_check_sams"])
+                ncbi_check_sras.update(res["ncbi_check_sras"])
 
-        base_context = ValidationContext(is_curator_mode=True)
-        ddbj_dict_for_parser = base_context.ddbj_dict
-
-        # 1. 構文解析とパース
-        for ann_path, seq_path in self.pairs:
-            ann_lines, fasta_content, pre_warnings = preprocess_files(ann_path, seq_path)
-            
-            records, parse_errors = parse_ddbj_submission(
-                fasta_content=fasta_content, 
-                ann_path=ann_path, 
-                ann_lines=ann_lines, 
-                ddbj_dict=ddbj_dict_for_parser
-            )
-            
-            # ローカルDB用の収集
-            all_samds.update(get_samds_from_records(records))
-            all_projects.update(get_projects_from_records(records))
-            all_drrs.update(get_drrs_from_records(records))
-            all_organisms.update(get_organisms_from_records(records))            
-            all_journals.update(get_journals_from_records(records))
-            
-            for record in records.values():
-                for feature in get_features(record, "DBLINK"):
-                    prjs = feature.qualifiers.get("project", [])
-                    sams = feature.qualifiers.get("biosample", [])
-                    sras = feature.qualifiers.get("sequence read archive", [])
-                    
-                    ncbi_check_prjs.update(filter_target_accessions("bioproject", prjs))
-                    ncbi_check_sams.update(filter_target_accessions("biosample", sams))
-                    ncbi_check_sras.update(filter_target_accessions("sra", sras))
-            
-            parsed_files.append((ann_path, seq_path, ann_lines, fasta_content, records, pre_warnings, parse_errors))
-            
-        # 2. データベース情報の取得
+        # 2. データベース情報の取得 (直列)
         db_manager = DatabaseManager()
         bp_psubs, dra_refs, tax_data, bs_data = {}, {}, {}, {}
-        bs_submitters, bs_smp_ids, psub_to_prjdb, smp_id_to_samd = {}, {}, {}, {} # ← {} を4つにする
+        bs_submitters, bs_smp_ids, psub_to_prjdb, smp_id_to_samd = {}, {}, {}, {}
         dra_lib_meta = {}
         drr_status = {}
-                
         ncbi_private_accs = set() 
         
         try:
             if all_organisms or all_samds or all_projects or all_drrs or ncbi_check_prjs or ncbi_check_sams or ncbi_check_sras:
                 print("\nChecking DB...")
 
-            # --- DDBJ ローカルDBのチェック ---
+            # --- ローカルDBのチェック ---
             if all_organisms:
                 lbl = "organism" if len(all_organisms) == 1 else "organisms"
                 print(f"[Taxonomy DB] Checking {len(all_organisms)} {lbl}...")
@@ -518,7 +541,7 @@ class ValidatorPipeline:
                 res = check_ncbi_public_status("sra", list(ncbi_check_sras))
                 ncbi_private_accs.update(res.get("private", []))
 
-            # 3. 検証コンテキストの作成とルールの初期化
+            # 3. 検証コンテキストの作成
             context = ValidationContext(
                 is_curator_mode=True,
                 bp_psubs=bp_psubs,
@@ -548,28 +571,23 @@ class ValidatorPipeline:
         updq_data = defaultdict(list)
         
         # 4. 個別ファイルの検証と Autofix提案の収集 (並列処理)
+        print("\nRunning validations in parallel...")
         tasks = []
-        for ann_path, seq_path, norm_ann, norm_seq, records, pre_warnings, parse_errors in parsed_files:
+        for ann_path, seq_path in self.pairs:
             tasks.append((
-                ann_path, seq_path, norm_ann, norm_seq, records, pre_warnings, parse_errors,
-                context, tax_data, bs_data, self.is_web_mode, self.report_out_dir
+                ann_path, seq_path, context, tax_data, bs_data, self.is_web_mode, self.report_out_dir
             ))
             
-        print("\nRunning validations in parallel...")
-        
-        # CPUリソースをフル活用して ProcessPoolExecutor を実行
         with ProcessPoolExecutor() as executor:
             for output in executor.map(_validate_single_file_set, tasks):
                 all_results.extend(output["results"])
                 all_interactive_proposals.extend(output["proposals"])
                 self.all_skipped_autofixes.extend(output["skipped_autofixes"])
                 
-                # updq_data の集約
                 for out_path, line in output["updq_data"]:
                     updq_data[out_path].append(line)
 
         # 後続フェーズのために状態を保存
-        self.parsed_files = parsed_files
         self.all_interactive_proposals = all_interactive_proposals
         self.auto_updates_by_file = auto_updates_by_file
         self.updq_data = updq_data
@@ -619,68 +637,25 @@ class ValidatorPipeline:
             for p in approved_proposals:  
                 approved_by_file[p["ann_path"]].append(p)
 
-        cleanup_header_printed = False
+        # 並列で Autofix を適用して出力
+        if approved_proposals or not self.all_interactive_proposals:
+            print("\n=== File Cleanup & Auto-Fix ===")
+        else:
+            print("\n=== File Cleanup (No auto-fix) ===")
 
-        for ann_path, seq_path, ann_lines, fasta_content, records, _, _ in self.parsed_files:
+        autofix_tasks = []
+        for ann_path, seq_path in self.pairs:
             file_updates = self.auto_updates_by_file[ann_path]
             
             if approved_proposals and approved_by_file[ann_path]:
                 interactive_updates = apply_proposals(approved_by_file[ann_path])
                 file_updates.extend(interactive_updates)
                 
-            fixed_dir = Path(ann_path).parent / "fixed"
-            fixed_dir.mkdir(parents=True, exist_ok=True)
-            
-            # 1. FASTAファイル
-            fixed_fasta = fixed_dir / Path(seq_path).name 
-            fast_copy_and_fix_fasta(fasta_content, fixed_fasta)
-                        
-            # 2. ANNファイル
-            original_ann_name = Path(ann_path).name
-            for ext in ANN_EXTENSIONS:
-                if original_ann_name.endswith(ext):
-                    original_ann_name = original_ann_name[:-len(ext)] + ".ann"
-                    break
-            else:
-                original_ann_name = Path(ann_path).with_suffix(".ann").name
-                
-            fixed_ann = fixed_dir / original_ann_name
-            
-            if file_updates:
-                write_autofix_to_file(ann_lines, file_updates, fixed_ann)
-            else:
-                write_clean_ann(ann_lines, fixed_ann)
+            autofix_tasks.append((ann_path, seq_path, file_updates, self.tax_data, self.cv_terms))
 
-            # ===================================================
-            # 3. アミノ酸配列 (AA FASTA) の出力
-            # ===================================================
-            aa_dir = Path(ann_path).parent / "aa"
-            base_name = original_ann_name[:-4] if original_ann_name.endswith('.ann') else Path(original_ann_name).stem
-            aa_fasta_path = aa_dir / f"AA_{base_name}.faa"
-            
-            tax_data_to_pass = getattr(self, "tax_data", None)
-            cv_terms_to_pass = getattr(self, "cv_terms", None)
-            is_aa_written = write_aa_fasta(records, aa_fasta_path, tax_data_to_pass, cv_terms_to_pass)
-            # ===================================================
-                                                                        
-            # ---------------------------------------------------
-            # 結果のコンソール出力
-            # ---------------------------------------------------
-            if self.all_interactive_proposals:
-                if approved_proposals:
-                    print(f"  => Auto-fixed ANN saved to: {fixed_ann}")
-                    print(f"  => Cleaned FASTA saved to: {fixed_fasta}")
-                else:
-                    print("\n=== File Cleanup (No auto-fix) ===")
-                    print(f"  => Cleaned ANN saved to: {fixed_ann}")
-                    print(f"  => Cleaned FASTA saved to: {fixed_fasta}")
-            else:
-                print("\n=== File Cleanup (No auto-fix) ===")
-                print(f"  => Cleaned ANN saved to: {fixed_ann}")
-                print(f"  => Cleaned FASTA saved to: {fixed_fasta}")
-                
-            if is_aa_written:
-                print(f"  => Translated AA FASTA saved to: {aa_fasta_path}")
+        with ProcessPoolExecutor() as executor:
+            for msg in executor.map(_apply_autofix_worker, autofix_tasks):
+                print(msg)
                 
         if self.is_web_mode and self.updq_data:
             print("\n[NSSS Mode] Exporting DB update files...")

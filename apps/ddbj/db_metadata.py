@@ -2,6 +2,73 @@ import psycopg2
 import re
 from apps.ddbj.utils.features import get_features
 
+# INSDC (DDBJ/ENA/GenBank) アクセッションを捕捉
+_PRJ_PATTERN = re.compile(r'\tproject\t(PRJ[DE][AB]\d+|PRJN[A]\d+)')
+_SAM_PATTERN = re.compile(r'\tbiosample\t(SAM[DN]\d+|SAME[AG]?\d+)')
+_SRA_PATTERN = re.compile(r'\tsequence read archive\t([SDE]RR\d+)')
+
+# 値にスペースが含まれる可能性がある項目は、行末または次のタブまでを取得
+_ORG_PATTERN = re.compile(r'\torganism\t([^\t\r\n]+)', re.IGNORECASE)
+_META_PATTERN = re.compile(r'\tmetagenome_source\t([^\t\r\n]+)')
+_JRN_PATTERN = re.compile(r'\tjournal\t([^\t\r\n]+)', re.IGNORECASE)
+
+def fast_extract_db_keys(ann_path, seq_path):
+    """
+    BioPythonのパースを待たずに、ANNファイルをテキストとして1行ずつ走査し、
+    DB検索用のキーを高速に抽出する。
+    """
+    samds, projects, drrs, organisms, journals = set(), set(), set(), set(), set()
+    
+    try:
+        with open(ann_path, 'r', encoding='utf-8', errors='replace') as f:
+            for line in f:
+                # 処理の高速化のため、まずは対象Qualifierの文字列が含まれるかin句で足切り
+                if '\tproject\t' in line:
+                    if m := _PRJ_PATTERN.search(line):
+                        projects.add(m.group(1).strip().upper())
+                        
+                elif '\tbiosample\t' in line:
+                    if m := _SAM_PATTERN.search(line):
+                        samds.add(m.group(1).strip().upper())
+                        
+                elif '\tsequence read archive\t' in line:
+                    if m := _SRA_PATTERN.search(line):
+                        drrs.add(m.group(1).strip().upper())
+
+                elif '\tjournal\t' in line:
+                    if m := _JRN_PATTERN.search(line):
+                        journals.add(m.group(1).strip())
+                        
+                elif '\torganism\t' in line:
+                    if m := _ORG_PATTERN.search(line):
+                        organisms.add(m.group(1).strip())
+                elif '\tmetagenome_source\t' in line:
+                    if m := _META_PATTERN.search(line):
+                        organisms.add(m.group(1).strip())                                               
+                        
+    except Exception as e:
+        print(f"[WARN] Failed to fast-scan {ann_path}: {e}")
+
+    # NCBI APIとDDBJローカルDBで問い合わせを振り分けるためのセットもここで作ってしまう
+    from common.ncbi_api import filter_target_accessions
+    ncbi_check_prjs = set(filter_target_accessions("bioproject", projects))
+    ncbi_check_sams = set(filter_target_accessions("biosample", samds))
+    ncbi_check_sras = set(filter_target_accessions("sra", drrs))
+
+    return {
+        "ann_path": ann_path,
+        "seq_path": seq_path,
+        "samds": samds, 
+        "projects": projects, 
+        "drrs": drrs, 
+        "organisms": organisms, 
+        "journals": journals,
+        "ncbi_check_prjs": ncbi_check_prjs,
+        "ncbi_check_sams": ncbi_check_sams,
+        "ncbi_check_sras": ncbi_check_sras
+    }
+
+
 def get_organisms_from_records(records):
     """
     レコード内の source フィーチャーから organism と metagenome_source を抽出する。

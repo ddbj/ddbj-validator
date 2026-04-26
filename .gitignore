@@ -75,5 +75,5 @@ file-content.sh
 bsival_context*.txt
 profile*.stats
 ANN0610_prompt.txt
-
+*.code-workspace
 
