@@ -1,11 +1,14 @@
 import re
 import shutil
+import json
 from pathlib import Path
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
+
 from Bio.Data import CodonTable
 from Bio.Seq import Seq
 from Bio.SeqFeature import BeforePosition, AfterPosition
+
 from apps.ddbj.preprocessor import preprocess_files, ANN_EXTENSIONS
 from apps.ddbj.parser import parse_ddbj_submission
 from apps.ddbj.validator import Validator
@@ -22,10 +25,9 @@ from apps.ddbj.db_metadata import get_expected_transl_table, get_organisms_from_
 from apps.ddbj.autofix import (
     propose_format_errors, propose_qualifiers_updates, propose_taxonomy_updates, 
     propose_transl_table_fixes, review_and_approve_proposals, apply_proposals,
-    propose_pcr_primer_fixes,
-    propose_date_fixes, propose_latlon_fixes, propose_geo_loc_name_fixes,
-    propose_culture_collection_fixes, propose_partial_location_fixes,
-    propose_hold_date_fixes,
+    propose_pcr_primer_fixes, propose_date_fixes, propose_latlon_fixes, 
+    propose_geo_loc_name_fixes, propose_culture_collection_fixes, 
+    propose_partial_location_fixes, propose_hold_date_fixes,
     propose_location_whitespace_fixes
 )
 from apps.ddbj.reporter import ValidationReporter
@@ -40,13 +42,12 @@ from apps.ddbj.utils.features import get_features
 # ============================================================================
 def _validate_single_file_set(args):
     (
-        ann_path, seq_path, context, tax_data, bs_data, is_web_mode, report_out_dir
+        ann_path, seq_path, context, tax_data, bs_data, is_web_mode, report_out_dir, tmp_dir_str
     ) = args
 
     from apps.ddbj.preprocessor import preprocess_files
     from apps.ddbj.parser import parse_ddbj_submission
     
-    # ワーカー内でファイルを読み込み、パース
     ann_lines, fasta_content, pre_warnings = preprocess_files(ann_path, seq_path)
     records, parse_errors = parse_ddbj_submission(
         fasta_content=fasta_content, 
@@ -55,7 +56,6 @@ def _validate_single_file_set(args):
         ddbj_dict=context.ddbj_dict
     )
 
-    # このプロセス（ファイル）専用に context をアップデート
     context.analyze_records(records)
     validator = Validator(context)
 
@@ -64,14 +64,11 @@ def _validate_single_file_set(args):
     file_skipped_autofixes = []
     file_updq_data = []
 
-    # プレ処理・パース時のエラーを結果に含める
     file_results.extend(pre_warnings + parse_errors)
 
-    # バリデーション実行
     val_results = validator.run(records, ann_path, seq_path, ann_lines=ann_lines, fasta_content=fasta_content)
     file_results.extend(val_results)
     
-    # Autofix提案の収集
     for res in val_results:
         if res.get("autofix") and "new_value" in res:
             entry_name = res.get("entry", res.get("entry_id", ""))
@@ -181,9 +178,49 @@ def _validate_single_file_set(args):
             out_path = Path(ann_path).parent / out_name
             file_updq_data.append((out_path, f">{acc}\tPCR_primers\t{current}\tPCR_primers\t{fixed}\n"))
 
+    # ====================================================
+    # メインプロセスでのクロスファイルチェック用にメタデータを収集
+    # ====================================================
+    file_entries = []
+    file_locus_tags = []
+
+    for entry_id, record in records.items():
+        if entry_id != "COMMON":
+            file_entries.append(entry_id)
+
+        for feature in get_features(record):
+            if "locus_tag" in feature.qualifiers:
+                for tag in feature.qualifiers["locus_tag"]:
+                    file_locus_tags.append({
+                        "tag": tag.strip(),
+                        "entry": entry_id,
+                        "feature_type": feature.type,
+                        "line_number": getattr(feature, 'line_number', None)
+                    })
+
+    # ====================================================
+    # メインプロセスにデータを返さず、専用のテンポラリJSONLに書き捨てる
+    # ====================================================
+    tmp_jsonl_path = Path(tmp_dir_str) / f"{Path(ann_path).name}.jsonl"
+    
+    with open(tmp_jsonl_path, "w", encoding="utf-8") as f_jsonl:
+        def write_record(rec_type, data):
+            f_jsonl.write(json.dumps({"type": rec_type, "data": data}) + "\n")
+            
+        for res in file_results:
+            write_record("result", res)
+            
+        for prop in file_proposals:
+            write_record("proposal", prop)
+            
+        for entry in file_entries:
+            write_record("entry", entry)
+            
+        for loc in file_locus_tags:
+            write_record("locus_tag", loc)
+
     return {
-        "results": file_results,
-        "proposals": file_proposals,
+        "jsonl_path": str(tmp_jsonl_path),
         "skipped_autofixes": file_skipped_autofixes,
         "updq_data": file_updq_data
     }
@@ -194,18 +231,18 @@ def _validate_single_file_set(args):
 def _apply_autofix_worker(args):
     ann_path, seq_path, file_updates, tax_data, cv_terms = args
     
-    # 修正適用とAA FASTA出力のために再度読み込む
+    from apps.ddbj.preprocessor import preprocess_files
+    from apps.ddbj.parser import parse_ddbj_submission
+    
     ann_lines, fasta_content, _ = preprocess_files(ann_path, seq_path)
     records, _ = parse_ddbj_submission(fasta_content, ann_path, ann_lines, {})
     
     fixed_dir = Path(ann_path).parent / "fixed"
     fixed_dir.mkdir(parents=True, exist_ok=True)
     
-    # 1. FASTAファイル
     fixed_fasta = fixed_dir / Path(seq_path).name 
     fast_copy_and_fix_fasta(fasta_content, fixed_fasta)
                 
-    # 2. ANNファイル
     original_ann_name = Path(ann_path).name
     for ext in ANN_EXTENSIONS:
         if original_ann_name.endswith(ext):
@@ -221,14 +258,12 @@ def _apply_autofix_worker(args):
     else:
         write_clean_ann(ann_lines, fixed_ann)
 
-    # 3. アミノ酸配列 (AA FASTA) の出力
     aa_dir = Path(ann_path).parent / "aa"
     base_name = original_ann_name[:-4] if original_ann_name.endswith('.ann') else Path(original_ann_name).stem
     aa_fasta_path = aa_dir / f"AA_{base_name}.faa"
     
     is_aa_written = write_aa_fasta(records, aa_fasta_path, tax_data, cv_terms)
     
-    # メッセージを親プロセスに返す
     msgs = []
     if file_updates:
         msgs.append(f"  => Auto-fixed ANN saved to: {fixed_ann}")
@@ -242,10 +277,8 @@ def _apply_autofix_worker(args):
     
     
 def write_autofix_to_file(ann_lines, updates, out_path):
-    """メモリ上のANNデータに対しAutofix（データ駆動）を適用し、直接fixedディレクトリへ出力する"""
     current_entry = ""
     update_count = 0
-    
     pending_new_features = [u for u in updates if u.get("action") == "add_feature"]
     
     with open(out_path, "w", encoding="utf-8", newline="\n") as fout:
@@ -253,7 +286,6 @@ def write_autofix_to_file(ann_lines, updates, out_path):
             line_no = line_no_0 + 1
             clean_line = line.rstrip("\r\n")
 
-            # 空行（ヘッダーの代替や不要な改行）は出力しない
             if not clean_line or clean_line.isspace():
                 continue
 
@@ -273,7 +305,6 @@ def write_autofix_to_file(ann_lines, updates, out_path):
                 
             active_entry = current_entry
 
-            # 3列 (Feature, Locationのみ) の行も処理対象に含める
             if len(cols) < 3:
                 fout.write(line + "\n")
                 continue
@@ -286,7 +317,6 @@ def write_autofix_to_file(ann_lines, updates, out_path):
             
             line_modified = False
 
-            # 1. 既存の項目 (location や qualifier値) の書き換えを先に適用する
             for u in updates:
                 target_entry = str(u.get("entry", "")).strip()
                 
@@ -312,7 +342,6 @@ def write_autofix_to_file(ann_lines, updates, out_path):
                         v_file = str(value).strip()
                         v_target = str(u.get("old_value", "")).strip()
 
-                        # Qualifierと値が一致したら書き換え実行
                         if q_target == q_file and v_file == v_target:
                             if len(cols) == 3:
                                 cols.extend([str(u["qualifier"]), str(u["new_value"])])
@@ -326,13 +355,11 @@ def write_autofix_to_file(ann_lines, updates, out_path):
                             line_modified = True
                             update_count += 1
                                         
-            # 2. 行の出力 (変更があれば更新版、なければ元の行)
             if line_modified:
                 fout.write("\t".join(cols) + "\n")
             else:
                 fout.write(line + "\n")
 
-            # 3. その行の直後に追加すべき Qualifier (transl_tableなど) があれば出力
             for u in updates:
                 if u.get("action") == "add_qualifier" and u.get("feature_line") == line_no:
                     fout.write(f"\t\t\t{u['qualifier']}\t{u['new_value']}\n")
@@ -346,25 +373,19 @@ def write_autofix_to_file(ann_lines, updates, out_path):
     return update_count > 0
     
 def write_clean_ann(ann_lines, out_path):
-    """Autofixがない場合でも、改行統一や空白除去済みのメモリデータから不正行を削除して出力する"""
     with open(out_path, "w", encoding="utf-8", newline="\n") as fout:
         for line in ann_lines:
             clean_line = line.rstrip("\r\n")
 
-            # 空行を出力から除外
             if not clean_line or clean_line.isspace():
                 continue
                 
             cols = clean_line.split("\t")
             if len(cols) not in (3, 4, 5):
-                continue  # 1列や2列の不正な行をスキップ
+                continue
             fout.write(line + "\n")
 
 def write_aa_fasta(records, out_path, tax_data=None, cv_terms=None):
-    """
-    メモリ上のレコードのCDSフィーチャーからアミノ酸配列を抽出し、
-    FASTA形式で出力する。pseudo/pseudogeneは除外。
-    """
     has_output = False
     out_lines = []
 
@@ -406,10 +427,6 @@ def write_aa_fasta(records, out_path, tax_data=None, cv_terms=None):
     return False    
                                         
 def fast_copy_and_fix_fasta(fasta_content, dst_fasta_path):
-    """
-    メモリ一括展開によるFASTA出力。
-    ヘッダーの形式を維持しつつ、配列部分のみを小文字化して終端子 // を付与する。
-    """
     data = fast_fasta_content = fasta_content
 
     if data.startswith('>'):
@@ -459,7 +476,6 @@ class ValidatorPipeline:
         # 1. 高速並列スキャン
         print("\nScanning annotation files for DB queries...")
         with ProcessPoolExecutor() as executor:
-            # 高速抽出ワーカーを並列実行
             futures = [executor.submit(fast_extract_db_keys, ann, seq) for ann, seq in self.pairs]
             for future in futures:
                 res = future.result()
@@ -484,7 +500,6 @@ class ValidatorPipeline:
             if all_organisms or all_samds or all_projects or all_drrs or ncbi_check_prjs or ncbi_check_sams or ncbi_check_sras:
                 print("\nChecking DB...")
 
-            # --- ローカルDBのチェック ---
             if all_organisms:
                 lbl = "organism" if len(all_organisms) == 1 else "organisms"
                 print(f"[Taxonomy DB] Checking {len(all_organisms)} {lbl}...")
@@ -522,7 +537,6 @@ class ValidatorPipeline:
                     if dra_smps:
                         smp_id_to_samd = fetch_samd_by_smp_id(db_manager.get_bs_conn(), list(dra_smps))
 
-            # --- NCBI APIの独立したチェック処理 ---
             if ncbi_check_prjs:
                 lbl = "BioProject" if len(ncbi_check_prjs) == 1 else "BioProjects"
                 print(f"[NCBI API] Checking {len(ncbi_check_prjs)} {lbl}...")
@@ -541,7 +555,6 @@ class ValidatorPipeline:
                 res = check_ncbi_public_status("sra", list(ncbi_check_sras))
                 ncbi_private_accs.update(res.get("private", []))
 
-            # 3. 検証コンテキストの作成
             context = ValidationContext(
                 is_curator_mode=True,
                 bp_psubs=bp_psubs,
@@ -565,27 +578,76 @@ class ValidatorPipeline:
         finally:
             db_manager.close_all()
 
-        all_results = []
         all_interactive_proposals = []
         auto_updates_by_file = defaultdict(list)
         updq_data = defaultdict(list)
         
-        # 4. 個別ファイルの検証と Autofix提案の収集 (並列処理)
+        # 4. 個別ファイルの検証 (並列処理)
         print("\nRunning validations in parallel...")
+        
+        self.tmp_dir = Path(self.report_out_dir) / ".val_tmp"
+        self.tmp_dir.mkdir(parents=True, exist_ok=True)
+        
         tasks = []
         for ann_path, seq_path in self.pairs:
-            tasks.append((
-                ann_path, seq_path, context, tax_data, bs_data, self.is_web_mode, self.report_out_dir
-            ))
+            tasks.append((ann_path, seq_path, context, tax_data, bs_data, self.is_web_mode, self.report_out_dir, str(self.tmp_dir)))
             
+        jsonl_paths = []
         with ProcessPoolExecutor() as executor:
             for output in executor.map(_validate_single_file_set, tasks):
-                all_results.extend(output["results"])
-                all_interactive_proposals.extend(output["proposals"])
+                jsonl_paths.append(output["jsonl_path"])
                 self.all_skipped_autofixes.extend(output["skipped_autofixes"])
                 
                 for out_path, line in output["updq_data"]:
                     updq_data[out_path].append(line)
+
+        # 5. JSONL からメタデータと提案を読み出してクロスチェック
+        cross_entries = defaultdict(list)
+        cross_locus_tags = defaultdict(list)
+        all_interactive_proposals = []
+        
+        for j_path in jsonl_paths:
+            with open(j_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    rec = json.loads(line)
+                    r_type = rec["type"]
+                    data = rec["data"]
+                    if r_type == "entry":
+                        cross_entries[data].append(j_path)
+                    elif r_type == "locus_tag":
+                        data["file"] = j_path
+                        cross_locus_tags[data["tag"]].append(data)
+                    elif r_type == "proposal":
+                        all_interactive_proposals.append(data)
+
+        # クロスファイル（Submission全体）のユニークチェック
+        cross_file_results = []
+        for entry_name, paths in cross_entries.items():
+            unique_files = set(paths)
+            if len(unique_files) > 1:
+                file_names = ", ".join([Path(p).name.replace('.jsonl', '') for p in unique_files])
+                msg = f"Duplicate entry name across multiple files. (Found: '{entry_name}' in {file_names})"
+                cross_file_results.append({
+                    "file": "Submission (Cross-File)", "full_path": "", "rule": "ANN0120",
+                    "level": "ERROR", "entry": entry_name, "feature_type": "entry", "target": "file", "message": msg
+                })
+
+        for tag, locs in cross_locus_tags.items():
+            if len(locs) > 1:
+                details = ", ".join(list(set([f"{o['entry']} in {Path(o['file']).name.replace('.jsonl', '')}" for o in locs])))
+                msg = f"Duplicate locus_tag found across the submission. (Found: '{tag}' in {details})"
+                cross_file_results.append({
+                    "file": "Submission (Cross-File)", "full_path": "", "rule": "ANN2520",
+                    "level": "ERROR", "entry": "ALL_ENTRIES", "feature_type": "locus_tag", "target": "locus_tag", "message": msg
+                })
+
+        # クロスファイルのチェック結果も専用の JSONL に書き出して先頭に追加
+        if cross_file_results:
+            cross_jsonl = self.tmp_dir / "Submission_Cross_File.jsonl"
+            with open(cross_jsonl, "w", encoding="utf-8") as f:
+                for res in cross_file_results:
+                    f.write(json.dumps({"type": "result", "data": res}) + "\n")
+            jsonl_paths.insert(0, str(cross_jsonl))
 
         # 後続フェーズのために状態を保存
         self.all_interactive_proposals = all_interactive_proposals
@@ -594,7 +656,12 @@ class ValidatorPipeline:
         self.tax_data = tax_data
         self.cv_terms = context.cv_terms
         
-        return all_results
+        return jsonl_paths
+
+    def cleanup_tmp_dir(self):
+        """テンポラリディレクトリのお掃除"""
+        if hasattr(self, 'tmp_dir') and self.tmp_dir and self.tmp_dir.exists():
+            shutil.rmtree(self.tmp_dir, ignore_errors=True)
 
     def run_autofix(self):
         """フェーズ2 & 3: Autofix 提案のレビューとファイルへの適用"""

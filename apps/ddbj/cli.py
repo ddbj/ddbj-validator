@@ -142,21 +142,24 @@ def main():
     # --- パイプラインの実行とレポート出力 --- #
     pipeline = ValidatorPipeline(pairs, report_out_dir, args.web, args.force_fix)
     
-    # 1. 検証の実行と Autofix 提案の収集
-    all_results = pipeline.run_validation()
-    
-    # 2. レポートの生成 (指定されたターゲットディレクトリに直接出力)
-    target_dir = target_dirs_for_report[0] if target_dirs_for_report else Path(report_out_dir)
-    reporter = ValidationReporter(out_dir=target_dir)
-    reporter.generate_report(all_results, print_console=True)
-    
-    # 3. Autofix の承認と適用
-    pipeline.run_autofix()
-    
-    # クリーンアップと終了メッセージ
-    print(f"\n\n[ All reports successfully generated to {target_dir} ]")
-    print(f"  validation_report_summary.txt")
-    print(f"  validation_report_details.txt\n")
+    try:
+        # 1. 検証の実行と Autofix 提案の収集 (戻り値はメモリ配列ではなく JSONL のパスリスト)
+        jsonl_paths = pipeline.run_validation()
+        
+        # 2. レポートの生成 (ストリーミング処理)
+        target_dir = target_dirs_for_report[0] if target_dirs_for_report else Path(report_out_dir)
+        reporter = ValidationReporter(out_dir=target_dir)
+        reporter.generate_report(jsonl_paths, print_console=True)
+        
+        # 3. Autofix の承認と適用
+        pipeline.run_autofix()
+        
+        print(f"\n\n[ All reports successfully generated to {target_dir} ]")
+        print(f"  validation_report_summary.txt")
+        print(f"  validation_report_details.txt\n")
+    finally:
+        # 4. コンテナやホストのディスクを圧迫しないよう、テンポラリファイルを確実に削除
+        pipeline.cleanup_tmp_dir()
 
 if __name__ == "__main__":
     main()

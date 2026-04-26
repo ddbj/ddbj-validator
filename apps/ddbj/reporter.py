@@ -1,4 +1,5 @@
 import re
+import json
 from pathlib import Path
 from collections import defaultdict
 
@@ -6,73 +7,189 @@ class ValidationReporter:
     def __init__(self, out_dir):
         self.out_dir = Path(out_dir) if out_dir else Path(".")
         self.show_location = False  
+        self.max_details_per_rule = 50  # ★ 同一ルールのDetails出力上限
 
-    def generate_report(self, all_results, print_console=True):
-        """レポート出力の統括メソッド"""
+    def generate_report(self, jsonl_paths, print_console=True):
+        """レポート出力の統括メソッド (JSONLストリーミング対応版)"""
         report_summary_path = self.out_dir / "validation_report_summary.txt"
         report_details_path = self.out_dir / "validation_report_details.txt"
 
-        if not all_results:
+        actual_sets = [p for p in jsonl_paths if "Submission_Cross_File" not in p]
+        num_sets = len(actual_sets)
+
+        if not jsonl_paths or num_sets == 0:
             self._write_empty_report(report_summary_path, report_details_path, print_console)
             return report_summary_path, report_details_path
 
-        data = self._process_results(all_results)
-        self._write_details(report_details_path, data)
-        self._write_summary(report_summary_path, data, print_console)
+        # レポートファイルを初期化 (上書き)
+        set_str = "1 file set" if num_sets == 1 else f"{num_sets} file sets"
+        with open(report_summary_path, "w", encoding="utf-8") as fs, open(report_details_path, "w", encoding="utf-8") as fd:
+            fs.write(f"\n=== Validation Summary ({set_str}) ===\n")
+            fd.write(f"\n=== Validation Details ({set_str}) ===\n")
+
+        set_idx = 1
+        for j_path in jsonl_paths:
+            is_cross = "Submission_Cross_File" in str(j_path)
+            self._process_and_append_report(j_path, set_idx, report_summary_path, report_details_path, print_console, is_cross)
+            if not is_cross:
+                set_idx += 1
 
         return report_summary_path, report_details_path
 
-    # ==========================================
-    # 内部処理メソッド
-    # ==========================================
-    def _process_results(self, all_results):
-        """全件の検証結果をパースし、出力用にグループ化する"""
-        base_set = set()
+    def _process_and_append_report(self, jsonl_path, set_idx, sum_path, det_path, print_console, is_cross):
+        detailed_lines = {"FATAL": [], "ERROR": [], "WARNING": [], "INFO": [], "AUTO-CLEANUP": []}
+        summary_stats = {} # key -> {"res": res, "items": []}
+        summary_messages = {} # key -> msg
+        detail_counts = defaultdict(int) # ★ 出力件数カウント用
+
+        base_group = ""
+
+        try:
+            with open(jsonl_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    rec = json.loads(line)
+                    if rec["type"] == "result":
+                        res = rec["data"]
+                        
+                        if not base_group:
+                            filename = str(res.get('file', ''))
+                            if is_cross or filename in ["ALL", "ALL_SETS", "Submission (Cross-File)"]:
+                                base_group = "Submission (Cross-File)"
+                            else:
+                                base_group = Path(filename).stem
+                                if base_group.endswith('.ann'):
+                                    base_group = base_group[:-4]
+
+                        # 1. Summaryキーの構築 (カウントの単位として使用)
+                        summary_key = self._format_summary_key(res)
+                        if summary_key not in summary_stats:
+                            summary_stats[summary_key] = {"res": res, "items": []}
+                            
+                            msg = res.get('message', '')
+                            if res.get('line_number') is None and msg.startswith("Line "):
+                                msg = re.sub(r"^Line \d+:\s*", "", msg)
+                            summary_messages[summary_key] = msg.split('\n')[0]
+                            
+                        summary_stats[summary_key]["items"].append(res)
+
+                        # 2. Details の構築 (上限キャップ付き)
+                        level = "AUTO-CLEANUP" if res.get('is_cleanup') else res.get('level', 'WARNING').upper()
+                        if level not in detailed_lines:
+                            detailed_lines[level] = []
+
+                        detail_counts[summary_key] += 1
+                        if detail_counts[summary_key] <= self.max_details_per_rule:
+                            detailed_line = self._format_detail_line(res)
+                            detailed_lines[level].append(detailed_line)
+
+        except FileNotFoundError:
+            return
+
+        if not base_group:
+            return
+
+        for key, count in detail_counts.items():
+            if count > self.max_details_per_rule:
+                first_res = summary_stats[key]["res"]
+                level = "AUTO-CLEANUP" if first_res.get('is_cleanup') else first_res.get('level', 'WARNING').upper()
+                rule_id = first_res.get('rule', 'UNKNOWN')
+                
+                # ご要望のフォーマットで追加 (例: ... ANN1210 further logs were omitted (50/39163))
+                omit_msg = f"... {rule_id}: {self.max_details_per_rule}/{count} messages shown. Further logs omitted."
+                detailed_lines[level].append(omit_msg)
+
+        # ==========================================
+        # Details の書き出し (逐次 Append)
+        # ==========================================
+        with open(det_path, "a", encoding="utf-8") as fd:
+            header = f"\n{base_group}\n" if is_cross else f"\n{set_idx}. {base_group}\n"
+            fd.write(header)
+            
+            is_first_group = True
+            for level_name in ["FATAL", "ERROR", "WARNING", "INFO", "AUTO-CLEANUP"]:
+                if detailed_lines.get(level_name):
+                    if not is_first_group:
+                        fd.write("\n")
+                    fd.write(f"[ {level_name} ]\n")
+                    # 省略メッセージが最後に来るようにソート条件を維持
+                    for line in sorted(detailed_lines[level_name], key=lambda x: (x.startswith("..."), x)):
+                        fd.write(f"{line}\n")
+                    is_first_group = False
+
+        # ==========================================
+        # Summary の書き出し (逐次 Append)
+        # ==========================================
+        sum_text = ""
+        header = f"\n{base_group}\n" if is_cross else f"\n{set_idx}. {base_group}\n"
+        sum_text += header
         
-        for res in all_results:
-            filename = str(res.get('file', ''))
+        level_groups = {"FATAL": [], "ERROR": [], "WARNING": [], "INFO": [], "AUTO-CLEANUP": []}
+        for key, stats in summary_stats.items():
+            first_res = stats["res"]
+            level = "AUTO-CLEANUP" if first_res.get('is_cleanup') else first_res.get('level', 'WARNING').upper()
+            if level not in level_groups:
+                level_groups[level] = []
+            level_groups[level].append((key, stats["items"]))
+
+        for level_name in ["FATAL", "ERROR", "WARNING", "INFO", "AUTO-CLEANUP"]:
+            if level_groups.get(level_name):
+                sum_text += f"[ {level_name} ]\n"
+                
+                for key, results_list in sorted(level_groups[level_name]):
+                    num_items = len(results_list)
+                    first_res = results_list[0]                               
+                    e_val = first_res.get('entry', '')
+                    f_type = first_res.get('feature_type', '')
+                    t_val = first_res.get('target', '')
+                    q_val = first_res.get('qualifier', '')
+                    
+                    if is_cross:
+                        label = "submission" if num_items == 1 else "submissions"
+                        count_str = f"{num_items} {label}"
+                    elif e_val == "ALL" or t_val == "file":
+                        label = "file" if num_items == 1 else "files"
+                        count_str = f"{num_items} {label}"
+                    elif t_val == "sequence" or f_type == "sequence":
+                        label = "sequence" if num_items == 1 else "sequences"
+                        count_str = f"{num_items} {label}"
+                    elif t_val == "file/format":
+                        parts = []
+                        parts.append(f"{num_items} line" if num_items == 1 else f"{num_items} lines")
+                        count_str = ", ".join(parts)
+                    else:
+                        unique_entries = len(set(r.get('entry') for r in results_list if r.get('entry') and r.get('entry') != "ALL"))
+                        unique_features = len(set((r.get('entry'), r.get('line_number')) for r in results_list if r.get('line_number') is not None))
+                        
+                        parts = []
+                        if unique_entries > 0:
+                            parts.append(f"{unique_entries} entry" if unique_entries == 1 else f"{unique_entries} entries")
+                         
+                        feat_count = unique_features if unique_features > 0 else num_items
+                        parts.append(f"{feat_count} feature" if feat_count == 1 else f"{feat_count} features")
+                        
+                        if q_val:
+                            parts.append(f"{num_items} qualifier" if num_items == 1 else f"{num_items} qualifiers")
+                        elif num_items > feat_count:
+                            rule_id = first_res.get('rule', '')
+                            if rule_id in ("AXS6030", "AXS6060"):
+                                parts.append(f"{num_items} codons")
+                            else:
+                                parts.append(f"{num_items} occurrences")
+                            
+                        count_str = ", ".join(parts)
+
+                    msg = summary_messages[key]
+                    if num_items > 1:
+                        msg = re.sub(r"\(Found:\s*(.*?)\)", r"(Example: \1)", msg)
+
+                    sum_text += f"{key}: {count_str}: {msg}\n"
+                sum_text += "\n"
+
+        with open(sum_path, "a", encoding="utf-8") as fs:
+            fs.write(sum_text)
             
-            if filename in ["ALL", "ALL_SETS", "Submission (Cross-File)"]:
-                res['base_group'] = "Submission (Cross-File)"
-            else:
-                base_name = Path(filename).stem
-                if base_name.endswith('.ann'):
-                    base_name = Path(base_name).stem
-                res['base_group'] = base_name
-                base_set.add(base_name)
-
-        detailed_lines = defaultdict(list)
-        # 件数(int)ではなく、結果の辞書をそのまま保持する
-        summary_results = defaultdict(lambda: defaultdict(list))
-        summary_messages = defaultdict(dict)
-
-        for res in all_results:
-            group_name = res['base_group']
-            
-            # details出力用にエラーレベルとフォーマット済み文字列をセットで保持する
-            detailed_line = self._format_detail_line(res)
-            if res.get('is_cleanup'):
-                level = "AUTO-CLEANUP"
-            else:
-                level = res.get('level', 'WARNING').upper()
-            detailed_lines[group_name].append((level, detailed_line))
-
-            summary_key = self._format_summary_key(res)
-            # keyごとに発生したエラー(res)をリストに蓄積
-            summary_results[group_name][summary_key].append(res)
-            
-            if summary_key not in summary_messages[group_name]:
-                msg = res.get('message', '')
-                if res.get('line_number') is None and msg.startswith("Line "):
-                    msg = re.sub(r"^Line \d+:\s*", "", msg)
-                summary_messages[group_name][summary_key] = msg.split('\n')[0]
-
-        return {
-            'num_sets': len(base_set),
-            'detailed_lines': detailed_lines,
-            'summary_results': summary_results,
-            'summary_messages': summary_messages
-        }
+        if print_console:
+            print(sum_text, end="")
 
     def _format_detail_line(self, res):
         line_val = res.get('line_number')
@@ -84,7 +201,6 @@ class ValidationReporter:
                 line_val = line_match.group(1)
                 msg = line_match.group(2)
         
-        # 行番号がない場合の表記を [FILE] または [ENTRY] に変更
         if line_val:
             line_str = f"Line[{line_val}]"
         else:
@@ -92,7 +208,6 @@ class ValidationReporter:
             t_val = res.get('target', '')
             f_type = res.get('feature_type', '')
             
-            # ALL指定、ターゲットがfile/sequence系なら [FILE]、それ以外は [ENTRY]
             if e_val == "ALL" or t_val in ("file", "file/format", "sequence") or f_type == "sequence":
                 line_str = "[FILE]"
             else:
@@ -109,7 +224,7 @@ class ValidationReporter:
         if self.show_location and res.get('location'): parts.append(res.get('location'))
         parts.extend([res.get('qualifier', ''), line_str, msg])
 
-        return ":".join(p for p in parts if p != "")
+        return ":".join(str(p) for p in parts if p != "")
 
     def _format_summary_key(self, res):
         rule_id = res.get('rule', 'UNKNOWN')
@@ -123,175 +238,19 @@ class ValidationReporter:
         if feat: parts.append(feat)
         qual = res.get('qualifier', '')
         if qual: parts.append(qual)
-        return ":".join(parts)
+        return ":".join(str(p) for p in parts)
 
-    def _write_details(self, path, data):
-        num_sets = data['num_sets']
-        detailed_lines = data['detailed_lines']
-        
-        try:
-            with open(path, "w", encoding="utf-8") as f:
-                set_str = "1 file set" if num_sets == 1 else f"{num_sets} file sets"
-                f.write(f"\n=== Validation Details ({set_str}) ===\n")
-                
-                set_idx = 1
-                for gname in sorted(detailed_lines.keys()):
-                    if gname == "Submission (Cross-File)":
-                        f.write(f"\n{gname}\n")
-                    else:
-                        f.write(f"\n{set_idx}. {gname}\n")
-                        set_idx += 1
-                        
-                    level_groups = {"FATAL": [], "ERROR": [], "WARNING": [], "INFO": [], "AUTO-CLEANUP": []}
-                    for lvl, line in detailed_lines[gname]:
-                        if lvl not in level_groups:
-                            level_groups[lvl] = []
-                        level_groups[lvl].append(line)
-
-                    # 深刻度が高い順にセクションを作成し、左寄せ＆グループ間に空行を入れる
-                    is_first_group = True
-                    for level_name in ["FATAL", "ERROR", "WARNING", "INFO", "AUTO-CLEANUP"]:
-                        if level_groups.get(level_name):
-                            if not is_first_group:
-                                f.write("\n")  # グループ間の空行
-                            f.write(f"[ {level_name} ]\n")
-                            for line in sorted(level_groups[level_name]):
-                                f.write(f"{line}\n")
-                            is_first_group = False
-                            
-        except PermissionError:
-            import sys
-            print(f"[WARN] Permission denied: Cannot write to '{path}'.", file=sys.stderr)
-        except Exception as e:
-            import sys
-            print(f"[WARN] Cannot write to '{path}': {e}", file=sys.stderr)
-
-    def _write_summary(self, path, data, print_console):
-        num_sets = data['num_sets']
-        summary_results = data['summary_results']
-        summary_messages = data['summary_messages']
-        
-        file_obj = None
-        try:
-            file_obj = open(path, "w", encoding="utf-8")
-        except PermissionError:
-            import sys
-            print(f"[WARN] Permission denied: Cannot write to '{path}'. Outputting to console only.", file=sys.stderr)
-        except Exception as e:
-            import sys
-            print(f"[WARN] Cannot write to '{path}': {e}", file=sys.stderr)
-            
-        def write_out(text):
-            if print_console: print(text, end="")
-            if file_obj: file_obj.write(text)
-
-        try:
-            set_str = "1 file set" if num_sets == 1 else f"{num_sets} file sets"
-            write_out(f"\n=== Validation Summary ({set_str}) ===\n")
-            
-            set_idx = 1
-            for gname in sorted(summary_results.keys()):
-                if gname == "Submission (Cross-File)":
-                    write_out(f"\n{gname}\n")
-                else:
-                    write_out(f"\n{set_idx}. {gname}\n")
-                    set_idx += 1
-                    
-                # 重大度 (Severity level) でグループ化
-                level_groups = {"FATAL": [], "ERROR": [], "WARNING": [], "INFO": [], "AUTO-CLEANUP": []}
-                for key, results_list in summary_results[gname].items():
-                    first_res = results_list[0]
-                    if first_res.get('is_cleanup'):
-                        level = "AUTO-CLEANUP"
-                    else:
-                        level = first_res.get('level', 'WARNING').upper()
-                            
-                    if level not in level_groups:
-                        level_groups[level] = []
-                    level_groups[level].append((key, results_list))
-
-                # 深刻度が高い順にセクションを作成
-                for level_name in ["FATAL", "ERROR", "WARNING", "INFO", "AUTO-CLEANUP"]:
-                    if level_name in level_groups and level_groups[level_name]:
-                        write_out(f"[ {level_name} ]\n")
-                        
-                        for key, results_list in sorted(level_groups[level_name]):
-                            num_items = len(results_list)
-                            first_res = results_list[0]                               
-                            e_val = first_res.get('entry', '')
-                            f_type = first_res.get('feature_type', '')
-                            t_val = first_res.get('target', '')
-                            q_val = first_res.get('qualifier', '')
-                            
-                            # 1. 複数ファイル横断チェック (Submission レベル)
-                            if gname == "Submission (Cross-File)":
-                                label = "submission" if num_items == 1 else "submissions"
-                                count_str = f"{num_items} {label}"
-                            
-                            # 2. ファイル単位チェックの判定 (File レベル)
-                            elif e_val == "ALL" or t_val == "file":
-                                label = "file" if num_items == 1 else "files"
-                                count_str = f"{num_items} {label}"
-                            
-                            # 3. 配列(Sequence)自体のエラー (SEQルールなど)
-                            elif t_val == "sequence" or f_type == "sequence":
-                                label = "sequence" if num_items == 1 else "sequences"
-                                count_str = f"{num_items} {label}"
-
-                            # 4. file/format エラーの場合は純粋な「発生件数 (items)」を出す
-                            elif t_val == "file/format":
-                                parts = []
-                                parts.append(f"{num_items} line" if num_items == 1 else f"{num_items} lines")
-                                count_str = ", ".join(parts)
-                            
-                            # 5. 通常のエントリー / Feature / Qualifier の判定
-                            else:
-                                unique_entries = len(set(r.get('entry') for r in results_list if r.get('entry') and r.get('entry') != "ALL"))
-                                unique_features = len(set((r.get('entry'), r.get('line_number')) for r in results_list if r.get('line_number') is not None))
-                                
-                                parts = []
-                                if unique_entries > 0:
-                                    parts.append(f"{unique_entries} entry" if unique_entries == 1 else f"{unique_entries} entries")
-                                 
-                                feat_count = unique_features if unique_features > 0 else num_items
-                                parts.append(f"{feat_count} feature" if feat_count == 1 else f"{feat_count} features")
-                                
-                                if q_val:
-                                    parts.append(f"{num_items} qualifier" if num_items == 1 else f"{num_items} qualifiers")
-                                elif num_items > feat_count:
-                                    rule_id = first_res.get('rule', '')
-                                    if rule_id in ("AXS6030", "AXS6060"):
-                                        parts.append(f"{num_items} codons")
-                                    else:
-                                        parts.append(f"{num_items} occurrences")
-                                    
-                                count_str = ", ".join(parts)
-
-                            msg = summary_messages[gname][key]
-                            if num_items > 1:
-                                msg = re.sub(r"\(Found:\s*(.*?)\)", r"(Example: \1)", msg)
-
-                            write_out(f"{key}: {count_str}: {msg}\n")
-                        write_out("\n")
-                        
-        finally:
-            if file_obj:
-                file_obj.close()
-                                        
     def _write_empty_report(self, sum_path, det_path, print_console):
         empty_msg = "\n=== Validation Summary (0 file sets) ===\nNo errors found.\n"
-        
         try:
             with open(det_path, "w", encoding="utf-8") as f:
                 f.write("=== Validation Details (0 file sets) ===\nNo errors found.\n")
         except Exception:
             pass
-
         try:
             with open(sum_path, "w", encoding="utf-8") as f:
                 f.write(empty_msg)
         except Exception:
             pass
-
         if print_console:
             print(empty_msg, end="")
