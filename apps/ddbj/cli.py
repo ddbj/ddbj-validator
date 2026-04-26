@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import sys
-import re
 import argparse
 from pathlib import Path
 from dotenv import load_dotenv
@@ -60,20 +59,9 @@ def main():
 
     # --- 4. ディレクトリモードの処理 ---
     if dirs:
-        # 追加チェック2: 複数ディレクトリ時の NSUB 重複チェック
         if len(dirs) > 1:
-            nsubs = set()
-            for d in dirs:
-                match = re.search(r'(NSUB\d+)', str(d))
-                if not match:
-                    print(f"[ERROR] NSUB ID could not be extracted from directory path '{d}'. Processing aborted.", file=sys.stderr)
-                    sys.exit(1)
-                
-                nsub_id = match.group(1)
-                if nsub_id in nsubs:
-                    print(f"[ERROR] Duplicated NSUB ID '{nsub_id}' across directories. Processing aborted.", file=sys.stderr)
-                    sys.exit(1)
-                nsubs.add(nsub_id)
+            print("[ERROR] Cannot specify multiple directories. Please specify only one directory.", file=sys.stderr)
+            sys.exit(1)
 
         target_dirs_for_report = dirs
         for d in dirs:
@@ -93,8 +81,7 @@ def main():
             pairs.extend(sub_pairs)
                             
         set_str = "1 file set" if len(pairs) == 1 else f"{len(pairs)} file sets"
-        dir_str = "1 directory" if len(dirs) == 1 else f"{len(dirs)} directories"
-        print(f"Found {set_str} in {dir_str}.")
+        print(f"Found {set_str} in 1 directory.")
 
     # --- 5. ファイルモードの処理 ---
     elif files:
@@ -158,68 +145,18 @@ def main():
     # 1. 検証の実行と Autofix 提案の収集
     all_results = pipeline.run_validation()
     
-    # 2. 全体統合レポートの生成 (実行したカレントディレクトリに出力)
-    combined_reporter = ValidationReporter(out_dir=".")
-    comb_sum_path, comb_det_path = combined_reporter.generate_report(all_results, print_console=True)
+    # 2. レポートの生成 (指定されたターゲットディレクトリに直接出力)
+    target_dir = target_dirs_for_report[0] if target_dirs_for_report else Path(report_out_dir)
+    reporter = ValidationReporter(out_dir=target_dir)
+    reporter.generate_report(all_results, print_console=True)
     
     # 3. Autofix の承認と適用
     pipeline.run_autofix()
     
-    # 4. 各ディレクトリへの個別レポート配分
-    import shutil
-    
-    # 複数ディレクトリ（複数NSUB）指定時のみ combined を出力するためのフラグ
-    output_combined = len(target_dirs_for_report) > 1
-    
-    for d_path in target_dirs_for_report:
-        d_abs = d_path.resolve()
-        
-        sub_results = [
-            r for r in all_results 
-            if r.get('full_path') and Path(r['full_path']).resolve().is_relative_to(d_abs)
-        ]
-        
-        if sub_results:
-            indiv_reporter = ValidationReporter(out_dir=d_path)
-            indiv_reporter.generate_report(sub_results, print_console=False)
-            
-            # フラグが True のときだけ combined ファイルをコピー
-            if output_combined:
-                if comb_sum_path.exists():
-                    try:
-                        shutil.copy(comb_sum_path, d_path / "validation_report_summary_combined.txt")
-                    except Exception as e:
-                        print(f"[WARN] Cannot copy summary to {d_path}: {e}", file=sys.stderr)
-                if comb_det_path.exists():
-                    try:
-                        shutil.copy(comb_det_path, d_path / "validation_report_details_combined.txt")
-                    except Exception as e:
-                        print(f"[WARN] Cannot copy details to {d_path}: {e}", file=sys.stderr)
-    
-    # ========================================================
     # クリーンアップと終了メッセージ
-    # カレントディレクトリ指定時など、個別レポートと出力先が被っている場合は削除しない
-    # ========================================================
-    is_conflict = any(comb_sum_path.resolve() == (d / "validation_report_summary.txt").resolve() for d in target_dirs_for_report)
-
-    if not is_conflict:
-        try:
-            if comb_sum_path.exists(): comb_sum_path.unlink()
-            if comb_det_path.exists(): comb_det_path.unlink()
-        except Exception:
-            pass
-
-    dist_dir_label = "directory" if len(target_dirs_for_report) == 1 else "directories"
-    print(f"\n\n[ All reports successfully generated to {len(target_dirs_for_report)} {dist_dir_label} ]")
-    for d in target_dirs_for_report:
-        print(f"{d}")
-        print(f"  validation_report_summary.txt (Individual)")
-        print(f"  validation_report_details.txt (Individual)")
-        # メッセージの出力もフラグで制御
-        if output_combined:
-            print(f"  validation_report_summary_combined.txt (Combined)")
-            print(f"  validation_report_details_combined.txt (Combined)")
-        print() # ディレクトリごとの空行
+    print(f"\n\n[ All reports successfully generated to {target_dir} ]")
+    print(f"  validation_report_summary.txt")
+    print(f"  validation_report_details.txt\n")
 
 if __name__ == "__main__":
     main()

@@ -1,11 +1,10 @@
-import re
 from pathlib import Path
 from collections import defaultdict
 
 def review_and_approve_proposals(all_proposals, force_fix=False):
     """
-    全提案を集約し、target (修正対象項目) ごとにファイル横断のサマリーを表示。
-    出力と同じ形式で各ディレクトリにサマリーファイルを保存し、一括または個別の承認を求める。
+    全提案を集約し、target (修正対象項目) ごとにサマリーを表示。
+    出力と同じ形式でディレクトリにサマリーファイルを保存し、一括または個別の承認を求める。
     """
     if not all_proposals:
         return []
@@ -16,14 +15,12 @@ def review_and_approve_proposals(all_proposals, force_fix=False):
     for p in all_proposals:
         path_obj = Path(p["ann_path"])
         target_dirs.add(path_obj.parent)
-        match = re.search(r'(NSUB\d+)', str(path_obj))
-        nsub_id = match.group(1) if match else "Unknown_NSUB"
         
         base_group = path_obj.stem
         if base_group.endswith('.ann'):
             base_group = Path(base_group).stem
             
-        file_set = f"{nsub_id} / {base_group}" if nsub_id != "Unknown_NSUB" else base_group
+        file_set = base_group
         
         target = p.get("target", "unknown")
         rule_id = p.get("rule", "UNKNOWN_RULE")
@@ -31,7 +28,6 @@ def review_and_approve_proposals(all_proposals, force_fix=False):
         
         change_key = (str(p.get("old", "")), str(p.get("new", "")), source_db)
         
-        # 🟢 古いコード（if target not in summary: 等）を消し、直接代入する
         target_dict = summary[target][file_set][change_key]
         target_dict["target_level"] = p.get("target_level", "qualifier")
         target_dict["positions"].extend(p.get("positions", []))
@@ -81,19 +77,16 @@ def review_and_approve_proposals(all_proposals, force_fix=False):
     summary_text = "\n".join(out_lines)
     print(summary_text)
 
-    # --- 対象の各ディレクトリに標準出力と同じ形式のログを書き出す ---
+    # --- 対象のディレクトリに標準出力と同じ形式のログを書き出す ---
     summary_filename = "autofix_confirmation_summary.txt"
     for d in target_dirs:
         summary_file = d / summary_filename
         with open(summary_file, "w", encoding="utf-8") as f:
             f.write(summary_text.lstrip() + "\n")
             
-    if len(target_dirs) == 1:
+    if target_dirs:
         dir_path = str(list(target_dirs)[0] / summary_filename)
         print(f"\n  => Confirmation summary saved: {dir_path}")
-    else:
-        dir_paths = ", ".join(str(d / summary_filename) for d in target_dirs)
-        print(f"\n  => Confirmation summary saved to {len(target_dirs)} directories: {dir_paths}")
 
     if force_fix:
         print("  => Applying all auto-fixes (--force-fix)")
