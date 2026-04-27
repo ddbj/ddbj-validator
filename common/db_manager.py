@@ -17,14 +17,13 @@ class DatabaseManager:
         if self._conns[key] is None:
             if is_tax:
                 self._conns[key] = psycopg2.connect(
-                    host=os.environ.get("PGHOST"),
-                    port=os.environ.get("PGPORT"),
-                    dbname=os.environ.get("PGDATABASE"),
-                    user=os.environ.get("USER"),
-                    password=os.environ.get("USER")
+                    host=os.environ.get("DB_HOST"),
+                    port=os.environ.get("DDBJ_DB_PORT"),
+                    dbname=os.environ.get("DDBJ_DB_NAME"),
+                    user=os.environ.get("DDBJ_DB_USER"),
+                    password=os.environ.get("DDBJ_DB_PASS")
                 )
             else:
-                # メタデータDBは共通の接続先 (.env の設定値をそのまま使用)
                 self._conns[key] = psycopg2.connect(
                     host=os.environ.get("DB_HOST"),
                     port=os.environ.get("DB_PORT"),

@@ -581,10 +581,8 @@ class ValidatorPipeline:
         all_interactive_proposals = []
         auto_updates_by_file = defaultdict(list)
         updq_data = defaultdict(list)
-        
+                
         # 4. 個別ファイルの検証 (並列処理)
-        print("\nRunning validations in parallel...")
-        
         self.tmp_dir = Path(self.report_out_dir) / ".val_tmp"
         self.tmp_dir.mkdir(parents=True, exist_ok=True)
         
@@ -594,7 +592,13 @@ class ValidatorPipeline:
             
         jsonl_paths = []
         with ProcessPoolExecutor() as executor:
-            for output in executor.map(_validate_single_file_set, tasks):
+            # executor._max_workers で実際の並列プロセス数を取得
+            actual_workers = min(executor._max_workers, len(tasks))
+            p_label = "process" if actual_workers == 1 else "processes"
+            f_label = "file set" if len(self.pairs) == 1 else "file sets"
+            print(f"\nRunning validations for {len(self.pairs)} {f_label} in {actual_workers} {p_label}...")
+            
+            for output in executor.map(_validate_single_file_set, tasks):                
                 jsonl_paths.append(output["jsonl_path"])
                 self.all_skipped_autofixes.extend(output["skipped_autofixes"])
                 

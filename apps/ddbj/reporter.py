@@ -7,7 +7,6 @@ class ValidationReporter:
     def __init__(self, out_dir):
         self.out_dir = Path(out_dir) if out_dir else Path(".")
         self.show_location = False  
-        self.max_details_per_rule = 50  # ★ 同一ルールのDetails出力上限
 
     def generate_report(self, jsonl_paths, print_console=True):
         """レポート出力の統括メソッド (JSONLストリーミング対応版)"""
@@ -40,7 +39,6 @@ class ValidationReporter:
         detailed_lines = {"FATAL": [], "ERROR": [], "WARNING": [], "INFO": [], "AUTO-CLEANUP": []}
         summary_stats = {} # key -> {"res": res, "items": []}
         summary_messages = {} # key -> msg
-        detail_counts = defaultdict(int) # ★ 出力件数カウント用
 
         base_group = ""
 
@@ -72,31 +70,19 @@ class ValidationReporter:
                             
                         summary_stats[summary_key]["items"].append(res)
 
-                        # 2. Details の構築 (上限キャップ付き)
+                        # 2. Details の構築
                         level = "AUTO-CLEANUP" if res.get('is_cleanup') else res.get('level', 'WARNING').upper()
                         if level not in detailed_lines:
                             detailed_lines[level] = []
 
-                        detail_counts[summary_key] += 1
-                        if detail_counts[summary_key] <= self.max_details_per_rule:
-                            detailed_line = self._format_detail_line(res)
-                            detailed_lines[level].append(detailed_line)
+                        detailed_line = self._format_detail_line(res)
+                        detailed_lines[level].append(detailed_line)
 
         except FileNotFoundError:
             return
 
         if not base_group:
             return
-
-        for key, count in detail_counts.items():
-            if count > self.max_details_per_rule:
-                first_res = summary_stats[key]["res"]
-                level = "AUTO-CLEANUP" if first_res.get('is_cleanup') else first_res.get('level', 'WARNING').upper()
-                rule_id = first_res.get('rule', 'UNKNOWN')
-                
-                # ご要望のフォーマットで追加 (例: ... ANN1210 further logs were omitted (50/39163))
-                omit_msg = f"... {rule_id}: {self.max_details_per_rule}/{count} messages shown. Further logs omitted."
-                detailed_lines[level].append(omit_msg)
 
         # ==========================================
         # Details の書き出し (逐次 Append)
@@ -111,8 +97,8 @@ class ValidationReporter:
                     if not is_first_group:
                         fd.write("\n")
                     fd.write(f"[ {level_name} ]\n")
-                    # 省略メッセージが最後に来るようにソート条件を維持
-                    for line in sorted(detailed_lines[level_name], key=lambda x: (x.startswith("..."), x)):
+                    # ソートして全件出力
+                    for line in sorted(detailed_lines[level_name]):
                         fd.write(f"{line}\n")
                     is_first_group = False
 
@@ -138,6 +124,7 @@ class ValidationReporter:
                 for key, results_list in sorted(level_groups[level_name]):
                     num_items = len(results_list)
                     first_res = results_list[0]                               
+            
                     e_val = first_res.get('entry', '')
                     f_type = first_res.get('feature_type', '')
                     t_val = first_res.get('target', '')
