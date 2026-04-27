@@ -61,7 +61,17 @@ def propose_qualifiers_updates(records, bs_data, ann_path):
                         bs_val = bs_values.pop()
                         source_samd = bs_samd_map[bs_val] 
                         
-                        if ann_val != bs_val:
+                        # 基本は完全一致チェック
+                        is_mismatch = (ann_val != bs_val)
+                        
+                        # geo_loc_name の場合は「:」より前の国名部分のみで一致判定を行う
+                        if attr == "geo_loc_name" and is_mismatch:
+                            ann_country = ann_val.split(":")[0].strip()
+                            bs_country = bs_val.split(":")[0].strip()
+                            if ann_country == bs_country:
+                                is_mismatch = False
+
+                        if is_mismatch:
                             msg = f"The '{attr}' qualifier value does not match the BioSample attribute value. (ann: '{ann_val}', BioSample: '{bs_val}')"
                             validation_warnings.append({
                                 "file": Path(ann_path).name,

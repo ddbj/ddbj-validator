@@ -52,7 +52,7 @@ class ValidationReporter:
                         if not base_group:
                             filename = str(res.get('file', ''))
                             if is_cross or filename in ["ALL", "ALL_SETS", "Submission (Cross-File)"]:
-                                base_group = "Submission (Cross-File)"
+                                base_group = "Submission (across files)"
                             else:
                                 base_group = Path(filename).stem
                                 if base_group.endswith('.ann'):
@@ -88,7 +88,7 @@ class ValidationReporter:
         # Details の書き出し (逐次 Append)
         # ==========================================
         with open(det_path, "a", encoding="utf-8") as fd:
-            header = f"\n{base_group}\n" if is_cross else f"\n{set_idx}. {base_group}\n"
+            header = f"\n0. {base_group}\n" if is_cross else f"\n{set_idx}. {base_group}\n"
             fd.write(header)
             
             is_first_group = True
@@ -97,7 +97,6 @@ class ValidationReporter:
                     if not is_first_group:
                         fd.write("\n")
                     fd.write(f"[ {level_name} ]\n")
-                    # ソートして全件出力
                     for line in sorted(detailed_lines[level_name]):
                         fd.write(f"{line}\n")
                     is_first_group = False
@@ -106,7 +105,7 @@ class ValidationReporter:
         # Summary の書き出し (逐次 Append)
         # ==========================================
         sum_text = ""
-        header = f"\n{base_group}\n" if is_cross else f"\n{set_idx}. {base_group}\n"
+        header = f"\n0. {base_group}\n" if is_cross else f"\n{set_idx}. {base_group}\n"
         sum_text += header
         
         level_groups = {"FATAL": [], "ERROR": [], "WARNING": [], "INFO": [], "AUTO-CLEANUP": []}
@@ -117,8 +116,12 @@ class ValidationReporter:
                 level_groups[level] = []
             level_groups[level].append((key, stats["items"]))
 
+        is_first_sum_group = True
         for level_name in ["FATAL", "ERROR", "WARNING", "INFO", "AUTO-CLEANUP"]:
             if level_groups.get(level_name):
+                # エラーレベルが変わる時（WARNING -> ERRORなど）だけ空行を入れる
+                if not is_first_sum_group:
+                    sum_text += "\n"
                 sum_text += f"[ {level_name} ]\n"
                 
                 for key, results_list in sorted(level_groups[level_name]):
@@ -170,14 +173,15 @@ class ValidationReporter:
                         msg = re.sub(r"\(Found:\s*(.*?)\)", r"(Example: \1)", msg)
 
                     sum_text += f"{key}: {count_str}: {msg}\n"
-                sum_text += "\n"
+                
+                is_first_sum_group = False
 
         with open(sum_path, "a", encoding="utf-8") as fs:
             fs.write(sum_text)
             
         if print_console:
-            print(sum_text, end="")
-
+            print(sum_text)
+            
     def _format_detail_line(self, res):
         line_val = res.get('line_number')
         msg = res.get('message', '')

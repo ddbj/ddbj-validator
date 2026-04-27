@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import sys
 import argparse
 from pathlib import Path
@@ -19,11 +20,23 @@ def main():
     parser.add_argument("-d", "--dir", action="append", help="Target directory (deprecated, use positional arguments)")
     parser.add_argument("-a", "--ann", help="Annotation file (deprecated, use positional arguments)")
     parser.add_argument("-s", "--seq", help="Sequence file (deprecated, use positional arguments)")
-    
+    parser.add_argument("-j", "--jobs", type=int, default=None, help="Number of parallel processes (default: up to 16. Use 0 to use all available cores)")
     parser.add_argument("-w", "--web", action="store_true", help="NSSS (web submission) mode")
     parser.add_argument("-f", "--force-fix", action="store_true", help="Automatically apply all auto-fixes without prompting")
     args = parser.parse_args()
-        
+
+    # --- 0. 並列数の決定 ---  #
+    cpu_count = os.cpu_count() or 1
+    if args.jobs is None:
+        # 未指定: 最大16までに制限
+        jobs = min(cpu_count, 16)
+    elif args.jobs <= 0:
+        # -j 0 指定: 制限なしでありったけのコアを使う
+        jobs = cpu_count
+    else:
+        # 明示的な指定 (例: -j 4)
+        jobs = args.jobs
+                
     # --- 1. ターゲットの収集とデフォルト設定 ---
     raw_targets = list(args.targets)
     if args.dir: raw_targets.extend(args.dir)
@@ -140,7 +153,7 @@ def main():
         target_dirs_for_report = list(dict.fromkeys(target_dirs_for_report))
 
     # --- パイプラインの実行とレポート出力 --- #
-    pipeline = ValidatorPipeline(pairs, report_out_dir, args.web, args.force_fix)
+    pipeline = ValidatorPipeline(pairs, report_out_dir, args.web, args.force_fix, jobs)
     
     try:
         # 1. 検証の実行と Autofix 提案の収集 (戻り値はメモリ配列ではなく JSONL のパスリスト)

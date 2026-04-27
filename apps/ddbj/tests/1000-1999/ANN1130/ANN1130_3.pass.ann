@@ -1,0 +1,51 @@
+COMMON	DBLINK		project	PRJDB36006
+			biosample	SAMD00000328
+			sequence read archive	DRR726430
+	SUBMITTER		ab_name	Kubomura,A.
+			ab_name	Lee,K.
+			ab_name	Iyoda,S.
+			ab_name	Akeda,Y.
+			contact	Akiko Kubomura
+			email	kubomura@niid.go.jp
+			institute	National Institute of Infectious Diseases
+			department	Bacteriology I
+			country	Japan
+			state	Tokyo
+			city	shinjuku-ku
+			street	Toyama 1-23-1
+			zip	162-8640
+	REFERENCE		title	Analysis of CFA/III-positive Escherichia coli
+			ab_name	Kubomura,A.
+			ab_name	Lee,K.
+			ab_name	Iyoda,S.
+			ab_name	Akeda,Y.
+			status	Unpublished
+			year	2025
+	COMMENT		line	Annotated by DFAST https://dfast.ddbj.nig.ac.jp/
+	ST_COMMENT		tagset_id	Genome-Assembly-Data
+			Assembly Method	Hybracter v. 0.11.0
+			Genome Coverage	117x
+			Sequencing Technology	Illumina MiSeq; Nanopore MinION
+chromosome	source	1..4924793	organism	Escherichia coli
+			strain	MTB313
+			mol_type	genomic DNA
+			ff_definition	@@[organism]@@ @@[strain]@@ DNA, complete genome
+			geo_loc_name	Japan
+			collection_date	2011
+			host	Homo sapiens
+			serovar	OUT:H18
+	TOPOLOGY		circular
+	CDS	336..2798	product	aspartokinase I
+			transl_table	11
+			codon_start	1
+			locus_tag	JNE25001_00010
+			gene	thrA
+			inference	COORDINATES:ab initio prediction:MetaGeneAnnotator
+			inference	similar to AA sequence:INSD:AAN78503.1
+	CDS	2800..3732	product	homoserine kinase
+			transl_table	11
+			codon_start	1
+			locus_tag	JNE25001_00020
+			gene	thrB
+			inference	COORDINATES:ab initio prediction:MetaGeneAnnotator
+			inference	similar to AA sequence:INSD:AAC73114.1

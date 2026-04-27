@@ -73,7 +73,7 @@ def parse_details_report(report_path):
         for line in f:
             line = line.strip()
             
-            file_match = re.match(r'^\d+\.\s+(\S+)', line)
+            file_match = re.match(r'^\d+\.\s+(.+)', line)
             if file_match:
                 current_file = file_match.group(1).replace('.ann', '').replace('.fasta', '')
                 results[current_file] = set()
@@ -242,7 +242,10 @@ def run_e2e_tests(target_rule_id=None):
         for ann_path in target_dir.glob("*.ann"):
             filename = ann_path.name
             file_stem = ann_path.stem 
-            
+
+            if file_stem.endswith("_sub"):
+                continue
+                            
             parts = filename.split('.')
             is_file_level = len(parts) >= 3 and parts[-2] in ["pass", "fail"]
             is_entries_level = "entries" in parts
@@ -587,7 +590,45 @@ def run_e2e_tests(target_rule_id=None):
                             print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name_trans}: {result_msg}")
                             errors.append(f"{target_dir.name}/{test_name_trans} ({result_msg})")
                             mismatched_count += 1
-                                                        
+
+        # =========================================================
+        # --- 5. Submission (across files) レベルのチェック ---
+        # =========================================================
+        submission_group = "Submission (across files)"
+        actual_cross_rules = triggered_rules_by_file.get(submission_group, set())
+        
+        # ★ 修正: ANN2520 をクロスファイルルールに追加
+        cross_target_rules = [r for r in target_dir.name.split('-') if r in ["ANN0120", "ANN2520"]]
+        
+        for crule in cross_target_rules:
+            if target_rule_id and crule not in target_rules_set and target_dir.name != target_rule_id:
+                continue
+                
+            # ★ 修正: ディレクトリ内に "fail" または "_sub" を含むファイルがあれば発火を期待する
+            has_fails = any("fail" in p.name or "_sub" in p.name for p in target_dir.glob("*.ann"))
+            expected_result = "fail" if has_fails else "pass"
+            rule_triggered = crule in actual_cross_rules
+            
+            test_name = f"{submission_group} (Rule: {crule})"
+            
+            if expected_result == "fail":
+                if not rule_triggered:
+                    print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name}: Expected FAIL, but rule did NOT trigger.")
+                    errors.append(f"{target_dir.name}/{test_name}")
+                    mismatched_count += 1
+                else:
+                    print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name}")
+                    passed_count += 1
+            elif expected_result == "pass":
+                if rule_triggered:
+                    print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name}: Expected PASS, but rule triggered.")
+                    errors.append(f"{target_dir.name}/{test_name}")
+                    mismatched_count += 1
+                else:
+                    print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name}")
+                    passed_count += 1
+                    
+
     print("\n" + "="*50)
     print(f"E2E Test Summary: {Colors.OKGREEN}{passed_count} Matched{Colors.ENDC}, {Colors.FAILRED}{mismatched_count} Mismatched{Colors.ENDC}")
     if errors:

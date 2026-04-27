@@ -455,11 +455,12 @@ def fast_copy_and_fix_fasta(fasta_content, dst_fasta_path):
 
 
 class ValidatorPipeline:
-    def __init__(self, pairs, report_out_dir, is_web_mode, force_fix):
+    def __init__(self, pairs, report_out_dir, is_web_mode, force_fix, jobs=1):
         self.pairs = pairs
         self.report_out_dir = report_out_dir
         self.is_web_mode = is_web_mode
         self.force_fix = force_fix
+        self.jobs = jobs
         
         self.all_interactive_proposals = []
         self.all_skipped_autofixes = []
@@ -475,7 +476,7 @@ class ValidatorPipeline:
         
         # 1. 高速並列スキャン
         print("\nScanning annotation files for DB queries...")
-        with ProcessPoolExecutor() as executor:
+        with ProcessPoolExecutor(max_workers=self.jobs) as executor:
             futures = [executor.submit(fast_extract_db_keys, ann, seq) for ann, seq in self.pairs]
             for future in futures:
                 res = future.result()
@@ -591,14 +592,16 @@ class ValidatorPipeline:
             tasks.append((ann_path, seq_path, context, tax_data, bs_data, self.is_web_mode, self.report_out_dir, str(self.tmp_dir)))
             
         jsonl_paths = []
-        with ProcessPoolExecutor() as executor:
-            # executor._max_workers で実際の並列プロセス数を取得
+        with ProcessPoolExecutor(max_workers=self.jobs) as executor:
             actual_workers = min(executor._max_workers, len(tasks))
-            p_label = "process" if actual_workers == 1 else "processes"
-            f_label = "file set" if len(self.pairs) == 1 else "file sets"
-            print(f"\nRunning validations for {len(self.pairs)} {f_label} in {actual_workers} {p_label}...")
+            num_sets = len(self.pairs)
             
-            for output in executor.map(_validate_single_file_set, tasks):                
+            p_label = "process" if actual_workers == 1 else "processes"
+            f_label = "file set" if num_sets == 1 else "file sets"
+            
+            print(f"\nRunning validations for {num_sets} {f_label} in {actual_workers} {p_label}...\n")
+            
+            for output in executor.map(_validate_single_file_set, tasks):
                 jsonl_paths.append(output["jsonl_path"])
                 self.all_skipped_autofixes.extend(output["skipped_autofixes"])
                 
@@ -724,7 +727,7 @@ class ValidatorPipeline:
                 
             autofix_tasks.append((ann_path, seq_path, file_updates, self.tax_data, self.cv_terms))
 
-        with ProcessPoolExecutor() as executor:
+        with ProcessPoolExecutor(max_workers=self.jobs) as executor:
             for msg in executor.map(_apply_autofix_worker, autofix_tasks):
                 print(msg)
                 
