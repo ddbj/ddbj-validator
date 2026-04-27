@@ -185,15 +185,14 @@ class Validator:
         ]
         
         for rule in available_rules:
-            if not ctx.is_curator_mode and getattr(rule, 'requires_rdb', False):
+            if ctx.is_offline and (getattr(rule, 'requires_rdb', False) or getattr(rule, 'requires_network', False)):
                 continue
             self.active_rules.append(rule)
 
         if ctx.ddbj_dict and ctx.ddbj_dict.get("features"):
             self.active_rules.append(ANN_DICT_VALIDATOR())
-
             
-        if ctx.dra_crosscheck_dict and ctx.dra_lib_meta:
+        if not ctx.is_offline and ctx.dra_crosscheck_dict and ctx.dra_lib_meta:
             self.active_rules.append(DRA_CROSSCHECK_VALIDATOR())
 
     # 引数に ann_lines=None を追加

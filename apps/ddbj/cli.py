@@ -23,6 +23,7 @@ def main():
     parser.add_argument("-j", "--jobs", type=int, default=None, help="Number of parallel processes (default: up to 16. Use 0 to use all available cores)")
     parser.add_argument("-w", "--web", action="store_true", help="NSSS (web submission) mode")
     parser.add_argument("-f", "--force-fix", action="store_true", help="Automatically apply all auto-fixes without prompting")
+    parser.add_argument("-o", "--offline", action="store_true", help="Run in offline mode (skip rules requiring DB connection)")
     args = parser.parse_args()
 
     # --- 0. 並列数の決定 ---  #
@@ -153,7 +154,7 @@ def main():
         target_dirs_for_report = list(dict.fromkeys(target_dirs_for_report))
 
     # --- パイプラインの実行とレポート出力 --- #
-    pipeline = ValidatorPipeline(pairs, report_out_dir, args.web, args.force_fix, jobs)
+    pipeline = ValidatorPipeline(pairs, report_out_dir, args.web, args.force_fix, jobs, args.offline)
     
     try:
         # 1. 検証の実行と Autofix 提案の収集 (戻り値はメモリ配列ではなく JSONL のパスリスト)

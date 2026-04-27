@@ -493,7 +493,8 @@ class DIVISION_QUALIFIER_VALIDATOR(BaseRule):
     description = "Validate unsupported qualifiers based on taxonomic division"
     requires_rdb = True  
     is_file_level = True
-
+    sub_rules = ["ANN1430", "ANN1440"]
+    
     QUAL_ERRORS = {
         "dev_stage": {"rule_id": "ANN1430", "msg": "The dev_stage and tissue_type qualifiers are not permitted for VRL, PHG, BCT, or ENV division entries."},
         "tissue_type": {"rule_id": "ANN1430", "msg": "The dev_stage and tissue_type qualifiers are not permitted for VRL, PHG, BCT, or ENV division entries."},

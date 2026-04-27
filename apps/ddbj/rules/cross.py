@@ -374,7 +374,10 @@ class DRA_CROSSCHECK_VALIDATOR(BaseRule):
     description = "Inconsistent SRA Experiment metadata"
     requires_rdb = True
     is_file_level = True
-
+    
+    # このマスタークラスを構成するルールIDのリスト (テスト判定用)
+    sub_rules = ["ANN0500", "ANN0510", "ANN0520", "ANN0530", "ANN0540", "ANN0550"]
+    
     def validate_file(self, records, context, ann_path=None, seq_path=None):
         results = []
         rules = context.dra_crosscheck_dict.get("external_db", [])

@@ -10,6 +10,7 @@ class ValidationContext:
     """
     # 外部DB・環境データ
     is_curator_mode: bool = True
+    is_offline: bool = False
     bp_psubs: dict = field(default_factory=dict)
     dra_refs: dict = field(default_factory=dict)
     drr_status: dict = field(default_factory=dict)
@@ -38,6 +39,7 @@ class ValidationContext:
     is_est: bool = False
     is_eukaryote: bool = False
     is_prokaryote: bool = False
+    is_web_mode: bool = False
     active_datatypes: set = field(default_factory=set)
     active_divisions: set = field(default_factory=set)
     
@@ -50,7 +52,7 @@ class ValidationContext:
         common_resources_dir = project_root / "common" / "resources"
         geo_dir = common_resources_dir / "geo"
         
-        # 1. DDBJ Dictionary の読み込み
+        # 1. DDBJ definition json の読み込み
         dict_path = ddbj_resources_dir / "definitions.json"        
         if not self.ddbj_dict:
             if dict_path.is_file():
@@ -72,7 +74,7 @@ class ValidationContext:
                 print(f"Warning: DRA crosscheck file not found at {crosscheck_path}")
                 self.dra_crosscheck_dict = {"crosscheck_rules": []}
                 
-        # 3. Institution Codes (coll_dump.txt) の読み込み (common/resources 参照へ変更)
+        # 3. Institution Codes (coll_dump.txt) の読み込み
         coll_path = common_resources_dir / "coll_dump.txt"
         if not self.institution_codes and coll_path.is_file():
             with open(coll_path, "r", encoding="utf-8") as f:
@@ -111,8 +113,6 @@ class ValidationContext:
         # 1. DATATYPE と DIVISION の解析 (COMMONレコードから取得)
         common_rec = records.get("COMMON")
         if common_rec:
-            # feature_result等でインデックス化されていれば features_by_type 等を使うと更に高速ですが
-            # ここでは安全に features をループしています
             for feat in common_rec.features:
                 if feat.type == "DATATYPE":
                     for dt in feat.qualifiers.get("type", []):

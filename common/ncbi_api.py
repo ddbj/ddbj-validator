@@ -7,9 +7,9 @@ NCBI_API_KEY = os.getenv("NCBI_API_KEY")
 
 # 対象とするNCBI/EBIのプレフィックス定義
 _TARGET_PATTERNS = {
-    "bioproject": re.compile(r"^PRJ(NA|EB)\d+", re.IGNORECASE),   
-    "biosample": re.compile(r"^SAM(N|E[A-Z]?)\d+", re.IGNORECASE),
-    "sra": re.compile(r"^[SE]RR\d+", re.IGNORECASE)
+    "bioproject": re.compile(r"^PRJ(NA|EA|EB)\d+"),   
+    "biosample": re.compile(r"^SAM(N|E[AG])\d+"),
+    "sra": re.compile(r"^[SE]RR\d+")
 }
 
 # データベースごとの正確なアクセッション検索タグ

@@ -25,15 +25,15 @@ def fast_extract_db_keys(ann_path, seq_path):
                 # 処理の高速化のため、まずは対象Qualifierの文字列が含まれるかin句で足切り
                 if '\tproject\t' in line:
                     if m := _PRJ_PATTERN.search(line):
-                        projects.add(m.group(1).strip().upper())
+                        projects.add(m.group(1).strip())
                         
                 elif '\tbiosample\t' in line:
                     if m := _SAM_PATTERN.search(line):
-                        samds.add(m.group(1).strip().upper())
+                        samds.add(m.group(1).strip())
                         
                 elif '\tsequence read archive\t' in line:
                     if m := _SRA_PATTERN.search(line):
-                        drrs.add(m.group(1).strip().upper())
+                        drrs.add(m.group(1).strip())
 
                 elif '\tjournal\t' in line:
                     if m := _JRN_PATTERN.search(line):
@@ -441,7 +441,7 @@ def fetch_drr_status(db_conn, drr_list):
     
     placeholders = ', '.join(['%s'] * len(drr_map))
     
-    # 修正: accession_entity (Run) 側から was_public, is_deleted を追加で取得する
+    # accession_entity (Run) 側から was_public, is_deleted を追加で取得する
     query = f"""
         SELECT 
             e.acc_no, 

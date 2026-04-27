@@ -713,6 +713,7 @@ class ANN0461(BaseRule):
     target = "DBLINK"
     description = "Accession is not publicly available in NCBI."
     requires_rdb = False
+    requires_network = True
     is_file_level = True
 
     def validate_file(self, records, context):
@@ -2328,8 +2329,8 @@ class ANN2010(BaseRule):
             print(f"[WARN] Failed to read ANN for {self.rule_id} check: {e}")
 
         return results
-        
-                
+
+
 class ANN2030(BaseRule):
     rule_id = "ANN2030"
     alternate_id = "JP0123"

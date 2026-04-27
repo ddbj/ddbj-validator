@@ -5,6 +5,7 @@ class BaseRule:
     target = ""
     description = ""
     requires_rdb = False
+    requires_network = False
     is_file_level = False
     is_submission_level = False
 
