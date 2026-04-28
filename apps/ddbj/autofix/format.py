@@ -4,8 +4,8 @@ from Bio.SeqFeature import BeforePosition, AfterPosition
 from apps.ddbj.utils.features import get_features
 
 # --- 定数と正規表現 ---
-_VALID_METHOD_PATTERN = re.compile(r"^.*?v\.\S.*$")
-_FIX_METHOD_PATTERN = re.compile(r"^(.*?)\s*(?:v\.?|version|ver\.?)?\s*(\d.*)$", re.IGNORECASE)
+_VALID_METHOD_PATTERN = re.compile(r"^.+?\s+v\.\s+\S.*$", re.IGNORECASE)
+_FIX_METHOD_PATTERN = re.compile(r"^(.*?)(?:[\s;:,]*)(?:v\.?|version|ver\.?)?\s*([a-zA-Z]*\d.*)$", re.IGNORECASE)
 _FWD_SEQ_PATTERN = re.compile(r'(fwd_seq:\s*)([A-Za-z]+)')
 _REV_SEQ_PATTERN = re.compile(r'(rev_seq:\s*)([A-Za-z]+)')
 _COV_NUMERIC_PATTERN = re.compile(r'^(\d+(?:\.\d+)?)$')

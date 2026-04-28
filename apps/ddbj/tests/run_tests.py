@@ -378,6 +378,28 @@ def run_e2e_tests(target_rule_id=None, mode="online"):
                         print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name}")
                         passed_count += 1
 
+                # ★ 追加: "clean" (Auto-fix対象) の評価ロジック
+                elif tc_expected_result == "clean":
+                    is_fail_expected = "fail" in filename
+                    
+                    if is_fail_expected and not tc_rule_triggered:
+                        print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name}: Expected FAIL & Auto-fix, but rule did NOT trigger.")
+                        errors.append(f"{target_dir.name}/{test_name} (Rule did not trigger)")
+                        mismatched_count += 1
+                    elif not is_fail_expected and tc_rule_triggered:
+                        print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name}: Expected PASS, but rule triggered.")
+                        errors.append(f"{target_dir.name}/{test_name} (Expected PASS)")
+                        mismatched_count += 1
+                    else:
+                        fixed_file_path = target_dir / "fixed" / filename
+                        if not fixed_file_path.exists():
+                            print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name}: Expected fixed file is missing.")
+                            errors.append(f"{target_dir.name}/{test_name} (Fixed file missing)")
+                            mismatched_count += 1
+                        else:
+                            print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name} (Auto-fixed successfully)")
+                            passed_count += 1
+
             # --- 3. Autofix (ANN5270など) の確認 ---
             if target_dir.name == "ANN5270" or target_rule_id == "ANN5270" or "ANN5270" in file_rule_ids:
                 if any(tc["expected_result"] == "fail" for tc in test_cases):

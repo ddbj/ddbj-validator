@@ -4,6 +4,7 @@ import json
 import datetime
 from common.rules.base import BaseRule
 from apps.ddbj.rules.division_datatype import get_active_divisions
+from apps.ddbj.autofix.format import _VALID_METHOD_PATTERN, _FIX_METHOD_PATTERN
 from collections import defaultdict
 from apps.ddbj.utils.location import get_introns_from_join
 from common.db_taxonomy import get_expected_transl_table
@@ -972,21 +973,28 @@ class ANN0800(BaseRule):
             q_name = "Assembly Method"
             if q_name in feat.qualifiers:
                 for i, val in enumerate(feat.qualifiers[q_name]):
-                    val_str = str(val)
+                    val_str = str(val).strip()
                     
-                    if re.search(r'v\.(?=\S)', val_str):
-                        fixed_val = re.sub(r'v\.(?=\S)', 'v. ', val_str)
-                        
-                        msg = "Invalid Assembly Method version format."
+                    # 1. 共通の正規表現を使って厳格なフォーマットチェック
+                    if not _VALID_METHOD_PATTERN.match(val_str):
+                        msg = f"Invalid Assembly Method version format. (Found: '{val_str}')"
                         res = self.feature_result(record, feat, msg, level="warning", qualifier=q_name)
                         
-                        res["autofix"] = True
-                        res["old_value"] = val_str
-                        res["new_value"] = fixed_val
+                        # 2. 共通の正規表現を使ってAuto-fixの値を抽出
+                        m = _FIX_METHOD_PATTERN.match(val_str)
+                        if m:
+                            prog = m.group(1).strip()
+                            ver = m.group(2).strip()
+                            if prog and ver:
+                                res["autofix"] = True
+                                res["old_value"] = val_str
+                                res["new_value"] = f"{prog} v. {ver}"
+                                
                         results.append(res)
+                        
         return results
 
-
+        
 class ANN0810(BaseRule):
     rule_id = "ANN0810"
     target = "ST_COMMENT"
