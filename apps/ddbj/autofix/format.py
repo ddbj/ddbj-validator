@@ -5,7 +5,9 @@ from apps.ddbj.utils.features import get_features
 
 # --- 定数と正規表現 ---
 _VALID_METHOD_PATTERN = re.compile(r"^.+?\s+v\.\s+\S.*$", re.IGNORECASE)
-_FIX_METHOD_PATTERN = re.compile(r"^(.*?)(?:[\s;:,]*)(?:v\.?|version|ver\.?)?\s*([a-zA-Z]*\d.*)$", re.IGNORECASE)
+# ツール名と、数字から始まるバージョン文字列（ピリオド・ハイフン・英字含む）を抽出
+# 区切りとして「1つ以上の空白」または「v, ver, version（前後の空白許容）」を要求
+_FIX_METHOD_PATTERN = re.compile(r"^(.*?)(?:\s+|[\s]*(?:v\.?|version|ver\.?))[\s]*([0-9][\d\.a-zA-Z-]*)$", re.IGNORECASE)
 _FWD_SEQ_PATTERN = re.compile(r'(fwd_seq:\s*)([A-Za-z]+)')
 _REV_SEQ_PATTERN = re.compile(r'(rev_seq:\s*)([A-Za-z]+)')
 _COV_NUMERIC_PATTERN = re.compile(r'^(\d+(?:\.\d+)?)$')
@@ -77,36 +79,62 @@ def _propose_mapping_fixes(records, ann_path, target_qualifier, allowed_map, exi
                         })
     return proposals
 
+
 def propose_geo_loc_name_fixes(records, ann_path, allowed_values, allowed_missing_reporting_terms=None, existing_proposals=None):
     allowed_map = {v.lower(): v for v in allowed_values}
     missing_terms_map = {m.lower().replace(" ", ""): m.lower() for m in (allowed_missing_reporting_terms or [])}
     return _propose_mapping_fixes(records, ann_path, "geo_loc_name", allowed_map, existing_proposals, match_prefix=True, missing_terms_map=missing_terms_map, rule_id="ANN1250")
 
+
 def propose_culture_collection_fixes(records, ann_path, allowed_map, existing_proposals=None):
     return _propose_mapping_fixes(records, ann_path, "culture_collection", allowed_map, existing_proposals, match_prefix=True, rule_id="ANN1290")
+
 
 def propose_format_errors(records, ann_path):
     proposals = []
     
     for entry_id, record in records.items():
         for feature in get_features(record, "ST_COMMENT"):
+            
+            # --- Assembly Method の Autofix ---
             if "Assembly Method" in feature.qualifiers:
                 methods = feature.qualifiers["Assembly Method"]
                 for i, method in enumerate(methods):
-                    if not _VALID_METHOD_PATTERN.match(method):
-                        match = _FIX_METHOD_PATTERN.match(method)
-                        if match:
-                            software = match.group(1).strip()
-                            version = match.group(2).strip()
-                            suggested = f"{software} v. {version}"
-                            
+                    val_str = str(method).strip()
+                    parts = [p.strip() for p in val_str.split(";") if p.strip()]
+
+                    is_valid = True
+                    can_autofix = True
+                    fixed_parts = []
+
+                    for part in parts:
+                        if _VALID_METHOD_PATTERN.match(part):
+                            fixed_parts.append(part)
+                        else:
+                            is_valid = False
+                            match = _FIX_METHOD_PATTERN.match(part)
+                            if match:
+                                software = match.group(1).strip()
+                                version = match.group(2).strip()
+                                if software and version:
+                                    fixed_parts.append(f"{software} v. {version}")
+                                else:
+                                    can_autofix = False
+                                    fixed_parts.append(part)
+                            else:
+                                can_autofix = False
+                                fixed_parts.append(part)
+
+                    if not is_valid and can_autofix:
+                        suggested = "; ".join(fixed_parts)
+                        if suggested != val_str:
                             updates = [{
                                 "action": "update_qualifier",
                                 "entry": entry_id,
                                 "feature_type": feature.type,
                                 "feature_id": getattr(feature, 'line_number', id(feature)),
                                 "qualifier": "Assembly Method",
-                                "old_value": method,
+                                "old_value": val_str,
                                 "new_value": suggested
                             }]
 
@@ -115,12 +143,13 @@ def propose_format_errors(records, ann_path):
                                 "rule": "ANN0800",
                                 "target": "Assembly Method",
                                 "target_level": "field", 
-                                "old": method, "new": suggested, "entry": entry_id,
+                                "old": val_str, "new": suggested, "entry": entry_id,
                                 "positions": [{"entry": entry_id, "feature_id": getattr(feature, 'line_number', id(feature))}], 
                                 "source_db": "",
                                 "updates": updates
                             })
-              
+            
+            # --- Genome Coverage の Autofix (既存のまま) ---
             if "Genome Coverage" in feature.qualifiers:
                 coverages = feature.qualifiers["Genome Coverage"]
                 for i, cov in enumerate(coverages):

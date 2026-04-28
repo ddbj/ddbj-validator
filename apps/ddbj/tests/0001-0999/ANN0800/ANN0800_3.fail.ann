@@ -19,7 +19,7 @@ COMMON	SUBMITTER		ab_name	Mishima,H.
 	KEYWORD		keyword	TSA
 			keyword	Transcriptome Shotgun Assembly
 	ST_COMMENT		tagset_id	Assembly-Data
-			Assembly Method	Flye ver. 2.9.3-b1797
+			Assembly Method	metabat2 v.2.12.1; concoct 1.0.0; MaxBin 2.2.6
 			Assembly Name	Mouse100
 			Coverage	30x
 			Sequencing Technology	PacBio Revio

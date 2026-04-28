@@ -975,25 +975,23 @@ class ANN0800(BaseRule):
                 for i, val in enumerate(feat.qualifiers[q_name]):
                     val_str = str(val).strip()
                     
-                    # 1. 共通の正規表現を使って厳格なフォーマットチェック
-                    if not _VALID_METHOD_PATTERN.match(val_str):
+                    parts = [p.strip() for p in val_str.split(";") if p.strip()]
+                    is_valid = True
+                    
+                    # 各ツールごとにフォーマットをチェック
+                    for part in parts:
+                        if not _VALID_METHOD_PATTERN.match(part):
+                            is_valid = False
+                            break
+                    
+                    # 1つでも不正なフォーマットがあれば警告を出す（Autofixはここで行わない）
+                    if not is_valid:
                         msg = f"Invalid Assembly Method version format. (Found: '{val_str}')"
                         res = self.feature_result(record, feat, msg, level="warning", qualifier=q_name)
-                        
-                        # 2. 共通の正規表現を使ってAuto-fixの値を抽出
-                        m = _FIX_METHOD_PATTERN.match(val_str)
-                        if m:
-                            prog = m.group(1).strip()
-                            ver = m.group(2).strip()
-                            if prog and ver:
-                                res["autofix"] = True
-                                res["old_value"] = val_str
-                                res["new_value"] = f"{prog} v. {ver}"
-                                
                         results.append(res)
                         
         return results
-
+        
         
 class ANN0810(BaseRule):
     rule_id = "ANN0810"
