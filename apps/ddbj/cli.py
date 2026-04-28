@@ -13,9 +13,11 @@ from apps.ddbj.reporter import ValidationReporter
 load_dotenv()
 
 def main():
-    parser = argparse.ArgumentParser(description="DDBJ MSS Validator")
+    parser = argparse.ArgumentParser(description="DDBJ Validator")
+    
     # 位置引数（ターゲット）を追加。0個以上の引数を受け付ける
     parser.add_argument("targets", nargs="*", help="Target directories or files (default: current directory)")
+    
     # 既存のフラグも後方互換性のために残す
     parser.add_argument("-d", "--dir", action="append", help="Target directory (deprecated, use positional arguments)")
     parser.add_argument("-a", "--ann", help="Annotation file (deprecated, use positional arguments)")
@@ -23,9 +25,38 @@ def main():
     parser.add_argument("-j", "--jobs", type=int, default=None, help="Number of parallel processes (default: up to 16. Use 0 to use all available cores)")
     parser.add_argument("-w", "--web", action="store_true", help="NSSS (web submission) mode")
     parser.add_argument("-f", "--force-fix", action="store_true", help="Automatically apply all auto-fixes without prompting")
-    parser.add_argument("-o", "--offline", action="store_true", help="Run in offline mode (skip rules requiring DB connection)")
+    
+    # --- ユーザー向けメインオプション ---
+    parser.add_argument("-l", "--local", action="store_true", help="Run in completely local mode (Skip both internal DB and NCBI API)")
+    parser.add_argument("-n", "--ncbi-api", action="store_true", help="Run with public NCBI API (Skip internal DB, but use NCBI API)")
+    
+    # --- 開発者向け個別制御オプション ---
+    parser.add_argument("--skip-db", action="store_true", help="Skip internal DB queries")
+    parser.add_argument("--skip-ncbi", action="store_true", help="Skip NCBI API queries")
+    
     args = parser.parse_args()
 
+    # --- オプションの論理解決 ---
+    skip_db = False
+    skip_ncbi = False
+
+    # 1. ローカルモードの適用 (-l)
+    if args.local:
+        skip_db = True
+        skip_ncbi = True
+
+    # 2. NCBI APIモードの適用 (-n)
+    # (-l と同時に指定された場合、NCBIをスキップするという設定を上書きしてONにする)
+    if args.ncbi_api:
+        skip_db = True
+        skip_ncbi = False
+
+    # 3. 開発者向け個別指定オプションの適用 (さらに上書き)
+    if args.skip_db:
+        skip_db = True
+    if args.skip_ncbi:
+        skip_ncbi = True
+        
     # --- 0. 並列数の決定 ---  #
     cpu_count = os.cpu_count() or 1
     if args.jobs is None:
@@ -154,7 +185,11 @@ def main():
         target_dirs_for_report = list(dict.fromkeys(target_dirs_for_report))
 
     # --- パイプラインの実行とレポート出力 --- #
-    pipeline = ValidatorPipeline(pairs, report_out_dir, args.web, args.force_fix, jobs, args.offline)
+    # ★ 解決済みの skip_db, skip_ncbi フラグを渡す
+    pipeline = ValidatorPipeline(
+        pairs, report_out_dir, args.web, args.force_fix, jobs, 
+        skip_db=skip_db, skip_ncbi=skip_ncbi
+    )
     
     try:
         # 1. 検証の実行と Autofix 提案の収集 (戻り値はメモリ配列ではなく JSONL のパスリスト)

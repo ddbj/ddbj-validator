@@ -21,9 +21,9 @@ except ImportError:
     HAS_BIOPYTHON = False
 
 # ==============================================================================
-# オフライン時にスキップされるべきルールの動的取得
+# LOCAL時にスキップされるべきルールの動的取得
 # ==============================================================================
-def get_offline_skipped_rules():
+def get_local_skipped_rules():
     """
     Validatorを初期化して、requires_rdb=True または requires_network=True
     が設定されているルールと、そのサブルールをすべて抽出してセットで返す。
@@ -31,7 +31,7 @@ def get_offline_skipped_rules():
     try:
         from apps.ddbj.validator import Validator
         from apps.ddbj.context import ValidationContext
-        val = Validator(ValidationContext(is_offline=False))
+        val = Validator(ValidationContext(skip_db=False, skip_ncbi=False))
         skipped_rules = set()
         for r in val.active_rules:
             if getattr(r, 'requires_rdb', False) or getattr(r, 'requires_network', False):
@@ -41,7 +41,7 @@ def get_offline_skipped_rules():
                     skipped_rules.update(r.sub_rules)
         return skipped_rules
     except Exception as e:
-        print(f"Warning: Failed to fetch offline skipped rules: {e}")
+        print(f"Warning: Failed to fetch local skipped rules: {e}")
         return set()
 
 class Colors:
@@ -197,12 +197,12 @@ def compare_fasta(fasta_ddbj, fasta_tool, ignore_ids=None):
             error_msgs.extend(skipped_msgs)
         return False, " | ".join(error_msgs)
                         
-def run_e2e_tests(target_rule_id=None, is_offline=False):
+def run_e2e_tests(target_rule_id=None, is_local=False):
     if not HAS_BIOPYTHON:
         print(f"{Colors.WARNINGYEL}[WARNING] Biopython is not installed. 6000-series amino acid fasta comparisons will fail.{Colors.ENDC}\n")
 
-    # オフライン時にスキップされるべきルールの取得
-    offline_skipped_rules = get_offline_skipped_rules()
+    # LOCAL時にスキップされるべきルールの取得
+    local_skipped_rules = get_local_skipped_rules()
 
     validator_sh = project_root / "bsi-validator.sh"
 
@@ -227,7 +227,7 @@ def run_e2e_tests(target_rule_id=None, is_offline=False):
     mismatched_count = 0
     errors = []
     
-    # オフライン専用のスキップ集計
+    # LOCAL専用のスキップ集計
     skipped_count = 0
     not_skipped_errors = []
 
@@ -236,15 +236,15 @@ def run_e2e_tests(target_rule_id=None, is_offline=False):
 
     msg = f"\nStarting E2E Tests via Shell"
     if target_rule_id: msg += f" for Rule(s): {target_rule_id}"
-    if is_offline: msg += f" [{Colors.WARNINGYEL}OFFLINE MODE{Colors.ENDC}]"
+    if is_local: msg += f" [{Colors.WARNINGYEL}LOCAL MODE{Colors.ENDC}]"
     print(f"{msg}...")
 
     for target_dir in target_dirs:
         print(f"Testing directory: {target_dir.relative_to(project_root)}")
         
         cmd = [str(validator_sh), "ddbj", str(target_dir), "-f"]
-        if is_offline:
-            cmd.append("--offline")
+        if is_local:
+            cmd.append("--local")
             
         result = subprocess.run(cmd, capture_output=True, text=True)
                 
@@ -334,13 +334,13 @@ def run_e2e_tests(target_rule_id=None, is_offline=False):
                 tc_rule_triggered = tc["rule_triggered"]
                 test_name = f"{tc_filename} (Rule: {tc_rule_id})"
 
-                # ★ OFFLINEモード時の特別評価
-                if is_offline and tc_rule_id in offline_skipped_rules:
+                # ★ LOCALモード時の特別評価
+                if is_local and tc_rule_id in local_skipped_rules:
                     if tc_rule_triggered:
-                        print(f"  [{Colors.FAILRED}NOT SKIPPED{Colors.ENDC}] {test_name}: Triggered in OFFLINE mode (It should be skipped!).")
-                        not_skipped_errors.append(f"{target_dir.name}/{test_name} (Triggered in offline mode)")
+                        print(f"  [{Colors.FAILRED}NOT SKIPPED{Colors.ENDC}] {test_name}: Triggered in LOCAL mode (It should be skipped!).")
+                        not_skipped_errors.append(f"{target_dir.name}/{test_name} (Triggered in local mode)")
                     else:
-                        print(f"  [{Colors.OKGREEN}Skipped{Colors.ENDC}]        {test_name} (Expectedly skipped in offline mode)")
+                        print(f"  [{Colors.OKGREEN}Skipped{Colors.ENDC}]        {test_name} (Expectedly skipped in local mode)")
                         skipped_count += 1
                     continue
                 
@@ -458,12 +458,12 @@ if __name__ == "__main__":
     print(f"{Colors.OKGREEN}============================================================{Colors.ENDC}")
     print(f"{Colors.OKGREEN}  PHASE 1: ONLINE MODE TESTING (Standard Pass/Fail Check)   {Colors.ENDC}")
     print(f"{Colors.OKGREEN}============================================================{Colors.ENDC}")
-    res_online = run_e2e_tests(target_rule_id=args.rule_id, is_offline=False)
+    res_online = run_e2e_tests(target_rule_id=args.rule_id, is_local=False)
 
     print(f"\n{Colors.WARNINGYEL}============================================================{Colors.ENDC}")
-    print(f"{Colors.WARNINGYEL}  PHASE 2: OFFLINE MODE TESTING (Skip Verification)         {Colors.ENDC}")
+    print(f"{Colors.WARNINGYEL}  PHASE 2: LOCAL MODE TESTING (Skip Verification)           {Colors.ENDC}")
     print(f"{Colors.WARNINGYEL}============================================================{Colors.ENDC}")
-    res_offline = run_e2e_tests(target_rule_id=args.rule_id, is_offline=True)
+    res_local = run_e2e_tests(target_rule_id=args.rule_id, is_local=True)
 
     # =========================================================
     # 最終結果のサマリー出力
@@ -479,17 +479,17 @@ if __name__ == "__main__":
         for e in res_online['errors']:
             print(f"    - {e}")
 
-    print(f"\n{Colors.WARNINGYEL}[ OFFLINE MODE RESULTS ]{Colors.ENDC}")
-    print(f"  Matched (Normal Rules): {res_offline['passed']}")
-    print(f"  Mismatched:             {Colors.FAILRED if res_offline['mismatched'] > 0 else Colors.OKGREEN}{res_offline['mismatched']}{Colors.ENDC}")
-    if res_offline['errors']:
-        for e in res_offline['errors']:
+    print(f"\n{Colors.WARNINGYEL}[ LOCAL MODE RESULTS ]{Colors.ENDC}")
+    print(f"  Matched (Normal Rules): {res_local['passed']}")
+    print(f"  Mismatched:             {Colors.FAILRED if res_local['mismatched'] > 0 else Colors.OKGREEN}{res_local['mismatched']}{Colors.ENDC}")
+    if res_local['errors']:
+        for e in res_local['errors']:
             print(f"    - {e}")
             
-    print(f"\n  Expectedly Skipped:     {Colors.OKGREEN}{res_offline['skipped']}{Colors.ENDC} (DB/Network dependent rules)")
-    print(f"  Not Skipped (Error!):   {Colors.FAILRED if len(res_offline['not_skipped_errors']) > 0 else Colors.OKGREEN}{len(res_offline['not_skipped_errors'])}{Colors.ENDC}")
-    if res_offline['not_skipped_errors']:
-        for e in res_offline['not_skipped_errors']:
+    print(f"\n  Expectedly Skipped:     {Colors.OKGREEN}{res_local['skipped']}{Colors.ENDC} (DB/Network dependent rules)")
+    print(f"  Not Skipped (Error!):   {Colors.FAILRED if len(res_local['not_skipped_errors']) > 0 else Colors.OKGREEN}{len(res_local['not_skipped_errors'])}{Colors.ENDC}")
+    if res_local['not_skipped_errors']:
+        for e in res_local['not_skipped_errors']:
             print(f"    - {e}")
             
     print("="*70 + "\n")

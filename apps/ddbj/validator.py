@@ -185,16 +185,21 @@ class Validator:
         ]
         
         for rule in available_rules:
-            if ctx.is_offline and (getattr(rule, 'requires_rdb', False) or getattr(rule, 'requires_network', False)):
+            # RDB必須ルールは skip_db が True の時にスキップ
+            if ctx.skip_db and getattr(rule, 'requires_rdb', False):
+                continue
+            # ネットワーク必須ルールは skip_ncbi が True の時にスキップ
+            if ctx.skip_ncbi and getattr(rule, 'requires_network', False):
                 continue
             self.active_rules.append(rule)
 
         if ctx.ddbj_dict and ctx.ddbj_dict.get("features"):
             self.active_rules.append(ANN_DICT_VALIDATOR())
             
-        if not ctx.is_offline and ctx.dra_crosscheck_dict and ctx.dra_lib_meta:
+        # クロスチェックは内部DBを使うので skip_db を確認する
+        if not ctx.skip_db and ctx.dra_crosscheck_dict and ctx.dra_lib_meta:
             self.active_rules.append(DRA_CROSSCHECK_VALIDATOR())
-
+            
     # 引数に ann_lines=None を追加
     def run(self, records, ann_path=None, seq_path=None, ann_lines=None, fasta_content=None):
         all_results = []

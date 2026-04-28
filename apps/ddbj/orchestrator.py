@@ -155,7 +155,7 @@ def _validate_single_file_set(args):
     if geo_loc_allowed_list:
         geo_loc_fixes = propose_geo_loc_name_fixes(records, ann_path, allowed_values=geo_loc_allowed_list, allowed_missing_reporting_terms=missing_reporting_terms_set, existing_proposals=file_proposals)
         file_proposals.extend(geo_loc_fixes)
-                                                                         
+                                                                 
     if context.institution_codes:
         culture_collection_fixes = propose_culture_collection_fixes(records, ann_path, allowed_map=context.institution_codes, existing_proposals=file_proposals)
         file_proposals.extend(culture_collection_fixes)
@@ -455,13 +455,16 @@ def fast_copy_and_fix_fasta(fasta_content, dst_fasta_path):
 
 
 class ValidatorPipeline:
-    def __init__(self, pairs, report_out_dir, is_web_mode, force_fix, jobs=1, is_offline=False):
+    def __init__(self, pairs, report_out_dir, is_web_mode, force_fix, jobs=1, skip_db=False, skip_ncbi=False):
         self.pairs = pairs
         self.report_out_dir = report_out_dir
         self.is_web_mode = is_web_mode
         self.force_fix = force_fix
         self.jobs = jobs
-        self.is_offline = is_offline
+        
+        # 新しいフラグを保持
+        self.skip_db = skip_db
+        self.skip_ncbi = skip_ncbi
         
         self.all_interactive_proposals = []
         self.all_skipped_autofixes = []
@@ -476,9 +479,15 @@ class ValidatorPipeline:
         all_samds, all_projects, all_drrs, all_organisms, all_journals = set(), set(), set(), set(), set()
         ncbi_check_prjs, ncbi_check_sams, ncbi_check_sras = set(), set(), set()
         
+        bp_psubs, dra_refs, tax_data, bs_data = {}, {}, {}, {}
+        bs_submitters, bs_smp_ids, psub_to_prjdb, smp_id_to_samd = {}, {}, {}, {}
+        dra_lib_meta = {}
+        drr_status = {}
+        ncbi_private_accs = set() 
+        
         # 1. 高速並列スキャン
-        if not self.is_offline:
-            print("\nScanning annotation files for DB queries...")
+        if not self.skip_db or not self.skip_ncbi:
+            print("\nScanning annotation files for DB/API queries...")
             with ProcessPoolExecutor(max_workers=self.jobs) as executor:
                 futures = [executor.submit(fast_extract_db_keys, ann, seq) for ann, seq in self.pairs]
                 for future in futures:
@@ -492,54 +501,60 @@ class ValidatorPipeline:
                     ncbi_check_sams.update(res["ncbi_check_sams"])
                     ncbi_check_sras.update(res["ncbi_check_sras"])
 
-            # 2. データベース情報の取得 (直列)
-            db_manager = DatabaseManager()
-            bp_psubs, dra_refs, tax_data, bs_data = {}, {}, {}, {}
-            bs_submitters, bs_smp_ids, psub_to_prjdb, smp_id_to_samd = {}, {}, {}, {}
-            dra_lib_meta = {}
-            drr_status = {}
-            ncbi_private_accs = set() 
-            
-            try:
-                if all_organisms or all_samds or all_projects or all_drrs or ncbi_check_prjs or ncbi_check_sams or ncbi_check_sras:
-                    print("\nChecking DB...")
+            # --- 2. データベース情報の取得 (内部DBへのアクセス) ---
+            if not self.skip_db:
+                db_manager = DatabaseManager()
+                try:
+                    if all_organisms or all_samds or all_projects or all_drrs:
+                        print("\nChecking Internal DB...")
 
-                if all_organisms:
-                    lbl = "organism" if len(all_organisms) == 1 else "organisms"
-                    print(f"[Taxonomy DB] Checking {len(all_organisms)} {lbl}...")
-                    tax_data = fetch_taxonomy_data(db_manager.get_tax_conn(), list(all_organisms))
-                    
-                if all_projects:
-                    lbl = "project" if len(all_projects) == 1 else "projects"
-                    print(f"[BioProject DB] Checking {len(all_projects)} {lbl}...")
-                    bp_psubs = fetch_bp_psubs(db_manager.get_bp_conn(), list(all_projects))
-
-                if all_samds:
-                    samd_list = list(all_samds)
-                    lbl = "sample" if len(samd_list) == 1 else "samples"
-                    print(f"[BioSample DB] Checking {len(samd_list)} {lbl}...")
-                    bs_data = fetch_biosample_data(db_manager.get_bs_conn(), samd_list)
-                    bs_submitters = fetch_biosample_submitters(db_manager.get_bs_conn(), samd_list)
-                    bs_smp_ids = fetch_biosample_smp_ids(db_manager.get_bs_conn(), samd_list)
-
-                if all_drrs:
-                    lbl = "DRA Run" if len(all_drrs) == 1 else "DRA Runs"
-                    print(f"[DRA DB] Checking {len(all_drrs)} {lbl}...")
-                    dra_refs = fetch_dra_refs(db_manager.get_dra_conn(), list(all_drrs))
-                    dra_lib_meta = fetch_dra_library_metadata(db_manager.get_dra_conn(), list(all_drrs))
-                    drr_status = fetch_drr_status(db_manager.get_dra_conn(), list(all_drrs))
-                    
-                    if dra_refs:
-                        dra_psubs, dra_smps = set(), set()
-                        for refs in dra_refs.values():
-                            for r in refs:
-                                if r.startswith("PSUB"): dra_psubs.add(r)
-                                elif r.isdigit(): dra_smps.add(int(r))
+                    if all_organisms:
+                        lbl = "organism" if len(all_organisms) == 1 else "organisms"
+                        print(f"[Taxonomy DB] Checking {len(all_organisms)} {lbl}...")
+                        tax_data = fetch_taxonomy_data(db_manager.get_tax_conn(), list(all_organisms))
                         
-                        if dra_psubs:
-                            psub_to_prjdb = fetch_prjdb_by_psub(db_manager.get_bp_conn(), list(dra_psubs))
-                        if dra_smps:
-                            smp_id_to_samd = fetch_samd_by_smp_id(db_manager.get_bs_conn(), list(dra_smps))
+                    if all_projects:
+                        lbl = "project" if len(all_projects) == 1 else "projects"
+                        print(f"[BioProject DB] Checking {len(all_projects)} {lbl}...")
+                        bp_psubs = fetch_bp_psubs(db_manager.get_bp_conn(), list(all_projects))
+
+                    if all_samds:
+                        samd_list = list(all_samds)
+                        lbl = "sample" if len(samd_list) == 1 else "samples"
+                        print(f"[BioSample DB] Checking {len(samd_list)} {lbl}...")
+                        bs_data = fetch_biosample_data(db_manager.get_bs_conn(), samd_list)
+                        bs_submitters = fetch_biosample_submitters(db_manager.get_bs_conn(), samd_list)
+                        bs_smp_ids = fetch_biosample_smp_ids(db_manager.get_bs_conn(), samd_list)
+
+                    if all_drrs:
+                        lbl = "DRA Run" if len(all_drrs) == 1 else "DRA Runs"
+                        print(f"[DRA DB] Checking {len(all_drrs)} {lbl}...")
+                        dra_refs = fetch_dra_refs(db_manager.get_dra_conn(), list(all_drrs))
+                        dra_lib_meta = fetch_dra_library_metadata(db_manager.get_dra_conn(), list(all_drrs))
+                        drr_status = fetch_drr_status(db_manager.get_dra_conn(), list(all_drrs))
+                        
+                        if dra_refs:
+                            dra_psubs, dra_smps = set(), set()
+                            for refs in dra_refs.values():
+                                for r in refs:
+                                    if r.startswith("PSUB"): dra_psubs.add(r)
+                                    elif r.isdigit(): dra_smps.add(int(r))
+                            
+                            if dra_psubs:
+                                psub_to_prjdb = fetch_prjdb_by_psub(db_manager.get_bp_conn(), list(dra_psubs))
+                            if dra_smps:
+                                smp_id_to_samd = fetch_samd_by_smp_id(db_manager.get_bs_conn(), list(dra_smps))
+                except Exception as e:
+                    print(f"[ERROR] Database connection failed: {e}")
+                finally:
+                    db_manager.close_all()
+            else:
+                print("\n[ SKIP ] Internal DB queries skipped. RDB-dependent rules will be ignored.")
+
+            # --- 3. NCBI APIへのアクセス ---
+            if not self.skip_ncbi:
+                if ncbi_check_prjs or ncbi_check_sams or ncbi_check_sras:
+                    print("\nChecking NCBI API...")
 
                 if ncbi_check_prjs:
                     lbl = "BioProject" if len(ncbi_check_prjs) == 1 else "BioProjects"
@@ -558,38 +573,43 @@ class ValidatorPipeline:
                     print(f"[NCBI API] Checking {len(ncbi_check_sras)} {lbl}...")
                     res = check_ncbi_public_status("sra", list(ncbi_check_sras))
                     ncbi_private_accs.update(res.get("private", []))
+            else:
+                print("\n[ SKIP ] NCBI API queries skipped. Network-dependent rules will be ignored.")
+                
+        else:
+            print("\n[ SKIP ] Both DB and NCBI API queries skipped.")
 
-                context = ValidationContext(
-                    is_curator_mode=True,
-                    is_web_mode=self.is_web_mode,
-                    is_offline=False,
-                    bp_psubs=bp_psubs,
-                    dra_refs=dra_refs,
-                    drr_status=drr_status,
-                    tax_data=tax_data,
-                    bs_data=bs_data,
-                    bs_submitters=bs_submitters,
-                    bs_smp_ids=bs_smp_ids,
-                    psub_to_prjdb=psub_to_prjdb,
-                    smp_id_to_samd=smp_id_to_samd,
-                    dra_lib_meta=dra_lib_meta,
-                    ncbi_private_accs=ncbi_private_accs  
-                )
-                
+        # --- Context の初期化 (共通ルート) ---
+        context = ValidationContext(
+            is_curator_mode=not self.skip_db,  # skip_db の場合はキュレーター権限オフ扱い
+            is_web_mode=self.is_web_mode,
+            skip_db=self.skip_db,
+            skip_ncbi=self.skip_ncbi,
+            bp_psubs=bp_psubs,
+            dra_refs=dra_refs,
+            drr_status=drr_status,
+            tax_data=tax_data,
+            bs_data=bs_data,
+            bs_submitters=bs_submitters,
+            bs_smp_ids=bs_smp_ids,
+            psub_to_prjdb=psub_to_prjdb,
+            smp_id_to_samd=smp_id_to_samd,
+            dra_lib_meta=dra_lib_meta,
+            ncbi_private_accs=ncbi_private_accs  
+        )
+        
+        # valid_journals の追加取得
+        if not self.skip_db and all_journals:
+            db_manager = DatabaseManager()
+            try:
                 context.load_valid_journals(list(all_journals), db_manager.get_tax_conn())
-                
-            except Exception as e:
-                print(f"[ERROR] Database connection failed: {e}")
-                context = ValidationContext(is_curator_mode=True, is_web_mode=self.is_web_mode, is_offline=False)
+            except Exception:
+                pass
             finally:
                 db_manager.close_all()
 
-            self.tax_data = tax_data
-            self.bs_data = bs_data
-                            
-        else:
-            print("\n[ OFFLINE MODE ] Skipping DB queries. DB-dependent rules will be skipped.")
-            context = ValidationContext(is_web_mode=self.is_web_mode, is_offline=True)
+        self.tax_data = tax_data
+        self.bs_data = bs_data
             
         auto_updates_by_file = defaultdict(list)
         updq_data = defaultdict(list)

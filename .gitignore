@@ -77,4 +77,5 @@ profile*.stats
 devs*.py
 ANN0610_prompt.txt
 *.code-workspace
+*benchmark*
 

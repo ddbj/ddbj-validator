@@ -10,7 +10,8 @@ class ValidationContext:
     """
     # 外部DB・環境データ
     is_curator_mode: bool = True
-    is_offline: bool = False
+    skip_db: bool = False
+    skip_ncbi: bool = False
     bp_psubs: dict = field(default_factory=dict)
     dra_refs: dict = field(default_factory=dict)
     drr_status: dict = field(default_factory=dict)
