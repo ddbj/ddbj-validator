@@ -490,7 +490,11 @@ class ValidatorPipeline:
         
         # 1. 高速並列スキャン
         if not self.skip_db or not self.skip_ncbi:
-            print("\nScanning annotation files for DB/API queries...")
+            if self.skip_db and not self.skip_ncbi:
+                print("\nScanning annotation files for NCBI API queries...")
+            else:
+                print("\nScanning annotation files for DB/API queries...")
+                
             with ProcessPoolExecutor(max_workers=self.jobs) as executor:
                 futures = [executor.submit(fast_extract_db_keys, ann, seq) for ann, seq in self.pairs]
                 for future in futures:
@@ -549,11 +553,21 @@ class ValidatorPipeline:
                                 smp_id_to_samd = fetch_samd_by_smp_id(db_manager.get_bs_conn(), list(dra_smps))
                 except Exception as e:
                     print(f"[ERROR] Database connection failed: {e}")
+                    print(f"\n[ ERROR ] Database connection failed: {e}")
+                    print("[ For users ] ")
+                    print("="*80)
+                    print("Please append:")
+                    print("   -n (or --ncbi-api) : Use public NCBI API for taxonomy/accession checks (Recommended)")
+                    print("   -l (or --local)    : Run offline (skips all DB/API dependent checks)")
+                    print("="*80 + "\n")
                 finally:
                     db_manager.close_all()
             else:
-                print("\n[ SKIP ] Internal DB queries skipped. DB-dependent rules will be skipped.")
-
+                print()
+                if not self.skip_ncbi:
+                    print("[ NCBI API ] Public NCBI API will be used for taxonomy-dependent rules and NCBI/EBI accessions checks.")
+                print("[ SKIP ] Internal DB queries skipped. DB-dependent rules will be skipped.")
+                
             # --- 3. NCBI APIへのアクセス ---
             if not self.skip_ncbi:
                 if ncbi_check_prjs or ncbi_check_sams or ncbi_check_sras or (self.skip_db and all_organisms):
@@ -583,10 +597,11 @@ class ValidatorPipeline:
                     from common.db_taxonomy import fetch_taxonomy_from_ncbi
                     tax_data = fetch_taxonomy_from_ncbi(list(all_organisms))                    
             else:
-                print("\n[ SKIP ] NCBI API queries skipped. Network-dependent rules will be skipped.")
+                print("\n[ SKIP ] NCBI API queries skipped. API- and taxonomy-dependent rules will be skipped.")
                 
         else:
-            print("\n[ SKIP ] Both DB and NCBI API queries skipped.")
+            print("\n[ SKIP ] DB and NCBI API queries skipped. DB-, API- and taxonomy-dependent rules will be skipped.")
+            print("Tip: Use '-n' to enable taxonomy-dependent checks via NCBI API.")
 
         # --- Context の初期化 (共通ルート) ---
         context = ValidationContext(

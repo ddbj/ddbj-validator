@@ -34,8 +34,14 @@ def main():
     parser.add_argument("--skip-db", action="store_true", help="Skip internal DB queries")
     parser.add_argument("--skip-ncbi", action="store_true", help="Skip NCBI API queries")
     
+    # NCBI API key 指定
+    parser.add_argument("--ncbi-api-key", type=str, help="NCBI API key to increase rate limits (optional)")
+
     args = parser.parse_args()
 
+    if args.ncbi_api_key:
+        os.environ["NCBI_API_KEY"] = args.ncbi_api_key
+    
     # --- オプションの論理解決 ---
     skip_db = False
     skip_ncbi = False

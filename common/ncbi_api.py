@@ -3,8 +3,6 @@ import re
 import time
 import requests
 
-NCBI_API_KEY = os.getenv("NCBI_API_KEY")
-
 # 対象とするNCBI/EBIのプレフィックス定義
 _TARGET_PATTERNS = {
     "bioproject": re.compile(r"^PRJ(NA|EA|EB)\d+"),   
@@ -43,6 +41,9 @@ def check_ncbi_public_status(db_name, accessions, chunk_size=100):
     base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
     field_tag = _DB_FIELD_TAGS.get(db_name, "[Accession]")
 
+    # 実行時に最新の環境変数を取得
+    current_api_key = os.environ.get("NCBI_API_KEY")
+
     def check_chunk(chunk):
         # SRAのあいまい検索を防ぐため、正確なフィールドタグを付与
         term = " OR ".join(f"{acc}{field_tag}" for acc in chunk)
@@ -52,8 +53,8 @@ def check_ncbi_public_status(db_name, accessions, chunk_size=100):
             "retmode": "json",
             "retmax": 0
         }
-        if NCBI_API_KEY:
-            payload["api_key"] = NCBI_API_KEY
+        if current_api_key:
+            payload["api_key"] = current_api_key
 
         response = requests.post(base_url, data=payload, timeout=15)
         response.raise_for_status()
@@ -96,7 +97,7 @@ def check_ncbi_public_status(db_name, accessions, chunk_size=100):
                     p_pub, p_priv = check_chunk([single_acc])
                     pub_fb.extend(p_pub)
                     priv_fb.extend(p_priv)
-                    time.sleep(0.15 if NCBI_API_KEY else 0.35)
+                    time.sleep(0.15 if current_api_key else 0.35)
                 return pub_fb, priv_fb
             else:
                 # あいまい検索で余計なものがヒットしている等は「無効」として扱う
@@ -110,7 +111,7 @@ def check_ncbi_public_status(db_name, accessions, chunk_size=100):
             pub, priv = check_chunk(chunk)
             results["public"].extend(pub)
             results["private"].extend(priv)
-            time.sleep(0.15 if NCBI_API_KEY else 0.35)
+            time.sleep(0.15 if current_api_key else 0.35)
         except Exception as e:
             print(f"[Warning] NCBI API request failed for {db_name}: {e}")
             
