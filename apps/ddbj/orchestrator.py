@@ -168,7 +168,10 @@ def _validate_single_file_set(args):
 
     whitespace_fixes = propose_location_whitespace_fixes(records, ann_path)
     file_proposals.extend(whitespace_fixes)
-              
+
+    format_fixes = propose_format_errors(records, ann_path)
+    file_proposals.extend(format_fixes)
+                  
     if is_web_mode:
         for p in pcr_fixes:
             acc = p["entry"].split('_')[0]
@@ -549,11 +552,11 @@ class ValidatorPipeline:
                 finally:
                     db_manager.close_all()
             else:
-                print("\n[ SKIP ] Internal DB queries skipped. RDB-dependent rules will be ignored.")
+                print("\n[ SKIP ] Internal DB queries skipped. DB-dependent rules will be skipped.")
 
             # --- 3. NCBI APIへのアクセス ---
             if not self.skip_ncbi:
-                if ncbi_check_prjs or ncbi_check_sams or ncbi_check_sras:
+                if ncbi_check_prjs or ncbi_check_sams or ncbi_check_sras or (self.skip_db and all_organisms):
                     print("\nChecking NCBI API...")
 
                 if ncbi_check_prjs:
@@ -573,8 +576,14 @@ class ValidatorPipeline:
                     print(f"[NCBI API] Checking {len(ncbi_check_sras)} {lbl}...")
                     res = check_ncbi_public_status("sra", list(ncbi_check_sras))
                     ncbi_private_accs.update(res.get("private", []))
+                # DBスキップ時のみ NCBI API から Taxonomy を代替取得
+                if self.skip_db and all_organisms:
+                    lbl = "organism" if len(all_organisms) == 1 else "organisms"
+                    print(f"[NCBI Taxonomy API] Checking {len(all_organisms)} {lbl}...")
+                    from common.db_taxonomy import fetch_taxonomy_from_ncbi
+                    tax_data = fetch_taxonomy_from_ncbi(list(all_organisms))                    
             else:
-                print("\n[ SKIP ] NCBI API queries skipped. Network-dependent rules will be ignored.")
+                print("\n[ SKIP ] NCBI API queries skipped. Network-dependent rules will be skipped.")
                 
         else:
             print("\n[ SKIP ] Both DB and NCBI API queries skipped.")

@@ -1,3 +1,7 @@
+import os
+import time
+import requests
+import xml.etree.ElementTree as ET
 import psycopg2
 from apps.ddbj.utils.features import get_features
 from apps.ddbj.db_metadata import get_organisms_from_records, get_expected_transl_table
@@ -173,4 +177,138 @@ def fetch_taxonomy_data(db_conn, organism_list):
             print(f"[WARN] Failed to check recursive taxonomy ranks: {e}")
 
     return tax_data
+
+# ==============================================================================
+# NCBI API を使用した代替Taxonomy情報取得（内部DBをスキップした場合に使用）
+# ==============================================================================
+def fetch_taxonomy_from_ncbi(organism_list):
+    tax_data = {}
+    if not organism_list:
+        return tax_data
+        
+    unique_orgs = list(set(organism_list))
+    api_key = os.environ.get("NCBI_API_KEY")
+    
+    for org in unique_orgs:
+        # 1. Esearch で Taxonomy ID を取得
+        search_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+        search_params = {
+            "db": "taxonomy",
+            "term": org,
+            "retmode": "json",
+            "retmax": 1
+        }
+        if api_key: search_params["api_key"] = api_key
+        
+        try:
+            res = requests.get(search_url, params=search_params, timeout=10)
+            res.raise_for_status()
+            data = res.json()
+            idlist = data.get("esearchresult", {}).get("idlist", [])
+            
+            if not idlist:
+                tax_data[org] = {"status": "not_found", "is_species_or_below": False}
+                time.sleep(0.15 if api_key else 0.35)
+                continue
+            
+            tax_id = idlist[0]
+            
+            # 2. Efetch で XML フォーマットの詳細情報を取得
+            fetch_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
+            fetch_params = {
+                "db": "taxonomy",
+                "id": tax_id,
+                "retmode": "xml"
+            }
+            if api_key: fetch_params["api_key"] = api_key
+            
+            f_res = requests.get(fetch_url, params=fetch_params, timeout=10)
+            f_res.raise_for_status()
+            
+            root = ET.fromstring(f_res.content)
+            taxon = root.find(".//Taxon")
+            
+            if taxon is not None:
+                sci_name = taxon.findtext("ScientificName", "")
+                rank = taxon.findtext("Rank", "unknown").lower()
                 
+                gen_code = int(taxon.findtext(".//GeneticCode/GCId", "1"))
+                mi_code = int(taxon.findtext(".//MitoGeneticCode/MGCId", "1"))
+                
+                pl_code_elem = taxon.find(".//PlastidGeneticCode/PGCId")
+                pl_code = int(pl_code_elem.text) if pl_code_elem is not None else 0
+                
+                lineage = taxon.findtext(".//Lineage", "")
+                
+                # NCBI APIの LineageEx には親ノードの詳細配列が含まれるため、
+                # そこに species レベルの親がいれば species_or_below だと判定（再帰クエリの代用）
+                is_species_or_below = False
+                if rank in ALLOWED_RANKS:
+                    is_species_or_below = True
+                elif rank not in DEFINITELY_NOT_SPECIES_RANKS:
+                    for taxon_node in taxon.findall(".//LineageEx/Taxon"):
+                        node_rank = taxon_node.findtext("Rank", "").lower()
+                        if node_rank in ALLOWED_RANKS:
+                            is_species_or_below = True
+                            break
+                
+                if is_species_or_below:
+                    if org.lower() == sci_name.lower():
+                        status = "valid"
+                        match_type = "scientific name"
+                    else:
+                        status = "fixable"
+                        match_type = "synonym"
+                else:
+                    status = "invalid_rank"
+                    match_type = "scientific name"
+                    
+                # Lineageのテキストベースから、DDBJのDivisionコード(3文字)を近似推測するフォールバック
+                div_code = "UNA"
+                if "Bacteria" in lineage or "Archaea" in lineage:
+                    div_code = "BCT"
+                elif "Viruses" in lineage:
+                    div_code = "VRL"
+                elif "Phages" in lineage:
+                    div_code = "PHG"
+                elif "Plants" in lineage or "Viridiplantae" in lineage or "Fungi" in lineage:
+                    div_code = "PLN"
+                elif "Primates" in lineage:
+                    div_code = "PRI"
+                elif "Rodentia" in lineage:
+                    div_code = "ROD"
+                elif "Mammalia" in lineage:
+                    div_code = "MAM"
+                elif "Vertebrata" in lineage:
+                    div_code = "VRT"
+                elif "Metazoa" in lineage:
+                    div_code = "INV"
+                elif "environmental samples" in lineage:
+                    div_code = "ENV"
+                elif "artificial sequences" in lineage:
+                    div_code = "SYN"
+
+                tax_data[org] = {
+                    "scientific_name": sci_name,
+                    "rank": rank,
+                    "type": match_type,
+                    "gen_code": gen_code,
+                    "mi_code": mi_code,
+                    "pl_code": pl_code,
+                    "tax_id": tax_id,
+                    "lineage": lineage,
+                    "division": div_code,
+                    "status": status,
+                    "is_species_or_below": is_species_or_below
+                }
+            else:
+                tax_data[org] = {"status": "not_found", "is_species_or_below": False}
+
+            # NCBI E-utilities の利用ガイドラインに基づきウェイトを入れる
+            time.sleep(0.15 if api_key else 0.35)
+            
+        except Exception as e:
+            print(f"[WARN] NCBI Taxonomy API failed for '{org}': {e}")
+            tax_data[org] = {"status": "not_found", "is_species_or_below": False}
+            
+    return tax_data

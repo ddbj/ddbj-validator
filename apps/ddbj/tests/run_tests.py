@@ -21,31 +21,35 @@ except ImportError:
     HAS_BIOPYTHON = False
 
 # ==============================================================================
-# LOCAL時にスキップされるべきルールの動的取得
+# モード時にスキップされるべきルールの動的取得
 # ==============================================================================
-def get_local_skipped_rules():
+def get_skipped_rules(skip_db=False, skip_ncbi=False):
     """
-    Validatorを初期化して、requires_rdb=True または requires_network=True
-    が設定されているルールと、そのサブルールをすべて抽出してセットで返す。
+    Validatorを初期化して、指定されたモードにおいてスキップされるべき
+    ルール（requires_rdb, requires_network）と、そのサブルールをすべて抽出してセットで返す。
     """
     try:
         from apps.ddbj.validator import Validator
         from apps.ddbj.context import ValidationContext
+        # 初期化自体はルール全取得のために False で行う
         val = Validator(ValidationContext(skip_db=False, skip_ncbi=False))
         skipped_rules = set()
         for r in val.active_rules:
-            if getattr(r, 'requires_rdb', False) or getattr(r, 'requires_network', False):
+            if (skip_db and getattr(r, 'requires_rdb', False)) or \
+               (skip_ncbi and getattr(r, 'requires_network', False)):
                 skipped_rules.add(r.rule_id)
                 # サブルール (ANN0500〜やANN1430等) も展開して追加
                 if hasattr(r, 'sub_rules'):
                     skipped_rules.update(r.sub_rules)
         return skipped_rules
     except Exception as e:
-        print(f"Warning: Failed to fetch local skipped rules: {e}")
+        print(f"Warning: Failed to fetch skipped rules: {e}")
         return set()
 
 class Colors:
     OKGREEN = '\033[92m'
+    OKCYAN = '\033[96m'
+    OKBLUE = '\033[94m'
     FAILRED = '\033[91m'
     WARNINGYEL = '\033[93m'
     ENDC = '\033[0m'
@@ -197,12 +201,16 @@ def compare_fasta(fasta_ddbj, fasta_tool, ignore_ids=None):
             error_msgs.extend(skipped_msgs)
         return False, " | ".join(error_msgs)
                         
-def run_e2e_tests(target_rule_id=None, is_local=False):
+def run_e2e_tests(target_rule_id=None, mode="online"):
     if not HAS_BIOPYTHON:
         print(f"{Colors.WARNINGYEL}[WARNING] Biopython is not installed. 6000-series amino acid fasta comparisons will fail.{Colors.ENDC}\n")
 
-    # LOCAL時にスキップされるべきルールの取得
-    local_skipped_rules = get_local_skipped_rules()
+    # モードに応じたフラグ設定
+    skip_db = mode in ["local", "ncbi"]
+    skip_ncbi = mode == "local"
+
+    # 対象モード時にスキップされるべきルールの取得
+    mode_skipped_rules = get_skipped_rules(skip_db=skip_db, skip_ncbi=skip_ncbi)
 
     validator_sh = project_root / "bsi-validator.sh"
 
@@ -227,7 +235,7 @@ def run_e2e_tests(target_rule_id=None, is_local=False):
     mismatched_count = 0
     errors = []
     
-    # LOCAL専用のスキップ集計
+    # スキップ集計
     skipped_count = 0
     not_skipped_errors = []
 
@@ -236,15 +244,22 @@ def run_e2e_tests(target_rule_id=None, is_local=False):
 
     msg = f"\nStarting E2E Tests via Shell"
     if target_rule_id: msg += f" for Rule(s): {target_rule_id}"
-    if is_local: msg += f" [{Colors.WARNINGYEL}LOCAL MODE{Colors.ENDC}]"
+    
+    if mode == "local":
+        msg += f" [{Colors.WARNINGYEL}LOCAL MODE{Colors.ENDC}]"
+    elif mode == "ncbi":
+        msg += f" [{Colors.OKCYAN}NCBI API MODE{Colors.ENDC}]"
+    
     print(f"{msg}...")
 
     for target_dir in target_dirs:
         print(f"Testing directory: {target_dir.relative_to(project_root)}")
         
         cmd = [str(validator_sh), "ddbj", str(target_dir), "-f"]
-        if is_local:
+        if mode == "local":
             cmd.append("--local")
+        elif mode == "ncbi":
+            cmd.append("--ncbi-api")
             
         result = subprocess.run(cmd, capture_output=True, text=True)
                 
@@ -334,13 +349,13 @@ def run_e2e_tests(target_rule_id=None, is_local=False):
                 tc_rule_triggered = tc["rule_triggered"]
                 test_name = f"{tc_filename} (Rule: {tc_rule_id})"
 
-                # ★ LOCALモード時の特別評価
-                if is_local and tc_rule_id in local_skipped_rules:
+                # ★ モードに応じた特別スキップ評価
+                if tc_rule_id in mode_skipped_rules:
                     if tc_rule_triggered:
-                        print(f"  [{Colors.FAILRED}NOT SKIPPED{Colors.ENDC}] {test_name}: Triggered in LOCAL mode (It should be skipped!).")
-                        not_skipped_errors.append(f"{target_dir.name}/{test_name} (Triggered in local mode)")
+                        print(f"  [{Colors.FAILRED}NOT SKIPPED{Colors.ENDC}] {test_name}: Triggered in {mode.upper()} mode (It should be skipped!).")
+                        not_skipped_errors.append(f"{target_dir.name}/{test_name} (Triggered in {mode.upper()} mode)")
                     else:
-                        print(f"  [{Colors.OKGREEN}Skipped{Colors.ENDC}]        {test_name} (Expectedly skipped in local mode)")
+                        print(f"  [{Colors.OKGREEN}Skipped{Colors.ENDC}]        {test_name} (Expectedly skipped in {mode.upper()} mode)")
                         skipped_count += 1
                     continue
                 
@@ -458,19 +473,24 @@ if __name__ == "__main__":
     print(f"{Colors.OKGREEN}============================================================{Colors.ENDC}")
     print(f"{Colors.OKGREEN}  PHASE 1: ONLINE MODE TESTING (Standard Pass/Fail Check)   {Colors.ENDC}")
     print(f"{Colors.OKGREEN}============================================================{Colors.ENDC}")
-    res_online = run_e2e_tests(target_rule_id=args.rule_id, is_local=False)
+    res_online = run_e2e_tests(target_rule_id=args.rule_id, mode="online")
 
     print(f"\n{Colors.WARNINGYEL}============================================================{Colors.ENDC}")
     print(f"{Colors.WARNINGYEL}  PHASE 2: LOCAL MODE TESTING (Skip Verification)           {Colors.ENDC}")
     print(f"{Colors.WARNINGYEL}============================================================{Colors.ENDC}")
-    res_local = run_e2e_tests(target_rule_id=args.rule_id, is_local=True)
+    res_local = run_e2e_tests(target_rule_id=args.rule_id, mode="local")
+
+    print(f"\n{Colors.OKCYAN}============================================================{Colors.ENDC}")
+    print(f"{Colors.OKCYAN}  PHASE 3: NCBI API MODE TESTING (Taxonomy fallback check)  {Colors.ENDC}")
+    print(f"{Colors.OKCYAN}============================================================{Colors.ENDC}")
+    res_ncbi = run_e2e_tests(target_rule_id=args.rule_id, mode="ncbi")
 
     # =========================================================
     # 最終結果のサマリー出力
     # =========================================================
-    print("\n" + "="*70)
+    print("\n" + "="*80)
     print(f" {Colors.OKGREEN}★ FINAL E2E TEST SUMMARY ★{Colors.ENDC} ")
-    print("="*70)
+    print("="*80)
     
     print(f"\n{Colors.OKGREEN}[ ONLINE MODE RESULTS ]{Colors.ENDC}")
     print(f"  Matched:    {res_online['passed']}")
@@ -485,11 +505,22 @@ if __name__ == "__main__":
     if res_local['errors']:
         for e in res_local['errors']:
             print(f"    - {e}")
-            
-    print(f"\n  Expectedly Skipped:     {Colors.OKGREEN}{res_local['skipped']}{Colors.ENDC} (DB/Network dependent rules)")
+    print(f"  Expectedly Skipped:     {Colors.OKGREEN}{res_local['skipped']}{Colors.ENDC} (DB/Network dependent rules)")
     print(f"  Not Skipped (Error!):   {Colors.FAILRED if len(res_local['not_skipped_errors']) > 0 else Colors.OKGREEN}{len(res_local['not_skipped_errors'])}{Colors.ENDC}")
     if res_local['not_skipped_errors']:
         for e in res_local['not_skipped_errors']:
             print(f"    - {e}")
-            
-    print("="*70 + "\n")
+
+    print(f"\n{Colors.OKCYAN}[ NCBI API MODE RESULTS ]{Colors.ENDC}")
+    print(f"  Matched (Normal Rules): {res_ncbi['passed']}")
+    print(f"  Mismatched:             {Colors.FAILRED if res_ncbi['mismatched'] > 0 else Colors.OKGREEN}{res_ncbi['mismatched']}{Colors.ENDC}")
+    if res_ncbi['errors']:
+        for e in res_ncbi['errors']:
+            print(f"    - {e}")
+    print(f"  Expectedly Skipped:     {Colors.OKGREEN}{res_ncbi['skipped']}{Colors.ENDC} (RDB dependent rules only)")
+    print(f"  Not Skipped (Error!):   {Colors.FAILRED if len(res_ncbi['not_skipped_errors']) > 0 else Colors.OKGREEN}{len(res_ncbi['not_skipped_errors'])}{Colors.ENDC}")
+    if res_ncbi['not_skipped_errors']:
+        for e in res_ncbi['not_skipped_errors']:
+            print(f"    - {e}")
+
+    print("="*80 + "\n")
