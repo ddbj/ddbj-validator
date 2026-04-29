@@ -155,7 +155,7 @@ def _validate_single_file_set(args):
     if geo_loc_allowed_list:
         geo_loc_fixes = propose_geo_loc_name_fixes(records, ann_path, allowed_values=geo_loc_allowed_list, allowed_missing_reporting_terms=missing_reporting_terms_set, existing_proposals=file_proposals)
         file_proposals.extend(geo_loc_fixes)
-                                                                 
+                                                         
     if context.institution_codes:
         culture_collection_fixes = propose_culture_collection_fixes(records, ann_path, allowed_map=context.institution_codes, existing_proposals=file_proposals)
         file_proposals.extend(culture_collection_fixes)
@@ -177,8 +177,10 @@ def _validate_single_file_set(args):
             acc = p["entry"].split('_')[0]
             current = p["old"]
             fixed = p["new"]
-            out_name = f"{Path(ann_path).parent.name}.updQ.txt" if report_out_dir == Path(ann_path).parent else f"{Path(ann_path).stem}.updQ.txt"
-            out_path = Path(ann_path).parent / out_name
+            # -o オプションがあればそこへ。なければ入力ファイルの親へ
+            base_out = Path(report_out_dir) if report_out_dir else Path(ann_path).parent
+            out_name = f"{Path(ann_path).stem}.updQ.txt"
+            out_path = base_out / out_name
             file_updq_data.append((out_path, f">{acc}\tPCR_primers\t{current}\tPCR_primers\t{fixed}\n"))
 
     # ====================================================
@@ -232,7 +234,8 @@ def _validate_single_file_set(args):
 # ワーカー2: Autofix 適用とファイル生成を行う
 # ============================================================================
 def _apply_autofix_worker(args):
-    ann_path, seq_path, file_updates, tax_data, cv_terms = args
+    # report_out_dir を引数で受け取る
+    ann_path, seq_path, file_updates, tax_data, cv_terms, report_out_dir = args
     
     from apps.ddbj.preprocessor import preprocess_files
     from apps.ddbj.parser import parse_ddbj_submission
@@ -240,7 +243,10 @@ def _apply_autofix_worker(args):
     ann_lines, fasta_content, _ = preprocess_files(ann_path, seq_path)
     records, _ = parse_ddbj_submission(fasta_content, ann_path, ann_lines, {})
     
-    fixed_dir = Path(ann_path).parent / "fixed"
+    # -o オプションがあればそこへ。なければ入力ファイルの親へ
+    base_out_dir = Path(report_out_dir) if report_out_dir else Path(ann_path).parent
+    
+    fixed_dir = base_out_dir / "fixed"
     fixed_dir.mkdir(parents=True, exist_ok=True)
     
     fixed_fasta = fixed_dir / Path(seq_path).name 
@@ -261,7 +267,7 @@ def _apply_autofix_worker(args):
     else:
         write_clean_ann(ann_lines, fixed_ann)
 
-    aa_dir = Path(ann_path).parent / "aa"
+    aa_dir = base_out_dir / "aa"
     base_name = original_ann_name[:-4] if original_ann_name.endswith('.ann') else Path(original_ann_name).stem
     aa_fasta_path = aa_dir / f"AA_{base_name}.faa"
     
@@ -480,7 +486,7 @@ class ValidatorPipeline:
     def run_validation(self):
         """フェーズ1: ファイルの検証と Autofix 提案の収集"""
         all_samds, all_projects, all_drrs, all_organisms, all_journals = set(), set(), set(), set(), set()
-        ncbi_check_prjs, ncbi_check_sams, ncbi_check_sras = set(), set(), set()
+        ncbi_check_prjs, ncbi_check_sams, ncbi_check_sras = set(), set() , set()
         
         bp_psubs, dra_refs, tax_data, bs_data = {}, {}, {}, {}
         bs_submitters, bs_smp_ids, psub_to_prjdb, smp_id_to_samd = {}, {}, {}, {}
@@ -639,7 +645,9 @@ class ValidatorPipeline:
         updq_data = defaultdict(list)
                 
         # 4. 個別ファイルの検証 (並列処理)
-        self.tmp_dir = Path(self.report_out_dir) / ".val_tmp"
+        # 出力先が指定されていればそこに、なければ今まで通り .val_tmp を作成
+        base_tmp_dir = Path(self.report_out_dir) if self.report_out_dir else Path(self.pairs[0][0]).parent
+        self.tmp_dir = base_tmp_dir / ".val_tmp"
         self.tmp_dir.mkdir(parents=True, exist_ok=True)
 
         tasks = []
@@ -758,7 +766,8 @@ class ValidatorPipeline:
             if "target" not in p:
                 p["target"] = p.get("qualifier", "feature")
             
-        approved_proposals = review_and_approve_proposals(self.all_interactive_proposals, self.force_fix)
+        # out_dir を渡して、提案サマリーを同じ場所に出力させる
+        approved_proposals = review_and_approve_proposals(self.all_interactive_proposals, self.force_fix, out_dir=self.report_out_dir)
         
         approved_by_file = defaultdict(list)
         if approved_proposals:
@@ -779,7 +788,8 @@ class ValidatorPipeline:
                 interactive_updates = apply_proposals(approved_by_file[ann_path])
                 file_updates.extend(interactive_updates)
                 
-            autofix_tasks.append((ann_path, seq_path, file_updates, self.tax_data, self.cv_terms))
+            # report_out_dir を引数に追加
+            autofix_tasks.append((ann_path, seq_path, file_updates, self.tax_data, self.cv_terms, self.report_out_dir))
 
         with ProcessPoolExecutor(max_workers=self.jobs) as executor:
             for msg in executor.map(_apply_autofix_worker, autofix_tasks):

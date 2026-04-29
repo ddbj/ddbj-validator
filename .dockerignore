@@ -1,0 +1,38 @@
+# .dockerignore
+
+# Git関連
+.git/
+.gitignore
+
+# Pythonキャッシュ・仮想環境・パッケージビルド
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+*.egg-info/
+bsi_validator.egg-info/
+
+# テスト・データ・ドキュメント関連
+tests/
+data/
+docs/
+README.md
+
+# 開発用・作業用スクリプト
+scripts/
+run_tests.py
+devs*.py
+file-content.sh
+move.sh
+
+# 一時ファイル・ログ・プロファイル・ワークスペースなど
+.env
+.DS_Store
+memo*
+nohup*
+bsival_context*.txt
+profile*stats
+*benchmark*
+*code-workspace*

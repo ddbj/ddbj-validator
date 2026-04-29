@@ -70,6 +70,7 @@ nohup.out
 # =========================
 # 管理用ファイル
 # =========================
+*result*
 move.sh
 memo.txt
 file-content.sh

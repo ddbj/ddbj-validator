@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import os
 import sys
 import argparse
@@ -22,11 +20,14 @@ def main():
     parser.add_argument("-d", "--dir", action="append", help="Target directory (deprecated, use positional arguments)")
     parser.add_argument("-a", "--ann", help="Annotation file (deprecated, use positional arguments)")
     parser.add_argument("-s", "--seq", help="Sequence file (deprecated, use positional arguments)")
-    parser.add_argument("-j", "--jobs", type=int, default=None, help="Number of parallel processes (default: up to 16. Use 0 to use all available cores)")
+    parser.add_argument("-j", "--jobs", type=int, default=None, help="Number of parallel processes (default: up to 8. Use 0 to use all available cores)")
     parser.add_argument("-w", "--web", action="store_true", help="NSSS (web submission) mode")
     parser.add_argument("-f", "--force-fix", action="store_true", help="Automatically apply all auto-fixes without prompting")
     
     # --- ユーザー向けメインオプション ---
+    # 出力ディレクトリの指定 (-o / --out-dir)
+    parser.add_argument("-o", "--out-dir", type=str, help="Output directory for reports and fixed files")
+    
     parser.add_argument("-l", "--local", action="store_true", help="Run in completely local mode (Skip both internal DB and NCBI API)")
     parser.add_argument("-n", "--ncbi-api", action="store_true", help="Run with public NCBI API (Skip internal DB, but use NCBI API)")
     
@@ -63,18 +64,18 @@ def main():
     if args.skip_ncbi:
         skip_ncbi = True
         
-    # --- 0. 並列数の決定 ---  #
+    # --- 0. 並列数の決定 ---
     cpu_count = os.cpu_count() or 1
     if args.jobs is None:
-        # 未指定: 最大16までに制限
-        jobs = min(cpu_count, 16)
+        # 未指定: 最大8までに制限 (OOMとI/Oスラッシングを防止)
+        jobs = min(cpu_count, 8)
     elif args.jobs <= 0:
-        # -j 0 指定: 制限なしでありったけのコアを使う
+        # -j 0 指定: 制限なしでありったけのコアを使う (HPC等のハイエンド環境向け)
         jobs = cpu_count
     else:
-        # 明示的な指定 (例: -j 4)
+        # 明示的な指定 (例: -j 16)
         jobs = args.jobs
-                
+                        
     # --- 1. ターゲットの収集とデフォルト設定 ---
     raw_targets = list(args.targets)
     if args.dir: raw_targets.extend(args.dir)
@@ -105,7 +106,13 @@ def main():
         sys.exit(1)
 
     pairs = []
+    
+    # -o オプションで指定された出力先ディレクトリの初期化
     report_out_dir = None 
+    if args.out_dir:
+        report_out_dir = Path(args.out_dir)
+        report_out_dir.mkdir(parents=True, exist_ok=True)
+        
     target_dirs_for_report = []
 
     # --- 4. ディレクトリモードの処理 ---
@@ -191,7 +198,7 @@ def main():
         target_dirs_for_report = list(dict.fromkeys(target_dirs_for_report))
 
     # --- パイプラインの実行とレポート出力 --- #
-    # ★ 解決済みの skip_db, skip_ncbi フラグを渡す
+    # 解決済みの skip_db, skip_ncbi フラグを渡す
     pipeline = ValidatorPipeline(
         pairs, report_out_dir, args.web, args.force_fix, jobs, 
         skip_db=skip_db, skip_ncbi=skip_ncbi
@@ -202,7 +209,8 @@ def main():
         jsonl_paths = pipeline.run_validation()
         
         # 2. レポートの生成 (ストリーミング処理)
-        target_dir = target_dirs_for_report[0] if target_dirs_for_report else Path(report_out_dir)
+        # -o オプションがあればそれを最優先に、なければ対象ディレクトリに出力
+        target_dir = report_out_dir if args.out_dir else (target_dirs_for_report[0] if target_dirs_for_report else Path(report_out_dir))
         reporter = ValidationReporter(out_dir=target_dir)
         reporter.generate_report(jsonl_paths, print_console=True)
         

@@ -1,7 +1,7 @@
 from pathlib import Path
 from collections import defaultdict
 
-def review_and_approve_proposals(all_proposals, force_fix=False):
+def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None):
     """
     全提案を集約し、target (修正対象項目) ごとにサマリーを表示。
     出力と同じ形式でディレクトリにサマリーファイルを保存し、一括または個別の承認を求める。
@@ -79,14 +79,21 @@ def review_and_approve_proposals(all_proposals, force_fix=False):
 
     # --- 対象のディレクトリに標準出力と同じ形式のログを書き出す ---
     summary_filename = "autofix_confirmation_summary.txt"
-    for d in target_dirs:
-        summary_file = d / summary_filename
+    
+    if out_dir:
+        summary_file = Path(out_dir) / summary_filename
         with open(summary_file, "w", encoding="utf-8") as f:
             f.write(summary_text.lstrip() + "\n")
-            
-    if target_dirs:
-        dir_path = str(list(target_dirs)[0] / summary_filename)
-        print(f"\n  => Confirmation summary saved: {dir_path}")
+        print(f"\n  => Confirmation summary saved: {summary_file}")
+    else:
+        for d in target_dirs:
+            summary_file = d / summary_filename
+            with open(summary_file, "w", encoding="utf-8") as f:
+                f.write(summary_text.lstrip() + "\n")
+                
+        if target_dirs:
+            dir_path = str(list(target_dirs)[0] / summary_filename)
+            print(f"\n  => Confirmation summary saved: {dir_path}")
 
     if force_fix:
         print("  => Applying all auto-fixes (--force-fix)")
