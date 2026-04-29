@@ -6,6 +6,29 @@ import psycopg2
 from apps.ddbj.utils.features import get_features
 from apps.ddbj.db_metadata import get_organisms_from_records, get_expected_transl_table
 
+
+def get_tax_group(org_name, lineage):
+    """organism名とlineageから tax_group を判定して返す"""
+    org_clean = org_name.strip() if org_name else ""
+    lineage_lower = lineage.lower() if lineage else ""
+    org_lower = org_clean.lower()
+    
+    # "uncultured" や "environmental" が名前に含まれているか、系統に含まれているかで判定
+    is_environmental = (
+        "unclassified sequences" in lineage_lower or 
+        "environmental samples" in lineage_lower or 
+        "uncultured" in org_lower or
+        "environmental" in org_lower
+    )
+    
+    if is_environmental: return "environmental"
+    if "Viruses" in lineage: return "virus"
+    if "Eukaryota" in lineage: return "eukaryote"
+    if "Bacteria" in lineage or "Archaea" in lineage: return "prokaryote"
+    
+    return "other"
+
+
 TYPE_PRIORITY = {
     'scientific name': 1,
     'synonym': 2,
@@ -34,7 +57,24 @@ DEFINITELY_NOT_SPECIES_RANKS = {
     "infraclass", "series", "realm", "superclass", "cohort", "subcohort", 
     "domain", "subkingdom", "acellular root", "cellular root", "superphylum"
 }
-    
+
+# NCBI TaxonomyのDivisionフルネームからDivision略号へのマッピング
+NCBI_DIVISION_MAP = {
+    "Bacteria": "BCT",
+    "Invertebrates": "INV",
+    "Mammals": "MAM",
+    "Phages": "PHG",
+    "Plants and Fungi": "PLN",
+    "Primates": "PRI",
+    "Rodents": "ROD",
+    "Synthetic and Chimeric": "SYN",
+    "Unassigned": "UNA",
+    "Viruses": "VRL",
+    "Vertebrates": "VRT",
+    "Environmental samples": "ENV"
+}
+
+
 def fetch_taxonomy_data(db_conn, organism_list):
     tax_data = {}
     if not organism_list:
@@ -96,11 +136,14 @@ def fetch_taxonomy_data(db_conn, organism_list):
             
             priority, best_type, sci_name, rank, gen_code, mi_code, pl_code, tax_id, lineage, division = best_match
             
+            tax_group = get_tax_group(org, lineage)
+            
             base_data = {
                 "scientific_name": sci_name, "rank": rank, "type": best_type, 
                 "gen_code": gen_code, "mi_code": mi_code, "pl_code": pl_code, 
                 "tax_id": tax_id, "lineage": lineage, "division": division,
-                "is_species_or_below": False
+                "is_species_or_below": False,
+                "tax_group": tax_group
             }
 
             if rank in ALLOWED_RANKS:
@@ -240,6 +283,9 @@ def fetch_taxonomy_from_ncbi(organism_list):
                 
                 lineage = taxon.findtext(".//Lineage", "")
                 
+                div_full = taxon.findtext(".//Division", "Unassigned")
+                div_code = NCBI_DIVISION_MAP.get(div_full, "UNA")                
+                
                 # NCBI APIの LineageEx には親ノードの詳細配列が含まれるため、
                 # そこに species レベルの親がいれば species_or_below だと判定（再帰クエリの代用）
                 is_species_or_below = False
@@ -262,31 +308,8 @@ def fetch_taxonomy_from_ncbi(organism_list):
                 else:
                     status = "invalid_rank"
                     match_type = "scientific name"
-                    
-                # Lineageのテキストベースから、DDBJのDivisionコード(3文字)を近似推測するフォールバック
-                div_code = "UNA"
-                if "Bacteria" in lineage or "Archaea" in lineage:
-                    div_code = "BCT"
-                elif "Viruses" in lineage:
-                    div_code = "VRL"
-                elif "Phages" in lineage:
-                    div_code = "PHG"
-                elif "Plants" in lineage or "Viridiplantae" in lineage or "Fungi" in lineage:
-                    div_code = "PLN"
-                elif "Primates" in lineage:
-                    div_code = "PRI"
-                elif "Rodentia" in lineage:
-                    div_code = "ROD"
-                elif "Mammalia" in lineage:
-                    div_code = "MAM"
-                elif "Vertebrata" in lineage:
-                    div_code = "VRT"
-                elif "Metazoa" in lineage:
-                    div_code = "INV"
-                elif "environmental samples" in lineage:
-                    div_code = "ENV"
-                elif "artificial sequences" in lineage:
-                    div_code = "SYN"
+
+                tax_group = get_tax_group(org, lineage)
 
                 tax_data[org] = {
                     "scientific_name": sci_name,
@@ -299,7 +322,8 @@ def fetch_taxonomy_from_ncbi(organism_list):
                     "lineage": lineage,
                     "division": div_code,
                     "status": status,
-                    "is_species_or_below": is_species_or_below
+                    "is_species_or_below": is_species_or_below,
+                    "tax_group": tax_group
                 }
             else:
                 tax_data[org] = {"status": "not_found", "is_species_or_below": False}

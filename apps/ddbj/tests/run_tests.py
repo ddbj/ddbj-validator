@@ -57,6 +57,7 @@ class Colors:
 def extract_feature_expectations(ann_path):
     has_fail = False
     has_pass = False
+    has_clean = False
     
     with open(ann_path, 'r', encoding='utf-8') as f:
         for line in f:
@@ -69,8 +70,11 @@ def extract_feature_expectations(ann_path):
                         has_fail = True
                     elif re.search(r'\bpass\b', value, re.IGNORECASE):
                         has_pass = True
+                    elif re.search(r'\bclean\b', value, re.IGNORECASE):
+                        has_clean = True
                         
     if has_fail: return "fail"
+    if has_clean: return "clean"
     if has_pass: return "pass"
     return None
 
@@ -201,7 +205,7 @@ def compare_fasta(fasta_ddbj, fasta_tool, ignore_ids=None):
             error_msgs.extend(skipped_msgs)
         return False, " | ".join(error_msgs)
                         
-def run_e2e_tests(target_rule_id=None, mode="online"):
+def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False):
     if not HAS_BIOPYTHON:
         print(f"{Colors.WARNINGYEL}[WARNING] Biopython is not installed. 6000-series amino acid fasta comparisons will fail.{Colors.ENDC}\n")
 
@@ -230,12 +234,16 @@ def run_e2e_tests(target_rule_id=None, mode="online"):
             d for d in target_dirs 
             if target_rule_id in d.name or any(r in d.name for r in target_rules_set)
         ]
+    elif skip_only:
+        # スキップ検証のみの場合は、対象ルールを含まないディレクトリの実行を省略して高速化
+        target_dirs = [
+            d for d in target_dirs 
+            if any(r in mode_skipped_rules for r in d.name.split('-'))
+        ]
 
     passed_count = 0
     mismatched_count = 0
     errors = []
-    
-    # スキップ集計
     skipped_count = 0
     not_skipped_errors = []
 
@@ -246,9 +254,15 @@ def run_e2e_tests(target_rule_id=None, mode="online"):
     if target_rule_id: msg += f" for Rule(s): {target_rule_id}"
     
     if mode == "local":
-        msg += f" [{Colors.WARNINGYEL}LOCAL MODE{Colors.ENDC}]"
+        msg += f" [{Colors.WARNINGYEL}LOCAL MODE"
+        msg += " (SKIP ONLY)" if skip_only else ""
+        msg += f"{Colors.ENDC}]"
     elif mode == "ncbi":
-        msg += f" [{Colors.OKCYAN}NCBI API MODE{Colors.ENDC}]"
+        msg += f" [{Colors.OKCYAN}NCBI API MODE"
+        msg += " (SKIP ONLY)" if skip_only else ""
+        msg += f"{Colors.ENDC}]"
+    else:
+        msg += f" [{Colors.OKGREEN}ONLINE MODE{Colors.ENDC}]"
     
     print(f"{msg}...")
 
@@ -278,7 +292,7 @@ def run_e2e_tests(target_rule_id=None, mode="online"):
                 continue
                             
             parts = filename.split('.')
-            is_file_level = len(parts) >= 3 and parts[-2] in ["pass", "fail"]
+            is_file_level = len(parts) >= 3 and parts[-2] in ["pass", "fail", "clean"]
             is_entries_level = "entries" in parts
             
             file_rule_ids = filename.split('_')[0].split('-')
@@ -291,9 +305,7 @@ def run_e2e_tests(target_rule_id=None, mode="online"):
                     continue
 
                 expected_result = None
-                if target_dir.name in ["SEQ0100", "ANN0170", "ANN0180", "ANN0350", "ANN0800", "ANN0810"]:
-                    expected_result = "clean"
-                elif is_file_level:
+                if is_file_level:
                     expected_result = parts[-2]
                 else:
                     expected_result = extract_feature_expectations(ann_path)
@@ -330,7 +342,7 @@ def run_e2e_tests(target_rule_id=None, mode="online"):
                         global_rules = file_triggered_entries.get("ALL", set()).union(file_triggered_entries.get("COMMON", set()))
                         rule_triggered = (rule_id in entry_actual_rules) or (rule_id in global_rules)
 
-                        order_map = {"pass": 0, "fail": 1}
+                        order_map = {"pass": 0, "fail": 1, "clean": 2}
                         sort_order = order_map.get(expected_result, 3)
 
                         test_cases.append({
@@ -349,7 +361,11 @@ def run_e2e_tests(target_rule_id=None, mode="online"):
                 tc_rule_triggered = tc["rule_triggered"]
                 test_name = f"{tc_filename} (Rule: {tc_rule_id})"
 
-                # ★ モードに応じた特別スキップ評価
+                # ★ skip_only指定時のフィルタリング
+                if skip_only and tc_rule_id not in mode_skipped_rules:
+                    continue
+
+                # モードに応じた特別スキップ評価
                 if tc_rule_id in mode_skipped_rules:
                     if tc_rule_triggered:
                         print(f"  [{Colors.FAILRED}NOT SKIPPED{Colors.ENDC}] {test_name}: Triggered in {mode.upper()} mode (It should be skipped!).")
@@ -378,17 +394,11 @@ def run_e2e_tests(target_rule_id=None, mode="online"):
                         print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name}")
                         passed_count += 1
 
-                # ★ 追加: "clean" (Auto-fix対象) の評価ロジック
+                # "clean" (Auto-fix対象) の評価ロジック
                 elif tc_expected_result == "clean":
-                    is_fail_expected = "fail" in filename
-                    
-                    if is_fail_expected and not tc_rule_triggered:
-                        print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name}: Expected FAIL & Auto-fix, but rule did NOT trigger.")
-                        errors.append(f"{target_dir.name}/{test_name} (Rule did not trigger)")
-                        mismatched_count += 1
-                    elif not is_fail_expected and tc_rule_triggered:
-                        print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name}: Expected PASS, but rule triggered.")
-                        errors.append(f"{target_dir.name}/{test_name} (Expected PASS)")
+                    if not tc_rule_triggered:
+                        print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name}: Expected rule to trigger for auto-cleanup, but it did NOT trigger.")
+                        errors.append(f"{target_dir.name}/{test_name} (Rule did not trigger for cleanup)")
                         mismatched_count += 1
                     else:
                         fixed_file_path = target_dir / "fixed" / filename
@@ -397,56 +407,58 @@ def run_e2e_tests(target_rule_id=None, mode="online"):
                             errors.append(f"{target_dir.name}/{test_name} (Fixed file missing)")
                             mismatched_count += 1
                         else:
-                            print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name} (Auto-fixed successfully)")
+                            print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name} (Detected and auto-fixed successfully)")
                             passed_count += 1
 
             # --- 3. Autofix (ANN5270など) の確認 ---
-            if target_dir.name == "ANN5270" or target_rule_id == "ANN5270" or "ANN5270" in file_rule_ids:
-                if any(tc["expected_result"] == "fail" for tc in test_cases):
-                    fixed_file_path = target_dir / "fixed" / filename
-                    test_name_autofix = f"{filename} (Rule: ANN5270 Auto-fix)"
-                    
-                    if not fixed_file_path.exists():
-                        print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name_autofix}: Expected fixed file, but it is missing.")
-                        errors.append(f"{target_dir.name}/{test_name_autofix} (File missing)")
-                        mismatched_count += 1
-                    else:
-                        print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name_autofix} (Fixed successfully)")
-                        passed_count += 1
+            if not skip_only:
+                if target_dir.name == "ANN5270" or target_rule_id == "ANN5270" or "ANN5270" in file_rule_ids:
+                    if any(tc["expected_result"] == "fail" for tc in test_cases):
+                        fixed_file_path = target_dir / "fixed" / filename
+                        test_name_autofix = f"{filename} (Rule: ANN5270 Auto-fix)"
+                        
+                        if not fixed_file_path.exists():
+                            print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name_autofix}: Expected fixed file, but it is missing.")
+                            errors.append(f"{target_dir.name}/{test_name_autofix} (File missing)")
+                            mismatched_count += 1
+                        else:
+                            print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name_autofix} (Fixed successfully)")
+                            passed_count += 1
 
             # --- 4. 6000番台翻訳結果の DDBJツール比較 ---
-            is_6000_series = target_dir.parent.name == "6000-6999" or any(re.search(r'6\d{3}', r) for r in file_rule_ids) and not any("6820" in r for r in file_rule_ids)
-            
-            if is_6000_series:
-                fasta_path = ann_path.with_suffix('.fasta')
-                aa_dir = target_dir / "aa"
-                current_faa_path = aa_dir / f"AA_{file_stem}.faa"
-                ddbj_faa_path = aa_dir / f"AA_{file_stem}.tc.faa"
+            if not skip_only:
+                is_6000_series = target_dir.parent.name == "6000-6999" or any(re.search(r'6\d{3}', r) for r in file_rule_ids) and not any("6820" in r for r in file_rule_ids)
                 
-                if fasta_path.exists():
-                    aa_dir.mkdir(exist_ok=True)
-                    tc_cmd = ["transChecker.sh", "-x", str(ann_path), "-s", str(fasta_path), "-o", str(ddbj_faa_path)]
+                if is_6000_series:
+                    fasta_path = ann_path.with_suffix('.fasta')
+                    aa_dir = target_dir / "aa"
+                    current_faa_path = aa_dir / f"AA_{file_stem}.faa"
+                    ddbj_faa_path = aa_dir / f"AA_{file_stem}.tc.faa"
                     
-                    try:
-                        subprocess.run(tc_cmd, capture_output=True, text=True)
-                        if not ddbj_faa_path.exists(): continue
-                    except Exception:
-                        continue
+                    if fasta_path.exists():
+                        aa_dir.mkdir(exist_ok=True)
+                        tc_cmd = ["transChecker.sh", "-x", str(ann_path), "-s", str(fasta_path), "-o", str(ddbj_faa_path)]
+                        
+                        try:
+                            subprocess.run(tc_cmd, capture_output=True, text=True)
+                            if not ddbj_faa_path.exists(): continue
+                        except Exception:
+                            continue
 
-                    test_name_trans = f"{filename} (Translation FASTA Match)"
-                    if not current_faa_path.exists():
-                        print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name_trans}: Current tool's .faa missing")
-                        errors.append(f"{target_dir.name}/{test_name_trans} (.faa missing)")
-                        mismatched_count += 1
-                    else:
-                        is_match, result_msg = compare_fasta(str(ddbj_faa_path), str(current_faa_path))
-                        if is_match:
-                            print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name_trans} - {result_msg}")
-                            passed_count += 1
-                        else:
-                            print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name_trans}: {result_msg}")
-                            errors.append(f"{target_dir.name}/{test_name_trans} ({result_msg})")
+                        test_name_trans = f"{filename} (Translation FASTA Match)"
+                        if not current_faa_path.exists():
+                            print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name_trans}: Current tool's .faa missing")
+                            errors.append(f"{target_dir.name}/{test_name_trans} (.faa missing)")
                             mismatched_count += 1
+                        else:
+                            is_match, result_msg = compare_fasta(str(ddbj_faa_path), str(current_faa_path))
+                            if is_match:
+                                print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name_trans} - {result_msg}")
+                                passed_count += 1
+                            else:
+                                print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name_trans}: {result_msg}")
+                                errors.append(f"{target_dir.name}/{test_name_trans} ({result_msg})")
+                                mismatched_count += 1
 
         # --- 5. Submission (across files) レベルのチェック ---
         submission_group = "Submission (across files)"
@@ -454,7 +466,10 @@ def run_e2e_tests(target_rule_id=None, mode="online"):
         cross_target_rules = [r for r in target_dir.name.split('-') if r in ["ANN0120", "ANN2520"]]
         
         for crule in cross_target_rules:
-            if target_rule_id and crule not in target_rules_set and target_dir.name != target_rule_id: continue
+            if skip_only and crule not in mode_skipped_rules:
+                continue
+            if target_rule_id and crule not in target_rules_set and target_dir.name != target_rule_id: 
+                continue
                 
             has_fails = any("fail" in p.name or "_sub" in p.name for p in target_dir.glob("*.ann"))
             expected_result = "fail" if has_fails else "pass"
@@ -487,62 +502,91 @@ def run_e2e_tests(target_rule_id=None, mode="online"):
     }
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run E2E tests for seq_validator.")
-    parser.add_argument("rule_id", nargs="?", default=None, help="Target Rule ID to test (e.g. ANN0350)")
-    args = parser.parse_args()
+def print_header(title, color):
+    print(f"\n{color}============================================================{Colors.ENDC}")
+    print(f"{color}  {title.ljust(56)}{Colors.ENDC}")
+    print(f"{color}============================================================{Colors.ENDC}")
 
-    print(f"{Colors.OKGREEN}============================================================{Colors.ENDC}")
-    print(f"{Colors.OKGREEN}  PHASE 1: ONLINE MODE TESTING (Standard Pass/Fail Check)   {Colors.ENDC}")
-    print(f"{Colors.OKGREEN}============================================================{Colors.ENDC}")
-    res_online = run_e2e_tests(target_rule_id=args.rule_id, mode="online")
-
-    print(f"\n{Colors.WARNINGYEL}============================================================{Colors.ENDC}")
-    print(f"{Colors.WARNINGYEL}  PHASE 2: LOCAL MODE TESTING (Skip Verification)           {Colors.ENDC}")
-    print(f"{Colors.WARNINGYEL}============================================================{Colors.ENDC}")
-    res_local = run_e2e_tests(target_rule_id=args.rule_id, mode="local")
-
-    print(f"\n{Colors.OKCYAN}============================================================{Colors.ENDC}")
-    print(f"{Colors.OKCYAN}  PHASE 3: NCBI API MODE TESTING (Taxonomy fallback check)  {Colors.ENDC}")
-    print(f"{Colors.OKCYAN}============================================================{Colors.ENDC}")
-    res_ncbi = run_e2e_tests(target_rule_id=args.rule_id, mode="ncbi")
-
-    # =========================================================
-    # 最終結果のサマリー出力
-    # =========================================================
+def print_summary(results_list):
     print("\n" + "="*80)
     print(f" {Colors.OKGREEN}★ FINAL E2E TEST SUMMARY ★{Colors.ENDC} ")
     print("="*80)
     
-    print(f"\n{Colors.OKGREEN}[ ONLINE MODE RESULTS ]{Colors.ENDC}")
-    print(f"  Matched:    {res_online['passed']}")
-    print(f"  Mismatched: {Colors.FAILRED if res_online['mismatched'] > 0 else Colors.OKGREEN}{res_online['mismatched']}{Colors.ENDC}")
-    if res_online['errors']:
-        for e in res_online['errors']:
-            print(f"    - {e}")
-
-    print(f"\n{Colors.WARNINGYEL}[ LOCAL MODE RESULTS ]{Colors.ENDC}")
-    print(f"  Matched (Normal Rules): {res_local['passed']}")
-    print(f"  Mismatched:             {Colors.FAILRED if res_local['mismatched'] > 0 else Colors.OKGREEN}{res_local['mismatched']}{Colors.ENDC}")
-    if res_local['errors']:
-        for e in res_local['errors']:
-            print(f"    - {e}")
-    print(f"  Expectedly Skipped:     {Colors.OKGREEN}{res_local['skipped']}{Colors.ENDC} (DB/Network dependent rules)")
-    print(f"  Not Skipped (Error!):   {Colors.FAILRED if len(res_local['not_skipped_errors']) > 0 else Colors.OKGREEN}{len(res_local['not_skipped_errors'])}{Colors.ENDC}")
-    if res_local['not_skipped_errors']:
-        for e in res_local['not_skipped_errors']:
-            print(f"    - {e}")
-
-    print(f"\n{Colors.OKCYAN}[ NCBI API MODE RESULTS ]{Colors.ENDC}")
-    print(f"  Matched (Normal Rules): {res_ncbi['passed']}")
-    print(f"  Mismatched:             {Colors.FAILRED if res_ncbi['mismatched'] > 0 else Colors.OKGREEN}{res_ncbi['mismatched']}{Colors.ENDC}")
-    if res_ncbi['errors']:
-        for e in res_ncbi['errors']:
-            print(f"    - {e}")
-    print(f"  Expectedly Skipped:     {Colors.OKGREEN}{res_ncbi['skipped']}{Colors.ENDC} (RDB dependent rules only)")
-    print(f"  Not Skipped (Error!):   {Colors.FAILRED if len(res_ncbi['not_skipped_errors']) > 0 else Colors.OKGREEN}{len(res_ncbi['not_skipped_errors'])}{Colors.ENDC}")
-    if res_ncbi['not_skipped_errors']:
-        for e in res_ncbi['not_skipped_errors']:
-            print(f"    - {e}")
-
+    for title, res, color in results_list:
+        print(f"\n{color}[ {title} ]{Colors.ENDC}")
+        passed_label = "Matched" if title == "ONLINE MODE RESULTS" else "Matched (Normal Rules)"
+        print(f"  {passed_label}: {res['passed']}")
+        print(f"  Mismatched:             {Colors.FAILRED if res['mismatched'] > 0 else Colors.OKGREEN}{res['mismatched']}{Colors.ENDC}")
+        if res['errors']:
+            for e in res['errors']:
+                print(f"    - {e}")
+                
+        if title != "ONLINE MODE RESULTS":
+            print(f"  Expectedly Skipped:     {Colors.OKGREEN}{res['skipped']}{Colors.ENDC}")
+            print(f"  Not Skipped (Error!):   {Colors.FAILRED if len(res['not_skipped_errors']) > 0 else Colors.OKGREEN}{len(res['not_skipped_errors'])}{Colors.ENDC}")
+            if res['not_skipped_errors']:
+                for e in res['not_skipped_errors']:
+                    print(f"    - {e}")
+                    
     print("="*80 + "\n")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run E2E tests for seq_validator.")
+    parser.add_argument("rule_id", nargs="?", default=None, help="Target Rule ID to test (e.g. ANN0350)")
+    
+    # 修正: defaultを ["online", "local-skip", "ncbi-skip"] に変更
+    parser.add_argument(
+        "--mode", 
+        nargs="+", 
+        choices=["online", "local", "local-skip", "ncbi", "ncbi-skip", "all"], 
+        default=["online", "local-skip", "ncbi-skip"], 
+        help="Execution mode(s). Multiple modes can be specified. (default: online local-skip ncbi-skip)"
+    )
+    args = parser.parse_args()
+
+    # 指定されたモードのリストを取得 ("all" が指定された場合は主要なフル検証3モードに展開)
+    modes = args.mode
+    if "all" in modes:
+        modes = ["online", "local", "ncbi"]
+
+    results_to_print = []
+    
+    # =========================================================================
+    # PHASE 1: ONLINE MODE
+    # =========================================================================
+    if "online" in modes:
+        print_header("PHASE 1: ONLINE MODE TESTING (Standard Pass/Fail Check)", Colors.OKGREEN)
+        res_online = run_e2e_tests(target_rule_id=args.rule_id, mode="online")
+        results_to_print.append(("ONLINE MODE RESULTS", res_online, Colors.OKGREEN))
+
+    # =========================================================================
+    # PHASE 2: LOCAL MODE
+    # =========================================================================
+    if "local" in modes:
+        print_header("PHASE 2: LOCAL MODE TESTING (All Rules Verification)", Colors.WARNINGYEL)
+        res_local = run_e2e_tests(target_rule_id=args.rule_id, mode="local", skip_only=False)
+        results_to_print.append(("LOCAL MODE RESULTS", res_local, Colors.WARNINGYEL))
+        
+    elif "local-skip" in modes:
+        print_header("PHASE 2: LOCAL MODE TESTING (Skip Verification Only)", Colors.WARNINGYEL)
+        res_local = run_e2e_tests(target_rule_id=args.rule_id, mode="local", skip_only=True)
+        results_to_print.append(("LOCAL MODE RESULTS (SKIP ONLY)", res_local, Colors.WARNINGYEL))
+
+    # =========================================================================
+    # PHASE 3: NCBI API MODE
+    # =========================================================================
+    if "ncbi" in modes:
+        print_header("PHASE 3: NCBI API MODE TESTING (Taxonomy fallback check)", Colors.OKCYAN)
+        res_ncbi = run_e2e_tests(target_rule_id=args.rule_id, mode="ncbi", skip_only=False)
+        results_to_print.append(("NCBI API MODE RESULTS", res_ncbi, Colors.OKCYAN))
+        
+    elif "ncbi-skip" in modes:
+        print_header("PHASE 3: NCBI API MODE TESTING (Skip Verification Only)", Colors.OKCYAN)
+        res_ncbi = run_e2e_tests(target_rule_id=args.rule_id, mode="ncbi", skip_only=True)
+        results_to_print.append(("NCBI API MODE RESULTS (SKIP ONLY)", res_ncbi, Colors.OKCYAN))
+
+    # =========================================================================
+    # サマリー出力
+    # =========================================================================
+    print_summary(results_to_print)

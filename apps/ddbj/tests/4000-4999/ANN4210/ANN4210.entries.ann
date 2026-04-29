@@ -9,13 +9,22 @@ COMMON	SUBMITTER		ab_name	Mishima,H.
 			city	Mishima
 			street	Yata 1111
 			zip	411-8540
-	REFERENCE		title	Mouse Genome Sequencing
+	REFERENCE		title	E coli Genome Sequencing
 			ab_name	Robertson,G.R.
 			ab_name	Mishima,H.
 			year	2026
 			status	Unpublished
-seq1	source	1..120	organism	Craniata sp.
+seq1	source	1..120	organism	Escherichia coli
 			mol_type	genomic DNA
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
-			germline
+	CDS	join(10..20,30..40)	product	test1
+			transl_table	11
+			note	ANN4210 fail
+seq2	source	1..120	organism	Homo sapiens
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	CDS	join(10..20,30..40)	product	test1
+			transl_table	11
+			note	ANN4210 pass

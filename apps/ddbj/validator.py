@@ -150,7 +150,6 @@ class Validator:
             
             FF_DEFINITION_VALIDATOR(), # [WARNING/ERROR] (Groups definition line checks)
             OPERON_MASTER_VALIDATOR(), # [WARNING/ERROR] (Groups operon checks)
-            DIVISION_QUALIFIER_VALIDATOR(),
             
             # 【フェーズ9】アセンブリ・ギャップ関連
             AXS5090(), # [ERROR] Sequences annotated as gap or assembly_gap must consist entirely of 'N'

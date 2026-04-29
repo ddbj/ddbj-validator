@@ -38,8 +38,6 @@ class ValidationContext:
     is_tsa: bool = False
     is_tpa: bool = False
     is_est: bool = False
-    is_eukaryote: bool = False
-    is_prokaryote: bool = False
     is_web_mode: bool = False
     active_datatypes: set = field(default_factory=set)
     active_divisions: set = field(default_factory=set)
@@ -106,8 +104,6 @@ class ValidationContext:
         self.is_tsa = False
         self.is_tpa = False
         self.is_est = False
-        self.is_eukaryote = False
-        self.is_prokaryote = False
         self.active_datatypes = set()
         self.active_divisions = set()
 
@@ -139,13 +135,4 @@ class ValidationContext:
                         org_name = org.strip()
                         # すでに self.tax_data に格納されている系統情報を利用
                         tax_info = self.tax_data.get(org_name, {})
-                        lineage = tax_info.get("lineage", "")
-                        
-                        if "Eukaryota" in lineage:
-                            self.is_eukaryote = True
-                        if "Archaea" in lineage or "Bacteria" in lineage:
-                            self.is_prokaryote = True
-                            
-            # 1つでも真核生物・原核生物の判定ができたら以降のレコードの走査は不要
-            if self.is_eukaryote or self.is_prokaryote:
-                break
+                        tax_group = tax_info.get("tax_group")

@@ -541,8 +541,7 @@ def propose_partial_location_fixes(records, ann_path, tax_data):
         is_prokaryote = False
         for feature in get_features(record, "source"):
             for org in feature.qualifiers.get("organism", []):
-                lineage = tax_data.get(org.strip(), {}).get("lineage", "")
-                if "Archaea" in lineage or "Bacteria" in lineage:
+                if tax_data.get(org.strip(), {}).get("tax_group") == "prokaryote":
                     is_prokaryote = True
                     break
             if is_prokaryote:

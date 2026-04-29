@@ -248,28 +248,61 @@ class ANN_DICT_VALIDATOR(BaseRule):
 
             q_def = qualifiers_dict.get(q_name) or {}
             
-            # Division チェック
-            allowed_divs = q_def.get("allowed_divisions")
-            if allowed_divs:
-                rule_id = q_def.get("division_rule_id", "ANN0000")
-                allowed_set = set(allowed_divs)
+            # =====================================================================
+            # 1. 系統(Taxonomy)に基づく特例 Qualifier チェック (ANN1430, 1440, 1450, 1460)
+            # =====================================================================
+            if f_type == "source" and q_name in ["dev_stage", "tissue_type", "germline", "rearranged", "proviral", "macronuclear"]:
+                orgs = feature.qualifiers.get("organism", [])
+                org_name = orgs[0].strip() if orgs else None
+                tax_info = tax_data.get(org_name, {}) if org_name else {}
+                
+                lineage = tax_info.get("lineage", "")
+                tax_group = tax_info.get("tax_group", "other")
+                
+                is_valid = True
+                rule_id = ""
+                msg = ""
 
-                if rule_id in ["ANN1450", "ANN1460"]:
-                    if f_type == "source":
-                        orgs = feature.qualifiers.get("organism", [])
-                        org_name = orgs[0].strip() if orgs else None
-                        tax_div = tax_data.get(org_name, {}).get("division") if org_name else None
+                if q_name in ["dev_stage", "tissue_type"]:
+                    if tax_group in ["virus", "prokaryote", "environmental"]:
+                        is_valid = False
+                        rule_id = "ANN1430"
+                        msg = f"The '{q_name}' qualifier is not permitted for viral, prokaryotic, or environmental entries. (organism: '{org_name}')"
                         
-                        if tax_div:
-                            tax_div_str = tax_div.strip()
-                            if tax_div_str not in allowed_set:
-                                divs_str = ", ".join(sorted(allowed_set))
-                                msg = f"The '{q_name}' qualifier is restricted to {divs_str} division entries. (organism: '{org_name}', taxonomic division: '{tax_div_str}')"
-                                res = self.feature_result(record, feature, msg, level="warning", qualifier=q_name)
-                                res["entry"] = getattr(feature, 'original_entry_id', entry_id)
-                                res["rule"] = rule_id; res["target"] = f_type
-                                results.append(res)
-                else:
+                elif q_name in ["germline", "rearranged"]:
+                    if "Craniata" not in lineage:
+                        is_valid = False
+                        rule_id = "ANN1440"
+                        msg = f"The '{q_name}' qualifier is restricted to Craniata entries. (organism: '{org_name}')"
+                        
+                elif q_name == "proviral":
+                    if tax_group != "virus":
+                        is_valid = False
+                        rule_id = "ANN1450"
+                        msg = f"The '{q_name}' qualifier is restricted to viral entries. (organism: '{org_name}')"
+                        
+                elif q_name == "macronuclear":
+                    if "Ciliophora" not in lineage:
+                        is_valid = False
+                        rule_id = "ANN1460"
+                        msg = f"The '{q_name}' qualifier is restricted to Ciliophora entries. (organism: '{org_name}')"
+
+                if not is_valid:
+                    res = self.feature_result(record, feature, msg, level="warning", qualifier=q_name)
+                    res["entry"] = getattr(feature, 'original_entry_id', entry_id)
+                    res["rule"] = rule_id
+                    res["target"] = f_type
+                    results.append(res)
+                    
+            # =====================================================================
+            # 2. Datatype / Division 依存の一般的な Qualifier 許可チェック
+            # =====================================================================
+            else:
+                allowed_divs = q_def.get("allowed_divisions")
+                if allowed_divs:
+                    rule_id = q_def.get("division_rule_id", "ANN0000")
+                    allowed_set = set(allowed_divs)
+                    
                     if active_dt_divisions:
                         if not active_dt_divisions.intersection(allowed_set):
                             divs_str = ", ".join(sorted(allowed_set))
@@ -277,9 +310,10 @@ class ANN_DICT_VALIDATOR(BaseRule):
                             msg = f"The '{q_name}' qualifier is restricted to {divs_str} division entries. (current division: '{active_divs_str}')"
                             res = self.feature_result(record, feature, msg, level="error", qualifier=q_name)
                             res["entry"] = getattr(feature, 'original_entry_id', entry_id)
-                            res["rule"] = rule_id; res["target"] = f_type
+                            res["rule"] = rule_id
+                            res["target"] = f_type
                             results.append(res)
-                                                                                                                        
+                                                                                                                                                    
             # 重複値チェック
             if q_def.get("unique_values"):
                 unique_rule = q_def.get("unique_rule", {})

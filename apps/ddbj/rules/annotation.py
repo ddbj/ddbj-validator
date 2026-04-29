@@ -1032,22 +1032,25 @@ class ANN0820(BaseRule):
     def validate_file(self, records, context, ann_path=None, seq_path=None):
         results = []
 
-        # WGS かつ 真核生物 でなければ即終了
-        if not (context.is_wgs and context.is_eukaryote):
+        if not context.is_wgs:
             return results
 
-        # 真核生物の名前を取得（エラーメッセージ用）
+        # 真核生物の名前を取得しつつ、真核生物が存在するか判定
         eukaryote_org_name = ""
         for record in records.values():
             for feature in self.get_features(record, "source"):
                 for org in feature.qualifiers.get("organism", []):
                     org_clean = org.strip()
-                    t_data = context.tax_data.get(org_clean, {})
-                    if "Eukaryota" in t_data.get("lineage", ""):
+                    # db_taxonomy で判定済みの tax_group を使用
+                    if context.tax_data.get(org_clean, {}).get("tax_group") == "eukaryote":
                         eukaryote_org_name = org_clean
                         break
                 if eukaryote_org_name: break
             if eukaryote_org_name: break
+
+        # 真核生物でなければ即終了
+        if not eukaryote_org_name:
+            return results
 
         # ST_COMMENT に Assembly Name が存在するかチェック
         has_assembly_name = False
@@ -1068,6 +1071,7 @@ class ANN0820(BaseRule):
             ))
 
         return results
+
 
 class ANN0830(BaseRule):
     rule_id = "ANN0830"
@@ -1301,6 +1305,10 @@ class ANN1100(BaseRule):
 
     def validate(self, record, context):
         results = []
+        
+        # ファイルレベルでの ENV 指定を確認
+        is_global_env = "ENV" in context.active_datatypes or "ENV" in context.active_divisions
+
         for feature in self.get_features(record, "source"):
             if "strain" in feature.qualifiers:
                 organisms = feature.qualifiers.get("organism", [])
@@ -1308,26 +1316,20 @@ class ANN1100(BaseRule):
                 for org in organisms:
                     org_clean = org.strip()
                     t_data = context.tax_data.get(org_clean, {})
-                    lineage = t_data.get("lineage", "").lower()
                     
-                    # "uncultured" や "environmental" が名前に含まれているか、系統に含まれているかで判定
-                    is_environmental = (
-                        "unclassified entries" in lineage or 
-                        "environmental samples" in lineage or 
-                        "uncultured" in org_clean.lower() or
-                        "environmental" in org_clean.lower()
-                    )
+                    # DATATYPE/DIVISION または tax_group のいずれかで environmental と判定
+                    is_env = is_global_env or t_data.get("tax_group") == "environmental"
                     
-                    if is_environmental:
+                    if is_env:
                         for strain_val in feature.qualifiers["strain"]:
                             msg = f"{self.description} (Organism: '{org_clean}', Strain: '{strain_val}')"
                             results.append(self.feature_result(record, feature, msg, level="error", qualifier="strain"))
                         # エラーを出したらこのfeatureの判定は終了してOK
                         break
                         
-        return results        
-
+        return results
         
+                        
 class ANN1110(BaseRule):
     rule_id = "ANN1110"
     alternate_id = "JK"
@@ -1753,15 +1755,16 @@ class ANN1280(BaseRule):
                 for org in organisms:
                     org_clean = org.strip()
                     t_data = context.tax_data.get(org_clean, {})
-                    lineage = t_data.get("lineage", "")
                     
-                    if "Archaea" in lineage or "Bacteria" in lineage:
+                    # db_taxonomy で判定済みの tax_group を使用
+                    if t_data.get("tax_group") == "prokaryote":
                         for sex_val in feature.qualifiers["sex"]:
                             msg = f"{self.description} (Organism: '{org_clean}', Sex: '{sex_val}')"
                             results.append(self.feature_result(record, feature, msg, level="warning", qualifier="sex"))
                         break
                         
         return results        
+
         
 class ANN1290(BaseRule):
     rule_id = "ANN1290"
@@ -1782,16 +1785,21 @@ class ANN1290(BaseRule):
                         results.append(self.feature_result(record, feature, msg, level="error", qualifier="culture_collection"))
         return results
 
+
 class ANN1320(BaseRule):
     rule_id = "ANN1320"
     alternate_id = "BS_R0115"
     target = "specimen_voucher"
-    description = "Specimen voucher for prokaryotes and unclassified sequences."
+    description = "Specimen voucher for prokaryotes and environmental sequences."
     requires_rdb = True
     is_file_level = False
 
     def validate(self, record, context):
         results = []
+        
+        # ファイルレベルでの ENV 指定を確認
+        is_global_env = "ENV" in context.active_datatypes or "ENV" in context.active_divisions
+
         for feature in self.get_features(record, "source"):
             if "specimen_voucher" in feature.qualifiers:
                 organisms = feature.qualifiers.get("organism", [])
@@ -1799,20 +1807,20 @@ class ANN1320(BaseRule):
                 for org in organisms:
                     org_clean = org.strip()
                     t_data = context.tax_data.get(org_clean, {})
-                    lineage = t_data.get("lineage", "")
+                    tax_group = t_data.get("tax_group")
                     
-                    is_bacteria = "Bacteria" in lineage
-                    is_archaea = "Archaea" in lineage
-                    is_unclassified = "unclassified" in lineage.lower() or "unclassified" in org_clean.lower()
+                    is_env = is_global_env or tax_group == "environmental"
+                    is_prokaryote = tax_group == "prokaryote"
                     
-                    if is_bacteria or is_archaea or is_unclassified:
+                    if is_prokaryote or is_env:
                         for val in feature.qualifiers["specimen_voucher"]:
                             msg = f"{self.description} (Organism: '{org_clean}', Specimen voucher: '{val}')"
                             results.append(self.feature_result(record, feature, msg, level="error", qualifier="specimen_voucher"))
                         break
                         
-        return results        
+        return results
         
+                
 class ANN1330(BaseRule):
     rule_id = "ANN1330"
     alternate_id = "BS_R0116"
@@ -2142,44 +2150,60 @@ class ANN1626(BaseRule):
                 results.append(self.feature_result(record, feature, msg, level="error"))
 
         return results
-        
+
+
 class ANN1810(BaseRule):
     rule_id = "ANN1810"
     alternate_id = "JK"
     target = "clone"
-    description = "The clone qualifier value is not unique within the ENV division entries."
+    description = "The clone qualifier value is not unique within the environmental sample entries."
     requires_rdb = False
     is_file_level = True
 
     def validate_file(self, records, context, ann_path=None, seq_path=None):
         results = []
         
-        if "ENV" not in context.active_divisions:
-            return results
-
-        seen_clones = set()
-        duplicate_clones = set()
+        # ファイルレベルでの ENV 指定を確認
+        is_global_env = "ENV" in context.active_datatypes or "ENV" in context.active_divisions
+        
+        # 環境サンプルと判定されたエントリの clone とその出現箇所を記録
+        clone_to_entries = {}
 
         for entry_id, record in records.items():
             if entry_id == "COMMON": continue
-            for feature in self.get_features(record, "source"):
-                for clone in feature.qualifiers.get("clone", []):
-                    clone_val = str(clone)
-                    if not clone_val: continue
-                    if clone_val in seen_clones:
-                        duplicate_clones.add(clone_val)
-                    else:
-                        seen_clones.add(clone_val)
-
-        if duplicate_clones:
-            msg = f"{self.description} (Duplicates: {', '.join(sorted(duplicate_clones))})"
-            results.append(self.format_result(
-                entry_id="ALL", message=msg, level="error",
-                feature_type="source", qualifier="clone"
-            ))
             
-        return results
+            for feature in self.get_features(record, "source"):
+                is_env = is_global_env
+                
+                # グローバルがENVでなければ、このレコードのorganismから判定
+                if not is_env:
+                    for org in feature.qualifiers.get("organism", []):
+                        tax_info = context.tax_data.get(org.strip(), {})
+                        if tax_info.get("tax_group") == "environmental":
+                            is_env = True
+                            break
+                
+                # 環境サンプルであれば、cloneの値を収集
+                if is_env:
+                    for clone in feature.qualifiers.get("clone", []):
+                        clone_val = str(clone).strip()
+                        if clone_val:
+                            if clone_val not in clone_to_entries:
+                                clone_to_entries[clone_val] = []
+                            clone_to_entries[clone_val].append((entry_id, record, feature))
 
+        # 重複している clone をエラーとして各エントリに紐付けて報告
+        for clone_val, occurrences in clone_to_entries.items():
+            if len(occurrences) > 1:
+                for entry_id, record_obj, feature in occurrences:
+                    msg = f"{self.description} (Duplicate clone: '{clone_val}')"
+                    res = self.feature_result(record_obj, feature, msg, level="error", qualifier="clone")
+                    res["entry"] = entry_id
+                    results.append(res)
+                    
+        return results
+                
+        
 class ANN1820(BaseRule):
     rule_id = "ANN1820"
     alternate_id = "JK"
@@ -3609,39 +3633,47 @@ class ANN4210(BaseRule):
     requires_rdb = False
     is_file_level = False
 
-    # バクテリア判定を context.is_prokaryote に近似 (より厳密にしたい場合はtax_dataを参照)
     def validate(self, record, context):
         results = []
         if record.id == "COMMON":
             return results
 
-        # ファイルレベルで原核生物と判定されていない場合はスキップ
-        if not context.is_prokaryote:
-            return results
-
+        # シーケンス長を取得 (fastaが無い場合はsourceフィーチャーの終端から推測)
         seq_len = len(record.seq) if record.seq else 0
+        if seq_len == 0:
+            for feat in self.get_features(record, "source"):
+                if feat.location:
+                    seq_len = int(feat.location.end)
+                    break
 
-        # このレコードが本当にバクテリアか再確認
-        is_bct = False
+        # エントリーごとに tax_group を使用して原核生物か判定
+        is_prokaryote = False
         for feat in self.get_features(record, "source"):
-            orgs = feat.qualifiers.get("organism", [])
-            if orgs:
-                org_name = orgs[0].strip()
-                tax_info = context.tax_data.get(org_name, {})
-                if tax_info.get("division") == "BCT" or "Bacteria" in tax_info.get("lineage", ""):
-                    is_bct = True
-            break
+            for org in feat.qualifiers.get("organism", []):
+                org_clean = org.strip()
+                if context.tax_data.get(org_clean, {}).get("tax_group") == "prokaryote":
+                    is_prokaryote = True
+                    break
+            if is_prokaryote:
+                break
 
-        if not is_bct:
+        if not is_prokaryote:
             return results  
 
         for feature in self.get_features(record):
-            if not isinstance(feature.location, CompoundLocation):
+            if not feature.location:
                 continue
 
+            # 結合されたLocation (CompoundLocation等) かどうかを判定
+            # 修正: parts が存在し、かつ複数のパート(長さ2以上)を持つ場合のみ対象とする
+            if not hasattr(feature.location, "parts") or len(feature.location.parts) <= 1:
+                continue
+
+            # 許容される Qualifier がある場合は結合エラーをスキップ
             if "ribosomal_slippage" in feature.qualifiers or "trans_splicing" in feature.qualifiers:
                 continue
 
+            # origin (起点) をまたぐ結合かどうかを判定
             crosses_origin = False
             if seq_len > 0:
                 parts = feature.location.parts
@@ -3659,8 +3691,8 @@ class ANN4210(BaseRule):
             results.append(self.feature_result(record, feature, self.description, level="warning"))
 
         return results
-
         
+                
 class ANN4220(BaseRule):
     rule_id = "ANN4220"
     alternate_id = "GENBANK_DUP_GENES_OPPOSITE_STRANDS"
@@ -3726,16 +3758,15 @@ class ANN4240(BaseRule):
             return results
 
         # =========================================================
-        # 1. Autofix と完全に同じロジックで原核生物判定を行う
+        # 1. tax_group を使用して原核生物判定を行う
         # =========================================================
         is_prokaryote = False
-        # context が tax_data (辞書) を持っていると仮定して取得
         tax_data = getattr(context, "tax_data", {}) 
 
         for feature in self.get_features(record, "source"):
             for org in feature.qualifiers.get("organism", []):
-                lineage = tax_data.get(org.strip(), {}).get("lineage", "")
-                if "Archaea" in lineage or "Bacteria" in lineage:
+                # db_taxonomy で判定済みの tax_group を使用
+                if tax_data.get(org.strip(), {}).get("tax_group") == "prokaryote":
                     is_prokaryote = True
                     break
             if is_prokaryote:
@@ -3801,8 +3832,9 @@ class ANN4240(BaseRule):
                 msg = f"{self.description} (Found partial location close to {reason_str}: {loc_str})"
                 results.append(self.feature_result(record, feature, msg, level="error"))
 
-        return results        
-                                                
+        return results
+        
+                                                        
 class ANN4300(BaseRule):
     rule_id = "ANN4300"
     alternate_id = "V200"
@@ -3898,14 +3930,23 @@ class ANN5045(BaseRule):
         if not context.is_wgs:
             return results
 
-        if not (context.is_eukaryote or context.is_prokaryote):
-            return results
-
         for entry_id, record in records.items():
             if entry_id == "COMMON":
                 continue
             
             for feature in self.get_features(record, "source"):
+                # エントリーごとに tax_group を使用して生物群を判定
+                is_target_group = False
+                for org in feature.qualifiers.get("organism", []):
+                    tax_group = context.tax_data.get(org.strip(), {}).get("tax_group")
+                    if tax_group in ["eukaryote", "prokaryote"]:
+                        is_target_group = True
+                        break
+                        
+                # 真核・原核生物以外（ウイルスや環境サンプル等）ならサイズチェックをスキップ
+                if not is_target_group:
+                    continue
+
                 if not feature.location:
                     continue
 
@@ -3920,7 +3961,7 @@ class ANN5045(BaseRule):
                 break # source は1つチェックすれば十分
         
         return results
-
+        
 
 class ANN5220(BaseRule):
     rule_id = "ANN5220"

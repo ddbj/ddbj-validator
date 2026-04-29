@@ -71,6 +71,7 @@ nohup.out
 # 管理用ファイル
 # =========================
 move.sh
+memo.txt
 file-content.sh
 bsival_context*.txt
 profile*.stats
