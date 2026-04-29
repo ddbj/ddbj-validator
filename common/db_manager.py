@@ -17,9 +17,10 @@ class DatabaseManager:
         if self._conns[key] is None:
             if is_tax:
                 db_name = os.environ.get("PGDATABASE") or os.environ.get("DDBJ_DB_NAME")
+                db_port = os.environ.get("PGPORT") or os.environ.get("DDBJ_DB_PORT")
                 self._conns[key] = psycopg2.connect(
                     host=os.environ.get("DB_HOST"),
-                    port=os.environ.get("DDBJ_DB_PORT"),
+                    port=db_port,
                     dbname=db_name,
                     user=os.environ.get("DDBJ_DB_USER"),
                     password=os.environ.get("DDBJ_DB_PASS")
