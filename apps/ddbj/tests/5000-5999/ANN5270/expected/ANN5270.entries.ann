@@ -1,0 +1,50 @@
+COMMON	SUBMITTER		ab_name	Mishima,H.
+			ab_name	Robertson,G.R.
+			contact	Hanako Mishima
+			email	mishima@ddbj.nig.ac.jp
+			institute	National Institute of Genetics
+			department	DNA Data Bank of Japan
+			country	Japan
+			state	Shizuoka
+			city	Mishima
+			street	Yata 1111
+			zip	411-8540
+	REFERENCE		title	Mouse Genome Sequencing
+			ab_name	Robertson,G.R.
+			ab_name	Mishima,H.
+			year	2026
+			status	Unpublished
+seq1	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	assembly_gap	51..70	estimated_length	known
+			gap_type	within scaffold
+	CDS	41..>50	transl_table	1
+			product	hypothetical protein
+			note	ANN5270 fail (assembly_gap partially overlaps with CDS)
+seq2	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	gap	51..70	estimated_length	20
+	mRNA	<71..80	product	hypothetical protein
+			note	ANN5270 fail (gap partially overlaps with mRNA)
+seq3	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	assembly_gap	51..70	estimated_length	known
+			gap_type	within scaffold
+	CDS	31..90	transl_table	1
+			product	hypothetical protein
+			note	ANN5270 fail (assembly_gap is fully inside CDS)
+seq4	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	assembly_gap	51..70	estimated_length	known
+			gap_type	within scaffold
+	CDS	join(31..50,71..90)	transl_table	1
+			product	hypothetical protein
+			note	ANN5270 pass (No overlap, gap is safely between exons)

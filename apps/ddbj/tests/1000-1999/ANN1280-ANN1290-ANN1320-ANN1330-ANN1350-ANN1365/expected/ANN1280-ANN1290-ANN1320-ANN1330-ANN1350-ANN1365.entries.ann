@@ -96,5 +96,5 @@ seq14	source	1..102	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
-			culture_collection	atcc:1
+			culture_collection	ATCC:1
 			note	ANN1290 fail

@@ -18,83 +18,77 @@ seq1	source	1..102	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
-			note	ANN1280 pass
-seq2	source	1..102	organism	Escherichia coli
+			note	ANN1210 pass
+seq2	source	1..102	organism	Mus musculus
 			mol_type	genomic DNA
 			geo_loc_name	Japan:Shizuoka, Mishima
-			sex	male
-			note	ANN1280 fail
-seq3	source	1..102	organism	Escherichia coli
-			mol_type	genomic DNA
-			collection_date	2020-01-01
-			geo_loc_name	Japan:Shizuoka, Mishima
-			culture_collection	ATCC:1
-			note	ANN1290 pass
-seq4	source	1..102	organism	Escherichia coli
+			note	ANN1210 fail
+seq3	source	1..102	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
-			culture_collection	ATCCC:1
-			note	ANN1290 fail
+			note	ANN1220 pass
+seq4	source	1..102	organism	Mus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			note	ANN1220 fail
 seq5	source	1..102	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
-			specimen_voucher	ATCC:1
-			note	ANN1320 pass
-seq6	source	1..102	organism	Escherichia coli
+			note	ANN1230 pass
+seq6	source	1..102	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
-			specimen_voucher	ATCC:1
-			note	ANN1320 fail
+			note	ANN1230 fail
 seq7	source	1..102	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
-			specimen_voucher	ATCC:1
-			note	ANN1330 pass
-seq8	source	1..102	organism	Escherichia coli
+			note	ANN1240 pass
+seq8	source	1..102	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2040-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			note	ANN1240 fail
+seq9	source	1..102	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
-			specimen_voucher	ATCC:C:D:1
-			note	ANN1330 fail
-seq9	source	1..102	organism	Escherichia coli
+			note	ANN1250 pass
+seq10	source	1..102	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
-			bio_material	ATCC:1
-			note	ANN1350 pass
-seq10	source	1..102	organism	Escherichia coli
-			mol_type	genomic DNA
-			collection_date	2020-01-01
-			geo_loc_name	Japan:Shizuoka, Mishima
-			bio_material	ATCC:C:D:1
-			note	ANN1350 fail
+			note	ANN1250 fail
 seq11	source	1..102	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
-			bio_material	ATCC:1
-			culture_collection	NBRC:1
-			note	ANN1365 pass
+			lat_lon	35.118978 N 138.937790 E
+			note	ANN1270 pass
 seq12	source	1..102	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
-			bio_material	ATCC:1
-			culture_collection	ATCC:1
-			note	ANN1365 fail
+			lat_lon	35.11897899 N 138.937790 E
+			note	ANN1270 fail
 seq13	source	1..102	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
-			specimen_voucher	Personal:Collection:1
-			note	ANN1330 pass
+			lat_lon	35.118978 N 138.937790 E
+			note	ANN1275 pass
 seq14	source	1..102	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
-			culture_collection	atcc:1
-			note	ANN1290 fail
+			lat_lon	35.118978 N 138.937790 W
+			note	ANN1275 fail
+seq15	source	1..102	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Suruga-bay
+			lat_lon	35.08143644 N 138.7059535 E
+			note	ANN1275 fail

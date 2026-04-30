@@ -34,6 +34,7 @@ def main():
     # --- 開発者向け個別制御オプション ---
     parser.add_argument("--skip-db", action="store_true", help="Skip internal DB queries")
     parser.add_argument("--skip-ncbi", action="store_true", help="Skip NCBI API queries")
+    parser.add_argument("--skip-auth", action="store_true", help="Skip rules that require DDBJ account authentication")
     
     # NCBI API key 指定
     parser.add_argument("--ncbi-api-key", type=str, help="NCBI API key to increase rate limits (optional)")
@@ -46,6 +47,7 @@ def main():
     # --- オプションの論理解決 ---
     skip_db = False
     skip_ncbi = False
+    skip_auth = False
 
     # 1. ローカルモードの適用 (-l)
     if args.local:
@@ -63,6 +65,11 @@ def main():
         skip_db = True
     if args.skip_ncbi:
         skip_ncbi = True
+
+    # Online mode で認証オフ
+    if args.skip_auth:
+        print("\n[ INFO ]\nSkipping authentication-dependent rules. This option is not intended for local mode.\n", file=sys.stderr)
+        skip_auth = True
         
     # --- 0. 並列数の決定 ---
     cpu_count = os.cpu_count() or 1
@@ -198,10 +205,9 @@ def main():
         target_dirs_for_report = list(dict.fromkeys(target_dirs_for_report))
 
     # --- パイプラインの実行とレポート出力 --- #
-    # 解決済みの skip_db, skip_ncbi フラグを渡す
     pipeline = ValidatorPipeline(
         pairs, report_out_dir, args.web, args.force_fix, jobs, 
-        skip_db=skip_db, skip_ncbi=skip_ncbi
+        skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=args.skip_auth
     )
     
     try:

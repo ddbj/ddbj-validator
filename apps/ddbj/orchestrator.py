@@ -464,16 +464,16 @@ def fast_copy_and_fix_fasta(fasta_content, dst_fasta_path):
 
 
 class ValidatorPipeline:
-    def __init__(self, pairs, report_out_dir, is_web_mode, force_fix, jobs=1, skip_db=False, skip_ncbi=False):
+    def __init__(self, pairs, report_out_dir, is_web_mode, force_fix, jobs=1, skip_db=False, skip_ncbi=False, skip_auth=False):
         self.pairs = pairs
         self.report_out_dir = report_out_dir
         self.is_web_mode = is_web_mode
         self.force_fix = force_fix
         self.jobs = jobs
         
-        # 新しいフラグを保持
         self.skip_db = skip_db
         self.skip_ncbi = skip_ncbi
+        self.skip_auth = skip_auth
         
         self.all_interactive_proposals = []
         self.all_skipped_autofixes = []
@@ -615,6 +615,7 @@ class ValidatorPipeline:
             is_web_mode=self.is_web_mode,
             skip_db=self.skip_db,
             skip_ncbi=self.skip_ncbi,
+            skip_auth=self.skip_auth,
             bp_psubs=bp_psubs,
             dra_refs=dra_refs,
             drr_status=drr_status,

@@ -19,5 +19,5 @@ COMMON	SUBMITTER		ab_name	Mishima,H.
 			status	Unpublished
 seq1	source	1..120	organism	Mus musculus
 			mol_type	genomic DNA
-			collection_date	2020-01-01
+			collection_date	2024-10-01
 			geo_loc_name	Japan:Shizuoka, Mishima

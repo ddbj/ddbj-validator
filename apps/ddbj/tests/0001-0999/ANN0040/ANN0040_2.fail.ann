@@ -10,7 +10,7 @@ COMMON	SUBMITTER		ab_name	Mishima,H.
 			street	Yata 1111
 			zip	411-8540
 	ST_COMMENT		tagset_id	Assembly-Data
-			Assembly Method	SPAdes（iGeneious v2023.2.1）
+			Assembly Method	SPAdes（iGeneious）
 			Sequencing Technology	Illumina
 	REFERENCE		title	Mouse Genome Sequencing
 			ab_name	Robertson,G.R.

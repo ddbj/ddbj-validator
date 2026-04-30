@@ -12,6 +12,7 @@ class ValidationContext:
     is_curator_mode: bool = True
     skip_db: bool = False
     skip_ncbi: bool = False
+    skip_auth: bool = False
     bp_psubs: dict = field(default_factory=dict)
     dra_refs: dict = field(default_factory=dict)
     drr_status: dict = field(default_factory=dict)
@@ -57,6 +58,22 @@ class ValidationContext:
             if dict_path.is_file():
                 with open(dict_path, "r", encoding="utf-8") as f:
                     self.ddbj_dict = json.load(f)
+                
+                # デフォルト internal_ignore True を設定
+                for f_name, f_def in self.ddbj_dict.get("features", {}).items():
+                    for q_name, q_rule in f_def.get("mandatory_qualifiers", {}).items():
+                        q_rule.setdefault("internal_ignore", True)
+                    for q_name, q_rule in f_def.get("singleton_qualifiers", {}).items():
+                        q_rule.setdefault("internal_ignore", True)
+                    for e_rule in f_def.get("either_one_mandatory_qualifiers", []):
+                        e_rule.setdefault("internal_ignore", True)
+                        
+                for q_name, q_def in self.ddbj_dict.get("qualifiers", {}).items():
+                    if "value_rule" in q_def: q_def["value_rule"].setdefault("internal_ignore", True)
+                    if "unique_rule" in q_def: q_def["unique_rule"].setdefault("internal_ignore", True)
+                    if "format_rule" in q_def: q_def["format_rule"].setdefault("internal_ignore", True)
+                    if "length_rule" in q_def: q_def["length_rule"].setdefault("internal_ignore", True)
+                    
                 self.cv_terms = self.ddbj_dict.get("cv_terms", {})
             else:
                 print(f"Warning: Dictionary file not found at {dict_path}")

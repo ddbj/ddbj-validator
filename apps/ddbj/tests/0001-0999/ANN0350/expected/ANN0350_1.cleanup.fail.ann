@@ -9,17 +9,11 @@ COMMON	SUBMITTER		ab_name	Mishima,H.
 			city	Mishima
 			street	Yata 1111
 			zip	411-8540
-	DIVISION		division	TSA
-	DATATYPE		type	TSA
-	DBLINK		project	PRJDB1
-			biosample	SAMD01797189
-			biosample	SAMD01797190
 	REFERENCE		title	Mouse Genome Sequencing
-			ab_name	Robertson,G.R.
-			ab_name	Mishima,H.
 			year	2026
+			journal	Nature
 			status	Unpublished
 seq1	source	1..120	organism	Mus musculus
 			mol_type	genomic DNA
-			collection_date	2024-10-01
+			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima

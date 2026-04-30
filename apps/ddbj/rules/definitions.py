@@ -167,14 +167,14 @@ class ANN_DICT_VALIDATOR(BaseRule):
         for req_qual, rule_info in f_def.get("mandatory_qualifiers", {}).items():
             if req_qual not in feature.qualifiers:
                 msg = rule_info.get("message", f"'{req_qual}' is required.")
-                res = self.feature_result(record, feature, msg, level=rule_info.get("level", "error").lower(), qualifier=req_qual)
+                res = self.feature_result(record, feature, msg, level=rule_info.get("level", "error").lower(), qualifier=req_qual, internal_ignore=rule_info.get("internal_ignore", True))
                 res["entry"] = getattr(feature, 'original_entry_id', entry_id)
                 res["rule"] = rule_info.get("rule_id", "UNKNOWN_RULE"); res["target"] = f_type; results.append(res)
 
         for sing_qual, rule_info in f_def.get("singleton_qualifiers", {}).items():
             if sing_qual in feature.qualifiers and len(feature.qualifiers[sing_qual]) > 1:
                 msg = rule_info.get("message", f"Duplicated '{sing_qual}'.")
-                res = self.feature_result(record, feature, msg, level=rule_info.get("level", "error").lower(), qualifier=sing_qual)
+                res = self.feature_result(record, feature, msg, level=rule_info.get("level", "error").lower(), qualifier=sing_qual, internal_ignore=rule_info.get("internal_ignore", True))
                 res["entry"] = getattr(feature, 'original_entry_id', entry_id)
                 res["rule"] = rule_info.get("rule_id", "UNKNOWN_RULE"); res["target"] = f_type; results.append(res)
 
@@ -185,7 +185,7 @@ class ANN_DICT_VALIDATOR(BaseRule):
             if not has_any:
                 msg = rule.get("message", f"At least one of {choices} is required for '{f_type}' feature.")
                 qualifier_label = ", ".join(choices)
-                res = self.feature_result(record, feature, msg, level=rule.get("level", "error").lower(), qualifier=qualifier_label)
+                res = self.feature_result(record, feature, msg, level=rule.get("level", "error").lower(), qualifier=qualifier_label, internal_ignore=rule.get("internal_ignore", True))
                 res["entry"] = getattr(feature, 'original_entry_id', entry_id)
                 res["rule"] = rule.get("rule_id", "ANN0000"); res["target"] = f_type; results.append(res)
         return results
@@ -206,7 +206,7 @@ class ANN_DICT_VALIDATOR(BaseRule):
         for q_name, q_values in feature.qualifiers.items():
             if q_name not in allowed_quals:
                 msg = f"'{q_name}' qualifier can NOT be used for '{f_type}' feature."
-                res = self.feature_result(record, feature, msg, level="error", qualifier=q_name)
+                res = self.feature_result(record, feature, msg, level="error", qualifier=q_name, internal_ignore=True)
                 res["entry"] = getattr(feature, 'original_entry_id', entry_id)
                 res["rule"] = "ANN3040"; res["target"] = f_type; results.append(res)
                 continue
@@ -218,6 +218,8 @@ class ANN_DICT_VALIDATOR(BaseRule):
                     dt_rule = datatype_rules.get(active_dt)
                     if not dt_rule: continue
                     
+                    ignore_flag = dt_rule.get("internal_ignore", True)
+                    
                     # 1. invalid_moltype チェック
                     invalid_moltypes = dt_rule.get("invalid_moltype", [])
                     for invalid_m in invalid_moltypes:
@@ -225,7 +227,7 @@ class ANN_DICT_VALIDATOR(BaseRule):
                             if invalid_m == m_val:
                                 rule_id = dt_rule.get("invalid_moltype_rule_id", "ANN0580" if active_dt == "TSA" else "ANN0570")
                                 msg = dt_rule.get("invalid_moltype_message", f"{active_dt} entries should not be mol_type {invalid_m}.")
-                                res = self.feature_result(record, feature, msg, level="error", qualifier=q_name)
+                                res = self.feature_result(record, feature, msg, level="error", qualifier=q_name, internal_ignore=ignore_flag)
                                 res["entry"] = getattr(feature, 'original_entry_id', entry_id)
                                 res["rule"] = rule_id; res["target"] = "sequence"; results.append(res)
                                 
@@ -242,7 +244,7 @@ class ANN_DICT_VALIDATOR(BaseRule):
                             if m_val not in allowed_set:
                                 msg = f"{msg_base} (Found: '{m_val}')"
                                 rule_id = dt_rule.get("required_moltype_rule_id", "ANN0575")
-                                res = self.feature_result(record, feature, msg, level="error", qualifier=q_name)
+                                res = self.feature_result(record, feature, msg, level="error", qualifier=q_name, internal_ignore=ignore_flag)
                                 res["entry"] = getattr(feature, 'original_entry_id', entry_id)
                                 res["rule"] = rule_id; res["target"] = "mol_type"; results.append(res)
 
@@ -320,6 +322,7 @@ class ANN_DICT_VALIDATOR(BaseRule):
                 rule_id = unique_rule.get("rule_id", "ANN0000")
                 level = unique_rule.get("level", "error").lower()
                 base_msg = unique_rule.get("message", f"Duplicate value in '{q_name}'.")
+                ignore_flag = unique_rule.get("internal_ignore", True)
                 
                 values_to_check = q_values if isinstance(q_values, list) else [q_values]
                 
@@ -344,7 +347,7 @@ class ANN_DICT_VALIDATOR(BaseRule):
                     val_str = str(val)
                     if val_str in seen_values:
                         msg = f"{base_msg} (Found: '{val_str}')"
-                        res = self.feature_result(record, feature, msg, level=level, qualifier=q_name)
+                        res = self.feature_result(record, feature, msg, level=level, qualifier=q_name, internal_ignore=ignore_flag)
                         res["entry"] = getattr(feature, 'original_entry_id', entry_id)
                         res["rule"] = rule_id; res["target"] = f_type
                         results.append(res)
@@ -477,6 +480,7 @@ class ANN_DICT_VALIDATOR(BaseRule):
                 rule_id = fmt_rule.get("rule_id", "ANN0185")
                 level = fmt_rule.get("level", "error").lower()
                 base_msg = fmt_rule.get("message", f"Invalid format for '{q_name}'.")
+                ignore_flag = fmt_rule.get("internal_ignore", True)
                 
                 for val in q_values:
                     if q_name in ("collection_date", "geo_loc_name") and val.lower() in missing_reporting_terms:
@@ -484,7 +488,7 @@ class ANN_DICT_VALIDATOR(BaseRule):
                         
                     if val != "" and not pattern.match(val):
                         msg = f"{base_msg} (Found: '{val}')"
-                        res = self.feature_result(record, feature, msg, level=level, qualifier=q_name)
+                        res = self.feature_result(record, feature, msg, level=level, qualifier=q_name, internal_ignore=ignore_flag)
                         res["entry"] = getattr(feature, 'original_entry_id', entry_id)
                         res["rule"] = rule_id; res["target"] = f_type
                         results.append(res)
@@ -497,6 +501,7 @@ class ANN_DICT_VALIDATOR(BaseRule):
                 rule_id = length_rule.get("rule_id", "ANN3100")
                 level = length_rule.get("level", "error").lower() 
                 base_msg = length_rule.get("message", f"Maximum length for '{q_name}' is {max_len:,} characters.")
+                ignore_flag = length_rule.get("internal_ignore", True)
                 
                 values_to_check = q_values if isinstance(q_values, list) else [q_values]
                 
@@ -504,7 +509,7 @@ class ANN_DICT_VALIDATOR(BaseRule):
                     val_str = str(val) 
                     if len(val_str) > max_len: 
                         msg = f"{base_msg} (Found: {len(val_str):,} chars)"
-                        res = self.feature_result(record, feature, msg, level=level, qualifier=q_name)
+                        res = self.feature_result(record, feature, msg, level=level, qualifier=q_name, internal_ignore=ignore_flag)
                         res["entry"] = getattr(feature, 'original_entry_id', entry_id)
                         res["rule"] = rule_id; res["target"] = f_type
                         results.append(res)
@@ -523,7 +528,7 @@ class ANN_DICT_VALIDATOR(BaseRule):
         for rule in mutual_exclusions:
             q1 = rule.get("qualifier_1"); q2 = rule.get("qualifier_2")
             if q1 in feature.qualifiers and q2 in feature.qualifiers:
-                res = self.feature_result(record, feature, rule.get("message"), level=rule.get("level", "error").lower(), qualifier=q1)
+                res = self.feature_result(record, feature, rule.get("message"), level=rule.get("level", "error").lower(), qualifier=q1, internal_ignore=rule.get("internal_ignore", True))
                 res["entry"] = getattr(feature, 'original_entry_id', entry_id)
                 res["rule"] = rule.get("rule_id", "ANN3150"); res["target"] = f_type; results.append(res)
 
@@ -534,12 +539,12 @@ class ANN_DICT_VALIDATOR(BaseRule):
             if q_present in feature.qualifiers:
                 if isinstance(q_required, list):
                     if not any(req in feature.qualifiers for req in q_required):
-                        res = self.feature_result(record, feature, rule.get("message"), level=rule.get("level", "error").lower(), qualifier=q_present)
+                        res = self.feature_result(record, feature, rule.get("message"), level=rule.get("level", "error").lower(), qualifier=q_present, internal_ignore=rule.get("internal_ignore", True))
                         res["entry"] = getattr(feature, 'original_entry_id', entry_id)
                         res["rule"] = rule.get("rule_id", "ANN3110"); res["target"] = f_type; results.append(res)
                 else:
                     if q_required not in feature.qualifiers:
-                        res = self.feature_result(record, feature, rule.get("message"), level=rule.get("level", "error").lower(), qualifier=q_present)
+                        res = self.feature_result(record, feature, rule.get("message"), level=rule.get("level", "error").lower(), qualifier=q_present, internal_ignore=rule.get("internal_ignore", True))
                         res["entry"] = getattr(feature, 'original_entry_id', entry_id)
                         res["rule"] = rule.get("rule_id", "ANN3110"); res["target"] = f_type; results.append(res)
                         
@@ -551,7 +556,7 @@ class ANN_DICT_VALIDATOR(BaseRule):
             
             if q1 in feature.qualifiers and q2 in feature.qualifiers:
                 if any(str(val) == v1 for val in feature.qualifiers[q1]):
-                    res = self.feature_result(record, feature, rule.get("message"), level=rule.get("level", "error").lower(), qualifier=q2)
+                    res = self.feature_result(record, feature, rule.get("message"), level=rule.get("level", "error").lower(), qualifier=q2, internal_ignore=rule.get("internal_ignore", True))
                     res["entry"] = getattr(feature, 'original_entry_id', entry_id)
                     res["rule"] = rule.get("rule_id", "ANN3160"); res["target"] = f_type
                     results.append(res)
@@ -573,7 +578,7 @@ class ANN_DICT_VALIDATOR(BaseRule):
                             is_missing = True
                             
                     if is_missing:
-                        res = self.feature_result(record, feature, rule.get("message"), level=rule.get("level", "error").lower(), qualifier=q1)
+                        res = self.feature_result(record, feature, rule.get("message"), level=rule.get("level", "error").lower(), qualifier=q1, internal_ignore=rule.get("internal_ignore", True))
                         res["entry"] = getattr(feature, 'original_entry_id', entry_id)
                         res["rule"] = rule.get("rule_id", "ANN3165"); res["target"] = f_type
                         results.append(res)

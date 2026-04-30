@@ -373,6 +373,7 @@ class DRA_CROSSCHECK_VALIDATOR(BaseRule):
     target = "DBLINK"
     description = "Inconsistent SRA Experiment metadata"
     requires_rdb = True
+    requires_auth = True
     is_file_level = True
     
     # このマスタークラスを構成するルールIDのリスト (テスト判定用)
@@ -453,6 +454,7 @@ class ANN0560(BaseRule):
     target = "DBLINK"
     description = "Inconsistent Sequencing Technology and SRA Experiment PLATFORM."
     requires_rdb = True
+    requires_auth = True
     is_file_level = True
 
     def validate_file(self, records, context, ann_path=None, seq_path=None):

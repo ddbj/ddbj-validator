@@ -189,7 +189,12 @@ class Validator:
                 continue
             # ネットワーク必須ルールは skip_ncbi が True の時にスキップ
             if ctx.skip_ncbi and getattr(rule, 'requires_network', False):
+                continue            
+            
+            # 認証が必要なルールを、skip_auth 指定時にスキップ
+            if ctx.skip_auth and getattr(rule, 'requires_auth', False):
                 continue
+
             self.active_rules.append(rule)
 
         if ctx.ddbj_dict and ctx.ddbj_dict.get("features"):
@@ -197,8 +202,11 @@ class Validator:
             
         # クロスチェックは内部DBを使うので skip_db を確認する
         if not ctx.skip_db and ctx.dra_crosscheck_dict and ctx.dra_lib_meta:
-            self.active_rules.append(DRA_CROSSCHECK_VALIDATOR())
-            
+            cross_rule = DRA_CROSSCHECK_VALIDATOR()
+            # 認証スキップ指定時、ルールが認証必須であれば登録しない
+            if not (ctx.skip_auth and (getattr(cross_rule, 'requires_auth', False) or getattr(cross_rule, 'auth_required', False))):
+                self.active_rules.append(cross_rule)
+                            
     # 引数に ann_lines=None を追加
     def run(self, records, ann_path=None, seq_path=None, ann_lines=None, fasta_content=None):
         all_results = []

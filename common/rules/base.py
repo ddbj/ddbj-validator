@@ -6,9 +6,11 @@ class BaseRule:
     description = ""
     requires_rdb = False
     requires_network = False
+    requires_auth = False
     is_file_level = False
-    is_submission_level = False
-
+    is_submission_level = False   
+    internal_ignore = True
+    
     def validate(self, record, context):
         """
         各ルールで必ず上書き（オーバーライド）するメソッド。
@@ -84,7 +86,8 @@ class BaseRule:
             "location": location,
             "qualifier": qualifier,
             "line_number": line_number,
-            "message": message
+            "message": message,
+            "internal_ignore": self.internal_ignore
         }
         res.update(kwargs)  # 受け取った任意の追加引数(autofix等)を辞書にマージ
         return res

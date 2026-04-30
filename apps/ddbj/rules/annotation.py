@@ -145,6 +145,7 @@ class ANN0250(BaseRule):
     target = "SUBMITTER"
     description = "Contact person not included in the associated BioSample."
     requires_rdb = True
+    requires_auth = True
     is_file_level = True
 
     def validate_file(self, records, context):
@@ -200,6 +201,7 @@ class ANN0260(BaseRule):
     target = "SUBMITTER"
     description = "Contact person email not included in the associated BioSample."
     requires_rdb = True
+    requires_auth = True
     is_file_level = True
 
     def validate_file(self, records, context):
@@ -234,6 +236,7 @@ class ANN0270(BaseRule):
     target = "SUBMITTER"
     description = "No submitter ab_name shared with the associated BioSample."
     requires_rdb = True
+    requires_auth = True
     is_file_level = True
 
     def validate_file(self, records, context):
@@ -523,6 +526,7 @@ class ANN0425(BaseRule):
     target = "DBLINK"
     description = "BioProject accession is cancelled/permanently suppressed/withdrawn in the BioProject database."
     requires_rdb = True
+    requires_auth = True
     is_file_level = True
 
     def validate_file(self, records, context):
@@ -565,6 +569,7 @@ class ANN0430(BaseRule):
     target = "DBLINK"
     description = "BioProject accession mismatches with the BioProject associated with the linked DRR accessions."
     requires_rdb = True
+    requires_auth = True
     is_file_level = True
 
     def validate_file(self, records, context):
@@ -602,6 +607,7 @@ class ANN0440(BaseRule):
     target = "DBLINK"
     description = "BioProject accession mismatches with the BioProject associated with the linked BioSample accessions."
     requires_rdb = True
+    requires_auth = True
     is_file_level = True
 
     def validate_file(self, records, context):
@@ -631,6 +637,7 @@ class ANN0445(BaseRule):
     target = "DBLINK"
     description = "BioProject is an Umbrella project, not a primary data type of BioProject. Please provide the accession of the correct primary data BioProject or create a new BioProject, if necessary."
     requires_rdb = True
+    requires_auth = True
     is_file_level = True
 
     def validate_file(self, records, context):
@@ -796,6 +803,7 @@ class ANN0463(BaseRule):
     target = "DBLINK"
     description = "BioSample accession is cancelled/permanently suppressed/withdrawn in the BioSample database."
     requires_rdb = True
+    requires_auth = True
     is_file_level = True
 
     def validate_file(self, records, context):
@@ -886,6 +894,7 @@ class ANN0485(BaseRule):
     target = "DBLINK"
     description = "DRR accession is cancelled/permanently suppressed/withdrawn in the DRA database."
     requires_rdb = True
+    requires_auth = True
     is_file_level = True
 
     def validate_file(self, records: dict, context):
@@ -929,6 +938,7 @@ class ANN0490(BaseRule):
     target = "DBLINK"
     description = "BioSample accession mismatches with the BioSample associated with the linked DRR accessions."
     requires_rdb = True
+    requires_auth = True
     is_file_level = True
 
     def validate_file(self, records, context):
@@ -1775,14 +1785,30 @@ class ANN1290(BaseRule):
 
     def validate(self, record, context):
         results = []
+        
+        # 小文字をキーとした正規コードのマッピングを作成
+        if isinstance(context.institution_codes, dict):
+            exact_map = context.institution_codes
+        else:
+            exact_map = {code.lower(): code for code in context.institution_codes}
+
         for feature in self.get_features(record):
             if "culture_collection" in feature.qualifiers:
                 for val in feature.qualifiers["culture_collection"]:
                     inst_code = val.split(':')[0].strip()
+                    inst_code_lower = inst_code.lower()
                     
-                    if inst_code.lower() not in context.institution_codes:
+                    if inst_code_lower not in exact_map:
+                        # 完全にリストに存在しない場合は ERROR
                         msg = f"{self.description} ('{inst_code}' in '{val}')"
                         results.append(self.feature_result(record, feature, msg, level="error", qualifier="culture_collection"))
+                        
+                    elif inst_code != exact_map[inst_code_lower]:
+                        # 大文字小文字の不一致がある場合は WARNING (Autofix対象)
+                        expected_code = exact_map[inst_code_lower]
+                        msg = f"Institution code case mismatch. Expected '{expected_code}' ('{inst_code}' in '{val}')"
+                        results.append(self.feature_result(record, feature, msg, level="warning", qualifier="culture_collection"))
+                        
         return results
 
 

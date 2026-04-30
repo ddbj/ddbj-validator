@@ -23,22 +23,17 @@ except ImportError:
 # ==============================================================================
 # モード時にスキップされるべきルールの動的取得
 # ==============================================================================
-def get_skipped_rules(skip_db=False, skip_ncbi=False):
-    """
-    Validatorを初期化して、指定されたモードにおいてスキップされるべき
-    ルール（requires_rdb, requires_network）と、そのサブルールをすべて抽出してセットで返す。
-    """
+def get_skipped_rules(skip_db=False, skip_ncbi=False, skip_auth=False):
     try:
         from apps.ddbj.validator import Validator
         from apps.ddbj.context import ValidationContext
-        # 初期化自体はルール全取得のために False で行う
-        val = Validator(ValidationContext(skip_db=False, skip_ncbi=False))
+        val = Validator(ValidationContext(skip_db=False, skip_ncbi=False, skip_auth=False))
         skipped_rules = set()
         for r in val.active_rules:
             if (skip_db and getattr(r, 'requires_rdb', False)) or \
-               (skip_ncbi and getattr(r, 'requires_network', False)):
+               (skip_ncbi and getattr(r, 'requires_network', False)) or \
+               (skip_auth and (getattr(r, 'requires_auth', False) or getattr(r, 'auth_required', False))):
                 skipped_rules.add(r.rule_id)
-                # サブルール (ANN0500〜やANN1430等) も展開して追加
                 if hasattr(r, 'sub_rules'):
                     skipped_rules.update(r.sub_rules)
         return skipped_rules
@@ -54,11 +49,10 @@ class Colors:
     WARNINGYEL = '\033[93m'
     ENDC = '\033[0m'
 
+# ==============================================================================
+# 期待値の抽出関数群
+# ==============================================================================
 def extract_feature_expectations(ann_path):
-    has_fail = False
-    has_pass = False
-    has_clean = False
-    
     with open(ann_path, 'r', encoding='utf-8') as f:
         for line in f:
             cols = line.rstrip('\n').split('\t')
@@ -66,16 +60,10 @@ def extract_feature_expectations(ann_path):
                 qualifier = cols[3].strip()
                 value = cols[4].strip()
                 if qualifier == "note":
-                    if re.search(r'\bfail\b', value, re.IGNORECASE):
-                        has_fail = True
-                    elif re.search(r'\bpass\b', value, re.IGNORECASE):
-                        has_pass = True
-                    elif re.search(r'\bclean\b', value, re.IGNORECASE):
-                        has_clean = True
-                        
-    if has_fail: return "fail"
-    if has_clean: return "clean"
-    if has_pass: return "pass"
+                    if re.search(r'\bfail\b', value, re.IGNORECASE): return "fail"
+                    if re.search(r'\bautocleanup\b', value, re.IGNORECASE): return "autocleanup"
+                    if re.search(r'\b(clean|autofix)\b', value, re.IGNORECASE): return "autofix"
+                    if re.search(r'\bpass\b', value, re.IGNORECASE): return "pass"
     return None
 
 def extract_entry_expectations(ann_path):
@@ -85,8 +73,7 @@ def extract_entry_expectations(ann_path):
     with open(ann_path, 'r', encoding='utf-8') as f:
         for line in f:
             cols = line.rstrip('\n').split('\t')
-            if not cols:
-                continue
+            if not cols: continue
                 
             if cols[0].strip() and cols[0] != "COMMON":
                 current_entry = cols[0].strip()
@@ -96,11 +83,12 @@ def extract_entry_expectations(ann_path):
             if current_entry and len(cols) >= 5:
                 qualifier = cols[3].strip()
                 value = cols[4].strip()
-                
                 if qualifier == "note":
-                    matches = re.findall(r'([A-Z]{3}\d+)\s+(pass|fail|clean)', value, re.IGNORECASE)
+                    matches = re.findall(r'([A-Z]{3}\d+)\s+(pass|fail|clean|autofix|autocleanup)', value, re.IGNORECASE)
                     for rule_id, status in matches:
-                        expectations[current_entry][rule_id.upper()] = status.lower()
+                        st = status.lower()
+                        if st == "clean": st = "autofix"
+                        expectations[current_entry][rule_id.upper()] = st
                         
     return expectations
     
@@ -124,7 +112,7 @@ def parse_details_report(report_path):
             if current_file and len(parts) >= 3:
                 rule_id = parts[0]
                 level = parts[1]
-                if re.match(r'^[A-Z0-9]+$', rule_id) and level in ["ERR", "WAR", "FAT", "INFO"]:
+                if re.match(r'^[A-Z0-9]+$', rule_id) and level in ["ERR", "WAR", "FAT", "INFO", "AUTO-CLEANUP"]:
                     entry_name = parts[2]
                     results[current_file].add(rule_id)
                     if entry_name not in results_by_entry[current_file]:
@@ -133,12 +121,43 @@ def parse_details_report(report_path):
                 
     return results, results_by_entry
 
+# ==============================================================================
+# ファイル直接比較 (Diff)
+# ==============================================================================
+def compare_text_files(expected_path, actual_path):
+    if not expected_path.exists():
+        return False, "Golden file not found."
+    if not actual_path.exists():
+        return False, "Actual file not found."
+
+    with open(expected_path, 'r', encoding='utf-8') as f:
+        # 改行コードを削除しつつリスト化
+        expected_lines = [line.rstrip('\r\n') for line in f.readlines()]
+    with open(actual_path, 'r', encoding='utf-8') as f:
+        actual_lines = [line.rstrip('\r\n') for line in f.readlines()]
+
+    # --- 追加: ファイル末尾の完全な空行を取り除く処理 ---
+    while expected_lines and expected_lines[-1] == '':
+        expected_lines.pop()
+    while actual_lines and actual_lines[-1] == '':
+        actual_lines.pop()
+
+    if len(expected_lines) != len(actual_lines):
+        return False, f"Line count mismatch (Expected: {len(expected_lines)}, Actual: {len(actual_lines)})"
+
+    for i, (exp, act) in enumerate(zip(expected_lines, actual_lines)):
+        if exp != act:
+            # タブやスペースの数が微妙に違うだけでエラーになっている可能性も考慮し、
+            # トリムした結果で再判定（念のためのフォールバック）
+            if exp.strip() == act.strip() and "".join(exp.split()) == "".join(act.split()):
+                continue # 空白の数が違うだけなら許容（厳密に見るならこのif文を消してください）
+            return False, f"Diff at line {i+1}: Expected '{exp}' vs Actual '{act}'"
+
+    return True, "Match"
+
 def compare_fasta(fasta_ddbj, fasta_tool, ignore_ids=None):
-    if ignore_ids is None:
-        ignore_ids = set()
-        
-    if not HAS_BIOPYTHON:
-        return False, "Biopython is not installed."
+    if ignore_ids is None: ignore_ids = set()
+    if not HAS_BIOPYTHON: return False, "Biopython is not installed."
         
     try:
         dict_ddbj = SeqIO.to_dict(SeqIO.parse(fasta_ddbj, "fasta"))
@@ -162,10 +181,8 @@ def compare_fasta(fasta_ddbj, fasta_tool, ignore_ids=None):
     error_msgs = []
     skipped_msgs = []
     
-    if only_in_ddbj:
-        error_msgs.append(f"Missing in current tool: {list(only_in_ddbj)[:3]}")
-    if only_in_tool:
-        error_msgs.append(f"Unexpected in current tool: {list(only_in_tool)[:3]}")
+    if only_in_ddbj: error_msgs.append(f"Missing in current tool: {list(only_in_ddbj)[:3]}")
+    if only_in_tool: error_msgs.append(f"Unexpected in current tool: {list(only_in_tool)[:3]}")
 
     mismatch_count = 0
     for seq_id in sorted(common_ids):
@@ -197,85 +214,82 @@ def compare_fasta(fasta_ddbj, fasta_tool, ignore_ids=None):
 
     if mismatch_count == 0 and not only_in_ddbj and not only_in_tool:
         success_msg = "Match"
-        if skipped_msgs:
-            success_msg += f" | {', '.join(skipped_msgs)}"
+        if skipped_msgs: success_msg += f" | {', '.join(skipped_msgs)}"
         return True, success_msg
     else:
-        if skipped_msgs:
-            error_msgs.extend(skipped_msgs)
+        if skipped_msgs: error_msgs.extend(skipped_msgs)
         return False, " | ".join(error_msgs)
-                        
+
+
+# ==============================================================================
+# メインテストランナー
+# ==============================================================================
 def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False):
     if not HAS_BIOPYTHON:
-        print(f"{Colors.WARNINGYEL}[WARNING] Biopython is not installed. 6000-series amino acid fasta comparisons will fail.{Colors.ENDC}\n")
+        print(f"{Colors.WARNINGYEL}[WARNING] Biopython is not installed. 6000-series fasta comparisons will fail.{Colors.ENDC}\n")
 
-    # モードに応じたフラグ設定
     skip_db = mode in ["local", "ncbi"]
     skip_ncbi = mode == "local"
+    skip_auth = mode == "auth-skip"
 
-    # 対象モード時にスキップされるべきルールの取得
-    mode_skipped_rules = get_skipped_rules(skip_db=skip_db, skip_ncbi=skip_ncbi)
+    mode_skipped_rules = get_skipped_rules(skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
 
     validator_sh = project_root / "bsi-validator.sh"
-
     if not validator_sh.exists():
         print(f"{Colors.FAILRED}Error: {validator_sh} not found.{Colors.ENDC}")
         sys.exit(1)
 
-    target_dirs = sorted([
-        d for d in tests_dir.glob("*/*")
-        if d.is_dir() and any(d.glob("*.ann"))
-    ])
-    
+    target_dirs = sorted([d for d in tests_dir.glob("*/*") if d.is_dir() and any(d.glob("*.ann"))])
     target_rules_set = set(target_rule_id.split('-')) if target_rule_id else set()
 
     if target_rule_id:
-        target_dirs = [
-            d for d in target_dirs 
-            if target_rule_id in d.name or any(r in d.name for r in target_rules_set)
-        ]
+        target_dirs = [d for d in target_dirs if target_rule_id in d.name or any(r in d.name for r in target_rules_set)]
     elif skip_only:
-        # スキップ検証のみの場合は、対象ルールを含まないディレクトリの実行を省略して高速化
-        target_dirs = [
-            d for d in target_dirs 
-            if any(r in mode_skipped_rules for r in d.name.split('-'))
-        ]
+        target_dirs = [d for d in target_dirs if any(r in mode_skipped_rules for r in d.name.split('-'))]
 
     passed_count = 0
     mismatched_count = 0
     errors = []
     skipped_count = 0
     not_skipped_errors = []
+    
+    autofix_fixed = 0
+    autofix_not_fixed = 0
+    autofix_errors = []
+    
+    autocleanup_cleaned = 0
+    autocleanup_not_cleaned = 0
+    autocleanup_errors = []
 
     if not target_dirs:
-        return {"passed": 0, "mismatched": 0, "errors": [], "skipped": 0, "not_skipped_errors": []}
+        return {
+            "passed": 0, "mismatched": 0, "errors": [], "skipped": 0, "not_skipped_errors": [],
+            "autofix_fixed": 0, "autofix_not_fixed": 0, "autofix_errors": [],
+            "autocleanup_cleaned": 0, "autocleanup_not_cleaned": 0, "autocleanup_errors": []
+        }
 
     msg = f"\nStarting E2E Tests via Shell"
     if target_rule_id: msg += f" for Rule(s): {target_rule_id}"
     
     if mode == "local":
-        msg += f" [{Colors.WARNINGYEL}LOCAL MODE"
-        msg += " (SKIP ONLY)" if skip_only else ""
-        msg += f"{Colors.ENDC}]"
+        msg += f" [{Colors.WARNINGYEL}LOCAL MODE" + (" (SKIP ONLY)" if skip_only else "") + f"{Colors.ENDC}]"
     elif mode == "ncbi":
-        msg += f" [{Colors.OKCYAN}NCBI API MODE"
-        msg += " (SKIP ONLY)" if skip_only else ""
-        msg += f"{Colors.ENDC}]"
+        msg += f" [{Colors.OKCYAN}NCBI API MODE" + (" (SKIP ONLY)" if skip_only else "") + f"{Colors.ENDC}]"
+    elif mode == "auth-skip":
+        msg += f" [{Colors.OKBLUE}AUTH SKIP MODE" + (" (SKIP ONLY)" if skip_only else "") + f"{Colors.ENDC}]"
     else:
         msg += f" [{Colors.OKGREEN}ONLINE MODE{Colors.ENDC}]"
-    
     print(f"{msg}...")
 
     for target_dir in target_dirs:
         print(f"Testing directory: {target_dir.relative_to(project_root)}")
         
         cmd = [str(validator_sh), "ddbj", str(target_dir), "-f"]
-        if mode == "local":
-            cmd.append("--local")
-        elif mode == "ncbi":
-            cmd.append("--ncbi-api")
+        if mode == "local": cmd.append("--local")
+        elif mode == "ncbi": cmd.append("--ncbi-api")
+        elif mode == "auth-skip": cmd.append("--skip-auth")
             
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        subprocess.run(cmd, capture_output=True, text=True)
                 
         report_path = target_dir / "validation_report_details.txt"
         if not report_path.exists():
@@ -284,151 +298,88 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False):
 
         triggered_rules_by_file, triggered_rules_by_entry = parse_details_report(report_path)
 
+        # ==============================================================================
+        # 1. ルール発火 (PASS/FAIL) と 6000番台翻訳の評価
+        # ==============================================================================
         for ann_path in target_dir.glob("*.ann"):
             filename = ann_path.name
             file_stem = ann_path.stem 
 
-            if file_stem.endswith("_sub"):
-                continue
+            if file_stem.endswith("_sub"): continue
                             
             parts = filename.split('.')
-            is_file_level = len(parts) >= 3 and parts[-2] in ["pass", "fail", "clean"]
+            is_file_level = len(parts) >= 3 and parts[-2] in ["pass", "fail", "clean", "autofix", "autocleanup"]
             is_entries_level = "entries" in parts
-            
             file_rule_ids = filename.split('_')[0].split('-')
+            
+            # ターゲット外のファイルはスキップ
+            if target_rule_id and not any(r in target_rules_set for r in file_rule_ids) and target_dir.name != target_rule_id:
+                continue
+            
             test_cases = []
             
-            # --- 1. ファイルレベルのチェック ---
             if not is_entries_level:
-                has_target_rule = any(r in target_rules_set for r in file_rule_ids)
-                if target_rule_id and not has_target_rule and target_dir.name != target_rule_id:
-                    continue
-
-                expected_result = None
-                if is_file_level:
-                    expected_result = parts[-2]
-                else:
-                    expected_result = extract_feature_expectations(ann_path)
-
-                if not expected_result: continue 
-
-                actual_rules = triggered_rules_by_file.get(file_stem, set())
-                
-                for rule_id in file_rule_ids:
-                    if target_rule_id and rule_id not in target_rules_set and target_dir.name != target_rule_id:
-                        continue
-                        
-                    rule_triggered = rule_id in actual_rules
-                    order_map = {"pass": 0, "fail": 1, "clean": 2}
-                    sort_order = order_map.get(expected_result, 3)
-
-                    test_cases.append({
-                        "filename": filename, "file_stem": file_stem, "rule_id": rule_id,
-                        "expected_result": expected_result, "actual_rules": actual_rules,
-                        "rule_triggered": rule_triggered, "sort_order": sort_order, "type": "file"
-                    })
-
-            # --- 2. エントリーレベルのチェック ---
+                expected_result = parts[-2] if is_file_level else extract_feature_expectations(ann_path)
+                # expected_resultがない（autofix専用のinputファイルなど）場合は PASS/FAIL のテストをスキップ
+                if expected_result:
+                    actual_rules = triggered_rules_by_file.get(file_stem, set())
+                    for rule_id in file_rule_ids:
+                        if target_rule_id and rule_id not in target_rules_set and target_dir.name != target_rule_id: continue
+                        test_cases.append({
+                            "filename": filename, "rule_id": rule_id, 
+                            "expected_result": expected_result, "rule_triggered": rule_id in actual_rules
+                        })
             else:
                 entry_expectations = extract_entry_expectations(ann_path)
                 file_triggered_entries = triggered_rules_by_entry.get(file_stem, {})
-
                 for entry_name, rules in entry_expectations.items():
                     for rule_id, expected_result in rules.items():
-                        if target_rule_id and rule_id not in target_rules_set and target_dir.name != target_rule_id:
-                            continue
-
+                        if target_rule_id and rule_id not in target_rules_set and target_dir.name != target_rule_id: continue
                         entry_actual_rules = file_triggered_entries.get(entry_name, set())
                         global_rules = file_triggered_entries.get("ALL", set()).union(file_triggered_entries.get("COMMON", set()))
-                        rule_triggered = (rule_id in entry_actual_rules) or (rule_id in global_rules)
-
-                        order_map = {"pass": 0, "fail": 1, "clean": 2}
-                        sort_order = order_map.get(expected_result, 3)
-
                         test_cases.append({
-                            "filename": f"{filename} [{entry_name}]", "file_stem": file_stem, "rule_id": rule_id,
-                            "expected_result": expected_result, "actual_rules": entry_actual_rules,
-                            "rule_triggered": rule_triggered, "sort_order": sort_order, "type": "entry"
+                            "filename": f"{filename} [{entry_name}]", "rule_id": rule_id, 
+                            "expected_result": expected_result, "rule_triggered": (rule_id in entry_actual_rules) or (rule_id in global_rules)
                         })
 
-            # --- 評価フェーズ ---
-            test_cases.sort(key=lambda x: (x["sort_order"], x["filename"], x["rule_id"]))
-
+            test_cases.sort(key=lambda x: (x["filename"], x["rule_id"]))
             for tc in test_cases:
-                tc_filename = tc["filename"]
-                tc_rule_id = tc["rule_id"]
-                tc_expected_result = tc["expected_result"]
-                tc_rule_triggered = tc["rule_triggered"]
+                tc_filename, tc_rule_id = tc["filename"], tc["rule_id"]
+                tc_expected_result, tc_rule_triggered = tc["expected_result"], tc["rule_triggered"]
                 test_name = f"{tc_filename} (Rule: {tc_rule_id})"
 
-                # ★ skip_only指定時のフィルタリング
                 if skip_only and tc_rule_id not in mode_skipped_rules:
                     continue
 
-                # モードに応じた特別スキップ評価
                 if tc_rule_id in mode_skipped_rules:
                     if tc_rule_triggered:
-                        print(f"  [{Colors.FAILRED}NOT SKIPPED{Colors.ENDC}] {test_name}: Triggered in {mode.upper()} mode (It should be skipped!).")
-                        not_skipped_errors.append(f"{target_dir.name}/{test_name} (Triggered in {mode.upper()} mode)")
+                        print(f"  [{Colors.FAILRED}NOT SKIPPED{Colors.ENDC}] {test_name}: Triggered in {mode.upper()} mode.")
+                        not_skipped_errors.append(f"[{tc_rule_id}] {target_dir.name}/{test_name}")
                     else:
-                        print(f"  [{Colors.OKGREEN}Skipped{Colors.ENDC}]        {test_name} (Expectedly skipped in {mode.upper()} mode)")
+                        print(f"  [{Colors.OKGREEN}Skipped{Colors.ENDC}]        {test_name}")
                         skipped_count += 1
                     continue
                 
-                # 通常の評価
                 if tc_expected_result == "pass":
                     if tc_rule_triggered:
                         print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name}: Expected PASS, but rule triggered.")
-                        errors.append(f"{target_dir.name}/{test_name} (Expected PASS)")
+                        errors.append(f"[{tc_rule_id}] {target_dir.name}/{test_name} (Expected PASS)")
                         mismatched_count += 1
                     else:
-                        print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name}")
+                        print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name} (No error triggered)")
                         passed_count += 1
-                        
-                elif tc_expected_result == "fail":
+                else:
                     if not tc_rule_triggered:
-                        print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name}: Expected FAIL, but rule did NOT trigger.")
-                        errors.append(f"{target_dir.name}/{test_name} (Expected FAIL)")
+                        print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name}: Expected rule to trigger, but it did NOT.")
+                        errors.append(f"[{tc_rule_id}] {target_dir.name}/{test_name} (Expected to trigger)")
                         mismatched_count += 1
                     else:
-                        print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name}")
+                        print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name} (Error correctly triggered)")
                         passed_count += 1
 
-                # "clean" (Auto-fix対象) の評価ロジック
-                elif tc_expected_result == "clean":
-                    if not tc_rule_triggered:
-                        print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name}: Expected rule to trigger for auto-cleanup, but it did NOT trigger.")
-                        errors.append(f"{target_dir.name}/{test_name} (Rule did not trigger for cleanup)")
-                        mismatched_count += 1
-                    else:
-                        fixed_file_path = target_dir / "fixed" / filename
-                        if not fixed_file_path.exists():
-                            print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name}: Expected fixed file is missing.")
-                            errors.append(f"{target_dir.name}/{test_name} (Fixed file missing)")
-                            mismatched_count += 1
-                        else:
-                            print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name} (Detected and auto-fixed successfully)")
-                            passed_count += 1
-
-            # --- 3. Autofix (ANN5270など) の確認 ---
-            if not skip_only:
-                if target_dir.name == "ANN5270" or target_rule_id == "ANN5270" or "ANN5270" in file_rule_ids:
-                    if any(tc["expected_result"] == "fail" for tc in test_cases):
-                        fixed_file_path = target_dir / "fixed" / filename
-                        test_name_autofix = f"{filename} (Rule: ANN5270 Auto-fix)"
-                        
-                        if not fixed_file_path.exists():
-                            print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name_autofix}: Expected fixed file, but it is missing.")
-                            errors.append(f"{target_dir.name}/{test_name_autofix} (File missing)")
-                            mismatched_count += 1
-                        else:
-                            print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name_autofix} (Fixed successfully)")
-                            passed_count += 1
-
-            # --- 4. 6000番台翻訳結果の DDBJツール比較 ---
+            # 6000番台翻訳結果の DDBJツール比較
             if not skip_only:
                 is_6000_series = target_dir.parent.name == "6000-6999" or any(re.search(r'6\d{3}', r) for r in file_rule_ids) and not any("6820" in r for r in file_rule_ids)
-                
                 if is_6000_series:
                     fasta_path = ann_path.with_suffix('.fasta')
                     aa_dir = target_dir / "aa"
@@ -438,17 +389,18 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False):
                     if fasta_path.exists():
                         aa_dir.mkdir(exist_ok=True)
                         tc_cmd = ["transChecker.sh", "-x", str(ann_path), "-s", str(fasta_path), "-o", str(ddbj_faa_path)]
-                        
                         try:
                             subprocess.run(tc_cmd, capture_output=True, text=True)
-                            if not ddbj_faa_path.exists(): continue
                         except Exception:
-                            continue
+                            pass
 
+                    if ddbj_faa_path.exists():
                         test_name_trans = f"{filename} (Translation FASTA Match)"
+                        rule_prefix = f"[{','.join(file_rule_ids)}]" if file_rule_ids else ""
+                        
                         if not current_faa_path.exists():
                             print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name_trans}: Current tool's .faa missing")
-                            errors.append(f"{target_dir.name}/{test_name_trans} (.faa missing)")
+                            errors.append(f"{rule_prefix} {target_dir.name}/{test_name_trans} (.faa missing)")
                             mismatched_count += 1
                         else:
                             is_match, result_msg = compare_fasta(str(ddbj_faa_path), str(current_faa_path))
@@ -457,50 +409,75 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False):
                                 passed_count += 1
                             else:
                                 print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name_trans}: {result_msg}")
-                                errors.append(f"{target_dir.name}/{test_name_trans} ({result_msg})")
+                                errors.append(f"{rule_prefix} {target_dir.name}/{test_name_trans} ({result_msg})")
                                 mismatched_count += 1
 
-        # --- 5. Submission (across files) レベルのチェック ---
-        submission_group = "Submission (across files)"
-        actual_cross_rules = triggered_rules_by_file.get(submission_group, set())
-        cross_target_rules = [r for r in target_dir.name.split('-') if r in ["ANN0120", "ANN2520"]]
-        
-        for crule in cross_target_rules:
-            if skip_only and crule not in mode_skipped_rules:
-                continue
-            if target_rule_id and crule not in target_rules_set and target_dir.name != target_rule_id: 
-                continue
-                
-            has_fails = any("fail" in p.name or "_sub" in p.name for p in target_dir.glob("*.ann"))
-            expected_result = "fail" if has_fails else "pass"
-            rule_triggered = crule in actual_cross_rules
-            test_name = f"{submission_group} (Rule: {crule})"
-            
-            if expected_result == "fail":
-                if not rule_triggered:
-                    print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name}: Expected FAIL, but rule did NOT trigger.")
-                    errors.append(f"{target_dir.name}/{test_name}")
-                    mismatched_count += 1
-                else:
-                    print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name}")
-                    passed_count += 1
-            elif expected_result == "pass":
-                if rule_triggered:
-                    print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name}: Expected PASS, but rule triggered.")
-                    errors.append(f"{target_dir.name}/{test_name}")
-                    mismatched_count += 1
-                else:
-                    print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name}")
-                    passed_count += 1
+        # ==============================================================================
+        # 2. AUTOFIX / AUTOCLEANUP の評価 (Golden Data Diff)
+        # expected フォルダ内のファイルを起点にして独立して評価する
+        # ==============================================================================
+        if not skip_only:
+            expected_dir = target_dir / "expected"
+            if expected_dir.exists() and expected_dir.is_dir():
+                for golden_file in expected_dir.glob("*"):
+                    if not golden_file.is_file(): continue
+                    
+                    file_rule_ids = golden_file.name.split('_')[0].split('-')
+                    
+                    # ターゲット外のルールならスキップ
+                    if target_rule_id and not any(r in target_rules_set for r in file_rule_ids) and target_dir.name != target_rule_id:
+                        continue
+                        
+                    # 実行モードによりスキップ対象となっているルールの場合は、修正ファイルも出力されないため比較を除外
+                    if any(r in mode_skipped_rules for r in file_rule_ids):
+                        continue
+                        
+                    # Golden Data のファイル名に 'clean' が含まれるかで autofix / autocleanup を分類
+                    is_autocleanup = "clean" in golden_file.name.lower()
+                    label_clean = "auto-cleanup" if is_autocleanup else "auto-fix"
+                    err_list = autocleanup_errors if is_autocleanup else autofix_errors
+                    
+                    test_name_golden = f"{golden_file.name} ({label_clean} Match)"
+                    
+                    fixed_file = target_dir / "fixed" / golden_file.name
+    
+                    if not fixed_file.exists():
+                        print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name_golden}: Actual fixed file is missing ({fixed_file.name}).")
+                        err_msg = f"[{','.join(file_rule_ids)}] {target_dir.name}/{test_name_golden} (Fixed file missing: {fixed_file.name})"
+                        errors.append(err_msg)
+                        err_list.append(err_msg)
+                        mismatched_count += 1
+                        if is_autocleanup: autocleanup_not_cleaned += 1
+                        else: autofix_not_fixed += 1
+                    else:
+                        is_match, diff_msg = compare_text_files(golden_file, fixed_file)
+                        if not is_match:
+                            print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name_golden}: Diff error -> {diff_msg}")
+                            err_msg = f"[{','.join(file_rule_ids)}] {target_dir.name}/{test_name_golden} ({diff_msg})"
+                            errors.append(err_msg)
+                            err_list.append(err_msg)
+                            mismatched_count += 1
+                            if is_autocleanup: autocleanup_not_cleaned += 1
+                            else: autofix_not_fixed += 1
+                        else:
+                            print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name_golden} (Perfect match)")
+                            passed_count += 1
+                            if is_autocleanup: autocleanup_cleaned += 1
+                            else: autofix_fixed += 1
 
     return {
         "passed": passed_count,
         "mismatched": mismatched_count,
         "errors": errors,
         "skipped": skipped_count,
-        "not_skipped_errors": not_skipped_errors
+        "not_skipped_errors": not_skipped_errors,
+        "autofix_fixed": autofix_fixed,
+        "autofix_not_fixed": autofix_not_fixed,
+        "autofix_errors": autofix_errors,
+        "autocleanup_cleaned": autocleanup_cleaned,
+        "autocleanup_not_cleaned": autocleanup_not_cleaned,
+        "autocleanup_errors": autocleanup_errors
     }
-
 
 def print_header(title, color):
     print(f"\n{color}============================================================{Colors.ENDC}")
@@ -517,8 +494,23 @@ def print_summary(results_list):
         passed_label = "Matched" if title == "ONLINE MODE RESULTS" else "Matched (Normal Rules)"
         print(f"  {passed_label}: {res['passed']}")
         print(f"  Mismatched:             {Colors.FAILRED if res['mismatched'] > 0 else Colors.OKGREEN}{res['mismatched']}{Colors.ENDC}")
-        if res['errors']:
-            for e in res['errors']:
+        
+        if 'autofix_fixed' in res:
+            print(f"  Autofix:                {Colors.OKGREEN}{res['autofix_fixed']} fixed{Colors.ENDC} / {Colors.FAILRED if res['autofix_not_fixed'] > 0 else Colors.OKGREEN}{res['autofix_not_fixed']} not fixed{Colors.ENDC}")
+            if res.get('autofix_errors'):
+                for e in res['autofix_errors']:
+                    print(f"    - {e}")
+                    
+            print(f"  Auto-cleanup:           {Colors.OKGREEN}{res['autocleanup_cleaned']} cleaned{Colors.ENDC} / {Colors.FAILRED if res['autocleanup_not_cleaned'] > 0 else Colors.OKGREEN}{res['autocleanup_not_cleaned']} not cleaned{Colors.ENDC}")
+            if res.get('autocleanup_errors'):
+                for e in res['autocleanup_errors']:
+                    print(f"    - {e}")
+
+        # Show general errors only if they weren't already printed as autofix/autocleanup errors
+        general_errors = [e for e in res.get('errors', []) if e not in res.get('autofix_errors', []) and e not in res.get('autocleanup_errors', [])]
+        if general_errors:
+            print("  General Errors:")
+            for e in general_errors:
                 print(f"    - {e}")
                 
         if title != "ONLINE MODE RESULTS":
@@ -535,34 +527,26 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run E2E tests for seq_validator.")
     parser.add_argument("rule_id", nargs="?", default=None, help="Target Rule ID to test (e.g. ANN0350)")
     
-    # 修正: defaultを ["online", "local-skip", "ncbi-skip"] に変更
     parser.add_argument(
         "--mode", 
         nargs="+", 
-        choices=["online", "local", "local-skip", "ncbi", "ncbi-skip", "all"], 
-        default=["online", "local-skip", "ncbi-skip"], 
-        help="Execution mode(s). Multiple modes can be specified. (default: online local-skip ncbi-skip)"
+        choices=["online", "local", "local-skip", "ncbi", "ncbi-skip", "auth-skip", "all"], 
+        default=["online", "local-skip", "ncbi-skip", "auth-skip"], 
+        help="Execution mode(s). Multiple modes can be specified. (default: online local-skip ncbi-skip auth-skip)"
     )
     args = parser.parse_args()
 
-    # 指定されたモードのリストを取得 ("all" が指定された場合は主要なフル検証3モードに展開)
     modes = args.mode
     if "all" in modes:
-        modes = ["online", "local", "ncbi"]
+        modes = ["online", "local", "ncbi", "auth-skip"]
 
     results_to_print = []
     
-    # =========================================================================
-    # PHASE 1: ONLINE MODE
-    # =========================================================================
     if "online" in modes:
         print_header("PHASE 1: ONLINE MODE TESTING (Standard Pass/Fail Check)", Colors.OKGREEN)
         res_online = run_e2e_tests(target_rule_id=args.rule_id, mode="online")
         results_to_print.append(("ONLINE MODE RESULTS", res_online, Colors.OKGREEN))
 
-    # =========================================================================
-    # PHASE 2: LOCAL MODE
-    # =========================================================================
     if "local" in modes:
         print_header("PHASE 2: LOCAL MODE TESTING (All Rules Verification)", Colors.WARNINGYEL)
         res_local = run_e2e_tests(target_rule_id=args.rule_id, mode="local", skip_only=False)
@@ -573,9 +557,6 @@ if __name__ == "__main__":
         res_local = run_e2e_tests(target_rule_id=args.rule_id, mode="local", skip_only=True)
         results_to_print.append(("LOCAL MODE RESULTS (SKIP ONLY)", res_local, Colors.WARNINGYEL))
 
-    # =========================================================================
-    # PHASE 3: NCBI API MODE
-    # =========================================================================
     if "ncbi" in modes:
         print_header("PHASE 3: NCBI API MODE TESTING (Taxonomy fallback check)", Colors.OKCYAN)
         res_ncbi = run_e2e_tests(target_rule_id=args.rule_id, mode="ncbi", skip_only=False)
@@ -586,7 +567,9 @@ if __name__ == "__main__":
         res_ncbi = run_e2e_tests(target_rule_id=args.rule_id, mode="ncbi", skip_only=True)
         results_to_print.append(("NCBI API MODE RESULTS (SKIP ONLY)", res_ncbi, Colors.OKCYAN))
 
-    # =========================================================================
-    # サマリー出力
-    # =========================================================================
+    if "auth-skip" in modes:
+        print_header("PHASE 4: AUTH SKIP MODE TESTING (Skip Verification Only)", Colors.OKBLUE)
+        res_auth = run_e2e_tests(target_rule_id=args.rule_id, mode="auth-skip", skip_only=True)
+        results_to_print.append(("AUTH SKIP MODE RESULTS (SKIP ONLY)", res_auth, Colors.OKBLUE))
+
     print_summary(results_to_print)
