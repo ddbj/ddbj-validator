@@ -1,4 +1,5 @@
 import json
+import importlib.resources
 from pathlib import Path
 from dataclasses import dataclass, field
 from apps.ddbj.db_metadata import fetch_valid_journals
@@ -44,19 +45,16 @@ class ValidationContext:
     active_divisions: set = field(default_factory=set)
     
     def __post_init__(self):
-        # プロジェクトルートの取得
-        project_root = Path(__file__).resolve().parent.parent.parent
-        
-        # リソースディレクトリの定義
-        ddbj_resources_dir = project_root / "apps" / "ddbj" / "resources"
-        common_resources_dir = project_root / "common" / "resources"
-        geo_dir = common_resources_dir / "geo"
+        # パッケージを基準としたリソースへのアクセス
+        ddbj_resources = importlib.resources.files("apps.ddbj.resources")
+        common_resources = importlib.resources.files("common.resources")
         
         # 1. DDBJ definition json の読み込み
-        dict_path = ddbj_resources_dir / "definitions.json"        
+        dict_path = ddbj_resources / "definitions.json"        
         if not self.ddbj_dict:
             if dict_path.is_file():
-                with open(dict_path, "r", encoding="utf-8") as f:
+                # built-in の open() ではなく、Traversable オブジェクトの open() メソッドを使用
+                with dict_path.open("r", encoding="utf-8") as f:
                     self.ddbj_dict = json.load(f)
                 
                 # デフォルト internal_ignore True を設定
@@ -81,19 +79,19 @@ class ValidationContext:
                 self.cv_terms = {}  
 
         # 2. DRA Crosscheck の読み込み
-        crosscheck_path = ddbj_resources_dir / "dra_crosscheck.json"
+        crosscheck_path = ddbj_resources / "dra_crosscheck.json"
         if not self.dra_crosscheck_dict:
             if crosscheck_path.is_file():
-                with open(crosscheck_path, "r", encoding="utf-8") as f:
+                with crosscheck_path.open("r", encoding="utf-8") as f:
                     self.dra_crosscheck_dict = json.load(f)
             else:
                 print(f"Warning: DRA crosscheck file not found at {crosscheck_path}")
                 self.dra_crosscheck_dict = {"crosscheck_rules": []}
                 
         # 3. Institution Codes (coll_dump.txt) の読み込み
-        coll_path = common_resources_dir / "coll_dump.txt"
+        coll_path = common_resources / "coll_dump.txt"
         if not self.institution_codes and coll_path.is_file():
-            with open(coll_path, "r", encoding="utf-8") as f:
+            with coll_path.open("r", encoding="utf-8") as f:
                 for line in f:
                     # 最初のタブまでしか分割しない(メモリと速度の節約)
                     code = line.split('\t', 1)[0].strip()

@@ -13,14 +13,16 @@ dependencies = [
     "python-dotenv",
     "requests",
     "intervaltree",
+    "defusedxml",
     "geopandas",
-    "pyarrow"
+    "pyarrow",
+    "shapely"
 ]
 
 [project.scripts]
 # ルートにある main.py のパス
 bsi-validator = "main:main"
-# dbs ではなく apps ディレクトリ配下を指定
+# apps ディレクトリ配下を指定
 ddbj-validator = "apps.ddbj.cli:main"
 
 [tool.setuptools]
@@ -30,3 +32,9 @@ py-modules = ["main"]
 [tool.setuptools.packages.find]
 # config や geo を除外し、Pythonパッケージとして認識させるディレクトリを限定する
 include = ["common*", "apps*"]
+
+# Python以外のリソースファイルをパッケージに同梱
+[tool.setuptools.package-data]
+"apps.ddbj.resources" = ["*.json"]
+"common.resources" = ["*.txt"]
+"common.resources.geo" = ["*.parquet", "*.json"]

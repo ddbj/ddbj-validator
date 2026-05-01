@@ -1,7 +1,7 @@
 import os
 import time
 import requests
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
 import psycopg2
 from apps.ddbj.utils.features import get_features
 from apps.ddbj.db_metadata import get_organisms_from_records, get_expected_transl_table

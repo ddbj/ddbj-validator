@@ -1600,30 +1600,32 @@ class ANN1275(BaseRule):
             print("[WARN] geopandas or shapely is not installed. Geo-location validation will be skipped.")
             return False
 
-        from pathlib import Path
-        import json
-
-        # プロジェクトルートからのパス解決
-        project_root = Path(__file__).resolve().parent.parent.parent.parent
-        geo_dir = project_root / "common" / "resources" / "geo"
-        parquet_path = geo_dir / "countries_50m.parquet"
-        mapping_path = geo_dir / "insdc_geo_mapping.json"
-
-        if not parquet_path.exists():
-            print(f"[WARN] GeoParquet file not found at {parquet_path}")
-            return False
+        from importlib.resources import files, as_file
 
         try:
-            self.geo_df = gpd.read_parquet(parquet_path)
-            _ = self.geo_df.sindex  # インデックスの強制構築
+            # パッケージリソースとしてのパス解決
+            geo_resources = files("common.resources.geo")
+            parquet_path = geo_resources / "countries_50m.parquet"
+            mapping_path = geo_resources / "insdc_geo_mapping.json"
+
+            # mapping.json の読み込み
+            self.geo_mapping = {}
+            if mapping_path.is_file():
+                with mapping_path.open("r", encoding="utf-8") as f:
+                    self.geo_mapping = json.load(f)
+
+            # parquet の読み込み (Cライブラリが読めるように as_file で物理パスを保証する)
+            if not parquet_path.is_file():
+                print(f"[WARN] GeoParquet file not found in resources.")
+                return False
+                
+            with as_file(parquet_path) as p_path:
+                self.geo_df = gpd.read_parquet(p_path)
+                _ = self.geo_df.sindex  # インデックスの強制構築
+
         except Exception as e:
             print(f"[WARN] Failed to load geo_data: {e}")
             return False
-
-        self.geo_mapping = {}
-        if mapping_path.exists():
-            with open(mapping_path, "r", encoding="utf-8") as f:
-                self.geo_mapping = json.load(f)
 
         # valid_land_names の初期化
         names = set()
@@ -1636,7 +1638,7 @@ class ANN1275(BaseRule):
         self.valid_land_names = names
 
         return True
-
+        
     def validate(self, record, context):
         results = []
         if record.id == "COMMON":

@@ -226,8 +226,9 @@ def compare_fasta(fasta_ddbj, fasta_tool, ignore_ids=None):
 # ==============================================================================
 def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False):
     if not HAS_BIOPYTHON:
-        print(f"{Colors.WARNINGYEL}[WARNING] Biopython is not installed. 6000-series fasta comparisons will fail.{Colors.ENDC}\n")
-
+        # 変更: "6000-series" という文言を "Amino acid FASTA" に変更
+        print(f"{Colors.WARNINGYEL}[WARNING] Biopython is not installed. Amino acid FASTA comparisons will fail.{Colors.ENDC}\n")
+        
     skip_db = mode in ["local", "ncbi"]
     skip_ncbi = mode == "local"
     skip_auth = mode == "auth-skip"
@@ -260,7 +261,11 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False):
     autocleanup_cleaned = 0
     autocleanup_not_cleaned = 0
     autocleanup_errors = []
-
+    
+    translation_passed = 0
+    translation_mismatched = 0
+    translation_errors = []
+    
     if not target_dirs:
         return {
             "passed": 0, "mismatched": 0, "errors": [], "skipped": 0, "not_skipped_errors": [],
@@ -377,41 +382,37 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False):
                         print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name} (Error correctly triggered)")
                         passed_count += 1
 
-            # 6000番台翻訳結果の DDBJツール比較
+            # ==============================================================================
+            # AA翻訳結果の DDBJツール (transChecker) との動的比較
+            # ==============================================================================
             if not skip_only:
-                is_6000_series = target_dir.parent.name == "6000-6999" or any(re.search(r'6\d{3}', r) for r in file_rule_ids) and not any("6820" in r for r in file_rule_ids)
-                if is_6000_series:
-                    fasta_path = ann_path.with_suffix('.fasta')
-                    aa_dir = target_dir / "aa"
-                    current_faa_path = aa_dir / f"AA_{file_stem}.faa"
-                    ddbj_faa_path = aa_dir / f"AA_{file_stem}.tc.faa"
-                    
-                    if fasta_path.exists():
-                        aa_dir.mkdir(exist_ok=True)
-                        tc_cmd = ["transChecker.sh", "-x", str(ann_path), "-s", str(fasta_path), "-o", str(ddbj_faa_path)]
-                        try:
-                            subprocess.run(tc_cmd, capture_output=True, text=True)
-                        except Exception:
-                            pass
+                aa_dir = target_dir / "aa"
+                current_faa_path = aa_dir / f"AA_{file_stem}.faa"
+                ddbj_faa_path = aa_dir / f"AA_{file_stem}.tc.faa"
+                fasta_path = ann_path.with_suffix('.fasta')
+                
+                # 自ツールが aa フォルダに .faa を出力している場合のみ実行
+                if aa_dir.exists() and current_faa_path.exists() and fasta_path.exists():
+                    # tc_cmd を実行して正解データ(.tc.faa)を生成する
+                    tc_cmd = ["transChecker.sh", "-x", str(ann_path), "-s", str(fasta_path), "-o", str(ddbj_faa_path)]
+                    try:
+                        subprocess.run(tc_cmd, capture_output=True, text=True)
+                    except Exception:
+                        pass
 
                     if ddbj_faa_path.exists():
                         test_name_trans = f"{filename} (Translation FASTA Match)"
                         rule_prefix = f"[{','.join(file_rule_ids)}]" if file_rule_ids else ""
                         
-                        if not current_faa_path.exists():
-                            print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name_trans}: Current tool's .faa missing")
-                            errors.append(f"{rule_prefix} {target_dir.name}/{test_name_trans} (.faa missing)")
-                            mismatched_count += 1
+                        is_match, result_msg = compare_fasta(str(ddbj_faa_path), str(current_faa_path))
+                        if is_match:
+                            print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name_trans} - {result_msg}")
+                            translation_passed += 1
                         else:
-                            is_match, result_msg = compare_fasta(str(ddbj_faa_path), str(current_faa_path))
-                            if is_match:
-                                print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name_trans} - {result_msg}")
-                                passed_count += 1
-                            else:
-                                print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name_trans}: {result_msg}")
-                                errors.append(f"{rule_prefix} {target_dir.name}/{test_name_trans} ({result_msg})")
-                                mismatched_count += 1
-
+                            print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name_trans}: {result_msg}")
+                            translation_errors.append(f"{rule_prefix} {target_dir.name}/{test_name_trans} ({result_msg})")
+                            translation_mismatched += 1
+                            
         # ==============================================================================
         # 2. AUTOFIX / AUTOCLEANUP の評価 (Golden Data Diff)
         # expected フォルダ内のファイルを起点にして独立して評価する
@@ -476,7 +477,10 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False):
         "autofix_errors": autofix_errors,
         "autocleanup_cleaned": autocleanup_cleaned,
         "autocleanup_not_cleaned": autocleanup_not_cleaned,
-        "autocleanup_errors": autocleanup_errors
+        "autocleanup_errors": autocleanup_errors,
+        "translation_passed": translation_passed,
+        "translation_mismatched": translation_mismatched,
+        "translation_errors": translation_errors
     }
 
 def print_header(title, color):
@@ -506,8 +510,20 @@ def print_summary(results_list):
                 for e in res['autocleanup_errors']:
                     print(f"    - {e}")
 
+            # --- 追加: AA翻訳のサマリー ---
+            if 'translation_passed' in res and (res['translation_passed'] > 0 or res['translation_mismatched'] > 0):
+                print(f"  AA Translation:         {Colors.OKGREEN}{res['translation_passed']} matched{Colors.ENDC} / {Colors.FAILRED if res['translation_mismatched'] > 0 else Colors.OKGREEN}{res['translation_mismatched']} mismatched{Colors.ENDC}")
+                if res.get('translation_errors'):
+                    for e in res['translation_errors']:
+                        print(f"    - {e}")
+
+        # --- 変更: 翻訳エラーも General Errors から除外する ---
+        general_errors = [e for e in res.get('errors', []) 
+                          if e not in res.get('autofix_errors', []) 
+                          and e not in res.get('autocleanup_errors', [])
+                          and e not in res.get('translation_errors', [])]
+                          
         # Show general errors only if they weren't already printed as autofix/autocleanup errors
-        general_errors = [e for e in res.get('errors', []) if e not in res.get('autofix_errors', []) and e not in res.get('autocleanup_errors', [])]
         if general_errors:
             print("  General Errors:")
             for e in general_errors:
