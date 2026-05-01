@@ -4,13 +4,13 @@ import argparse
 
 def main():
     parser = argparse.ArgumentParser(
-        description="BSI Validator Toolkit",
+        description="BSI Validation Tools",
         usage="bsi-validator <command> [<args>]"
     )
     subparsers = parser.add_subparsers(dest="command")
     
     # サブコマンドの登録（将来BioProjectなどをここに追加します）
-    subparsers.add_parser("ddbj", help="Run DDBJ MSS Validator")
+    subparsers.add_parser("ddbj", help="Run DDBJ Validator")
     
     # parse_known_args を使うことで、ddbj 特有の引数(-d, -wなど)を unknown として分離
     args, unknown = parser.parse_known_args()
