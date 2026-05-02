@@ -257,8 +257,8 @@ class ANN_DICT_VALIDATOR(BaseRule):
                 orgs = feature.qualifiers.get("organism", [])
                 org_name = orgs[0].strip() if orgs else None
                 
-                # tax_data自体が存在しない（skip_dbやskip_ncbiモード時）場合はスキップ
-                if not tax_data:
+            # DBもNCBI APIも使えない(Localモード)場合はスキップ
+            if context.skip_db and context.skip_ncbi:
                     continue
                     
                 tax_info = tax_data.get(org_name, {}) if org_name else {}
