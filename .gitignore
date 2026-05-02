@@ -11,6 +11,7 @@
 .venv/
 venv/
 env/
+log/
 
 # =========================
 # Python キャッシュ・バイトコード
@@ -80,4 +81,4 @@ devs*.py
 ANN0610_prompt.txt
 *.code-workspace
 *benchmark*
-
+*memo*

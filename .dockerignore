@@ -19,6 +19,7 @@ tests/
 data/
 docs/
 README.md
+log/
 
 # 開発用・作業用スクリプト
 scripts/
