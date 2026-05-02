@@ -8,63 +8,88 @@ BSI Validator は、DDBJ (DNA Data Bank of Japan) に登録するアノテーシ
 現在適用されているバリデーションルールの詳細については、以下のスプレッドシートをご参照ください。
 * [Validation Rules](https://docs.google.com/spreadsheets/xxx)
 
-## 使い方 (Docker を利用した実行方法)
+## インストール
 
-環境構築の手間を省くため、Docker イメージの利用を推奨しています。以下のコマンドでイメージをダウンロードできます。
+### Docker のインストール
 
+本ツールを実行するには、環境に Docker がインストールされている必要があります。
+
+* Windows/macOS: [Docker Desktop](https://www.docker.com/products/docker-desktop/) をインストールしてください。
+* Linux: (Docker Engine)[https://docs.docker.com/engine/install/] をインストールしてください。
+
+### Docker イメージの取得
+
+以下のコマンドで最新のイメージを取得します。
 ```bash
 docker pull ghcr.io/ddbj/bsi-validator:0.1.0-beta
 ```
 
-### 基本的なコマンド構造
+## 使い方
 
-カレントディレクトリ（検証したい .ann と .fasta があるディレクトリ）を Docker コンテナ内の /data にマウントして実行します。  
+### ラッパースクリプトを使用する（推奨）
 
-```bash
-docker run --rm -v <マウントするディレクトリ>:/data ghcr.io/ddbj/bsi-validator:0.1.0-beta ddbj [オプション] /data
-```
+リポジトリに含まれるスクリプトを使用すると、複雑な Docker コマンドを入力せずに実行できます。
 
 #### macOS/Linux (Unix 系)
 
-```bash
-# 対象ディレクトリへ移動
-cd /path/to/your/data
+`bsi-validator-ddbj.sh` があるディレクトリで実行します。
 
-# バリデーションの実行
-docker run --rm -v $(pwd):/data ghcr.io/ddbj/bsi-validator:0.1.0-beta ddbj /data
+```bash
+# 実行権限を付与（初回のみ）
+chmod +x bsi-validator-ddbj.sh
+
+# 実行（カレントディレクトリのファイルを検証）
+./bsi-validator-ddbj.sh [オプション] [検証対象ディレクトリ]
 ```
 
-#### Windows (PowerShell)
+#### Windows
+
+コマンドプロンプトまたは PowerShell で `bsi-validator-ddbj.bat` を実行します。
 
 ```bash
-cd C:\path\to\your\data
-docker run --rm -v "${PWD}:/data" ghcr.io/ddbj/bsi-validator:0.1.0-beta ddbj /data
+bsi-validator-ddbj.bat [オプション] [検証対象ディレクトリ]
+```
+
+### Docker コマンドを直接実行する
+
+スクリプトを使わず、直接 `docker run` で実行する場合の基本構造は以下の通りです。カレントディレクトリをコンテナ内の `/data` にマウントして実行します。
+
+```bash
+# macOS/Linux
+docker run --rm -v $(pwd):/data ghcr.io/ddbj/bsi-validator:0.1.0-beta ddbj [オプション] /data
+
+# Windows (PowerShell)
+docker run --rm -v "${PWD}:/data" ghcr.io/ddbj/bsi-validator:0.1.0-beta ddbj [オプション] /data
 ```
 
 ### 主要なコマンドラインオプション
 
 オプション説明
--o, --out-dir レポート結果（Summary, Details）や自動修正済みファイルの出力先ディレクトリを指定します。
--n, --ncbi-api(推奨) 公開の NCBI API を利用して Taxonomy の検証を行います。DDBJ のデータベースへの接続はスキップされます。
--l, --local 完全にローカルな環境で動作します。DB および API へのアクセスをスキップし、ファイルのチェックのみを行います。
--f, --force-fix フォーマットエラーや修正事項（Autofix）が見つかった際、対話プロンプトでの確認をスキップしてすべて自動適用します。
---ncbi-api-key NCBI API へのリクエスト制限を緩和するための API キーを指定します。
+* -o, --out-dir レポート結果（Summary, Details）や自動修正済みファイルの出力先ディレクトリを指定します。
+* -n, --ncbi-api(推奨) 公開の NCBI API を利用して Taxonomy の検証を行います。DDBJ のデータベースへの接続はスキップされます。
+* -l, --local 完全にローカルな環境で動作します。DB および API へのアクセスをスキップし、ファイルのチェックのみを行います。
+* -f, --force-fix フォーマットエラーや修正事項（Autofix）が見つかった際、対話プロンプトでの確認をスキップしてすべて自動適用します。
+* --ncbi-api-key NCBI API へのリクエスト制限を緩和するための API キーを指定します。
 
 #### 実行例（オプション指定）
 
-NCBI API を利用し、確認プロンプトなしで自動修正を適用、結果を output フォルダに出力する場合（macOS/Linux の例）：
+NCBI API を利用し、結果を output フォルダに出力する場合（macOS/Linux の例）：
 ```bash
-docker run --rm -v $(pwd):/data ghcr.io/ddbj/bsi-validator:0.1.0-beta ddbj -n -f -o /data/output /data
+# macOS/Unix
+./bsi-validator-ddbj.sh -n -o output_directory target_directory_contains_ann_fasta
+
+# Windows
+./bsi-validator-ddbj.bat -n -o output_directory target_directory_contains_ann_fasta
 ```
 
 ### 動作の仕組みと出力結果
 
-ツールを実行すると、指定したディレクトリ内の *.ann と *.fasta のファイルペアを自動的に検索し、検証を行います。
+ツールを実行すると、指定したディレクトリ内の *.ann と *.fasta のペアを自動的に検索し、検証を行います。
 検証が完了すると、以下のファイルが出力ディレクトリ（指定がない場合は対象ファイルと同じディレクトリ）に生成されます。
 
-validation_report_summary.txt: エラーや警告のサマリー（ルールごとの発生件数）
-validation_report_details.txt: エラーが発生した行番号や具体的なメッセージ、修正指示などの詳細
-fixed/ ディレクトリ: Autofix（自動修正）を承認、または --force-fix を指定した場合に出力される、修正済みのアノテーションおよび FASTA ファイル
-aa/ ディレクトリ: CDS feature から翻訳されたアミノ酸配列（FASTA 形式）
+* `validation_report_summary.txt`: エラーや警告のサマリー（ルールごとの発生件数）
+* `validation_report_details.txt`: エラーが発生した行番号や具体的なメッセージ、修正指示などの詳細
+* `fixed/` ディレクトリ: Autofix（自動修正）を承認、または --force-fix を指定した場合に出力される、修正済みのアノテーションおよび FASTA ファイル
+* `aa/` ディレクトリ: CDS feature から翻訳されたアミノ酸配列（FASTA 形式）
 
 
