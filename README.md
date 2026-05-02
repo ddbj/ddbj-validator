@@ -1,7 +1,8 @@
 # BSI Validator
 
 BSI Validator は、DDBJ (DNA Data Bank of Japan) に登録するアノテーションファイル（`.ann`）と塩基配列 FASTA ファイル（`.fasta`）の構文や整合性を検証・自動修正するためのコマンドラインツールです。  
-本ツールはローカルでのフォーマットチェックに加え、NCBI Taxonomy API と連携し、登録前の詳細なバリデーション（Taxonomy に依存した整合性確認など）を行うことができます。
+本ツールはローカルでのフォーマットチェックに加え、NCBI Taxonomy API と連携し、登録前の詳細なバリデーション（Taxonomy に依存した整合性確認など）を行うことができます。  
+DDBJ の既存チェックツールである [UME](https://www.ddbj.nig.ac.jp/ddbj/ume.html) の構文検証機能に加え、Taxonomy に依存した検証や [INSDC Minimal Specifications](https://www.insdc.org/insdc-minimal-specifications/) で定義されたチェック機能を提供しています。
 
 ## ルールリスト
 
