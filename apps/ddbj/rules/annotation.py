@@ -2185,7 +2185,7 @@ class ANN1810(BaseRule):
     alternate_id = "JK"
     target = "clone"
     description = "The clone qualifier value is not unique within the environmental sample entries."
-    requires_rdb = False
+    requires_rdb = True
     is_file_level = True
 
     def validate_file(self, records, context, ann_path=None, seq_path=None):

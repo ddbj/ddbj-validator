@@ -256,7 +256,16 @@ class ANN_DICT_VALIDATOR(BaseRule):
             if f_type == "source" and q_name in ["dev_stage", "tissue_type", "germline", "rearranged", "proviral", "macronuclear"]:
                 orgs = feature.qualifiers.get("organism", [])
                 org_name = orgs[0].strip() if orgs else None
+                
+                # tax_data自体が存在しない（skip_dbやskip_ncbiモード時）場合はスキップ
+                if not tax_data:
+                    continue
+                    
                 tax_info = tax_data.get(org_name, {}) if org_name else {}
+                
+                # 該当のorganismに対する系統情報がDBから引けなかった場合も誤検知を防ぐためスキップ
+                if not tax_info:
+                    continue
                 
                 lineage = tax_info.get("lineage", "")
                 tax_group = tax_info.get("tax_group", "other")

@@ -89,8 +89,7 @@ def extract_feature_expectations(ann_path):
                 value = cols[4].strip()
                 if qualifier == "note":
                     if re.search(r'\bfail\b', value, re.IGNORECASE): return "fail"
-                    if re.search(r'\bautocleanup\b', value, re.IGNORECASE): return "autocleanup"
-                    if re.search(r'\b(clean|autofix)\b', value, re.IGNORECASE): return "autofix"
+                    if re.search(r'\bautofix\b', value, re.IGNORECASE): return "autofix"
                     if re.search(r'\bpass\b', value, re.IGNORECASE): return "pass"
     return None
 
@@ -112,14 +111,14 @@ def extract_entry_expectations(ann_path):
                 qualifier = cols[3].strip()
                 value = cols[4].strip()
                 if qualifier == "note":
-                    matches = re.findall(r'([A-Z]{3}\d+)\s+(pass|fail|clean|autofix|autocleanup)', value, re.IGNORECASE)
+                    # cleanup, clean, autocleanup等を除外し、autofixに限定
+                    matches = re.findall(r'([A-Z]{3}\d+)\s+(pass|fail|autofix)', value, re.IGNORECASE)
                     for rule_id, status in matches:
-                        st = status.lower()
-                        if st == "clean": st = "autofix"
-                        expectations[current_entry][rule_id.upper()] = st
+                        expectations[current_entry][rule_id.upper()] = status.lower()
                         
     return expectations
     
+        
 def parse_details_report(report_path):
     results = {}
     results_by_entry = {}
@@ -258,10 +257,17 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
 
     mode_skipped_rules = get_skipped_rules(skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
 
-    validator_sh = project_root / "bsi-validator.sh"
-    if not docker_image and not validator_sh.exists():
-        print(f"{Colors.FAILRED}Error: {validator_sh} not found.{Colors.ENDC}")
-        sys.exit(1)
+    # シェルスクリプトではなく、Pythonとmain.pyのパスを指定
+    python_bin = project_root / ".venv" / "bin" / "python"
+    main_py = project_root / "main.py"
+    
+    if not docker_image:
+        if not python_bin.exists():
+            print(f"{Colors.FAILRED}Error: Python executable not found at {python_bin}.{Colors.ENDC}")
+            sys.exit(1)
+        if not main_py.exists():
+            print(f"{Colors.FAILRED}Error: {main_py} not found.{Colors.ENDC}")
+            sys.exit(1)
 
     target_dirs = sorted([d for d in tests_dir.glob("*/*") if d.is_dir() and any(d.glob("*.ann"))])
     target_rules_set = set(target_rule_id.split('-')) if target_rule_id else set()
@@ -324,7 +330,8 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
                 "ddbj", str(rel_target), "-f"
             ]
         else:
-            cmd = [str(validator_sh), "ddbj", str(target_dir), "-f"]
+            # .venv/bin/python main.py ddbj [target_dir] -f で実行
+            cmd = [str(python_bin), str(main_py), "ddbj", str(target_dir), "-f"]
         
         if mode == "local": 
             cmd.append("-l" if docker_image else "--local")
@@ -349,7 +356,7 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
             if file_stem.endswith("_sub"): continue
                             
             parts = filename.split('.')
-            is_file_level = len(parts) >= 3 and parts[-2] in ["pass", "fail", "clean", "autofix", "autocleanup"]
+            is_file_level = len(parts) >= 3 and parts[-2] in ["pass", "fail", "autofix", "cleanup"]
             is_entries_level = "entries" in parts
             
             # [修正] ファイル名から正確にルールID部分だけを抽出
@@ -393,9 +400,15 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
                     continue
 
                 if tc_rule_id in mode_skipped_rules:
-                    # [修正] テストスクリプト側で「ルールがトリガーされたか」をチェックせず、無条件でSkippedとしてカウントする
-                    print(f"  [{Colors.OKGREEN}Skipped{Colors.ENDC}]        {test_name} (Forced Skip)")
-                    skipped_count += 1
+                    # スキップされるべきルールが発火していないかを検証する
+                    if tc_rule_triggered:
+                        print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name}: Expected to be SKIPPED, but it TRIGGERED.")
+                        errors.append(f"[{tc_rule_id}] {target_dir.name}/{test_name} (Expected SKIP)")
+                        not_skipped_errors.append(f"[{tc_rule_id}] {target_dir.name}/{test_name}")
+                        mismatched_count += 1
+                    else:
+                        print(f"  [{Colors.OKGREEN}Skipped{Colors.ENDC}]        {test_name} (Correctly Skipped)")
+                        skipped_count += 1
                     continue
                 
                 if tc_expected_result == "pass":
@@ -458,9 +471,16 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
                     if any(r in mode_skipped_rules for r in file_rule_ids):
                         continue
                         
-                    is_autocleanup = "clean" in golden_file.name.lower()
-                    label_clean = "auto-cleanup" if is_autocleanup else "auto-fix"
-                    err_list = autocleanup_errors if is_autocleanup else autofix_errors
+                    # ファイル名で厳密に cleanup と autofix を判定
+                    is_cleanup = "cleanup" in golden_file.name.lower()
+                    is_autofix = "autofix" in golden_file.name.lower()
+                    
+                    if is_cleanup:
+                        label_clean = "cleanup"
+                        err_list = autocleanup_errors
+                    else:
+                        label_clean = "auto-fix"
+                        err_list = autofix_errors
                     
                     test_name_golden = f"{golden_file.name} ({label_clean} Match)"
                     
@@ -472,7 +492,7 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
                         errors.append(err_msg)
                         err_list.append(err_msg)
                         mismatched_count += 1
-                        if is_autocleanup: autocleanup_not_cleaned += 1
+                        if is_cleanup: autocleanup_not_cleaned += 1
                         else: autofix_not_fixed += 1
                     else:
                         is_match, diff_msg = compare_text_files(golden_file, fixed_file)
@@ -482,12 +502,12 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
                             errors.append(err_msg)
                             err_list.append(err_msg)
                             mismatched_count += 1
-                            if is_autocleanup: autocleanup_not_cleaned += 1
+                            if is_cleanup: autocleanup_not_cleaned += 1
                             else: autofix_not_fixed += 1
                         else:
                             print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name_golden} (Perfect match)")
                             passed_count += 1
-                            if is_autocleanup: autocleanup_cleaned += 1
+                            if is_cleanup: autocleanup_cleaned += 1
                             else: autofix_fixed += 1
 
     return {
