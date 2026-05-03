@@ -397,16 +397,21 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
                 test_name = f"{tc_filename} (Rule: {tc_rule_id})"
 
                 # ==============================================================
-                # ANN1810_2.fail に対する個別ハードコード除外
-                # LocalモードではTaxonomyが引けず発火しないのが正仕様のため、テストをスキップ
+                # ANN1810 に対する個別ハードコード除外
+                # - ANN1810_2: LocalモードではTaxonomyが引けず発火しないのが正仕様のため、テストをスキップ
+                # - ANN1810_1: Localモードでも通常通り発火するのが正仕様のため、スキップルールから除外
                 # ==============================================================
                 if mode == "local" and tc_rule_id == "ANN1810" and "ANN1810_2" in tc_filename:
                     continue
+
+                is_skipped_rule = tc_rule_id in mode_skipped_rules
+                if mode == "local" and tc_rule_id == "ANN1810" and "ANN1810_1" in tc_filename:
+                    is_skipped_rule = False
                     
-                if skip_only and tc_rule_id not in mode_skipped_rules:
+                if skip_only and not is_skipped_rule:
                     continue
 
-                if tc_rule_id in mode_skipped_rules:
+                if is_skipped_rule:
                     # スキップされるべきルールが発火していないかを検証する
                     if tc_rule_triggered:
                         print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name}: Expected to be SKIPPED, but it TRIGGERED.")

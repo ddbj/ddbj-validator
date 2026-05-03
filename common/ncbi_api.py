@@ -51,7 +51,9 @@ def check_ncbi_public_status(db_name, accessions, chunk_size=100):
             "db": db_name,
             "term": term,
             "retmode": "json",
-            "retmax": 0
+            "retmax": 0,
+            "tool": "bsi-validator",
+            "email": "ddbj@ddbj.nig.ac.jp"
         }
         if current_api_key:
             payload["api_key"] = current_api_key

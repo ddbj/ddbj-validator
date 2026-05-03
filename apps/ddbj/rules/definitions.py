@@ -70,11 +70,10 @@ class ANN_DICT_VALIDATOR(BaseRule):
                 ))
 
                 # Qualifierの詳細検証 (存在許可、重複値、許容値、型、フォーマット等)
-                # 修正: global_seen_unique_values と entry_seen_unique_values の両方を渡す
                 results.extend(self._check_qualifiers_details(
                     entry_id, record, feature, f_def, qualifiers_dict, 
                     active_datatypes, active_dt_divisions, ddbj_dict, cv_terms, tax_data,
-                    global_seen_unique_values, entry_seen_unique_values
+                    global_seen_unique_values, entry_seen_unique_values, context
                 ))
 
                 # 相互排他と依存関係のチェック
@@ -114,8 +113,10 @@ class ANN_DICT_VALIDATOR(BaseRule):
                 sing_clean = f_type_def
                 if local_counts.get(sing_clean, 0) > 1:
                     msg = sing_rule.get("message", f"More than one {f_type_def} is not allowed.")
-                    res = self.format_result(entry_id=entry_id, message=msg, level=sing_rule.get("level", "error").lower(), feature_type=f_type_def)
-                    res["rule"] = sing_rule.get("rule_id", "ANN0645"); res["target"] = f_type_def
+                    # internal_ignore はそのまま渡す
+                    res = self.format_result(entry_id=entry_id, message=msg, level=sing_rule.get("level", "error").lower(), feature_type=f_type_def, internal_ignore=sing_rule.get("internal_ignore", True))
+                    res["rule"] = sing_rule.get("rule_id", "ANN0645")
+                    res["target"] = f_type_def
                     results.append(res)
 
         # エントリー単位の必須 Feature チェック
@@ -128,16 +129,18 @@ class ANN_DICT_VALIDATOR(BaseRule):
             for req_feat, rule_info in mandatory_features.items():
                 req_clean = req_feat.strip()
                 if total_counts.get(req_clean, 0) == 0:
-                    res = self.format_result(entry_id=entry_id, message=rule_info.get("message"), level=rule_info.get("level", "error").lower(), feature_type=req_feat)
-                    res["rule"] = rule_info.get("rule_id", "ANN0225"); res["target"] = "feature"
+                    res = self.format_result(entry_id=entry_id, message=rule_info.get("message"), level=rule_info.get("level", "error").lower(), feature_type=req_feat, internal_ignore=rule_info.get("internal_ignore", True))
+                    res["rule"] = rule_info.get("rule_id", "ANN0225")
+                    res["target"] = "feature"
                     results.append(res)
 
             singleton_features = ddbj_dict.get("entries", {}).get("singleton_features", {})
             for sing_feat, rule_info in singleton_features.items():
                 sing_clean = sing_feat
                 if local_counts.get(sing_clean, 0) > 1:
-                    res = self.format_result(entry_id=entry_id, message=rule_info.get("message"), level=rule_info.get("level", "warning").lower(), feature_type=sing_feat)
-                    res["rule"] = rule_info.get("rule_id", "ANN2690"); res["target"] = "feature"
+                    res = self.format_result(entry_id=entry_id, message=rule_info.get("message"), level=rule_info.get("level", "warning").lower(), feature_type=sing_feat, internal_ignore=rule_info.get("internal_ignore", True))
+                    res["rule"] = rule_info.get("rule_id", "ANN2690")
+                    res["target"] = "feature"
                     results.append(res)
         return results
 
@@ -151,14 +154,18 @@ class ANN_DICT_VALIDATOR(BaseRule):
             if "COMMON" in field_place and "ENTRY" not in field_place:
                 res = self.feature_result(record, feature, "Should be described in the COMMON section.", level="fatal")
                 res["entry"] = getattr(feature, 'original_entry_id', entry_id)
-                res["rule"] = "ANN0600"; res["target"] = f_type; results.append(res)
+                res["rule"] = "ANN0600"
+                res["target"] = f_type
+                results.append(res)
                 
             elif "COMMON" in field_place and "ENTRY" in field_place:
                 if not allow_both_sections and common_counts.get(f_type, 0) > 0:
                     msg = f"Duplicate in the COMMON and ENTRY sections. ({f_type} is found in both COMMON and {entry_id})"
                     res = self.feature_result(record, feature, msg, level="fatal")
                     res["entry"] = getattr(feature, 'original_entry_id', entry_id)
-                    res["rule"] = "ANN0610"; res["target"] = f_type; results.append(res)
+                    res["rule"] = "ANN0610"
+                    res["target"] = f_type
+                    results.append(res)
         return results
 
     def _check_qualifier_requirements(self, entry_id, record, feature, f_def):
@@ -169,14 +176,18 @@ class ANN_DICT_VALIDATOR(BaseRule):
                 msg = rule_info.get("message", f"'{req_qual}' is required.")
                 res = self.feature_result(record, feature, msg, level=rule_info.get("level", "error").lower(), qualifier=req_qual, internal_ignore=rule_info.get("internal_ignore", True))
                 res["entry"] = getattr(feature, 'original_entry_id', entry_id)
-                res["rule"] = rule_info.get("rule_id", "UNKNOWN_RULE"); res["target"] = f_type; results.append(res)
+                res["rule"] = rule_info.get("rule_id", "UNKNOWN_RULE")
+                res["target"] = f_type
+                results.append(res)
 
         for sing_qual, rule_info in f_def.get("singleton_qualifiers", {}).items():
             if sing_qual in feature.qualifiers and len(feature.qualifiers[sing_qual]) > 1:
                 msg = rule_info.get("message", f"Duplicated '{sing_qual}'.")
                 res = self.feature_result(record, feature, msg, level=rule_info.get("level", "error").lower(), qualifier=sing_qual, internal_ignore=rule_info.get("internal_ignore", True))
                 res["entry"] = getattr(feature, 'original_entry_id', entry_id)
-                res["rule"] = rule_info.get("rule_id", "UNKNOWN_RULE"); res["target"] = f_type; results.append(res)
+                res["rule"] = rule_info.get("rule_id", "UNKNOWN_RULE")
+                res["target"] = f_type
+                results.append(res)
 
         for rule in f_def.get("either_one_mandatory_qualifiers", []):
             choices = rule.get("choices", [])
@@ -187,28 +198,35 @@ class ANN_DICT_VALIDATOR(BaseRule):
                 qualifier_label = ", ".join(choices)
                 res = self.feature_result(record, feature, msg, level=rule.get("level", "error").lower(), qualifier=qualifier_label, internal_ignore=rule.get("internal_ignore", True))
                 res["entry"] = getattr(feature, 'original_entry_id', entry_id)
-                res["rule"] = rule.get("rule_id", "ANN0000"); res["target"] = f_type; results.append(res)
+                res["rule"] = rule.get("rule_id", "ANN0000")
+                res["target"] = f_type
+                results.append(res)
         return results
 
-    # 引数の末尾に entry_seen_unique_values を追加
     def _check_qualifiers_details(self, entry_id, record, feature, f_def, qualifiers_dict, 
                                   active_datatypes, active_dt_divisions, ddbj_dict, cv_terms, tax_data, 
-                                  global_seen_unique_values, entry_seen_unique_values):
+                                  global_seen_unique_values, entry_seen_unique_values, context):
         results = []
         f_type = feature.type
         historical_countries = {c.lower() for c in cv_terms.get("historical_countries", [])}
         missing_reporting_terms = {m.lower() for m in cv_terms.get("missing_reporting_terms", [])}
 
+        # DDBJ JSONのリスト構造に合わせて許可Qualifierを抽出
         allowed_quals = set(f_def.get("mandatory_qualifiers", {}).keys())
         allowed_quals.update(f_def.get("optional_qualifiers", []))
         allowed_quals.update(f_def.get("singleton_qualifiers", {}).keys())
 
         for q_name, q_values in feature.qualifiers.items():
+            # =====================================================================
+            # ANN3040: Qualifierの許可チェック
+            # =====================================================================
             if q_name not in allowed_quals:
                 msg = f"'{q_name}' qualifier can NOT be used for '{f_type}' feature."
-                res = self.feature_result(record, feature, msg, level="error", qualifier=q_name, internal_ignore=True)
+                res = self.feature_result(record, feature, msg, level="error", qualifier=q_name)
                 res["entry"] = getattr(feature, 'original_entry_id', entry_id)
-                res["rule"] = "ANN3040"; res["target"] = f_type; results.append(res)
+                res["rule"] = "ANN3040"
+                res["target"] = f_type
+                results.append(res)
                 continue
 
             # Datatype ルールに基づく invalid_moltype / required_moltype チェック
@@ -229,7 +247,9 @@ class ANN_DICT_VALIDATOR(BaseRule):
                                 msg = dt_rule.get("invalid_moltype_message", f"{active_dt} entries should not be mol_type {invalid_m}.")
                                 res = self.feature_result(record, feature, msg, level="error", qualifier=q_name, internal_ignore=ignore_flag)
                                 res["entry"] = getattr(feature, 'original_entry_id', entry_id)
-                                res["rule"] = rule_id; res["target"] = "sequence"; results.append(res)
+                                res["rule"] = rule_id
+                                res["target"] = "sequence"
+                                results.append(res)
                                 
                     # 2. required_moltype チェック
                     required_moltypes = dt_rule.get("required_moltype", [])
@@ -246,7 +266,9 @@ class ANN_DICT_VALIDATOR(BaseRule):
                                 rule_id = dt_rule.get("required_moltype_rule_id", "ANN0575")
                                 res = self.feature_result(record, feature, msg, level="error", qualifier=q_name, internal_ignore=ignore_flag)
                                 res["entry"] = getattr(feature, 'original_entry_id', entry_id)
-                                res["rule"] = rule_id; res["target"] = "mol_type"; results.append(res)
+                                res["rule"] = rule_id
+                                res["target"] = "mol_type"
+                                results.append(res)
 
             q_def = qualifiers_dict.get(q_name) or {}
             
@@ -257,13 +279,12 @@ class ANN_DICT_VALIDATOR(BaseRule):
                 orgs = feature.qualifiers.get("organism", [])
                 org_name = orgs[0].strip() if orgs else None
                 
-            # DBもNCBI APIも使えない(Localモード)場合はスキップ
-            if context.skip_db and context.skip_ncbi:
+                # DBもNCBI APIも使えない(Localモード)場合はスキップ
+                if context.skip_db and context.skip_ncbi:
                     continue
                     
                 tax_info = tax_data.get(org_name, {}) if org_name else {}
                 
-                # 該当のorganismに対する系統情報がDBから引けなかった場合も誤検知を防ぐためスキップ
                 if not tax_info:
                     continue
                 
@@ -335,19 +356,15 @@ class ANN_DICT_VALIDATOR(BaseRule):
                 
                 values_to_check = q_values if isinstance(q_values, list) else [q_values]
                 
-                # デフォルトを 'global' とし、JSONで "unique_scope" が指定された場合に従う
                 unique_scope = q_def.get("unique_scope", "global")
                 
                 if unique_scope == "feature":
-                    # フィーチャー単位の場合は毎回空のセットで初期化する
                     seen_values = set()
                 elif unique_scope == "entry":
-                    # エントリー単位の場合は、そのエントリー専用の辞書を使う
                     if q_name not in entry_seen_unique_values:
                         entry_seen_unique_values[q_name] = set()
                     seen_values = entry_seen_unique_values[q_name]
                 else:
-                    # global（デフォルト）の場合はファイル全体で管理している辞書を使用する
                     if q_name not in global_seen_unique_values:
                         global_seen_unique_values[q_name] = set()
                     seen_values = global_seen_unique_values[q_name]
@@ -358,12 +375,15 @@ class ANN_DICT_VALIDATOR(BaseRule):
                         msg = f"{base_msg} (Found: '{val_str}')"
                         res = self.feature_result(record, feature, msg, level=level, qualifier=q_name, internal_ignore=ignore_flag)
                         res["entry"] = getattr(feature, 'original_entry_id', entry_id)
-                        res["rule"] = rule_id; res["target"] = f_type
+                        res["rule"] = rule_id
+                        res["target"] = f_type
                         results.append(res)
                     else:
                         seen_values.add(val_str)
                                                                         
-            # 許容値 (allowed_values) の動的生成と検証
+            # =====================================================================
+            # ANN3290: 許容値 (allowed_values) の動的生成と検証
+            # =====================================================================
             allowed = q_def.get("allowed_values", [])
             rule_info = q_def.get("value_rule", {})
             
@@ -380,7 +400,7 @@ class ANN_DICT_VALIDATOR(BaseRule):
                 for val in q_values:
                     is_valid = False
                     custom_msg = None 
-                    suggested_fix = None  # Autofix候補を保持する変数
+                    suggested_fix = None
                     
                     if q_name == "inference":
                         parts = val.split(":")
@@ -416,7 +436,6 @@ class ANN_DICT_VALIDATOR(BaseRule):
                             is_valid = True
                                                                                                                                                                                                                                                                 
                     else:
-                        # 通常のCVチェック。完全一致しない場合は大文字小文字を無視してチェック
                         str_val = str(val)
                         allowed_strs = [str(a) for a in allowed]
                         
@@ -426,7 +445,6 @@ class ANN_DICT_VALIDATOR(BaseRule):
                             val_lower = str_val.lower()
                             for a_str in allowed_strs:
                                 if a_str.lower() == val_lower:
-                                    # 大文字小文字の違いだけであればAutofix対象とする
                                     suggested_fix = a_str
                                     custom_msg = f"{rule_info.get('message', '')}"
                                     break
@@ -435,11 +453,11 @@ class ANN_DICT_VALIDATOR(BaseRule):
                         base_msg = custom_msg if custom_msg else rule_info.get('message', '')
                         msg = f"{base_msg} (Found: '{val}')".strip()
                         
-                        res = self.feature_result(record, feature, msg, level=rule_info.get("level", "warning").lower(), qualifier=q_name)
+                        res = self.feature_result(record, feature, msg, level=rule_info.get("level", "warning").lower(), qualifier=q_name, internal_ignore=rule_info.get("internal_ignore", True))
                         res["entry"] = getattr(feature, 'original_entry_id', entry_id)
-                        res["rule"] = rule_info.get("rule_id", "ANN3290"); res["target"] = f_type
+                        res["rule"] = rule_info.get("rule_id", "ANN3290")
+                        res["target"] = f_type
                         
-                        # Autofixが可能な場合はメタデータを付与
                         if suggested_fix:
                             res["autofix"] = True
                             res["fix_target"] = "qualifier"
@@ -452,36 +470,33 @@ class ANN_DICT_VALIDATOR(BaseRule):
                 continue
 
             # =====================================================================
-            # 値の型(value-less)、フォーマット(正規表現)、最大長の検証
+            # ANN0185: 値の型(value-less)、フォーマット(正規表現)の検証
             # =====================================================================
             field_type = q_def.get("field_type")
             for val in q_values:
-                # 旧 qual_phi (値を持たないフラグ) のチェック
                 if field_type == "value-less" and val != "":
                     res = self.feature_result(record, feature, f"Invalid format: '{q_name}' takes no value (Found: '{val}')", level="error", qualifier=q_name)
                     res["entry"] = getattr(feature, 'original_entry_id', entry_id)
-                    res["rule"] = "ANN0185"; res["target"] = f_type
+                    res["rule"] = "ANN0185"
+                    res["target"] = f_type
                     results.append(res)
 
-            # replace 固有の塩基配列チェック (空文字許容、cv_terms参照)
             if q_name == "replace":
                 allowed_bases = set(cv_terms.get("nucleic_acids", []))
                 for val in q_values:
                     val_str = str(val)
-                    # 空文字 (deletion) は許容
                     if val_str == "":
                         continue
                     
-                    # 許可されていない文字が含まれているかチェック (小文字のみ許容)
                     invalid_chars = set(val_str) - allowed_bases
                     if invalid_chars:
                         msg = f"Invalid nucleotide codes in the 'replace' qualifier. Only lower-case IUPAC nucleotide codes (or an empty value) are allowed. (Found: '{val_str}')"
                         res = self.feature_result(record, feature, msg, level="error", qualifier=q_name)
                         res["entry"] = getattr(feature, 'original_entry_id', entry_id)
-                        res["rule"] = "ANN0185"; res["target"] = f_type
+                        res["rule"] = "ANN0185"
+                        res["target"] = f_type
                         results.append(res)
 
-            # ^\d+$ 等のフォーマットチェック
             pattern_str = q_def.get("format_pattern")
             if pattern_str:
                 pattern = re.compile(pattern_str)
@@ -499,10 +514,13 @@ class ANN_DICT_VALIDATOR(BaseRule):
                         msg = f"{base_msg} (Found: '{val}')"
                         res = self.feature_result(record, feature, msg, level=level, qualifier=q_name, internal_ignore=ignore_flag)
                         res["entry"] = getattr(feature, 'original_entry_id', entry_id)
-                        res["rule"] = rule_id; res["target"] = f_type
+                        res["rule"] = rule_id
+                        res["target"] = f_type
                         results.append(res)
                                                 
-            # 最大長チェック
+            # =====================================================================
+            # ANN3100: 最大長の検証 (qualifiers直下から取得)
+            # =====================================================================
             max_len = q_def.get("max_length")
 
             if max_len is not None:
@@ -520,7 +538,8 @@ class ANN_DICT_VALIDATOR(BaseRule):
                         msg = f"{base_msg} (Found: {len(val_str):,} chars)"
                         res = self.feature_result(record, feature, msg, level=level, qualifier=q_name, internal_ignore=ignore_flag)
                         res["entry"] = getattr(feature, 'original_entry_id', entry_id)
-                        res["rule"] = rule_id; res["target"] = f_type
+                        res["rule"] = rule_id
+                        res["target"] = f_type
                         results.append(res)
                         
         return results
@@ -528,19 +547,29 @@ class ANN_DICT_VALIDATOR(BaseRule):
     def _check_exclusions_and_dependencies(self, entry_id, record, feature, ddbj_dict):
         results = []
         f_type = feature.type
+        
+        # DDBJ JSONのルール構造に合わせてルートから抽出
         mutual_exclusions = ddbj_dict.get("rules", {}).get("mutual_exclusions", [])
         dependencies = ddbj_dict.get("rules", {}).get("required_dependencies", [])
         value_mutual_exclusions = ddbj_dict.get("rules", {}).get("value_mutual_exclusions", [])
         value_dependencies = ddbj_dict.get("rules", {}).get("value_dependencies", [])
 
-        # シンプルな相互排他と依存関係のチェック
+        # =====================================================================
+        # ANN3150: 相互排他チェック
+        # =====================================================================
         for rule in mutual_exclusions:
-            q1 = rule.get("qualifier_1"); q2 = rule.get("qualifier_2")
+            q1 = rule.get("qualifier_1")
+            q2 = rule.get("qualifier_2")
             if q1 in feature.qualifiers and q2 in feature.qualifiers:
                 res = self.feature_result(record, feature, rule.get("message"), level=rule.get("level", "error").lower(), qualifier=q1, internal_ignore=rule.get("internal_ignore", True))
                 res["entry"] = getattr(feature, 'original_entry_id', entry_id)
-                res["rule"] = rule.get("rule_id", "ANN3150"); res["target"] = f_type; results.append(res)
+                res["rule"] = rule.get("rule_id", "ANN3150")
+                res["target"] = f_type
+                results.append(res)
 
+        # =====================================================================
+        # ANN3110 / ANN3050: 依存関係チェック
+        # =====================================================================
         for rule in dependencies:
             q_present = rule.get("if_present")
             q_required = rule.get("requires")
@@ -550,14 +579,20 @@ class ANN_DICT_VALIDATOR(BaseRule):
                     if not any(req in feature.qualifiers for req in q_required):
                         res = self.feature_result(record, feature, rule.get("message"), level=rule.get("level", "error").lower(), qualifier=q_present, internal_ignore=rule.get("internal_ignore", True))
                         res["entry"] = getattr(feature, 'original_entry_id', entry_id)
-                        res["rule"] = rule.get("rule_id", "ANN3110"); res["target"] = f_type; results.append(res)
+                        res["rule"] = rule.get("rule_id", "ANN3110")
+                        res["target"] = f_type
+                        results.append(res)
                 else:
                     if q_required not in feature.qualifiers:
                         res = self.feature_result(record, feature, rule.get("message"), level=rule.get("level", "error").lower(), qualifier=q_present, internal_ignore=rule.get("internal_ignore", True))
                         res["entry"] = getattr(feature, 'original_entry_id', entry_id)
-                        res["rule"] = rule.get("rule_id", "ANN3110"); res["target"] = f_type; results.append(res)
+                        res["rule"] = rule.get("rule_id", "ANN3110")
+                        res["target"] = f_type
+                        results.append(res)
                         
-        # 値(Value)に依存する相互排他チェック
+        # =====================================================================
+        # ANN3160: 値依存の相互排他チェック
+        # =====================================================================
         for rule in value_mutual_exclusions:
             q1 = rule.get("qualifier_1")
             v1 = rule.get("value_1")
@@ -567,10 +602,13 @@ class ANN_DICT_VALIDATOR(BaseRule):
                 if any(str(val) == v1 for val in feature.qualifiers[q1]):
                     res = self.feature_result(record, feature, rule.get("message"), level=rule.get("level", "error").lower(), qualifier=q2, internal_ignore=rule.get("internal_ignore", True))
                     res["entry"] = getattr(feature, 'original_entry_id', entry_id)
-                    res["rule"] = rule.get("rule_id", "ANN3160"); res["target"] = f_type
+                    res["rule"] = rule.get("rule_id", "ANN3160")
+                    res["target"] = f_type
                     results.append(res)
 
-        # 値(Value)に依存する必須依存チェック
+        # =====================================================================
+        # ANN3165: 値依存の必須依存チェック
+        # =====================================================================
         for rule in value_dependencies:
             q1 = rule.get("qualifier_1")
             v1 = rule.get("value_1")
@@ -589,7 +627,8 @@ class ANN_DICT_VALIDATOR(BaseRule):
                     if is_missing:
                         res = self.feature_result(record, feature, rule.get("message"), level=rule.get("level", "error").lower(), qualifier=q1, internal_ignore=rule.get("internal_ignore", True))
                         res["entry"] = getattr(feature, 'original_entry_id', entry_id)
-                        res["rule"] = rule.get("rule_id", "ANN3165"); res["target"] = f_type
+                        res["rule"] = rule.get("rule_id", "ANN3165")
+                        res["target"] = f_type
                         results.append(res)
 
-        return results        
+        return results
