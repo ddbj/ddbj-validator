@@ -101,50 +101,44 @@ NCBI API（`-n`）を利用し、結果を output（`-o`）フォルダに出力
 
 本プロジェクトは、以下のオープンソースソフトウェアを利用して構築されています。各ソフトウェアの開発者および貢献者の皆様に深く感謝いたします。
 
-| Package | Version | License |
-| :--- | :--- | :--- |
-| `annotated-types` | 0.7.0 | MIT |
-| `anyio` | 4.12.1 | MIT |
-| `biopython` | 1.86 | Biopython License |
-| `certifi` | 2026.2.25 | MPL 2.0 |
-| `cffi` | 2.0.0 | MIT |
-| `charset-normalizer` | 3.4.6 | MIT |
-| `cryptography` | 46.0.5 | Apache-2.0 / BSD |
-| `defusedxml` | 0.7.1 | PSF License |
-| `distro` | 1.9.0 | Apache-2.0 |
-| `geopandas` | 1.1.3 | BSD |
-| `google-auth` | 2.49.1 | Apache-2.0 |
-| `google-genai` | 1.68.0 | Apache-2.0 |
-| `h11` | 0.16.0 | MIT |
-| `httpcore` | 1.0.9 | BSD |
-| `httpx` | 0.28.1 | BSD |
-| `idna` | 3.11 | BSD |
-| `intervaltree` | 3.2.1 | Apache-2.0 |
-| `numpy` | 2.4.2 | BSD / MIT / Zlib / CC0 |
-| `packaging` | 26.2 | Apache-2.0 / BSD |
-| `pandas` | 3.0.2 | BSD |
-| `psycopg2-binary` | 2.9.11 | LGPL (with exception) |
-| `pyarrow` | 24.0.0 | Apache-2.0 |
-| `pyasn1` | 0.6.3 | BSD |
-| `pyasn1_modules` | 0.4.2 | BSD |
-| `pycparser` | 3.0 | BSD |
-| `pydantic` | 2.12.5 | MIT |
-| `pydantic_core` | 2.41.5 | MIT |
-| `pyogrio` | 0.12.1 | MIT |
-| `pyproj` | 3.7.2 | MIT |
-| `python-dateutil` | 2.9.0.post0 | Apache-2.0 / BSD |
-| `python-dotenv` | 1.2.2 | BSD |
-| `requests` | 2.32.5 | Apache-2.0 |
-| `shapely` | 2.1.2 | BSD |
-| `six` | 1.17.0 | MIT |
-| `sniffio` | 1.3.1 | Apache-2.0 / MIT |
-| `sortedcontainers` | 2.4.0 | Apache-2.0 |
-| `tenacity` | 9.1.4 | Apache-2.0 |
-| `typing-inspection` | 0.4.2 | MIT |
-| `typing_extensions` | 4.15.0 | PSF-2.0 |
-| `urllib3` | 2.6.3 | MIT |
-| `websockets` | 16.0 | BSD |
-
-
-
-
+* annotated-types
+* anyio
+* biopython
+* certifi
+* cffi
+* charset-normalizer
+* cryptography
+* defusedxml
+* distro
+* geopandas
+* google-auth
+* google-genai
+* h11
+* httpcore
+* httpx
+* idna
+* intervaltree
+* numpy
+* packaging
+* pandas
+* psycopg2-binary
+* pyarrow
+* pyasn1
+* pyasn1_modules
+* pycparser
+* pydantic
+* pydantic_core
+* pyogrio
+* pyproj
+* python-dateutil
+* python-dotenv
+* requests
+* shapely
+* six
+* sniffio
+* sortedcontainers
+* tenacity
+* typing-inspection
+* typing_extensions
+* urllib3
+* websockets
