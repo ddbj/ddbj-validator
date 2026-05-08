@@ -52,7 +52,7 @@ def check_ncbi_public_status(db_name, accessions, chunk_size=100):
             "term": term,
             "retmode": "json",
             "retmax": 0,
-            "tool": "bsi-validator",
+            "tool": "ddbj-validator",
             "email": "ddbj@ddbj.nig.ac.jp"
         }
         if current_api_key:
