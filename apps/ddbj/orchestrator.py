@@ -704,14 +704,18 @@ class ValidatorPipeline:
                 })
 
         for tag, locs in cross_locus_tags.items():
-            if len(locs) > 1:
-                details = ", ".join(list(set([f"{o['entry']} in {Path(o['file']).name.replace('.jsonl', '')}" for o in locs])))
+            # エントリー名とファイル名の組み合わせでユニークにする
+            unique_occurrences = set([f"{o['entry']} in {Path(o['file']).name.replace('.jsonl', '')}" for o in locs])
+            
+            # 異なるエントリー（または異なるファイル）にまたがって存在する場合のみエラーとする
+            if len(unique_occurrences) > 1:
+                details = ", ".join(sorted(list(unique_occurrences)))
                 msg = f"Duplicate locus_tag found across the submission. (Found: '{tag}' in {details})"
                 cross_file_results.append({
                     "file": "Submission (across files)", "full_path": "", "rule": "ANN2520",
                     "level": "ERROR", "entry": "ALL_ENTRIES", "feature_type": "locus_tag", "target": "locus_tag", "message": msg
                 })
-
+                
         # クロスファイルのチェック結果も専用の JSONL に書き出して先頭に追加
         if cross_file_results:
             cross_jsonl = self.tmp_dir / "Submission_Cross_File.jsonl"

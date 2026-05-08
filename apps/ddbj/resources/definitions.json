@@ -5191,7 +5191,7 @@
     },
     "sequence read archive": {
       "qualifier_type": "metadata_field",
-      "format_pattern": "^(DR[RZ]\\d{6}|[SE]RR\\d{6,8})$",
+      "format_pattern": "^(DR[RZ]\\d{6,7}|[SE]RR\\d{6,8})$",
       "format_rule": {
         "rule_id": "ANN0465",
         "alternate_id": "",
