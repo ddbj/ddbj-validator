@@ -186,12 +186,11 @@ def _validate_single_file_set(args):
     # ====================================================
     # メインプロセスでのクロスファイルチェック用にメタデータを収集
     # ====================================================
-    file_entries = []
     file_locus_tags = []
 
     for entry_id, record in records.items():
-        if entry_id != "COMMON":
-            file_entries.append(entry_id)
+        if entry_id == "COMMON":
+            continue
 
         for feature in get_features(record):
             if "locus_tag" in feature.qualifiers:
@@ -218,12 +217,9 @@ def _validate_single_file_set(args):
         for prop in file_proposals:
             write_record("proposal", prop)
             
-        for entry in file_entries:
-            write_record("entry", entry)
-            
         for loc in file_locus_tags:
             write_record("locus_tag", loc)
-
+            
     return {
         "jsonl_path": str(tmp_jsonl_path),
         "skipped_autofixes": file_skipped_autofixes,
@@ -673,7 +669,6 @@ class ValidatorPipeline:
                     updq_data[out_path].append(line)
 
         # 5. JSONL からメタデータと提案を読み出してクロスチェック
-        cross_entries = defaultdict(list)
         cross_locus_tags = defaultdict(list)
         all_interactive_proposals = []
         
@@ -683,9 +678,7 @@ class ValidatorPipeline:
                     rec = json.loads(line)
                     r_type = rec["type"]
                     data = rec["data"]
-                    if r_type == "entry":
-                        cross_entries[data].append(j_path)
-                    elif r_type == "locus_tag":
+                    if r_type == "locus_tag":
                         data["file"] = j_path
                         cross_locus_tags[data["tag"]].append(data)
                     elif r_type == "proposal":
@@ -693,15 +686,6 @@ class ValidatorPipeline:
 
         # クロスファイル（Submission全体）のユニークチェック
         cross_file_results = []
-        for entry_name, paths in cross_entries.items():
-            unique_files = set(paths)
-            if len(unique_files) > 1:
-                file_names = ", ".join([Path(p).name.replace('.jsonl', '') for p in unique_files])
-                msg = f"Duplicate entry name across multiple files. (Found: '{entry_name}' in {file_names})"
-                cross_file_results.append({
-                    "file": "Submission (across files)", "full_path": "", "rule": "ANN0120",
-                    "level": "ERROR", "entry": entry_name, "feature_type": "entry", "target": "file", "message": msg
-                })
 
         for tag, locs in cross_locus_tags.items():
             # エントリー名とファイル名の組み合わせでユニークにする
@@ -715,7 +699,7 @@ class ValidatorPipeline:
                     "file": "Submission (across files)", "full_path": "", "rule": "ANN2520",
                     "level": "ERROR", "entry": "ALL_ENTRIES", "feature_type": "locus_tag", "target": "locus_tag", "message": msg
                 })
-                
+                                
         # クロスファイルのチェック結果も専用の JSONL に書き出して先頭に追加
         if cross_file_results:
             cross_jsonl = self.tmp_dir / "Submission_Cross_File.jsonl"

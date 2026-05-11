@@ -2490,6 +2490,7 @@ class ANN2510(BaseRule):
             return [self.format_result(entry_id="ALL", message=msg, level="warning")]
         return []
 
+
 class ANN2520(BaseRule):
     rule_id = "ANN2520"
     alternate_id = "SUBC0003, SVP0150"
@@ -2501,8 +2502,8 @@ class ANN2520(BaseRule):
     def validate_file(self, records, context):
         results = []
         
-        # locus_tag とそれが現れた feature を紐づける辞書
-        # 形式: {"LTP_0001": [(record1, feature1), (record8, feature8), ...]}
+        # locus_tag と feature.type を組み合わせて記録する辞書
+        # 形式: {"LTP_0001": {"CDS": [(rec, feat), (rec, feat)], "gene": [(rec, feat)]}}
         tag_registry = {}
 
         # ファイル内の全レコードを走査
@@ -2514,19 +2515,25 @@ class ANN2520(BaseRule):
             index = getattr(record, 'features_by_locus_tag', {})
             for tag, features in index.items():
                 if tag not in tag_registry:
-                    tag_registry[tag] = []
+                    tag_registry[tag] = {}
                 
-                # そのタグを持つ feature をレコード情報と共に記録
+                # そのタグを持つ feature を "featureの型ごと" に記録
                 for f in features:
-                    tag_registry[tag].append((record, f))
+                    feat_type = f.type
+                    if feat_type not in tag_registry[tag]:
+                        tag_registry[tag][feat_type] = []
+                    
+                    tag_registry[tag][feat_type].append((record, f))
 
-        # 収集した結果、複数回出現した tag をエラーとする
-        for tag, occurrences in tag_registry.items():
-            if len(occurrences) > 1:
-                # 複数ある場合は、それぞれに対して警告を出す
-                for rec, feat in occurrences:
-                    msg = f"{self.description} ('{tag}')"
-                    results.append(self.feature_result(rec, feat, msg, level="warning", qualifier="locus_tag"))
+        # 収集した結果、"同じ feature type 内で" 複数回出現した tag をエラーとする
+        for tag, types_dict in tag_registry.items():
+            for feat_type, occurrences in types_dict.items():
+                if len(occurrences) > 1:
+                    # 同一 feature での重複が見つかった場合、それぞれに対して警告を出す
+                    for rec, feat in occurrences:
+                        # どの feature で重複しているか分かりやすいようにメッセージを少し調整
+                        msg = f"{self.description} ('{tag}' in {feat_type})"
+                        results.append(self.feature_result(rec, feat, msg, level="warning", qualifier="locus_tag"))
                     
         return results
         
@@ -2611,7 +2618,7 @@ class ANN2542(BaseRule):
     rule_id = "ANN2542"
     alternate_id = "V200"
     target = "locus_tag"
-    description = "Duplicate locus_tag across features with different gene qualifiers."
+    description = "Duplicate locus_tag across features without common gene qualifiers."
     requires_rdb = False
     is_file_level = True
 
@@ -2643,22 +2650,35 @@ class ANN2542(BaseRule):
         
         for tag, occurrences in locus_tag_map.items():
             if len(occurrences) > 1:
-                non_empty_gene_sets = {occ["genes"] for occ in occurrences if occ["genes"]}
+                # すべての occurrences の gene を取得（空の gene も含める）
+                gene_sets = {occ["genes"] for occ in occurrences}
                 
-                if len(non_empty_gene_sets) > 1:
-                    conflict_genes = [list(g) for g in non_empty_gene_sets]
-                    msg = f"{self.description} (locus_tag: '{tag}', Conflicting genes: {conflict_genes})"
+                # 以下のいずれかの場合にエラーとする：
+                # 1. gene が無い (frozenset()) ものが含まれている
+                # 2. 複数の異なる gene の値が存在する
+                if frozenset() in gene_sets or len(gene_sets) > 1:
                     
+                    # 存在する gene の値を文字列に整形
+                    found_values = [f"'{','.join(g)}'" for g in gene_sets if g]
+                    
+                    # 空の gene (frozenset) が含まれている場合は 'none' を追加
+                    if frozenset() in gene_sets:
+                        found_values.append("none")
+                        
+                    # 余計な括弧や説明を省き、シンプルに連結
+                    msg = f"{self.description} (locus_tag: '{tag}', genes: {', '.join(found_values)})"
+                                        
                     results.append(self.format_result(
                         entry_id="ALL", 
                         message=msg, 
-                        level="error",
+                        level="warning",
                         feature_type="ALL", 
                         qualifier="locus_tag"
                     ))
-                    
+                                        
         return results
         
+                
 class ANN2544(BaseRule):
     rule_id = "ANN2544"
     alternate_id = "V200"
