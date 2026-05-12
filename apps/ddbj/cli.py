@@ -223,7 +223,9 @@ def main():
         # 3. Autofix の承認と適用
         pipeline.run_autofix()
         
-        print(f"\n\n[ All reports successfully generated to {target_dir} ]")
+        # --- 変更点: 表示用パスに reports ディレクトリを追加 ---
+        reports_dir = target_dir / "reports"
+        print(f"\n\n[ All reports successfully generated to {reports_dir} ]")
         print(f"  validation_report_summary.txt")
         print(f"  validation_report_details.txt\n")
     finally:

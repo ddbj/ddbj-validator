@@ -7,6 +7,12 @@ import argparse
 from pathlib import Path
 
 # ==============================================================================
+# Docker イメージ構築
+# ==============================================================================
+# docker build -t ddbj-validator:0.1.0-beta .
+# .venv/bin/python apps/ddbj/tests/run_tests.py -d ddbj-validator:0.1.0-beta
+
+# ==============================================================================
 # プロジェクトルートをPythonのパスに追加 (モジュールインポートエラー回避)
 # ==============================================================================
 tests_dir = Path(__file__).resolve().parent
@@ -342,7 +348,7 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
             
         subprocess.run(cmd, capture_output=True, text=True)
                 
-        report_path = target_dir / "validation_report_details.txt"
+        report_path = target_dir / "reports" / "validation_report_details.txt"
         if not report_path.exists():
             print(f"{Colors.FAILRED}[ERROR]{Colors.ENDC} Details report not generated: {report_path}")
             continue

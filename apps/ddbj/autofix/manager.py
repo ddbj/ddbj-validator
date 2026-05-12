@@ -81,18 +81,24 @@ def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None):
     summary_filename = "autofix_confirmation_summary.txt"
     
     if out_dir:
-        summary_file = Path(out_dir) / summary_filename
+        reports_dir = Path(out_dir) / "reports"
+        reports_dir.mkdir(parents=True, exist_ok=True)
+        summary_file = reports_dir / summary_filename
+        
         with open(summary_file, "w", encoding="utf-8") as f:
             f.write(summary_text.lstrip() + "\n")
         print(f"\n  => Confirmation summary saved: {summary_file}")
     else:
         for d in target_dirs:
-            summary_file = d / summary_filename
+            reports_dir = d / "reports"
+            reports_dir.mkdir(parents=True, exist_ok=True)
+            summary_file = reports_dir / summary_filename
+            
             with open(summary_file, "w", encoding="utf-8") as f:
                 f.write(summary_text.lstrip() + "\n")
                 
         if target_dirs:
-            dir_path = str(list(target_dirs)[0] / summary_filename)
+            dir_path = str(list(target_dirs)[0] / "reports" / summary_filename)
             print(f"\n  => Confirmation summary saved: {dir_path}")
 
     if force_fix:

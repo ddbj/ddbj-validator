@@ -5,8 +5,9 @@ from collections import defaultdict
 
 class ValidationReporter:
     def __init__(self, out_dir):
-        self.out_dir = Path(out_dir) if out_dir else Path(".")
-        self.show_location = False  
+        self.out_dir = Path(out_dir) / "reports" if out_dir else Path(".") / "reports"
+        self.out_dir.mkdir(parents=True, exist_ok=True)
+        self.show_location = False
 
     def generate_report(self, jsonl_paths, print_console=True):
         """レポート出力の統括メソッド (JSONLストリーミング対応版)"""
