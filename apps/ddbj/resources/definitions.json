@@ -6329,8 +6329,9 @@
     "translation",
     "type_material"
   ],
-  "datatypes": {
+  "data_categories": {
     "WGS": {
+      "required_datatype": "WGS",
       "required_keywords": [
         [
           "WGS"
@@ -6490,7 +6491,7 @@
       ]
     },
     "TLS": {
-      "required_division": "TLS",
+      "required_datatype": "TLS",
       "required_keywords": [
         [
           "TLS"
@@ -6550,6 +6551,7 @@
       ]
     },
     "TPA": {
+      "required_datatype": "TPA",
       "required_keywords": [
         [
           "TPA"
@@ -6563,6 +6565,7 @@
       ]
     },
     "TPA-WGS": {
+      "required_datatype": "TPA-WGS",
       "inherits": [
         "TPA",
         "WGS"
@@ -6583,6 +6586,7 @@
       ]
     },
     "TPA-TSA": {
+      "required_datatype": "TPA-TSA",
       "inherits": [
         "TPA",
         "TSA"
@@ -6605,6 +6609,7 @@
       ]
     },
     "TPA-TLS": {
+      "required_datatype": "TPA-TLS",
       "inherits": [
         "TPA",
         "TLS"
@@ -6622,7 +6627,7 @@
       ]
     },
     "MGA": {
-      "required_division": "MGA",
+      "required_datatype": "MGA",
       "required_keywords": [
         [
           "MGA"
@@ -6638,6 +6643,15 @@
         "mRNA"
       ]
     }
+  },
+  "datatypes": {
+    "WGS": {},
+    "TLS": {},
+    "TPA": {},
+    "TPA-WGS": {},
+    "TPA-TSA": {},
+    "TPA-TLS": {},
+    "MGA": {}
   },
   "divisions": {
     "ENV": {

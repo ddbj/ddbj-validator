@@ -4,8 +4,8 @@ from common.rules.base import BaseRule
 
 def get_active_divisions(records, ddbj_dict, tax_data):
     """
-    ファイル内の Datatype Division と Taxonomic Division を分離して取得する
-    基本的には context.active_datatypes や context.active_divisions を直接利用推奨。
+    ファイル内の Datatype Division と Taxonomic Division を分離して取得
+    基本的には context.active_datatypes や context.active_divisions を直接利用
     """
     divisions = {
         "datatype": set(),
@@ -34,7 +34,7 @@ def get_active_divisions(records, ddbj_dict, tax_data):
                         
     # 2. DATATYPE のルールから required_division を取得 (Datatype Division)
     if not divisions["datatype"]:
-        type_rules = ddbj_dict.get("datatypes", {})
+        type_rules = ddbj_dict.get("data_categories", {})
         if common_rec:
             for feat in common_rec.features:
                 if feat.type == "DATATYPE":
@@ -61,6 +61,7 @@ def get_active_divisions(records, ddbj_dict, tax_data):
                         
     return divisions
 
+
 class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
     rule_id = "DIV_TYPE_STATIC_MASTER"
     target = "file"
@@ -76,7 +77,7 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
         if not records:
             return results
 
-        type_rules = context.ddbj_dict.get("datatypes", {})
+        type_rules = context.ddbj_dict.get("data_categories", {})
 
         # ---------------------------------------------------
         # 1. COMMONからタグを抽出 (DATATYPE のみを起点とする)
@@ -138,8 +139,7 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
         # --- (A) 必須DIVISIONのチェック ---
         req_div = compiled_rule["required_division"]
         
-        # 一意に決まるDatatype Divisionのリスト
-        UNIQUE_DIVISIONS = {"TSA", "ENV", "EST", "GSS", "HTG", "HTC", "TLS", "MAG", "MGA", "CON", "STS", "SYN"}
+        UNIQUE_DIVISIONS = {"TSA", "ENV", "EST", "GSS", "HTG", "HTC", "CON", "STS", "SYN"}
 
         if req_div and common_rec:
             existing_divs = context.active_divisions
@@ -357,6 +357,7 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
                     
         return results
 
+
 class ANN0640(BaseRule):
     rule_id = "ANN0640"
     alternate_id = "JP1015"
@@ -367,70 +368,103 @@ class ANN0640(BaseRule):
 
     def __init__(self, ddbj_dict=None):
         self.keyword_to_datatypes = defaultdict(set)
-        self.division_to_datatypes = defaultdict(set)
         self.is_initialized = False
 
     def _initialize_dict(self, context):
-        if self.is_initialized:
-            return
+        if self.is_initialized: return
             
-        type_rules = context.ddbj_dict.get("datatypes", {})
+        type_rules = context.ddbj_dict.get("data_categories", {})
+        valid_datatypes = set(context.ddbj_dict.get("datatypes", {}).keys())
         
-        # ---------------------------------------------------
-        # JSONから「キーワード/DIVISION -> 要求されるDATATYPE」の逆引き辞書を自動生成
-        # ---------------------------------------------------
-        for dt, rule in type_rules.items():
-            dt_exact = dt
-            
+        for cat_name, rule in type_rules.items():
+            req_datatype = rule.get("required_datatype")
+            if not req_datatype or req_datatype not in valid_datatypes:
+                continue
+                
             for kw_group in rule.get("required_keywords", []):
                 for kw in kw_group:
-                    self.keyword_to_datatypes[kw].add(dt_exact)
-            
-            req_div = rule.get("required_division")
-            if req_div:
-                self.division_to_datatypes[req_div].add(dt_exact)
-                
+                    self.keyword_to_datatypes[kw].add(req_datatype)
+        
         self.is_initialized = True
 
     def validate_file(self, records, context, ann_path=None, seq_path=None):
         self._initialize_dict(context)
-        
         results = []
         common_rec = records.get("COMMON")
-        if not common_rec:
-            return results
+        if not common_rec: return results
 
-        # 1. 実際に記述されている DATATYPE を収集 (context から利用)
-        existing_datatypes = context.active_datatypes
+        # 1. 実際に記述されている DATATYPE (継承込み)
+        type_rules = context.ddbj_dict.get("data_categories", {})
+        existing_datatypes = set(context.active_datatypes)
+        for dt in list(existing_datatypes):
+            rule_def = type_rules.get(dt, {})
+            existing_datatypes.update(rule_def.get("inherits", []))
 
-        # 2. KEYWORD や DIVISION を走査し、DATATYPE の入力を促す (FATAL)
-        # --- KEYWORD -> DATATYPE チェック ---
+        # 2. ファイルに記述されている全キーワードを収集
+        present_keywords = set()
         for feat in self.get_features(common_rec, "KEYWORD"):
-            for kw in feat.qualifiers.get("keyword", []):
-                if kw in self.keyword_to_datatypes:
-                    required_dts = self.keyword_to_datatypes[kw]
-                    if not any(dt in existing_datatypes for dt in required_dts):
-                        req_dts_str = " or ".join(sorted(required_dts))
-                        msg = f'Keyword "{kw}" requires DATATYPE/type "{req_dts_str}".'
-                        res = self.feature_result(common_rec, feat, msg, level="error", qualifier="keyword")
-                        res["rule"] = self.rule_id
-                        res["target"] = "KEYWORD"
-                        results.append(res)
-                        
-        # --- DIVISION -> DATATYPE チェック ---
-        for feat in self.get_features(common_rec, "DIVISION"):
-            for div in feat.qualifiers.get("division", []):
-                if div in self.division_to_datatypes:
-                    required_dts = self.division_to_datatypes[div]
-                    if not any(dt in existing_datatypes for dt in required_dts):
-                        req_dts_str = " or ".join(sorted(required_dts))
-                        msg = f'DIVISION "{div}" requires DATATYPE/type "{req_dts_str}".'
-                        res = self.feature_result(common_rec, feat, msg, level="error", qualifier="division")
-                        res["rule"] = "ANN0641" # DIVISION 起点のエラー
-                        res["target"] = "DIVISION"
-                        results.append(res)
+            present_keywords.update(feat.qualifiers.get("keyword", []))
+
+        # 3. 制約があるキーワードを特定
+        constrained_kws = [kw for kw in present_keywords if kw in self.keyword_to_datatypes]
+        if not constrained_kws: return results
+
+        # 4. すでに適切なDATATYPEがあるかチェック
+        # すべての constrained_kws が既存のDATATYPEのいずれかによって「カバー」されているか
+        uncovered_kws = []
+        for kw in constrained_kws:
+            if not any(dt in existing_datatypes for dt in self.keyword_to_datatypes[kw]):
+                uncovered_kws.append(kw)
+
+        if not uncovered_kws: return results
+
+# 5. スマートなレコメンド作成 (積集合を利用)
+        # uncovered_kws のすべてをカバーできる DATATYPE を探す
+        candidate_sets = [self.keyword_to_datatypes[kw] for kw in uncovered_kws]
+        common_candidates = set.intersection(*candidate_sets) if candidate_sets else set()
+
+        if common_candidates:
+            # 共通項が見つかった場合はそのまま提示
+            req_dts_str = " or ".join(sorted(common_candidates))
+        else:
+            # 共通項がない場合は各キーワードの要求をマージ
+            all_reqs = set()
+            for kw in uncovered_kws:
+                all_reqs.update(self.keyword_to_datatypes[kw])
+            
+            # --- スマートなレコメンド (TPA複合型の解決) ---
+            has_tpa = any(dt.startswith("TPA") for dt in all_reqs)
+            has_tls = "TLS" in all_reqs
+            has_wgs = "WGS" in all_reqs
+            has_tsa = "TSA" in all_reqs
+
+            resolved_composites = []
+            if has_tpa and has_tls:
+                resolved_composites.append("TPA-TLS")
+            if has_tpa and has_tsa:
+                resolved_composites.append("TPA-TSA")
+            if has_tpa and has_wgs:
+                resolved_composites.append("TPA-WGS")
+
+            # TPAと他のキーワードが組み合わさっている場合は複合型を提示
+            if resolved_composites:
+                req_dts_str = " or ".join(sorted(resolved_composites))
+            else:
+                # TPA系のみ、または複合に関係ないキーワード群の場合は全候補を提示
+                req_dts_str = " or ".join(sorted(all_reqs))
+
+        # 代表として最初のKEYWORDフィーチャーにエラーを出す
+        keyword_feats = self.get_features(common_rec, "KEYWORD")
+        target_feat = keyword_feats[0] if keyword_feats else None
+        
+        msg = f'Keywords require DATATYPE/type "{req_dts_str}".'
+        res = self.feature_result(common_rec, target_feat, msg, level="error", qualifier="keyword")
+        res["rule"] = self.rule_id
+        res["target"] = "KEYWORD"
+        results.append(res)
 
         return results
+                        
 
 class DIV_TYPE_DYNAMIC_VALIDATOR(BaseRule):
     rule_id = "DIV_TYPE_DYNAMIC_MASTER"
@@ -486,4 +520,3 @@ class DIV_TYPE_DYNAMIC_VALIDATOR(BaseRule):
                 results.append(res)
                 
         return results
-        

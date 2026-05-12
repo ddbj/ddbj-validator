@@ -16,15 +16,14 @@ COMMON	SUBMITTER		ab_name	Mishima,H.
 			status	Unpublished
 	DATE		hold_date	20280101
 	KEYWORD		keyword	WGS
-	ST_COMMENT		tagset_id	Assembly-Data
-			Assembly Method	Trinity v. r2012-10-05
+	ST_COMMENT		tagset_id	Genome-Assembly-Data
+			Assembly Method	Velvet v. 1.0
 			Assembly Name	Mouse100
-			Coverage	30x
+			Genome Coverage	30x
 			Sequencing Technology	PacBio Revio
 seq1	source	1..120	organism	Mus musculus
-			mol_type	transcribed RNA
+			mol_type	genomic DNA
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
 			tissue_type	brain
 			submitter_seqid	@@[entry]@@
-	ST_COMMENT		Genome Coverage	40x

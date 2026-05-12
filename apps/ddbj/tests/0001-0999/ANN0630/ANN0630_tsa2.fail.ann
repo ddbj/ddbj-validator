@@ -15,7 +15,7 @@ COMMON	SUBMITTER		ab_name	Mishima,H.
 			year	2026
 			status	Unpublished
 	DATE		hold_date	20280101
-	DATATYPE		type	tsa
+	DATATYPE		type	TPA-TSA
 	DIVISION		division	TSA
 	KEYWORD		keyword	TSA
 	ST_COMMENT		tagset_id	Assembly-Data

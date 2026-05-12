@@ -229,9 +229,12 @@ class ANN_DICT_VALIDATOR(BaseRule):
                 results.append(res)
                 continue
 
-            # Datatype ルールに基づく invalid_moltype / required_moltype チェック
+            # =====================================================================
+            # Datatype / Category ルールに基づく invalid_moltype / required_moltype チェック
+            # =====================================================================
             if f_type == "source" and q_name == "mol_type":
-                datatype_rules = ddbj_dict.get("datatypes", {})
+                # "datatypes" から "data_categories" に変更
+                datatype_rules = ddbj_dict.get("data_categories", {})
                 for active_dt in active_datatypes:
                     dt_rule = datatype_rules.get(active_dt)
                     if not dt_rule: continue
@@ -391,11 +394,17 @@ class ANN_DICT_VALIDATOR(BaseRule):
                 allowed = list(ddbj_dict.get("divisions", {}).keys())
                 if not rule_info:
                     rule_info = {"rule_id": "ANN3290", "level": "error", "message": "Value not defined in controlled values 'division'."}
+                    
+            # =====================================================================
+            # DATATYPE の許容値抽出ロジックを変更
+            # =====================================================================
             elif f_type.upper() == "DATATYPE" and q_name == "type":
+                # data_categories の中から required_datatype が設定されている値をリスト化
                 allowed = list(ddbj_dict.get("datatypes", {}).keys())
+                
                 if not rule_info:
                     rule_info = {"rule_id": "ANN3290", "level": "error", "message": "Value not defined in controlled values 'type'."}
-
+                    
             if allowed:
                 for val in q_values:
                     is_valid = False
