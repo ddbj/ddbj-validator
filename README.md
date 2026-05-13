@@ -6,7 +6,7 @@ DDBJ の既存チェックツールである [jParser](https://www.ddbj.nig.ac.j
 
 ## ルールリスト
 
-現在適用されているバリデーションルールの詳細については、スプレッドシート [Validation rules](https://docs.google.com/spreadsheets/xxx)をご参照ください。
+現在適用されているバリデーションルールの詳細については、スプレッドシート [Validation rules](https://docs.google.com/spreadsheets/d/1Bb4yG0UeC5Y-oem7cMZFHhL1PtvuXG73tqQs5_tr-sw/edit?gid=0#gid=0)をご参照ください。
 
 ## インストール
 
@@ -118,7 +118,7 @@ Alongside the syntax validation by DDBJ's existing tool [jParser](https://www.dd
 
 ## Rule List
 
-For details on the validation rules, please refer to the spreadsheet [Validation rules](https://www.google.com/search?q=https://docs.google.com/spreadsheets/xxx).
+For details on the validation rules, please refer to the spreadsheet [Validation rules](https://docs.google.com/spreadsheets/d/1Bb4yG0UeC5Y-oem7cMZFHhL1PtvuXG73tqQs5_tr-sw/edit?gid=0#gid=0).
 
 ## Installation
 
