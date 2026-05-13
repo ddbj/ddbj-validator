@@ -110,9 +110,125 @@ NCBI API（`-n`）を利用し、結果を output（`-o`）フォルダに出力
 * `fixed/` 承認された Autofix（または、`-f` オプションで自動適用された修正）が反映されたファイルが格納されます。
 * `aa/` CDS feature から翻訳されたアミノ酸配列（FASTA 形式）が格納されます。
 
-## 謝辞
+# DDBJ Validator
 
-本プロジェクトは、以下のオープンソースソフトウェアを利用して構築されています。各ソフトウェアの開発者および貢献者の皆様に深く感謝いたします。
+The DDBJ Validator is a command-line tool to validate and automatically fix the syntax and consistency of annotation files (`.ann`) and nucleotide sequence FASTA files (`.fasta`) for submission to the DDBJ (DNA Data Bank of Japan).  
+In addition to format validation, this tool uses the NCBI Taxonomy API to perform detailed validation such as taxonomy-dependent checks before submission.  
+Alongside the syntax validation by DDBJ's existing tool [jParser](https://www.ddbj.nig.ac.jp/ddbj/parser-e.html) and the CDS amino acid translation features of [transChecker](https://www.ddbj.nig.ac.jp/ddbj/transchecker-e.html), this tool provides taxonomy-dependent validations and checks required by the [INSDC Minimal Specifications](https://www.insdc.org/insdc-minimal-specifications/).
+
+## Rule List
+
+For details on the validation rules, please refer to the spreadsheet [Validation rules](https://www.google.com/search?q=https://docs.google.com/spreadsheets/xxx).
+
+## Installation
+
+### Installing Docker
+
+Docker must be installed to run this tool.
+
+* Windows/macOS: Please install [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+* Linux: Please install [Docker Engine](https://docs.docker.com/engine/install/).
+
+### Downloading the Docker Image
+
+Download the latest image using the following command:
+
+```bash
+docker pull ghcr.io/ddbj/ddbj-validator:0.1.0-beta
+```
+
+## Usage
+
+### A. Using the Wrapper Script (Recommended)
+
+You can execute the tool without entering complex Docker commands by using the scripts included in the repository.
+
+#### macOS/Linux (Unix-like)
+
+Execute the script in the directory where `ddbj-validator-seq.sh` is located.
+
+```bash
+# Grant execution permission (first time only)
+chmod +x ddbj-validator-seq.sh
+
+# Execute (validates files in the current directory)
+./ddbj-validator-seq.sh [Options] [Target Directory]
+```
+
+If the target directory is omitted, the current directory will be validated.
+
+#### Windows
+
+Execute `ddbj-validator-seq.bat` in the Command Prompt or PowerShell.
+
+```bash
+ddbj-validator-seq.bat [Options] [Target Directory]
+```
+
+### B. Running Docker Commands Directly
+
+The basic structure for executing the tool directly via `docker run` is as follows. Mount the directory containing the files you want to validate to `/data` inside the container.
+
+```bash
+# macOS/Linux
+docker run --rm -v $(pwd):/data ghcr.io/ddbj/ddbj-validator:0.1.0-beta ddbj [Options] /data
+
+# Windows (PowerShell)
+docker run --rm -v "${PWD}:/data" ghcr.io/ddbj/ddbj-validator:0.1.0-beta ddbj [Options] /data
+```
+
+### Main Command-Line Options
+
+Options
+
+* `-o`, `--out-dir`: Specifies the output directory for the report files (summary, details) and auto-fixed files.
+* `-n`, `--ncbi-api`: (Recommended) Uses the NCBI API for Taxonomy validation. Skips access to the DDBJ databases.
+* `-l`, `--local`: Runs in a completely local environment. Skips access to databases and APIs, performing only file checks.
+* `-f`, `--force-fix`: Automatically applies all fixes (Autofix) found, skipping the interactive confirmation prompt.
+* `-j`, `--jobs`: Specifies the number of parallel processes. If not specified, it is automatically set according to the environment (maximum of 8). If `0` is specified, all available CPU cores will be used.
+* `--ncbi-api-key`: Specifies an API key to ease request limits to the NCBI API.
+
+### Memory Usage
+
+This tool consumes memory proportional to the number of parallel processes. The memory usage per process is highly dependent on the size of the individual FASTA file being processed. To prevent forced termination due to Out of Memory (OOM) errors, please adjust the `-j` value using the following guidelines.
+
+[Memory Consumption Guidelines (Measured Values)]
+
+* Large sequence data (FASTA files in the gigabyte range/Human genome, etc.)
+    * Processing 1 file (approx. 3GB) consumes about 15GB to 18GB of memory.
+    * `-j 4` requires about 55GB, and `-j 8` requires about 100GB of RAM.
+* Small sequence data sets (FASTA files in the tens to hundreds of megabytes range/TSA, short assemblies, etc.)
+    * Processing 1 file (approx. 100MB) consumes about 1.5GB to 2GB of memory.
+    * Even with `-j 8`, memory usage stays around 8GB, allowing for standard parallel processing.
+
+#### Execution Example (with options)
+
+When using the NCBI API (`-n`) and outputting results to an `output_directory` (`-o`):
+
+```bash
+# macOS/Unix
+./ddbj-validator-seq.sh -n -o output_directory target_directory_contains_ann_fasta
+
+# Windows
+./ddbj-validator-seq.bat -n -o output_directory target_directory_contains_ann_fasta
+```
+
+### How It Works and Output Results
+
+When the tool is executed, it automatically searches for and validates `*.ann` and `*.fasta` file pairs in the specified directory. Once validation is complete, the following directory structure is generated in the output directory (or in the same directory as the target files if no output directory is specified).
+
+Generated directories and files
+
+* `reports/`: Stores text reports of the validation results.
+    * `validation_report_summary.txt`: A summary of errors (ERROR/FATAL) and warnings (WARNING). You can check the number of occurrences per rule.
+    * `validation_report_details.txt`: A full list of messages and line numbers where errors or warnings occurred.
+    * `autofix_confirmation_summary.txt`: A list of proposed automatic fixes (Autofix).
+* `fixed/`: Stores files reflecting the approved Autofixes (or those automatically applied via the `-f` option).
+* `aa/`: Stores amino acid sequences (FASTA format) translated from CDS features.
+
+## Acknowledgments
+
+This project is built using the following open-source software. We deeply thank all developers and contributors to each of these projects.
 
 * annotated-types
 * anyio
