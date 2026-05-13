@@ -201,7 +201,7 @@ This tool consumes memory proportional to the number of parallel processes. The 
     * Processing 1 file (approx. 100MB) consumes about 1.5GB to 2GB of memory.
     * Even with `-j 8`, memory usage stays around 8GB, allowing for standard parallel processing.
 
-#### Execution Example (with options)
+#### Execution Example (with Options)
 
 When using the NCBI API (`-n`) and outputting results to an `output_directory` (`-o`):
 
