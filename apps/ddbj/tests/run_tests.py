@@ -4,6 +4,7 @@ import sys
 import subprocess
 import re
 import argparse
+import shutil  # ← 追加: ディレクトリ一括削除のため
 from pathlib import Path
 
 # ==============================================================================
@@ -309,6 +310,17 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
             "translation_passed": 0, "translation_mismatched": 0, "translation_errors": []
         }
 
+    # ==============================================================================
+    # [追加] テスト実行前のアーティファクト一括クリーンアップ
+    # ==============================================================================
+    print(f"{Colors.OKCYAN}[INFO] Cleaning up previous test artifacts (reports, aa, fixed)...{Colors.ENDC}")
+    for target_dir in target_dirs:
+        for folder_name in ["reports", "aa", "fixed"]:
+            folder_path = target_dir / folder_name
+            if folder_path.exists() and folder_path.is_dir():
+                shutil.rmtree(folder_path, ignore_errors=True)
+    # ==============================================================================
+
     msg = f"\nStarting E2E Tests via {'Docker (' + docker_image + ')' if docker_image else 'Shell'}"
     if target_rule_id: msg += f" for Rule(s): {target_rule_id}"
     
@@ -327,30 +339,48 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
 
         if docker_image:
             import os
+            # [修正] コンテナ内の絶対パスを生成
             rel_target = target_dir.relative_to(project_root)
+            container_target = f"/work/{rel_target}"
+            
             cmd = [
                 "docker", "run", "--rm",
                 "-u", f"{os.getuid()}:{os.getgid()}",
-                "-v", f"{project_root}:/work",
-                docker_image,
-                "ddbj", str(rel_target), "-f"
+                "-v", f"{str(project_root)}:/work",
+                docker_image
             ]
-        else:
-            # .venv/bin/python main.py ddbj [target_dir] -f で実行
-            cmd = [str(python_bin), str(main_py), "ddbj", str(target_dir), "-f"]
-        
-        if mode == "local": 
-            cmd.append("-l" if docker_image else "--local")
-        elif mode == "ncbi": 
-            cmd.append("-n" if docker_image else "--ncbi-api")
-        elif mode == "auth-skip": 
-            cmd.append("--skip-auth")
             
-        subprocess.run(cmd, capture_output=True, text=True)
+            # [修正] ddbjサブコマンドはコンテナのENTRYPOINTに任せ、フラグとパスだけ渡す
+            if mode == "local": 
+                cmd.append("--local")
+            elif mode == "ncbi": 
+                cmd.append("-n")
+            elif mode == "auth-skip": 
+                cmd.append("--skip-auth")
+                
+            cmd.extend(["-f", container_target])
+            
+        else:
+            # シェル実行時のコマンド
+            cmd = [str(python_bin), str(main_py), "ddbj"]
+            
+            if mode == "local": 
+                cmd.append("--local")
+            elif mode == "ncbi": 
+                cmd.append("--ncbi-api")
+            elif mode == "auth-skip": 
+                cmd.append("--skip-auth")
+                
+            cmd.extend(["-f", str(target_dir)])
+            
+        # コマンドの実行
+        result = subprocess.run(cmd, capture_output=True, text=True)
                 
         report_path = target_dir / "reports" / "validation_report_details.txt"
         if not report_path.exists():
             print(f"{Colors.FAILRED}[ERROR]{Colors.ENDC} Details report not generated: {report_path}")
+            if result.returncode != 0:
+                print(f"{Colors.WARNINGYEL}[DEBUG] STDERR:{Colors.ENDC}\n{result.stderr}")
             continue
 
         triggered_rules_by_file, triggered_rules_by_entry = parse_details_report(report_path)
@@ -459,18 +489,18 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
                     except Exception:
                         pass
 
-                    if ddbj_faa_path.exists():
-                        test_name_trans = f"{filename} (Translation FASTA Match)"
-                        rule_prefix = f"[{','.join(file_rule_ids)}]" if file_rule_ids else ""
-                        
-                        is_match, result_msg = compare_fasta(str(ddbj_faa_path), str(current_faa_path))
-                        if is_match:
-                            print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name_trans} - {result_msg}")
-                            translation_passed += 1
-                        else:
-                            print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name_trans}: {result_msg}")
-                            translation_errors.append(f"{rule_prefix} {target_dir.name}/{test_name_trans} ({result_msg})")
-                            translation_mismatched += 1
+                if ddbj_faa_path.exists():
+                    test_name_trans = f"{filename} (Translation FASTA Match)"
+                    rule_prefix = f"[{','.join(file_rule_ids)}]" if file_rule_ids else ""
+                    
+                    is_match, result_msg = compare_fasta(str(ddbj_faa_path), str(current_faa_path))
+                    if is_match:
+                        print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name_trans} - {result_msg}")
+                        translation_passed += 1
+                    else:
+                        print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name_trans}: {result_msg}")
+                        translation_errors.append(f"{rule_prefix} {target_dir.name}/{test_name_trans} ({result_msg})")
+                        translation_mismatched += 1
                             
         if not skip_only:
             expected_dir = target_dir / "expected"

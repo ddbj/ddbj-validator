@@ -58,10 +58,10 @@ ddbj-validator-seq.bat [オプション] [検証対象ディレクトリ]
 
 ```bash
 # macOS/Linux
-docker run --rm -v $(pwd):/data ghcr.io/ddbj/ddbj-validator:0.1.0-beta ddbj [オプション] /data
+docker run --rm -v $(pwd):/data ghcr.io/ddbj/ddbj-validator:0.1.0-beta [オプション] /data/target_directory
 
 # Windows (PowerShell)
-docker run --rm -v "${PWD}:/data" ghcr.io/ddbj/ddbj-validator:0.1.0-beta ddbj [オプション] /data
+docker run --rm -v "${PWD}:/data" ghcr.io/ddbj/ddbj-validator:0.1.0-beta [オプション] /data/target_directory
 
 ```
 
@@ -105,7 +105,7 @@ pip install .
 
 ```bash
 # 基本的な実行（対象ディレクトリ内のファイルを検証）
-ddbj-validator ddbj [オプション] [検証対象ディレクトリ]
+ddbj-validator [オプション] [検証対象ディレクトリ]
 
 ```
 
@@ -133,7 +133,7 @@ NCBI API（`-n`）を利用し、結果を output（`-o`）フォルダに出力
 **pip (直接コマンド実行) の場合:**
 
 ```bash
-ddbj-validator ddbj -n -o output_directory -j 4 target_directory
+ddbj-validator -n -o output_directory -j 4 target_directory
 
 ```
 
@@ -223,10 +223,10 @@ The basic structure for executing the tool directly via `docker run` is as follo
 
 ```bash
 # macOS/Linux
-docker run --rm -v $(pwd):/data ghcr.io/ddbj/ddbj-validator:0.1.0-beta ddbj [Options] /data
+docker run --rm -v $(pwd):/data ghcr.io/ddbj/ddbj-validator:0.1.0-beta [Options] /data/target_directory
 
 # Windows (PowerShell)
-docker run --rm -v "${PWD}:/data" ghcr.io/ddbj/ddbj-validator:0.1.0-beta ddbj [Options] /data
+docker run --rm -v "${PWD}:/data" ghcr.io/ddbj/ddbj-validator:0.1.0-beta [Options] /data/target_directory
 
 ```
 
@@ -272,7 +272,7 @@ After installation, it can be run as a dedicated command-line tool. You must spe
 
 ```bash
 # Basic execution (validates files in the target directory)
-ddbj-validator ddbj [Options] [Target Directory]
+ddbj-validator [Options] [Target Directory]
 
 ```
 
@@ -300,7 +300,7 @@ When using the NCBI API (`-n`), outputting results to an `output_directory` (`-o
 **For pip (Direct command):**
 
 ```bash
-ddbj-validator ddbj -n -o output_directory -j 4 target_directory
+ddbj-validator -n -o output_directory -j 4 target_directory
 
 ```
 
