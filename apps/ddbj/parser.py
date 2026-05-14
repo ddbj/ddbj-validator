@@ -67,7 +67,6 @@ def parse_ddbj_submission(fasta_content, ann_path, ann_lines, ddbj_dict=None):
 # =========================================================
 # フェーズ分割された内部ヘルパー関数群
 # =========================================================
-
 def _parse_fasta_blocks(fasta_content, records, parse_errors, ann_path):
     """FASTA文字列をパースして SeqRecord を初期化する"""
     if not fasta_content:
@@ -84,17 +83,47 @@ def _parse_fasta_blocks(fasta_content, records, parse_errors, ann_path):
         idx = block.find('\n')
         if idx == -1:
             header = block
-            seq_str = ""
+            raw_seq = ""
         else:
             header = block[:idx]
-            seq_str = block[idx+1:].replace('\n', '').replace('\r', '').replace(' ', '').lower()
-            if seq_str.endswith('//'):
-                seq_str = seq_str[:-2]
-            
+            raw_seq = block[idx+1:].lower()
+
+        # ヘッダーから seq_id を抽出 (Auto-cleanup メッセージの entry に使用するため)
         seq_id = header.split(None, 1)[0] if header else "UNKNOWN"
+        clean_seq = ""
+
+        if raw_seq:
+            # 末尾の正しい '//' を安全に除去（改行や空白が連続していても対応）
+            raw_seq = re.sub(r'//\s*$', '', raw_seq)
+
+            # 1. まず、正常なフォーマットである「改行」だけを削除する（ここは警告の対象外）
+            seq_no_newlines = re.sub(r'[\r\n]+', '', raw_seq)
+
+            # 2. 不正な文字（タブ、スペース等の空白、ハイフン、途中の //）が含まれているかチェック
+            cleanup_pattern = re.compile(r'[ \t\f\v　]|-|//')
+            
+            if cleanup_pattern.search(seq_no_newlines):
+                # 不正な文字が含まれていた場合、それらを削除
+                clean_seq = cleanup_pattern.sub('', seq_no_newlines)
+                
+                # Auto-cleanup の警告（SEQ0085）を parse_errors に追加
+                fasta_filename = Path(ann_path).with_suffix('.fasta').name if ann_path else "Sequence File"
+                parse_errors.append({
+                    "level": "warning",
+                    "rule": "SEQ0085",
+                    "target": "file/format",
+                    "entry": seq_id,
+                    "message": "[Auto-cleanup] Invalid characters (spaces, tabs and hyphens) or improperly placed terminators ('//') were automatically removed from the sequence.",
+                    "is_cleanup": True,
+                    "file": fasta_filename,
+                    "category": "sequence"
+                })
+            else:
+                clean_seq = seq_no_newlines
 
         try:
-            record = SeqRecord(Seq(seq_str), id=seq_id, description=header.strip())
+            # 完全に綺麗な文字列（clean_seq）を Seq オブジェクトに渡す
+            record = SeqRecord(Seq(clean_seq), id=seq_id, description=header.strip())
         except UnicodeEncodeError:
             fasta_filename = Path(ann_path).with_suffix('.fasta').name if ann_path else "Sequence File"
             parse_errors.append({

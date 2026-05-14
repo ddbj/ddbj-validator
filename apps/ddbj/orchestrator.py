@@ -432,8 +432,10 @@ def write_aa_fasta(records, out_path, tax_data=None, cv_terms=None):
     return False    
                                         
 def fast_copy_and_fix_fasta(fasta_content, dst_fasta_path):
-    data = fast_fasta_content = fasta_content
+    if not fasta_content:
+        return
 
+    data = fasta_content
     if data.startswith('>'):
         data = data[1:]
 
@@ -446,19 +448,27 @@ def fast_copy_and_fix_fasta(fasta_content, dst_fasta_path):
                 
             idx = block.find('\n')
             if idx == -1:
+                # 配列がなくヘッダーのみの場合
                 f.write(f">{block}\n//\n")
             else:
                 header = block[:idx]
-                seq_str = block[idx+1:].lower()
-                clean_seq = seq_str.rstrip()
+                raw_seq = block[idx+1:].lower()
                 
-                if clean_seq.endswith('//'):
-                    clean_seq = clean_seq[:-2].rstrip()
+                # 1. 末尾の正しい '//' を安全に除去（改行や空白が連続していても対応）
+                raw_seq = re.sub(r'//\s*$', '', raw_seq)
                 
-                clean_seq += '\n//'
-                f.write(f">{header}\n{clean_seq}\n")
-
-
+                # 2. 不正な文字（タブ、スペース等の空白、ハイフン、途中の //）のみを削除
+                # 元の改行（折り返し）はそのまま維持される
+                clean_seq = re.sub(r'[ \t\f\v　]|-|//', '', raw_seq)
+                
+                # 3. ヘッダー出力後、配列を出力し、最後に // を追加
+                f.write(f">{header}\n")
+                if clean_seq:
+                    # 末尾の余分な改行を一旦整理して出力
+                    f.write(clean_seq.rstrip('\r\n') + "\n")
+                f.write("//\n")
+                
+                
 class ValidatorPipeline:
     def __init__(self, pairs, report_out_dir, is_web_mode, force_fix, jobs=1, skip_db=False, skip_ncbi=False, skip_auth=False):
         self.pairs = pairs

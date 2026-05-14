@@ -69,7 +69,8 @@ class FASTA_FORMAT_VALIDATOR(BaseRule):
             results.append(res)
 
         return results
-        
+
+
 class SEQ0090(BaseRule):
     rule_id = "SEQ0090"
     alternate_id = "JP0014"
@@ -108,6 +109,7 @@ class SEQ0090(BaseRule):
                     break 
 
         return results
+
         
 class SEQ5010(BaseRule):
     rule_id = "SEQ5010"
