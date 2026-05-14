@@ -4,14 +4,8 @@ import sys
 import subprocess
 import re
 import argparse
-import shutil  # ← 追加: ディレクトリ一括削除のため
+import shutil
 from pathlib import Path
-
-# ==============================================================================
-# Docker イメージ構築
-# ==============================================================================
-# docker build -t ddbj-validator:0.1.0-beta .
-# .venv/bin/python apps/ddbj/tests/run_tests.py -d ddbj-validator:0.1.0-beta
 
 # ==============================================================================
 # プロジェクトルートをPythonのパスに追加 (モジュールインポートエラー回避)
@@ -311,7 +305,7 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
         }
 
     # ==============================================================================
-    # [追加] テスト実行前のアーティファクト一括クリーンアップ
+    # テスト実行前のアーティファクト一括クリーンアップ
     # ==============================================================================
     print(f"{Colors.OKCYAN}[INFO] Cleaning up previous test artifacts (reports, aa, fixed)...{Colors.ENDC}")
     for target_dir in target_dirs:
@@ -339,7 +333,7 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
 
         if docker_image:
             import os
-            # [修正] コンテナ内の絶対パスを生成
+            # コンテナ内の絶対パスを生成
             rel_target = target_dir.relative_to(project_root)
             container_target = f"/work/{rel_target}"
             
@@ -350,7 +344,7 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
                 docker_image
             ]
             
-            # [修正] ddbjサブコマンドはコンテナのENTRYPOINTに任せ、フラグとパスだけ渡す
+            # ddbjサブコマンドはコンテナのENTRYPOINTに任せ、フラグとパスだけ渡す
             if mode == "local": 
                 cmd.append("--local")
             elif mode == "ncbi": 
@@ -395,7 +389,7 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
             is_file_level = len(parts) >= 3 and parts[-2] in ["pass", "fail", "autofix", "cleanup"]
             is_entries_level = "entries" in parts
             
-            # [修正] ファイル名から正確にルールID部分だけを抽出
+            # ファイル名から正確にルールID部分だけを抽出
             file_rule_ids = parts[0].split('_')[0].split('-')
             
             if target_rule_id and not any(r in target_rules_set for r in file_rule_ids) and target_dir.name != target_rule_id:
@@ -508,14 +502,14 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
                 for golden_file in expected_dir.glob("*"):
                     if not golden_file.is_file(): continue
                     
-                    # [修正] ".entries.ann" などを取り除いてからハイフン等で分割する (ANN4240のMismtachを防ぐため)
+                    # ".entries.ann" などを取り除いてからハイフン等で分割する (ANN4240のMismtachを防ぐため)
                     base_name = golden_file.name.split('.')[0]
                     file_rule_ids = base_name.split('_')[0].split('-')
                     
                     if target_rule_id and not any(r in target_rules_set for r in file_rule_ids) and target_dir.name != target_rule_id:
                         continue
                         
-                    # [修正] このファイルに含まれるルールがスキップ対象の場合、Autofixのファイル比較処理自体を行わない
+                    # このファイルに含まれるルールがスキップ対象の場合、Autofixのファイル比較処理自体を行わない
                     if any(r in mode_skipped_rules for r in file_rule_ids):
                         continue
                         
@@ -695,3 +689,29 @@ if __name__ == "__main__":
         results_to_print.append(("AUTH SKIP MODE RESULTS (SKIP ONLY)", res_auth, Colors.OKBLUE))
 
     print_summary(results_to_print, docker_image=args.docker_image)
+    
+    # ==============================================================================
+    # 終了コードの制御 (CI/CD や シェルスクリプトのアボート用)
+    # ==============================================================================
+    has_errors = False
+    total_mismatches = 0
+
+    for title, res, color in results_to_print:
+        # Mismatch や エラーの数を合算
+        mode_errors = (
+            res.get("mismatched", 0) +
+            res.get("translation_mismatched", 0) +
+            res.get("autofix_not_fixed", 0) +
+            res.get("autocleanup_not_cleaned", 0) +
+            len(res.get("not_skipped_errors", []))
+        )
+        if mode_errors > 0:
+            has_errors = True
+            total_mismatches += mode_errors
+
+    if has_errors:
+        print(f"\n{Colors.FAILRED}[ABORT] Test failures detected (Total mismatch/errors). Exiting with status code 1.{Colors.ENDC}\n")
+        sys.exit(1)
+    else:
+        print(f"\n{Colors.OKGREEN}[SUCCESS] All tests passed successfully! Exiting with status code 0.{Colors.ENDC}\n")
+        sys.exit(0)

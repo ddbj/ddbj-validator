@@ -39,6 +39,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+build-push-docker-image.sh
 
 # =========================
 # テスト・カバレッジ

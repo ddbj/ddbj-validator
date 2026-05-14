@@ -54,14 +54,14 @@ ddbj-validator-seq.bat [オプション] [検証対象ディレクトリ]
 
 #### B. Docker コマンドを直接実行する
 
-直接 `docker run` で実行する場合の基本構造は以下の通りです。検証したいファイルが存在するディレクトリをコンテナ内の `/data` にマウントして実行します。
+直接 `docker run` で実行する場合の基本構造は以下の通りです。カレントディレクトリをコンテナの /data にマウントし、そこを作業ディレクトリとして実行します。
 
 ```bash
 # macOS/Linux
-docker run --rm -v $(pwd):/data ghcr.io/ddbj/ddbj-validator:0.1.0-beta [オプション] /data/target_directory
+docker run --rm -v $(pwd):/data -w /data ghcr.io/ddbj/ddbj-validator:0.1.0-beta [オプション] target_directory
 
 # Windows (PowerShell)
-docker run --rm -v "${PWD}:/data" ghcr.io/ddbj/ddbj-validator:0.1.0-beta [オプション] /data/target_directory
+docker run --rm -v "${PWD}:/data" -w /data ghcr.io/ddbj/ddbj-validator:0.1.0-beta [オプション] target_directory
 
 ```
 
@@ -223,10 +223,10 @@ The basic structure for executing the tool directly via `docker run` is as follo
 
 ```bash
 # macOS/Linux
-docker run --rm -v $(pwd):/data ghcr.io/ddbj/ddbj-validator:0.1.0-beta [Options] /data/target_directory
+docker run --rm -v $(pwd):/data -w /data ghcr.io/ddbj/ddbj-validator:0.1.0-beta [Options] target_directory
 
 # Windows (PowerShell)
-docker run --rm -v "${PWD}:/data" ghcr.io/ddbj/ddbj-validator:0.1.0-beta [Options] /data/target_directory
+docker run --rm -v "${PWD}:/data" -w /data ghcr.io/ddbj/ddbj-validator:0.1.0-beta [Options] target_directory
 
 ```
 
