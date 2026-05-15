@@ -54,14 +54,14 @@ ddbj-validator-seq.bat [オプション] [検証対象ディレクトリ]
 
 #### B. Docker コマンドを直接実行する
 
-直接 `docker run` で実行する場合の基本構造は以下の通りです。カレントディレクトリをコンテナの /data にマウントし、そこを作業ディレクトリとして実行します。
+直接 `docker run` で実行する場合の基本構造は以下の通りです。カレントディレクトリをコンテナの /data にマウントし、そこを作業ディレクトリとして実行します。不正フォーマットなどの自動修正（Autofix）を行う際、対話式でキーボード入力を受け付けるために `-it` オプションを指定します。
 
 ```bash
 # macOS/Linux
-docker run --rm -v $(pwd):/data -w /data ghcr.io/ddbj/ddbj-validator:0.1.0-beta [オプション] target_directory
+docker run -it --rm -v $(pwd):/data -w /data ghcr.io/ddbj/ddbj-validator:0.1.0-beta [オプション] target_directory
 
 # Windows (PowerShell)
-docker run --rm -v "${PWD}:/data" -w /data ghcr.io/ddbj/ddbj-validator:0.1.0-beta [オプション] target_directory
+docker run -it --rm -v "${PWD}:/data" -w /data ghcr.io/ddbj/ddbj-validator:0.1.0-beta [オプション] target_directory
 
 ```
 
@@ -134,6 +134,16 @@ NCBI API（`-n`）を利用し、結果を output（`-o`）フォルダに出力
 
 ```bash
 ddbj-validator -n -o output_directory -j 4 target_directory
+
+```
+
+### NCBI API キーの設定（推奨）
+
+`-n` オプションで NCBI API を利用する場合、NCBI のアカウントから [API キー](https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen#chapter2.API_Keys)を取得して設定することを推奨します。  
+実行するディレクトリに `.env` という名前のファイルを作成し、以下のように記述しておくと、ツールが自動的にキーを読み込みます。
+
+```ini
+NCBI_API_KEY=あなたの_NCBI_API_KEY文字列
 
 ```
 
@@ -223,14 +233,12 @@ The basic structure for executing the tool directly via `docker run` is as follo
 
 ```bash
 # macOS/Linux
-docker run --rm -v $(pwd):/data -w /data ghcr.io/ddbj/ddbj-validator:0.1.0-beta [Options] target_directory
+docker run -it --rm -v $(pwd):/data -w /data ghcr.io/ddbj/ddbj-validator:0.1.0-beta [Options] target_directory
 
 # Windows (PowerShell)
-docker run --rm -v "${PWD}:/data" -w /data ghcr.io/ddbj/ddbj-validator:0.1.0-beta [Options] target_directory
+docker run -it --rm -v "${PWD}:/data" -w /data ghcr.io/ddbj/ddbj-validator:0.1.0-beta [Options] target_directory
 
 ```
-
----
 
 ## Using pip
 
@@ -301,6 +309,16 @@ When using the NCBI API (`-n`), outputting results to an `output_directory` (`-o
 
 ```bash
 ddbj-validator -n -o output_directory -j 4 target_directory
+
+```
+
+### Setting the NCBI API Key (Recommended)
+
+When using the NCBI API (`-n` option), it is recommended to obtain an [API key]((https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen#chapter2.API_Keys)) from your NCBI account and configuring it.  
+Create a file named `.env` in your current working directory and add the following line. The tool will load it automatically.
+
+```ini
+NCBI_API_KEY=your_ncbi_api_key_string_here
 
 ```
 
