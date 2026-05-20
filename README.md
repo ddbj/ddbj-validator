@@ -89,12 +89,12 @@ cd ddbj-validator
 
 ```bash
 # macOS/Linux (Unix 系)
-python -m venv venv
-source venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate
 
 # Windows (コマンドプロンプト/PowerShell)
-python -m venv venv
-venv\Scripts\activate
+python -m venv .venv
+.venv\Scripts\activate
 
 ```
 
@@ -270,12 +270,12 @@ cd ddbj-validator
 
 ```bash
 # macOS/Linux (Unix-like)
-python -m venv venv
-source venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate
 
 # Windows (Command Prompt/PowerShell)
-python -m venv venv
-venv\Scripts\activate
+python -m venv .venv
+.venv\Scripts\activate
 
 ```
 
@@ -400,6 +400,7 @@ This project is built using the following open-source software. We deeply thank 
 * sniffio
 * sortedcontainers
 * tenacity
+* toml
 * typing-inspection
 * typing_extensions
 * urllib3
