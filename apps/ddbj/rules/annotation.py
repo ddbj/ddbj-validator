@@ -319,6 +319,35 @@ class ANN0300(BaseRule):
         return results
 
 
+class ANN0310(BaseRule):
+    rule_id = "ANN0310"
+    target = "REFERENCE"
+    description = "Invalid reference title."
+    requires_rdb = False
+    is_file_level = False
+
+    def validate(self, record, context):
+        results = []
+        
+        for feature in self.get_features(record, "REFERENCE"):
+            if "title" in feature.qualifiers:
+                for title_val in feature.qualifiers["title"]:
+                    # 大文字小文字を無視して 'Direct Submission' と一致するかチェック
+                    if title_val.strip().lower() == "direct submission":
+                        msg = f"{self.description} (Found: '{title_val}')"
+                        res = self.feature_result(record, feature, msg, level="warning", qualifier="title")
+                        
+                        # Autofix の提案を追加
+                        res["autofix"] = True
+                        res["fix_target"] = "qualifier"
+                        res["old_value"] = title_val
+                        res["new_value"] = "No primary citation"
+                        
+                        results.append(res)
+                        
+        return results
+
+
 class ANN0342(BaseRule):
     rule_id = "ANN0342"
     alternate_id = "JP0033"

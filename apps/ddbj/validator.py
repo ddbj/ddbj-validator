@@ -87,6 +87,7 @@ class Validator:
             ANN0260(), # [WARNING] Contact person email not included in the associated BioSample
             ANN0270(), # [WARNING] No submitter ab_name shared with the associated BioSample
             ANN0300(), # [WARNING] Invalid reference information
+            ANN0310(), # [WARNING] Invalid reference title
             ANN0350(), # [WARNING] Trailing comma is detected
             ANN0640(), # [ERROR] Keyword requires specific DATATYPE/type
             ANN0800(), # [WARNING] Invalid Assembly Method version format
