@@ -190,8 +190,8 @@ Alongside the syntax validation by DDBJ's existing tool [jParser](https://www.dd
 ## Beta Release
 
 On May 18, 2026, we released the tool as a beta version (0.1.0-beta).  
-While we are developmenting with the goal of an official release in the future, it is currently in its early stages and may contain some bugs. To help us improve the tool, we are actively seeking feedback from our users.   
-Please submit bug reports, feature requests, or any other feedback via [GitHub Issues](https://github.com/ddbj/ddbj-validator/issues) or the [DDBJ Validator Form](https://www.google.com/search?q=https://docs.google.com/forms/d/e/1FAIpQLSeNybDSYLbS3oMHruheAtaXQOArsT_s7ezjJr-Q5r_YWENZIA/viewform%3Fusp%3Dheader).
+While we are developing with the goal of an official release in the future, it is currently in its early stages and may contain some bugs. To help us improve the tool, we are actively seeking feedback from our users.   
+Please submit bug reports, feature requests, or any other feedback via [GitHub Issues](https://github.com/ddbj/ddbj-validator/issues) or the [DDBJ Validator Form](https://docs.google.com/forms/d/e/1FAIpQLSeNybDSYLbS3oMHruheAtaXQOArsT_s7ezjJr-Q5r_YWENZIA/viewform?usp=header).
 
 ## Rule List
 
@@ -326,7 +326,7 @@ ddbj-validator -n -o output_directory -j 4 target_directory
 
 ### Setting the NCBI API Key (Recommended)
 
-When using the NCBI API (`-n` option), it is recommended to obtain an [API key]((https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen#chapter2.API_Keys)) from your NCBI account and configuring it.  
+When using the NCBI API (`-n` option), it is recommended to obtain an [API key](https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen#chapter2.API_Keys) from your NCBI account and configuring it.  
 Create a file named `.env` in your current working directory and add the following line. The tool will load it automatically.
 
 ```ini
