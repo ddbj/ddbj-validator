@@ -92,3 +92,11 @@ ANN0610_prompt.txt
 *benchmark*
 *memo*
 
+# =========================
+# BioSample
+# =========================
+attribute.tsv
+package-attribute.tsv
+package.tsv
+
+
