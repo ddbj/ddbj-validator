@@ -27,7 +27,7 @@ except ImportError:
 def get_skipped_rules(skip_db=False, skip_ncbi=False, skip_auth=False):
     skipped_rules = set()
     
-    # --- 1. 動的取得 (既存ロジック) ---
+    # --- 動的取得 (既存ロジック) ---
     try:
         from apps.ddbj.validator import Validator
         from apps.ddbj.context import ValidationContext
@@ -46,7 +46,7 @@ def get_skipped_rules(skip_db=False, skip_ncbi=False, skip_auth=False):
     except Exception as e:
         print(f"Warning: Failed to fetch skipped rules dynamically: {e}")
 
-    # --- 2. ハードコードによる強制除外ロジック ---
+    # --- ハードコードによる強制除外ロジック ---
     
     # [A] RDB必須ルール (Localモード、NCBI APIモードの両方でスキップ)
     if skip_db:
@@ -78,9 +78,6 @@ class Colors:
     WARNINGYEL = '\033[93m'
     ENDC = '\033[0m'
 
-# ==============================================================================
-# 期待値の抽出関数群
-# ==============================================================================
 def extract_feature_expectations(ann_path):
     with open(ann_path, 'r', encoding='utf-8') as f:
         for line in f:
@@ -248,7 +245,7 @@ def compare_fasta(fasta_ddbj, fasta_tool, ignore_ids=None):
 # ==============================================================================
 # メインテストランナー
 # ==============================================================================
-def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_image=None):
+def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_image=None, use_pip=False):
     if not HAS_BIOPYTHON:
         print(f"{Colors.WARNINGYEL}[WARNING] Biopython is not installed. Amino acid FASTA comparisons will fail.{Colors.ENDC}\n")
         
@@ -305,7 +302,7 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
         }
 
     # ==============================================================================
-    # テスト実行前のアーティファクト一括クリーンアップ
+    # テスト実行前の一括クリーンアップ
     # ==============================================================================
     print(f"{Colors.OKCYAN}[INFO] Cleaning up previous test artifacts (reports, aa, fixed)...{Colors.ENDC}")
     for target_dir in target_dirs:
@@ -333,7 +330,6 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
 
         if docker_image:
             import os
-            # コンテナ内の絶対パスを生成
             rel_target = target_dir.relative_to(project_root)
             container_target = f"/work/{rel_target}"
             
@@ -344,7 +340,6 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
                 docker_image
             ]
             
-            # ddbjサブコマンドはコンテナのENTRYPOINTに任せ、フラグとパスだけ渡す
             if mode == "local": 
                 cmd.append("--local")
             elif mode == "ncbi": 
@@ -354,8 +349,25 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
                 
             cmd.extend(["-f", container_target])
             
+        elif use_pip:
+            cli_cmd = project_root / ".venv" / "bin" / "ddbj-validator"
+            
+            if not cli_cmd.exists():
+                print(f"{Colors.FAILRED}[ERROR] CLI command not found at {cli_cmd}. Did you run 'pip install .' ?{Colors.ENDC}")
+                sys.exit(1)
+                
+            cmd = [str(cli_cmd)]
+            
+            if mode == "local": 
+                cmd.append("--local")
+            elif mode == "ncbi": 
+                cmd.append("--ncbi-api")
+            elif mode == "auth-skip": 
+                cmd.append("--skip-auth")
+                
+            cmd.extend(["-f", str(target_dir)])
+
         else:
-            # シェル実行時のコマンド
             cmd = [str(python_bin), str(main_py), "ddbj"]
             
             if mode == "local": 
@@ -366,7 +378,7 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
                 cmd.append("--skip-auth")
                 
             cmd.extend(["-f", str(target_dir)])
-            
+                        
         # コマンドの実行
         result = subprocess.run(cmd, capture_output=True, text=True)
                 
@@ -442,7 +454,7 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
                     continue
 
                 if is_skipped_rule:
-                    # スキップされるべきルールが発火していないかを検証する
+                    # スキップされるべきルールが発火していないかを検証
                     if tc_rule_triggered:
                         print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name}: Expected to be SKIPPED, but it TRIGGERED.")
                         errors.append(f"[{tc_rule_id}] {target_dir.name}/{test_name} (Expected SKIP)")
@@ -577,9 +589,9 @@ def print_header(title, color):
 def print_summary(results_list, docker_image=None):
     print("\n" + "="*80)
     if docker_image:
-        print(f" {Colors.OKGREEN}★ FINAL E2E TEST SUMMARY (DOCKER: {docker_image}) ★{Colors.ENDC} ")
+        print(f" {Colors.OKGREEN} FINAL E2E TEST SUMMARY (DOCKER: {docker_image}) {Colors.ENDC} ")
     else:
-        print(f" {Colors.OKGREEN}★ FINAL E2E TEST SUMMARY (SHELL) ★{Colors.ENDC} ")
+        print(f" {Colors.OKGREEN} FINAL E2E TEST SUMMARY (PIP) {Colors.ENDC} ")
     print("="*80)
     
     for title, res, color in results_list:
@@ -633,7 +645,13 @@ if __name__ == "__main__":
         "-d", "--docker", 
         dest="docker_image", 
         default=None, 
-        help="Run tests using the specified Docker image (e.g., bsi-validator:0.1.0-beta)"
+        help="Run tests using the specified Docker image (e.g., ddbj-validator:0.1.0-beta)"
+    )
+
+    parser.add_argument(
+        "--use-pip",
+        action="store_true",
+        help="Run tests using the pip-installed CLI command (ddbj-validator) instead of main.py"
     )
     
     parser.add_argument(

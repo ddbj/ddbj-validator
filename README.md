@@ -107,11 +107,20 @@ pip install .
 
 ### 使い方
 
-インストール後は、専用のコマンドラインツールとして実行できます。実行にはサブコマンドとして `ddbj` を指定し、続けてオプションと対象ディレクトリを渡します。
+インストール後は、専用のコマンドラインツールとして実行できます。
+仮想環境がアクティベートされている状態（コマンドプロンプトの先頭に (.venv) などが表示されている状態）であれば、直接 ddbj-validator コマンドを使用できます。
 
 ```bash
 # 基本的な実行（対象ディレクトリ内のファイルを検証）
 ddbj-validator [オプション] [検証対象ディレクトリ]
+
+```
+
+仮想環境をアクティベートしていない状態から実行する場合は、実行ファイルのパスを直接指定してください。
+
+```bash
+# 仮想環境をアクティベートしていない場合 (macOS/Linux の例)
+.venv/bin/ddbj-validator [オプション] [検証対象ディレクトリ]
 
 ```
 
@@ -288,11 +297,20 @@ pip install .
 
 ### Usage
 
-After installation, it can be run as a dedicated command-line tool. You must specify `ddbj` as a subcommand followed by any options and the target directory.
+After installation, the tool can be run as a command-line tool. 
+If your virtual environment is activated (typically indicated by (.venv) at the beginning of your command prompt), you can run the ddbj-validator command directly.
 
 ```bash
 # Basic execution (validates files in the target directory)
 ddbj-validator [Options] [Target Directory]
+
+```
+
+If the virtual environment is not activated, you must specify the direct path to the executable.
+
+```bash
+# When the virtual environment is not activated (Example for macOS/Linux)
+.venv/bin/ddbj-validator [Options] [Target Directory]
 
 ```
 
