@@ -9,7 +9,7 @@ class ValidationReporter:
         self.out_dir.mkdir(parents=True, exist_ok=True)
         self.show_location = False
 
-    def generate_report(self, jsonl_paths, print_console=True):
+    def generate_report(self, jsonl_paths, print_console=True, start_time=None, end_time=None, version=None):
         """レポート出力の統括メソッド (JSONLストリーミング対応版)"""
         report_summary_path = self.out_dir / "validation_report_summary.txt"
         report_details_path = self.out_dir / "validation_report_details.txt"
@@ -18,14 +18,41 @@ class ValidationReporter:
         num_sets = len(actual_sets)
 
         if not jsonl_paths or num_sets == 0:
-            self._write_empty_report(report_summary_path, report_details_path, print_console)
+            self._write_empty_report(report_summary_path, report_details_path, print_console, start_time=start_time, end_time=end_time, version=version)
             return report_summary_path, report_details_path
+
+        # ヘッダー情報の生成
+        import datetime
+        import time
+        exec_date = datetime.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
+        process_time_str = ""
+        if start_time and end_time:
+            diff = end_time - start_time
+            if diff < 1:
+                process_time_str = f"{diff:.2f} seconds"
+            else:
+                # timedelta は 秒未満も処理してくれる
+                delta = datetime.timedelta(seconds=diff)
+                # ミリ秒以下を切り捨てて見やすくする
+                delta = delta - datetime.timedelta(microseconds=delta.microseconds)
+                process_time_str = str(delta)
+                if diff < 60:
+                    process_time_str += " seconds"
+        version_str = version if version else "unknown"
+            
+        header_info = (
+            f"Validation Date: {exec_date}\n"
+            f"Process Time: {process_time_str}\n"
+            f"Version: {version_str}\n"
+        )
 
         # レポートファイルを初期化 (上書き)
         set_str = "1 file set" if num_sets == 1 else f"{num_sets} file sets"
         with open(report_summary_path, "w", encoding="utf-8") as fs, open(report_details_path, "w", encoding="utf-8") as fd:
             fs.write(f"\n=== Validation Summary ({set_str}) ===\n")
+            fs.write(header_info)
             fd.write(f"\n=== Validation Details ({set_str}) ===\n")
+            fd.write(header_info)
 
         set_idx = 1
         for j_path in jsonl_paths:
@@ -232,17 +259,41 @@ class ValidationReporter:
         if qual: parts.append(qual)
         return ":".join(str(p) for p in parts)
 
-    def _write_empty_report(self, sum_path, det_path, print_console):
-        empty_msg = "\n=== Validation Summary (0 file sets) ===\nNo errors found.\n"
+    def _write_empty_report(self, sum_path, det_path, print_console, start_time=None, end_time=None, version=None):
+        import datetime
+        import time
+        exec_date = datetime.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
+        process_time_str = ""
+        if start_time and end_time:
+            diff = end_time - start_time
+            if diff < 1:
+                process_time_str = f"{diff:.2f} seconds"
+            else:
+                delta = datetime.timedelta(seconds=diff)
+                delta = delta - datetime.timedelta(microseconds=delta.microseconds)
+                process_time_str = str(delta)
+                if diff < 60:
+                    process_time_str += " seconds"
+        version_str = version if version else "unknown"
+            
+        header_info = (
+            f"Validation Date: {exec_date}\n"
+            f"Process Time: {process_time_str}\n"
+            f"Version: {version_str}\n"
+        )
+
+        empty_msg_sum = f"\n=== Validation Summary (0 file sets) ===\n{header_info}No errors found.\n"
+        empty_msg_det = f"\n=== Validation Details (0 file sets) ===\n{header_info}No errors found.\n"
+        
         try:
             with open(det_path, "w", encoding="utf-8") as f:
-                f.write("=== Validation Details (0 file sets) ===\nNo errors found.\n")
+                f.write(empty_msg_det)
         except Exception:
             pass
         try:
             with open(sum_path, "w", encoding="utf-8") as f:
-                f.write(empty_msg)
+                f.write(empty_msg_sum)
         except Exception:
             pass
         if print_console:
-            print(empty_msg, end="")
+            print(empty_msg_sum, end="")

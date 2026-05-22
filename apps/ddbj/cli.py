@@ -210,15 +210,27 @@ def main():
         skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=args.skip_auth
     )
     
+    import time
+    start_time = time.time()
+    
+    import toml
+    try:
+        pyproject_data = toml.load(Path(__file__).parent.parent.parent / "pyproject.toml")
+        tool_version = pyproject_data.get("project", {}).get("version", "unknown")
+    except Exception:
+        tool_version = "unknown"
+    
     try:
         # 1. 検証の実行と Autofix 提案の収集 (戻り値はメモリ配列ではなく JSONL のパスリスト)
         jsonl_paths = pipeline.run_validation()
+        
+        end_time = time.time()
         
         # 2. レポートの生成 (ストリーミング処理)
         # -o オプションがあればそれを最優先に、なければ対象ディレクトリに出力
         target_dir = report_out_dir if args.out_dir else (target_dirs_for_report[0] if target_dirs_for_report else Path(report_out_dir))
         reporter = ValidationReporter(out_dir=target_dir)
-        reporter.generate_report(jsonl_paths, print_console=True)
+        reporter.generate_report(jsonl_paths, print_console=True, start_time=start_time, end_time=end_time, version=tool_version)
         
         # 3. Autofix の承認と適用
         pipeline.run_autofix()
