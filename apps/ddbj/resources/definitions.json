@@ -1,7 +1,7 @@
 {
   "metadata": {
     "version": "1.0",
-    "description": "DDBJ feature qualifier dictionary"
+    "description": "DDBJ annotation and sequence definition"
   },
   "cv_terms": {
     "missing_terms": [
@@ -6329,7 +6329,7 @@
     "translation",
     "type_material"
   ],
-  "data_categories": {
+  "submission_types": {
     "WGS": {
       "required_datatype": "WGS",
       "required_keywords": [

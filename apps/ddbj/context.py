@@ -51,6 +51,8 @@ class ValidationContext:
         
         # 1. DDBJ definition json の読み込み
         dict_path = ddbj_resources / "definitions.json"        
+        common_dict_path = common_resources / "definitions.json"
+
         if not self.ddbj_dict:
             if dict_path.is_file():
                 # built-in の open() ではなく、Traversable オブジェクトの open() メソッドを使用
@@ -73,6 +75,12 @@ class ValidationContext:
                     if "length_rule" in q_def: q_def["length_rule"].setdefault("internal_ignore", True)
                     
                 self.cv_terms = self.ddbj_dict.get("cv_terms", {})
+                # common definitions から cv_terms を読み込んでマージする
+                if common_dict_path.is_file():
+                    with common_dict_path.open("r", encoding="utf-8") as f:
+                        common_dict = json.load(f)
+                        if "cv_terms" in common_dict:
+                            self.cv_terms.update(common_dict["cv_terms"])
             else:
                 print(f"Warning: Dictionary file not found at {dict_path}")
                 self.ddbj_dict = {"features": {}, "qualifiers": {}}  
@@ -118,7 +126,8 @@ class ValidationContext:
         self.is_wgs = False
         self.is_tsa = False
         self.is_tpa = False
-        self.is_est = False
+        self.is_tls = False
+        self.is_mga = False
         self.active_datatypes = set()
         self.active_divisions = set()
 
@@ -133,7 +142,8 @@ class ValidationContext:
                         if dt_upper == "WGS": self.is_wgs = True
                         if dt_upper == "TSA": self.is_tsa = True
                         if dt_upper == "TPA": self.is_tpa = True
-                        if dt_upper == "EST": self.is_est = True
+                        if dt_upper == "TLS": self.is_tls = True
+                        if dt_upper == "MGA": self.is_mga = True
                         
                 elif feat.type == "DIVISION":
                     for div in feat.qualifiers.get("division", []):

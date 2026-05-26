@@ -34,7 +34,7 @@ def get_active_divisions(records, ddbj_dict, tax_data):
                         
     # 2. DATATYPE のルールから required_division を取得 (Datatype Division)
     if not divisions["datatype"]:
-        type_rules = ddbj_dict.get("data_categories", {})
+        type_rules = ddbj_dict.get("submission_types", {})
         if common_rec:
             for feat in common_rec.features:
                 if feat.type == "DATATYPE":
@@ -77,7 +77,7 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
         if not records:
             return results
 
-        type_rules = context.ddbj_dict.get("data_categories", {})
+        type_rules = context.ddbj_dict.get("submission_types", {})
 
         # ---------------------------------------------------
         # 1. COMMONからタグを抽出 (DATATYPE のみを起点とする)
@@ -373,7 +373,7 @@ class ANN0640(BaseRule):
     def _initialize_dict(self, context):
         if self.is_initialized: return
             
-        type_rules = context.ddbj_dict.get("data_categories", {})
+        type_rules = context.ddbj_dict.get("submission_types", {})
         valid_datatypes = set(context.ddbj_dict.get("datatypes", {}).keys())
         
         for cat_name, rule in type_rules.items():
@@ -394,7 +394,7 @@ class ANN0640(BaseRule):
         if not common_rec: return results
 
         # 1. 実際に記述されている DATATYPE (継承込み)
-        type_rules = context.ddbj_dict.get("data_categories", {})
+        type_rules = context.ddbj_dict.get("submission_types", {})
         existing_datatypes = set(context.active_datatypes)
         for dt in list(existing_datatypes):
             rule_def = type_rules.get(dt, {})
