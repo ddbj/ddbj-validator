@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ddbj-validator"
-version = "0.1.0-beta"
-description = "BSI validation tools for DDBJ, BioProject, BioSample etc."
+version = "0.1.2-beta"
+description = "Validation tools for DDBJ, BioProject, BioSample etc."
 dependencies = [
     "biopython",
     "psycopg2-binary",
@@ -20,8 +20,6 @@ dependencies = [
 ]
 
 [project.scripts]
-# ルートにある main.py のパス
-bsi-validator = "main:main"
 # apps ディレクトリ配下を指定
 ddbj-validator = "apps.ddbj.cli:main"
 

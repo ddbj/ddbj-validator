@@ -4238,8 +4238,11 @@ class ANN5250(BaseRule):
 class ANN5270(BaseRule):
     rule_id = "ANN5270"
     alternate_id = "BLP0026, ANN0406, SVP0300, ANN0407"
-    target = "CDS, mRNA, assembly_gap, gap"
-    description = "Overlap between CDS/mRNA and gap/assembly_gap features."
+    target = "All features (except source), assembly_gap, gap"
+    
+    # 1. ひな形としてプレースホルダー（{}）を設定しておく
+    description = "{overlap_type} between {target_type} and {gap_type} features."
+    
     requires_rdb = False
     is_file_level = False
 
@@ -4252,11 +4255,11 @@ class ANN5270(BaseRule):
         if not gaps:
             return results
 
-        targets = self.get_features(record, "CDS") + self.get_features(record, "mRNA")
+        exclude_types = {"source", "gap", "assembly_gap"}
+        targets = [f for f in record.features if f.type not in exclude_types]
         if not targets:
             return results
         
-        # 1. ギャップ(gap, assembly_gap) の空間インデックス（区間木）を構築
         gap_tree = IntervalTree()
         for gap in gaps:
             if gap.location:
@@ -4264,10 +4267,11 @@ class ANN5270(BaseRule):
                 for g_part in g_parts:
                     gap_tree.addi(int(g_part.start), int(g_part.end), {"gap": gap, "part": g_part})
 
-        # 2. ターゲットをループし、ギャップと重なっているか高速検索
         for target in targets:
             if not target.location:
                 continue
+            
+            is_autofix_target = target.type in ("CDS", "mRNA")
             
             orig_loc = getattr(target, 'original_location', "")
             t_parts = getattr(target.location, "parts", [target.location])
@@ -4281,48 +4285,43 @@ class ANN5270(BaseRule):
                 if not overlapping_gaps:
                     continue
                     
-                # =======================================================
-                # 1. 重なる全ギャップを評価し、最終的な両端の座標を決定する
-                # =======================================================
-                new_start_0 = t_start_0
-                new_end_0 = t_end_0
-                new_start_lt = ""
-                new_end_gt = ""
-                
-                for interval in overlapping_gaps:
-                    g_part = interval.data["part"]
-                    g_start_0 = int(g_part.start)
-                    g_end_0 = int(g_part.end)
-
-                    # Targetの Start側 のみがギャップ内に落ちている場合
-                    if g_start_0 <= new_start_0 < g_end_0 and new_end_0 > g_end_0:
-                        new_start_0 = g_end_0
-                        new_start_lt = "<"
-                        
-                    # Targetの End側 のみがギャップ内に落ちている場合
-                    if new_start_0 < g_start_0 and g_start_0 < new_end_0 <= g_end_0:
-                        new_end_0 = g_start_0
-                        new_end_gt = ">"
-
-                autofix_possible = (new_start_0 != t_start_0) or (new_end_0 != t_end_0)
-
-                # =======================================================
-                # 2. 新しいロケーション文字列の構築（autofix可能な場合のみ）
-                # =======================================================
+                autofix_possible = False
+                new_loc_str = ""
                 old_loc_str = getattr(target, 'original_location', "")
-                if autofix_possible:
-                    if not old_loc_str:
-                        old_loc_str = f"{t_start_0+1}..{t_end_0}"
-                        if getattr(target.location, 'strand', 1) == -1:
-                            old_loc_str = f"complement({old_loc_str})"
-                            
-                    is_complement = "complement" in old_loc_str
+                
+                if is_autofix_target:
+                    new_start_0 = t_start_0
+                    new_end_0 = t_end_0
+                    new_start_lt = ""
+                    new_end_gt = ""
+                    
+                    for interval in overlapping_gaps:
+                        g_part = interval.data["part"]
+                        g_start_0 = int(g_part.start)
+                        g_end_0 = int(g_part.end)
 
-                    n_start_1 = new_start_0 + 1
-                    n_end_1 = new_end_0
-                    prefix = "complement(" if is_complement else ""
-                    suffix = ")" if is_complement else ""
-                    new_loc_str = f"{prefix}{new_start_lt}{n_start_1}..{new_end_gt}{n_end_1}{suffix}"
+                        if g_start_0 <= new_start_0 < g_end_0 and new_end_0 > g_end_0:
+                            new_start_0 = g_end_0
+                            new_start_lt = "<"
+                            
+                        if new_start_0 < g_start_0 and g_start_0 < new_end_0 <= g_end_0:
+                            new_end_0 = g_start_0
+                            new_end_gt = ">"
+
+                    autofix_possible = (new_start_0 != t_start_0) or (new_end_0 != t_end_0)
+
+                    if autofix_possible:
+                        if not old_loc_str:
+                            old_loc_str = f"{t_start_0+1}..{t_end_0}"
+                            if getattr(target.location, 'strand', 1) == -1:
+                                old_loc_str = f"complement({old_loc_str})"
+                                
+                        is_complement = "complement" in old_loc_str
+                        n_start_1 = new_start_0 + 1
+                        n_end_1 = new_end_0
+                        prefix = "complement(" if is_complement else ""
+                        suffix = ")" if is_complement else ""
+                        new_loc_str = f"{prefix}{new_start_lt}{n_start_1}..{new_end_gt}{n_end_1}{suffix}"
 
                 # =======================================================
                 # 3. 警告と Auto-fix の登録
@@ -4334,18 +4333,21 @@ class ANN5270(BaseRule):
                     g_start_0 = int(g_part.start)
                     g_end_0 = int(g_part.end)
                     
-                    # 完全に内包されているか判定 (CDSがGapをすっぽり覆っている、またはその逆)
+                    # 完全に内包されているか判定
                     is_complete_overlap = (t_start_0 <= g_start_0 and g_end_0 <= t_end_0) or \
                                           (g_start_0 <= t_start_0 and t_end_0 <= g_end_0)
                     
-                    overlap_prefix = "Complete overlap" if is_complete_overlap else "Overlap"
+                    # 先頭の単語を決定
+                    overlap_type = "Complete overlap" if is_complete_overlap else "Overlap"                    
+                    dynamic_desc = f"{overlap_type} between {target.type} and {gap.type} features."
                     
-                    msg = f"{overlap_prefix} between {target.type} and {gap.type} features. (at {t_start_0+1}..{t_end_0})"
+                    msg = f"{dynamic_desc} (at {t_start_0+1}..{t_end_0})"
                     res = self.feature_result(record, target, msg, level="warning")
-                    res["target"] = "location"
+                    res["target"] = "location"                
+                    res["description"] = dynamic_desc
                     
-                    # autofixの指示は重複適用を防ぐため最初の警告(i == 0)にのみ紐付ける
-                    if autofix_possible and i == 0:
+                    # autofix対象であり、かつ最初の警告(i == 0)の場合のみ情報を紐付ける
+                    if is_autofix_target and autofix_possible and i == 0:
                         res["autofix"] = True
                         res["fix_target"] = "location"
                         res["old_value"] = old_loc_str
@@ -4362,9 +4364,10 @@ class ANN5270(BaseRule):
                         }]
                     
                     results.append(res)
-                                                                    
-        return results        
-        
+                                                                        
+        return results
+    
+            
 class ANN5310(BaseRule):
     rule_id = "ANN5310"
     target = "feature"
