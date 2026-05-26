@@ -1847,7 +1847,7 @@ class ANN1320(BaseRule):
     rule_id = "ANN1320"
     alternate_id = "BS_R0115"
     target = "specimen_voucher"
-    description = "Specimen voucher for prokaryotes and environmental sequences."
+    description = "Specimen voucher cannot be used for prokaryotes and environmental sequences."
     requires_rdb = True
     is_file_level = False
 
