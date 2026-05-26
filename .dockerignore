@@ -12,7 +12,7 @@ __pycache__/
 venv/
 env/
 *.egg-info/
-bsi_validator.egg-info/
+ddbj_validator.egg-info/
 
 # テスト・データ・ドキュメント関連
 tests/
@@ -33,7 +33,7 @@ move.sh
 .DS_Store
 memo*
 nohup*
-bsival_context*.txt
+ddbjval_context*.txt
 profile*stats
 *benchmark*
 *code-workspace*
