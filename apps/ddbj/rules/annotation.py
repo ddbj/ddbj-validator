@@ -795,16 +795,16 @@ class ANN0462(BaseRule):
     rule_id = "ANN0462"
     alternate_id = "V200"
     target = "DBLINK"
-    description = "Multiple BioSample accessions are permitted only for TSA/TLS entries."
+    description = "Multiple BioSample accessions are permitted only for TSA/TLS/EST entries."
     requires_rdb = False
     is_file_level = False
 
     def validate(self, record, context):
         results = []
         
-        is_tsa_or_tls = context.is_tsa or ("TLS" in context.active_datatypes) or ("TLS" in context.active_divisions)
+        is_tsa_or_tls_or_est = context.is_tsa or context.is_tls or ("TSA" in context.active_divisions) or ("TLS" in context.active_divisions) or ("EST" in context.active_divisions)
         
-        if is_tsa_or_tls:
+        if is_tsa_or_tls_or_est:
             return results
 
         biosamples = []
@@ -3118,7 +3118,7 @@ class ANN2630(BaseRule):
     def validate_file(self, records, context, ann_path=None, seq_path=None):
         results = []
 
-        if context.is_est:
+        if "EST" in context.active_divisions:
             return results
 
         raw_metadata_fields = context.ddbj_dict.get("metadata_fields", [])
