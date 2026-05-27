@@ -590,8 +590,10 @@ def print_summary(results_list, docker_image=None):
     print("\n" + "="*80)
     if docker_image:
         print(f" {Colors.OKGREEN} FINAL E2E TEST SUMMARY (DOCKER: {docker_image}) {Colors.ENDC} ")
+    elif args.use_pip: # 引数をチェック
+        print(f" {Colors.OKGREEN} FINAL E2E TEST SUMMARY (PIP CLI) {Colors.ENDC} ")
     else:
-        print(f" {Colors.OKGREEN} FINAL E2E TEST SUMMARY (PIP) {Colors.ENDC} ")
+        print(f" {Colors.OKGREEN} FINAL E2E TEST SUMMARY (DIRECT EXECUTION) {Colors.ENDC} ")
     print("="*80)
     
     for title, res, color in results_list:
