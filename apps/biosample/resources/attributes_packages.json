@@ -8,75 +8,90 @@
       "name": "sample_name",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "sample_title": {
       "name": "sample_title",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "description": {
       "name": "description",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "organism": {
       "name": "organism",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "taxonomy_id": {
       "name": "taxonomy_id",
       "synonyms": [],
       "type": "integer",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "bioproject_id": {
       "name": "bioproject_id",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "locus_tag_prefix": {
       "name": "locus_tag_prefix",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": [],
+      "allowed_values": [],
       "allow_multiple": true
     },
     "strain": {
       "name": "strain",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": [],
+      "invalid_values": [
+        "bacteria",
+        "clinical isolate",
+        "environmental",
+        "microbial",
+        "no",
+        "soil",
+        "sp",
+        "sp.",
+        "strain",
+        "whole organism",
+        "yes",
+        "subsp.*",
+        "serovar*"
+      ]
     },
     "isolate": {
       "name": "isolate",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "breed": {
       "name": "breed",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "cultivar": {
       "name": "cultivar",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ecotype": {
       "name": "ecotype",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "isolation_source": {
       "name": "isolation_source",
@@ -84,7 +99,7 @@
         "isolation_source"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host": {
       "name": "host",
@@ -94,13 +109,13 @@
         "nat-host"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "lab_host": {
       "name": "lab_host",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "age": {
       "name": "age",
@@ -108,7 +123,7 @@
         "age"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "dev_stage": {
       "name": "dev_stage",
@@ -117,13 +132,13 @@
         "development stage"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "tissue": {
       "name": "tissue",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "sex": {
       "name": "sex",
@@ -131,7 +146,7 @@
         "sex"
       ],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "male",
         "female",
         "pooled male and female",
@@ -145,7 +160,7 @@
       "name": "biomaterial_provider",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "sample_type": {
       "name": "sample_type",
@@ -155,7 +170,7 @@
         "sampletype"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "collection_date": {
       "name": "collection_date",
@@ -164,7 +179,7 @@
       ],
       "type": "timestamp",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "geo_loc_name": {
       "name": "geo_loc_name",
@@ -173,7 +188,7 @@
         "region)"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "lat_lon": {
       "name": "lat_lon",
@@ -181,7 +196,7 @@
         "geographic location (latitude and longitude)"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "env_broad_scale": {
       "name": "env_broad_scale",
@@ -190,7 +205,7 @@
         "environmental biome"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "env_local_scale": {
       "name": "env_local_scale",
@@ -199,7 +214,7 @@
         "environmental feature"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "env_medium": {
       "name": "env_medium",
@@ -208,7 +223,7 @@
         "environment (material)"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "depth": {
       "name": "depth",
@@ -216,7 +231,7 @@
         "depth"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "elev": {
       "name": "elev",
@@ -224,7 +239,7 @@
         "elevation"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "altitude": {
       "name": "altitude",
@@ -232,7 +247,7 @@
         "altitude"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "isol_growth_condt": {
       "name": "isol_growth_condt",
@@ -241,7 +256,7 @@
       ],
       "type": "reference",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "propagation": {
       "name": "propagation",
@@ -249,7 +264,7 @@
         "propagation"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ref_biomaterial": {
       "name": "ref_biomaterial",
@@ -258,7 +273,7 @@
       ],
       "type": "reference",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "num_replicons": {
       "name": "num_replicons",
@@ -267,7 +282,7 @@
       ],
       "type": "integer",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "collected_by": {
       "name": "collected_by",
@@ -275,44 +290,44 @@
         "collected_by"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_disease": {
       "name": "host_disease",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "metagenome_source": {
       "name": "metagenome_source",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": [],
+      "allowed_values": [],
       "allow_multiple": true
     },
     "derived_from": {
       "name": "derived_from",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "abs_air_humidity": {
       "name": "abs_air_humidity",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "air_temp": {
       "name": "air_temp",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "build_occup_type": {
       "name": "build_occup_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "office",
         "market",
         "restaurant",
@@ -332,7 +347,7 @@
       "name": "building_setting",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "urban",
         "suburban",
         "exurban",
@@ -345,13 +360,13 @@
         "carbon dioxide"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "filter_type": {
       "name": "filter_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "particulate air filter",
         "chemical air filter",
         "low-MERV pleated media",
@@ -364,7 +379,7 @@
       "name": "heat_cool_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "radiant system",
         "heat pump",
         "forced air system",
@@ -376,7 +391,7 @@
       "name": "indoor_space",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "bedroom",
         "office",
         "bathroom",
@@ -391,7 +406,7 @@
       "name": "light_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "natural light",
         "electric light",
         "no light"
@@ -401,13 +416,13 @@
       "name": "occup_samp",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "occupant_dens_samp": {
       "name": "occupant_dens_samp",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "organism_count": {
       "name": "organism_count",
@@ -415,19 +430,19 @@
         "organism count"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "rel_air_humidity": {
       "name": "rel_air_humidity",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "space_typ_state": {
       "name": "space_typ_state",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "typical occupied",
         "typically unoccupied"
       ]
@@ -436,7 +451,7 @@
       "name": "typ_occupant_dens",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ventilation_type": {
       "name": "ventilation_type",
@@ -444,13 +459,13 @@
         "ventilation type"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "source_uvig": {
       "name": "source_uvig",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "metagenome (not viral targeted)",
         "viral fraction metagenome (virome)",
         "sequence-targeted metagenome",
@@ -466,7 +481,7 @@
       "name": "virus_enrich_appr",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "filtration",
         "ultrafiltration",
         "centrifugation",
@@ -484,7 +499,7 @@
       "name": "beta_lactamase_family",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "ACC",
         "ACT",
         "ADC",
@@ -521,7 +536,7 @@
       "name": "carbapenemase",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "yes",
         "no"
       ]
@@ -530,7 +545,7 @@
       "name": "edta_inhibitor_tested",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "yes",
         "no"
       ]
@@ -539,91 +554,91 @@
       "name": "ww_population",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_sample_duration": {
       "name": "ww_sample_duration",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_sample_matrix": {
       "name": "ww_sample_matrix",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_sample_type": {
       "name": "ww_sample_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_surv_target_1": {
       "name": "ww_surv_target_1",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_surv_target_1_known_present": {
       "name": "ww_surv_target_1_known_present",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "biological_replicate": {
       "name": "biological_replicate",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "antibody": {
       "name": "antibody",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "add_recov_method": {
       "name": "add_recov_method",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "additional_info": {
       "name": "additional_info",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "address": {
       "name": "address",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "adj_room": {
       "name": "adj_room",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "adjacent_environment": {
       "name": "adjacent_environment",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "aero_struc": {
       "name": "aero_struc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "affection_status": {
       "name": "affection_status",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "agrochem_addition": {
       "name": "agrochem_addition",
@@ -631,19 +646,19 @@
         "history/agrochemical additions"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "air_flow_impede": {
       "name": "air_flow_impede",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "air_pm_concen": {
       "name": "air_pm_concen",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "air_temp_regm": {
       "name": "air_temp_regm",
@@ -651,7 +666,7 @@
         "air temperature regimen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "al_sat": {
       "name": "al_sat",
@@ -659,7 +674,7 @@
         "extreme_unusual_properties/Al saturation"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "al_sat_meth": {
       "name": "al_sat_meth",
@@ -668,7 +683,7 @@
       ],
       "type": "reference",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "alkalinity": {
       "name": "alkalinity",
@@ -676,13 +691,13 @@
         "alkalinity"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "alkalinity_method": {
       "name": "alkalinity_method",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "alkyl_diethers": {
       "name": "alkyl_diethers",
@@ -690,7 +705,7 @@
         "alkyl diethers"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "aminopept_act": {
       "name": "aminopept_act",
@@ -698,7 +713,7 @@
         "aminopeptidase activity"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ammonium": {
       "name": "ammonium",
@@ -706,7 +721,7 @@
         "ammonium"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "amniotic_fluid_color": {
       "name": "amniotic_fluid_color",
@@ -714,97 +729,97 @@
         "amniotic fluid/color"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "amount_light": {
       "name": "amount_light",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "analyte_type": {
       "name": "analyte_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "anamorph": {
       "name": "anamorph",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ances_data": {
       "name": "ances_data",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "anim_water_method": {
       "name": "anim_water_method",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "animal_am_dur": {
       "name": "animal_am_dur",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "animal_am_freq": {
       "name": "animal_am_freq",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "animal_am_route": {
       "name": "animal_am_route",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "animal_am_use": {
       "name": "animal_am_use",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "animal_body_cond": {
       "name": "animal_body_cond",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "animal_diet": {
       "name": "animal_diet",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "animal_feed_equip": {
       "name": "animal_feed_equip",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "animal_intrusion": {
       "name": "animal_intrusion",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "animal_sex": {
       "name": "animal_sex",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "annual_precpt": {
       "name": "annual_precpt",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "annual_season_precpt": {
       "name": "annual_season_precpt",
@@ -812,7 +827,7 @@
         "mean annual and seasonal precipitation"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "annual_season_temp": {
       "name": "annual_season_temp",
@@ -820,13 +835,13 @@
         "mean annual and seasonal temperature"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "annual_temp": {
       "name": "annual_temp",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "antibiotic_regm": {
       "name": "antibiotic_regm",
@@ -834,49 +849,49 @@
         "antibiotic regimen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "antiviral_treatment_agent": {
       "name": "antiviral_treatment_agent",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "api": {
       "name": "api",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "arch_struc": {
       "name": "arch_struc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "area_samp_size": {
       "name": "area_samp_size",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "aromatics_pc": {
       "name": "aromatics_pc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "asphaltenes_pc": {
       "name": "asphaltenes_pc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "association_duration": {
       "name": "association_duration",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "atmospheric_data": {
       "name": "atmospheric_data",
@@ -884,43 +899,43 @@
         "atmospheric data"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "authority": {
       "name": "authority",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "avg_dew_point": {
       "name": "avg_dew_point",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "avg_occup": {
       "name": "avg_occup",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "avg_temp": {
       "name": "avg_temp",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "bac_prod": {
       "name": "bac_prod",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "bac_resp": {
       "name": "bac_resp",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "bacteria_carb_prod": {
       "name": "bacteria_carb_prod",
@@ -928,13 +943,13 @@
         "bacterial carbon production"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "bacterial_density": {
       "name": "bacterial_density",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "barometric_press": {
       "name": "barometric_press",
@@ -942,37 +957,37 @@
         "barometric pressure"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "basin_name": {
       "name": "basin_name",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "bathroom_count": {
       "name": "bathroom_count",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "bedroom_count": {
       "name": "bedroom_count",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "benzene": {
       "name": "benzene",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "bio_material": {
       "name": "bio_material",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "biochem_oxygen_dem": {
       "name": "biochem_oxygen_dem",
@@ -980,31 +995,31 @@
         "biochemical oxygen demand"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "biocide_admin": {
       "name": "biocide_admin",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "biocide_admin_method": {
       "name": "biocide_admin_method",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "biocide_used": {
       "name": "biocide_used",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "biol_stat": {
       "name": "biol_stat",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "biomass": {
       "name": "biomass",
@@ -1012,13 +1027,13 @@
         "biomass"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "biotic_regm": {
       "name": "biotic_regm",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "biotic_relationship": {
       "name": "biotic_relationship",
@@ -1026,7 +1041,7 @@
         "observed biotic relationship"
       ],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "free living",
         "parasite",
         "commensal",
@@ -1037,7 +1052,7 @@
       "name": "biovar",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "birth_control": {
       "name": "birth_control",
@@ -1045,20 +1060,20 @@
         "birth control"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "birth_date": {
       "name": "birth_date",
       "synonyms": [],
       "type": "timestamp",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "birth_location": {
       "name": "birth_location",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "bishomohopanol": {
       "name": "bishomohopanol",
@@ -1066,7 +1081,7 @@
         "bishomohopanol"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "blood_blood_disord": {
       "name": "blood_blood_disord",
@@ -1074,7 +1089,7 @@
         "blood/blood disorder"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "blood_press_diast": {
       "name": "blood_press_diast",
@@ -1082,7 +1097,7 @@
         "blood pressure diastolic"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "blood_press_syst": {
       "name": "blood_press_syst",
@@ -1090,7 +1105,7 @@
         "blood pressure systolic"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "body_habitat": {
       "name": "body_habitat",
@@ -1098,7 +1113,7 @@
         "body habitat"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "body_mass_index": {
       "name": "body_mass_index",
@@ -1106,7 +1121,7 @@
         "body-mass index"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "body_product": {
       "name": "body_product",
@@ -1114,19 +1129,19 @@
         "body product"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "breeding_history": {
       "name": "breeding_history",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "breeding_method": {
       "name": "breeding_method",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "bromide": {
       "name": "bromide",
@@ -1134,31 +1149,31 @@
         "bromide"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "build_docs": {
       "name": "build_docs",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "built_struc_age": {
       "name": "built_struc_age",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "built_struc_set": {
       "name": "built_struc_set",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "built_struc_type": {
       "name": "built_struc_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "calcium": {
       "name": "calcium",
@@ -1166,7 +1181,7 @@
         "calcium"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "carb_monoxide": {
       "name": "carb_monoxide",
@@ -1174,7 +1189,7 @@
         "carbon monoxide"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "carb_nitro_ratio": {
       "name": "carb_nitro_ratio",
@@ -1182,55 +1197,55 @@
         "carbon/nitrogen ratio"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ceil_area": {
       "name": "ceil_area",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ceil_cond": {
       "name": "ceil_cond",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ceil_finish_mat": {
       "name": "ceil_finish_mat",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ceil_struc": {
       "name": "ceil_struc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ceil_texture": {
       "name": "ceil_texture",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ceil_thermal_mass": {
       "name": "ceil_thermal_mass",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ceil_type": {
       "name": "ceil_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ceil_water_mold": {
       "name": "ceil_water_mold",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "cell_line": {
       "name": "cell_line",
@@ -1239,13 +1254,13 @@
         "cell line"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "cell_subtype": {
       "name": "cell_subtype",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "cell_type": {
       "name": "cell_type",
@@ -1254,7 +1269,7 @@
         "cell type"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "chem_administration": {
       "name": "chem_administration",
@@ -1262,7 +1277,7 @@
         "chemical administration"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "chem_mutagen": {
       "name": "chem_mutagen",
@@ -1270,7 +1285,7 @@
         "chemical mutagen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "chem_oxygen_dem": {
       "name": "chem_oxygen_dem",
@@ -1278,25 +1293,25 @@
         "chemical oxygen demand"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "chem_treat_method": {
       "name": "chem_treat_method",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "chem_treatment": {
       "name": "chem_treatment",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "child_of": {
       "name": "child_of",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "chloride": {
       "name": "chloride",
@@ -1304,7 +1319,7 @@
         "chloride"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "chlorophyll": {
       "name": "chlorophyll",
@@ -1312,7 +1327,7 @@
         "chlorophyll"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "climate_environment": {
       "name": "climate_environment",
@@ -1320,80 +1335,80 @@
         "climate environment"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "clone": {
       "name": "clone",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "clone_lib": {
       "name": "clone_lib",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "coll_site_geo_feat": {
       "name": "coll_site_geo_feat",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "collection_device": {
       "name": "collection_device",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "collection_method": {
       "name": "collection_method",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "component_organism": {
       "name": "component_organism",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": [],
+      "allowed_values": [],
       "allow_multiple": true
     },
     "conduc": {
       "name": "conduc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "cons_food_stor_dur": {
       "name": "cons_food_stor_dur",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "cons_food_stor_temp": {
       "name": "cons_food_stor_temp",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "cons_purch_date": {
       "name": "cons_purch_date",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "cons_qty_purchased": {
       "name": "cons_qty_purchased",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "cool_syst_id": {
       "name": "cool_syst_id",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "crop_rotation": {
       "name": "crop_rotation",
@@ -1401,43 +1416,43 @@
         "history/crop rotation"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "crop_yield": {
       "name": "crop_yield",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "cult_isol_date": {
       "name": "cult_isol_date",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "cult_result": {
       "name": "cult_result",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "cult_result_org": {
       "name": "cult_result_org",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "cult_root_med": {
       "name": "cult_root_med",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "cult_target": {
       "name": "cult_target",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "culture_collection": {
       "name": "culture_collection",
@@ -1445,7 +1460,7 @@
         "culture collection"
       ],
       "format_pattern": "",
-      "cv_terms": [],
+      "allowed_values": [],
       "allow_multiple": true
     },
     "cur_land_use": {
@@ -1454,7 +1469,7 @@
         "current land use"
       ],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "cities",
         "farmstead",
         "industrial areas",
@@ -1498,7 +1513,7 @@
         "current vegetation"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "cur_vegetation_meth": {
       "name": "cur_vegetation_meth",
@@ -1507,44 +1522,44 @@
       ],
       "type": "reference",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "date_extr_weath": {
       "name": "date_extr_weath",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "date_last_rain": {
       "name": "date_last_rain",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "date_of_prior_antiviral_treat": {
       "name": "date_of_prior_antiviral_treat",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "date_of_prior_sars_cov_2_infection": {
       "name": "date_of_prior_sars_cov_2_infection",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "date_of_sars_cov_2_vaccination": {
       "name": "date_of_sars_cov_2_vaccination",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "death_date": {
       "name": "death_date",
       "synonyms": [],
       "type": "timestamp",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "density": {
       "name": "density",
@@ -1552,13 +1567,13 @@
         "density"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "depos_env": {
       "name": "depos_env",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "dermatology_disord": {
       "name": "dermatology_disord",
@@ -1566,13 +1581,13 @@
         "dermatology disorder"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "dew_point": {
       "name": "dew_point",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "diet_last_six_month": {
       "name": "diet_last_six_month",
@@ -1580,13 +1595,13 @@
         "major diet change in last six months"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "dietary_claim_use": {
       "name": "dietary_claim_use",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "diether_lipids": {
       "name": "diether_lipids",
@@ -1594,13 +1609,13 @@
         "diether lipids"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "disease": {
       "name": "disease",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "disease_stage": {
       "name": "disease_stage",
@@ -1608,7 +1623,7 @@
         "disease stage"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "diss_carb_dioxide": {
       "name": "diss_carb_dioxide",
@@ -1616,7 +1631,7 @@
         "dissolved carbon dioxide"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "diss_hydrogen": {
       "name": "diss_hydrogen",
@@ -1624,7 +1639,7 @@
         "dissolved hydrogen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "diss_inorg_carb": {
       "name": "diss_inorg_carb",
@@ -1632,7 +1647,7 @@
         "dissolved inorganic carbon"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "diss_inorg_nitro": {
       "name": "diss_inorg_nitro",
@@ -1640,7 +1655,7 @@
         "dissolved inorganic nitrogen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "diss_inorg_phosp": {
       "name": "diss_inorg_phosp",
@@ -1648,13 +1663,13 @@
         "dissolved inorganic phosphorus"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "diss_iron": {
       "name": "diss_iron",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "diss_org_carb": {
       "name": "diss_org_carb",
@@ -1662,7 +1677,7 @@
         "dissolved organic carbon"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "diss_org_nitro": {
       "name": "diss_org_nitro",
@@ -1670,7 +1685,7 @@
         "dissolved organic nitrogen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "diss_oxygen": {
       "name": "diss_oxygen",
@@ -1678,13 +1693,13 @@
         "dissolved oxygen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "diss_oxygen_fluid": {
       "name": "diss_oxygen_fluid",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "dominant_hand": {
       "name": "dominant_hand",
@@ -1692,7 +1707,7 @@
         "dominant hand"
       ],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "left",
         "right",
         "ambidextrous"
@@ -1702,67 +1717,67 @@
       "name": "door_comp_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "door_cond": {
       "name": "door_cond",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "door_direct": {
       "name": "door_direct",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "door_loc": {
       "name": "door_loc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "door_mat": {
       "name": "door_mat",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "door_move": {
       "name": "door_move",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "door_size": {
       "name": "door_size",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "door_type": {
       "name": "door_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "door_type_metal": {
       "name": "door_type_metal",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "door_type_wood": {
       "name": "door_type_wood",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "door_water_mold": {
       "name": "door_water_mold",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "douche": {
       "name": "douche",
@@ -1771,13 +1786,13 @@
       ],
       "type": "timestamp",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "down_par": {
       "name": "down_par",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "drainage_class": {
       "name": "drainage_class",
@@ -1785,7 +1800,7 @@
         "drainage classification"
       ],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "very poorly",
         "poorly",
         "somewhat poorly",
@@ -1798,7 +1813,7 @@
       "name": "drawings",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "drug_usage": {
       "name": "drug_usage",
@@ -1806,7 +1821,7 @@
         "drug usage"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "dry_mass": {
       "name": "dry_mass",
@@ -1814,7 +1829,7 @@
         "dry mass"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "efficiency_percent": {
       "name": "efficiency_percent",
@@ -1822,13 +1837,13 @@
         "efficiency percent"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "elevator": {
       "name": "elevator",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "emulsions": {
       "name": "emulsions",
@@ -1836,7 +1851,7 @@
         "emulsions"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "encoded_traits": {
       "name": "encoded_traits",
@@ -1844,31 +1859,31 @@
         "encoded traits"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "enrichment_protocol": {
       "name": "enrichment_protocol",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "env_monitoring_zone": {
       "name": "env_monitoring_zone",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "env_package": {
       "name": "env_package",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "escalator": {
       "name": "escalator",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "estimated_size": {
       "name": "estimated_size",
@@ -1876,67 +1891,67 @@
         "estimated size"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ethnicity": {
       "name": "ethnicity",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ethylbenzene": {
       "name": "ethylbenzene",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "exp_duct": {
       "name": "exp_duct",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "exp_pipe": {
       "name": "exp_pipe",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "experimental_factor": {
       "name": "experimental_factor",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "exposure_event": {
       "name": "exposure_event",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ext_door": {
       "name": "ext_door",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ext_wall_orient": {
       "name": "ext_wall_orient",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ext_window_orient": {
       "name": "ext_window_orient",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "extr_weather_event": {
       "name": "extr_weather_event",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "extrachrom_elements": {
       "name": "extrachrom_elements",
@@ -1944,7 +1959,7 @@
         "extrachromosomal elements"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "extreme_event": {
       "name": "extreme_event",
@@ -1952,7 +1967,7 @@
         "history/extreme events"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "extreme_salinity": {
       "name": "extreme_salinity",
@@ -1960,19 +1975,19 @@
         "extreme_unusual_properties/salinity"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "facility_type": {
       "name": "facility_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "family_id": {
       "name": "family_id",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "family_relationship": {
       "name": "family_relationship",
@@ -1982,7 +1997,7 @@
         "familyrelationship"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "fao_class": {
       "name": "fao_class",
@@ -1990,103 +2005,103 @@
         "soil_taxonomic/FAO classification"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "farm_equip": {
       "name": "farm_equip",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "farm_equip_san": {
       "name": "farm_equip_san",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "farm_equip_san_freq": {
       "name": "farm_equip_san_freq",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "farm_equip_shared": {
       "name": "farm_equip_shared",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "farm_water_source": {
       "name": "farm_water_source",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ferm_chem_add": {
       "name": "ferm_chem_add",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ferm_chem_add_perc": {
       "name": "ferm_chem_add_perc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ferm_headspace_oxy": {
       "name": "ferm_headspace_oxy",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ferm_medium": {
       "name": "ferm_medium",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ferm_ph": {
       "name": "ferm_ph",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ferm_rel_humidity": {
       "name": "ferm_rel_humidity",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ferm_temp": {
       "name": "ferm_temp",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ferm_time": {
       "name": "ferm_time",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ferm_vessel": {
       "name": "ferm_vessel",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "fertilizer_admin": {
       "name": "fertilizer_admin",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "fertilizer_date": {
       "name": "fertilizer_date",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "fertilizer_regm": {
       "name": "fertilizer_regm",
@@ -2094,13 +2109,13 @@
         "fertilizer regimen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "field": {
       "name": "field",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "fire": {
       "name": "fire",
@@ -2108,13 +2123,13 @@
         "history/fire"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "fireplace_type": {
       "name": "fireplace_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "flooding": {
       "name": "flooding",
@@ -2122,61 +2137,61 @@
         "history/flooding"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "floor_age": {
       "name": "floor_age",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "floor_area": {
       "name": "floor_area",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "floor_cond": {
       "name": "floor_cond",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "floor_count": {
       "name": "floor_count",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "floor_finish_mat": {
       "name": "floor_finish_mat",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "floor_struc": {
       "name": "floor_struc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "floor_thermal_mass": {
       "name": "floor_thermal_mass",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "floor_water_mold": {
       "name": "floor_water_mold",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "fluor": {
       "name": "fluor",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "foetal_health_stat": {
       "name": "foetal_health_stat",
@@ -2184,199 +2199,199 @@
         "amniotic fluid/foetal health status"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_additive": {
       "name": "food_additive",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_allergen_label": {
       "name": "food_allergen_label",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_clean_proc": {
       "name": "food_clean_proc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_contact_surf": {
       "name": "food_contact_surf",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_contain_wrap": {
       "name": "food_contain_wrap",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_cooking_proc": {
       "name": "food_cooking_proc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_dis_point": {
       "name": "food_dis_point",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_dis_point_city": {
       "name": "food_dis_point_city",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_harvest_proc": {
       "name": "food_harvest_proc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_ingredient": {
       "name": "food_ingredient",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_name_status": {
       "name": "food_name_status",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_origin": {
       "name": "food_origin",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_pack_capacity": {
       "name": "food_pack_capacity",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_pack_integrity": {
       "name": "food_pack_integrity",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_pack_medium": {
       "name": "food_pack_medium",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_preserv_proc": {
       "name": "food_preserv_proc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_prior_contact": {
       "name": "food_prior_contact",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_prod_char": {
       "name": "food_prod_char",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_prod_synonym": {
       "name": "food_prod_synonym",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_product_qual": {
       "name": "food_product_qual",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_product_type": {
       "name": "food_product_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_quality_date": {
       "name": "food_quality_date",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_source": {
       "name": "food_source",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_source_age": {
       "name": "food_source_age",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_trace_list": {
       "name": "food_trace_list",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_trav_mode": {
       "name": "food_trav_mode",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_trav_vehic": {
       "name": "food_trav_vehic",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "food_treat_proc": {
       "name": "food_treat_proc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "forma": {
       "name": "forma",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "forma_specialis": {
       "name": "forma_specialis",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "freq_clean": {
       "name": "freq_clean",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "freq_cook": {
       "name": "freq_cook",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "fungicide_regm": {
       "name": "fungicide_regm",
@@ -2384,13 +2399,13 @@
         "fungicide regimen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "furniture": {
       "name": "furniture",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "gaseous_environment": {
       "name": "gaseous_environment",
@@ -2398,7 +2413,7 @@
         "gaseous environment"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "gaseous_substances": {
       "name": "gaseous_substances",
@@ -2406,7 +2421,7 @@
         "gaseous substances"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "gastrointest_disord": {
       "name": "gastrointest_disord",
@@ -2414,19 +2429,19 @@
         "gastrointestinal tract disorder"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "gender_restroom": {
       "name": "gender_restroom",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "genetic_modification": {
       "name": "genetic_modification",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "genotype": {
       "name": "genotype",
@@ -2434,13 +2449,13 @@
         "genotype"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "geo_loc_exposure": {
       "name": "geo_loc_exposure",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "gestation_state": {
       "name": "gestation_state",
@@ -2448,19 +2463,19 @@
         "amniotic fluid/gestation state"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "gisaid_accession": {
       "name": "gisaid_accession",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "gisaid_virus_name": {
       "name": "gisaid_virus_name",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "glucosidase_act": {
       "name": "glucosidase_act",
@@ -2468,7 +2483,7 @@
         "glucosidase activity"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "gravidity": {
       "name": "gravidity",
@@ -2476,7 +2491,7 @@
         "gravidity"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "gravity": {
       "name": "gravity",
@@ -2484,19 +2499,19 @@
         "gravity"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "growth_facil": {
       "name": "growth_facil",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "growth_habit": {
       "name": "growth_habit",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "growth_hormone_regm": {
       "name": "growth_hormone_regm",
@@ -2504,19 +2519,19 @@
         "growth hormone regimen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "growth_medium": {
       "name": "growth_medium",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "growth_protocol": {
       "name": "growth_protocol",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "gynecologic_disord": {
       "name": "gynecologic_disord",
@@ -2524,67 +2539,67 @@
         "gynecological disorder"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "haccp_term": {
       "name": "haccp_term",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "hall_count": {
       "name": "hall_count",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "handidness": {
       "name": "handidness",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "haplotype": {
       "name": "haplotype",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "hc_produced": {
       "name": "hc_produced",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "hcr": {
       "name": "hcr",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "hcr_fw_salinity": {
       "name": "hcr_fw_salinity",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "hcr_geol_age": {
       "name": "hcr_geol_age",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "hcr_pressure": {
       "name": "hcr_pressure",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "hcr_temp": {
       "name": "hcr_temp",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "health_state": {
       "name": "health_state",
@@ -2592,25 +2607,25 @@
         "health state"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "heat_deliv_loc": {
       "name": "heat_deliv_loc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "heat_sys_deliv_meth": {
       "name": "heat_sys_deliv_meth",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "heat_system_id": {
       "name": "heat_system_id",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "heavy_metals": {
       "name": "heavy_metals",
@@ -2618,7 +2633,7 @@
         "extreme_unusual_properties/heavy metals"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "heavy_metals_meth": {
       "name": "heavy_metals_meth",
@@ -2627,13 +2642,13 @@
       ],
       "type": "reference",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "height_carper_fiber": {
       "name": "height_carper_fiber",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "height_or_length": {
       "name": "height_or_length",
@@ -2641,7 +2656,7 @@
         "height or length"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "herbicide_regm": {
       "name": "herbicide_regm",
@@ -2649,13 +2664,13 @@
         "herbicide regimen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "histological_type": {
       "name": "histological_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "hiv_stat": {
       "name": "hiv_stat",
@@ -2663,7 +2678,7 @@
         "HIV status"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "horizon_meth": {
       "name": "horizon_meth",
@@ -2672,7 +2687,7 @@
       ],
       "type": "reference",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_age": {
       "name": "host_age",
@@ -2681,55 +2696,55 @@
         "host_age"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_am": {
       "name": "host_am",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_anatomical_material": {
       "name": "host_anatomical_material",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_anatomical_part": {
       "name": "host_anatomical_part",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_blood_press_diast": {
       "name": "host_blood_press_diast",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_blood_press_syst": {
       "name": "host_blood_press_syst",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_body_habitat": {
       "name": "host_body_habitat",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_body_mass_index": {
       "name": "host_body_mass_index",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_body_product": {
       "name": "host_body_product",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_body_temp": {
       "name": "host_body_temp",
@@ -2737,13 +2752,13 @@
         "host body temperature"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_cellular_loc": {
       "name": "host_cellular_loc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_color": {
       "name": "host_color",
@@ -2751,19 +2766,19 @@
         "host color"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_common_name": {
       "name": "host_common_name",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_dependence": {
       "name": "host_dependence",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_description": {
       "name": "host_description",
@@ -2772,13 +2787,13 @@
         "host_description"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_diet": {
       "name": "host_diet",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_disease_outcome": {
       "name": "host_disease_outcome",
@@ -2787,37 +2802,37 @@
         "host_disease_outcome"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_disease_stage": {
       "name": "host_disease_stage",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_dry_mass": {
       "name": "host_dry_mass",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_family_relationship": {
       "name": "host_family_relationship",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_genotype": {
       "name": "host_genotype",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_group_size": {
       "name": "host_group_size",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_growth_cond": {
       "name": "host_growth_cond",
@@ -2826,187 +2841,187 @@
       ],
       "type": "reference",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_health_state": {
       "name": "host_health_state",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_height": {
       "name": "host_height",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_hiv_stat": {
       "name": "host_hiv_stat",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_housing": {
       "name": "host_housing",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_infra_specific_name": {
       "name": "host_infra_specific_name",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_infra_specific_rank": {
       "name": "host_infra_specific_rank",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_last_meal": {
       "name": "host_last_meal",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_length": {
       "name": "host_length",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_life_stage": {
       "name": "host_life_stage",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_number": {
       "name": "host_number",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_occupation": {
       "name": "host_occupation",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_of_host_coinf": {
       "name": "host_of_host_coinf",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_of_host_disease": {
       "name": "host_of_host_disease",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_of_host_env_loc": {
       "name": "host_of_host_env_loc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_of_host_env_med": {
       "name": "host_of_host_env_med",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_of_host_fam_rel": {
       "name": "host_of_host_fam_rel",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_of_host_geno": {
       "name": "host_of_host_geno",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_of_host_gravid": {
       "name": "host_of_host_gravid",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_of_host_infname": {
       "name": "host_of_host_infname",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_of_host_infrank": {
       "name": "host_of_host_infrank",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_of_host_name": {
       "name": "host_of_host_name",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_of_host_pheno": {
       "name": "host_of_host_pheno",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_of_host_sub_id": {
       "name": "host_of_host_sub_id",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_of_host_taxid": {
       "name": "host_of_host_taxid",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_of_host_totmass": {
       "name": "host_of_host_totmass",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_phenotype": {
       "name": "host_phenotype",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_pulse": {
       "name": "host_pulse",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_recent_travel_loc": {
       "name": "host_recent_travel_loc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_recent_travel_return_date": {
       "name": "host_recent_travel_return_date",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_sex": {
       "name": "host_sex",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "male",
         "female",
         "pooled male and female",
@@ -3022,19 +3037,19 @@
         "host shape"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_specificity": {
       "name": "host_specificity",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_specimen_voucher": {
       "name": "host_specimen_voucher",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_subject_id": {
       "name": "host_subject_id",
@@ -3042,25 +3057,25 @@
         "host subject id"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_subspecf_genlin": {
       "name": "host_subspecf_genlin",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_substrate": {
       "name": "host_substrate",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_symbiont": {
       "name": "host_symbiont",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_taxid": {
       "name": "host_taxid",
@@ -3069,32 +3084,32 @@
       ],
       "type": "integer",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_tissue_sampled": {
       "name": "host_tissue_sampled",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_tot_mass": {
       "name": "host_tot_mass",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "host_wet_mass": {
       "name": "host_wet_mass",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "hrt": {
       "name": "hrt",
       "synonyms": [],
       "type": "timestamp",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "humidity": {
       "name": "humidity",
@@ -3102,7 +3117,7 @@
         "humidity"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "humidity_regm": {
       "name": "humidity_regm",
@@ -3110,13 +3125,13 @@
         "humidity regimen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "hygienic_area": {
       "name": "hygienic_area",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "hysterectomy": {
       "name": "hysterectomy",
@@ -3124,19 +3139,19 @@
         "hysterectomy"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "identified_by": {
       "name": "identified_by",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ifsac_category": {
       "name": "ifsac_category",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ihmc_medication_code": {
       "name": "ihmc_medication_code",
@@ -3144,13 +3159,13 @@
         "ihmc medication code"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "indoor_surf": {
       "name": "indoor_surf",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "counter top",
         "window",
         "wall",
@@ -3167,13 +3182,13 @@
         "industrial effluent percent"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "infection": {
       "name": "infection",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "infra_specific_name": {
       "name": "infra_specific_name",
@@ -3181,7 +3196,7 @@
         "infra_specific_name"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "infra_specific_rank": {
       "name": "infra_specific_rank",
@@ -3189,7 +3204,7 @@
         "infra_specific_rank"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "inorg_particles": {
       "name": "inorg_particles",
@@ -3197,31 +3212,31 @@
         "inorganic particles"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "inside_lux": {
       "name": "inside_lux",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "int_wall_cond": {
       "name": "int_wall_cond",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "intended_consumer": {
       "name": "intended_consumer",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "investigation_type": {
       "name": "investigation_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "eukaryote",
         "bacteria_archaea",
         "plasmid",
@@ -3236,31 +3251,31 @@
       "name": "is_tumor",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "isolate_name_alias": {
       "name": "isolate_name_alias",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "iw_bt_date_well": {
       "name": "iw_bt_date_well",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "iwf": {
       "name": "iwf",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "karyotype": {
       "name": "karyotype",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "kidney_disord": {
       "name": "kidney_disord",
@@ -3268,19 +3283,19 @@
         "urine/kidney disorder"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "label": {
       "name": "label",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "last_clean": {
       "name": "last_clean",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "last_meal": {
       "name": "last_meal",
@@ -3288,7 +3303,7 @@
         "last meal"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "life_stage": {
       "name": "life_stage",
@@ -3296,7 +3311,7 @@
         "life stage"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "light_intensity": {
       "name": "light_intensity",
@@ -3304,13 +3319,13 @@
         "light intensity"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "light_regm": {
       "name": "light_regm",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "link_addit_analys": {
       "name": "link_addit_analys",
@@ -3319,7 +3334,7 @@
       ],
       "type": "reference",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "link_class_info": {
       "name": "link_class_info",
@@ -3328,7 +3343,7 @@
       ],
       "type": "reference",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "link_climate_info": {
       "name": "link_climate_info",
@@ -3337,13 +3352,13 @@
       ],
       "type": "reference",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "lithology": {
       "name": "lithology",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "liver_disord": {
       "name": "liver_disord",
@@ -3351,7 +3366,7 @@
         "liver disorder"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "local_class": {
       "name": "local_class",
@@ -3359,7 +3374,7 @@
         "soil_taxonomic/local classification"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "local_class_meth": {
       "name": "local_class_meth",
@@ -3368,13 +3383,13 @@
       ],
       "type": "reference",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "lot_number": {
       "name": "lot_number",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "magnesium": {
       "name": "magnesium",
@@ -3382,7 +3397,7 @@
         "magnesium"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "maternal_health_stat": {
       "name": "maternal_health_stat",
@@ -3390,19 +3405,19 @@
         "amniotic fluid/maternal health status"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "mating_type": {
       "name": "mating_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "max_occup": {
       "name": "max_occup",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "mean_frict_vel": {
       "name": "mean_frict_vel",
@@ -3410,7 +3425,7 @@
         "mean friction velocity"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "mean_peak_frict_vel": {
       "name": "mean_peak_frict_vel",
@@ -3418,13 +3433,13 @@
         "mean peak friction velocity"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "mech_struc": {
       "name": "mech_struc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "mechanical_damage": {
       "name": "mechanical_damage",
@@ -3432,7 +3447,7 @@
         "mechanical damage"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "medic_hist_perform": {
       "name": "medic_hist_perform",
@@ -3440,7 +3455,7 @@
         "medical history performed"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "menarche": {
       "name": "menarche",
@@ -3449,7 +3464,7 @@
       ],
       "type": "timestamp",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "menopause": {
       "name": "menopause",
@@ -3458,7 +3473,7 @@
       ],
       "type": "timestamp",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "methane": {
       "name": "methane",
@@ -3466,49 +3481,49 @@
         "methane"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "microb_cult_med": {
       "name": "microb_cult_med",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "microb_start": {
       "name": "microb_start",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "microb_start_count": {
       "name": "microb_start_count",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "microb_start_inoc": {
       "name": "microb_start_inoc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "microb_start_prep": {
       "name": "microb_start_prep",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "microb_start_source": {
       "name": "microb_start_source",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "microb_start_taxid": {
       "name": "microb_start_taxid",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "microbial_biomass": {
       "name": "microbial_biomass",
@@ -3516,7 +3531,7 @@
         "microbial biomass"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "microbial_biomass_meth": {
       "name": "microbial_biomass_meth",
@@ -3525,7 +3540,7 @@
       ],
       "type": "reference",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "mineral_nutr_regm": {
       "name": "mineral_nutr_regm",
@@ -3533,7 +3548,7 @@
         "mineral nutrient regimen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "misc_param": {
       "name": "misc_param",
@@ -3541,25 +3556,25 @@
         "miscellaneous parameter"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "mode_transmission": {
       "name": "mode_transmission",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "molecular_data_type": {
       "name": "molecular_data_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "morphology": {
       "name": "morphology",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "n_alkanes": {
       "name": "n_alkanes",
@@ -3567,19 +3582,19 @@
         "n-alkanes"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "narms_isolate_number": {
       "name": "narms_isolate_number",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "neg_cont_type": {
       "name": "neg_cont_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "nitrate": {
       "name": "nitrate",
@@ -3587,7 +3602,7 @@
         "nitrate"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "nitrite": {
       "name": "nitrite",
@@ -3595,7 +3610,7 @@
         "nitrite"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "nitro": {
       "name": "nitro",
@@ -3603,7 +3618,7 @@
         "nitrogen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "non_mineral_nutr_regm": {
       "name": "non_mineral_nutr_regm",
@@ -3611,7 +3626,7 @@
         "non-mineral nutrient regimen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "nose_mouth_teeth_throat_disord": {
       "name": "nose_mouth_teeth_throat_disord",
@@ -3619,7 +3634,7 @@
         "nose/mouth/teeth/throat disorder"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "nose_throat_disord": {
       "name": "nose_throat_disord",
@@ -3627,37 +3642,37 @@
         "lung/nose-throat disorder"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "num_samp_collect": {
       "name": "num_samp_collect",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "number_pets": {
       "name": "number_pets",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "number_plants": {
       "name": "number_plants",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "number_resident": {
       "name": "number_resident",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "occup_document": {
       "name": "occup_document",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "occupation": {
       "name": "occupation",
@@ -3665,13 +3680,13 @@
         "occupation"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "omics_observ_id": {
       "name": "omics_observ_id",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "org_carb": {
       "name": "org_carb",
@@ -3679,13 +3694,13 @@
         "organic carbon"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "org_count_qpcr_info": {
       "name": "org_count_qpcr_info",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "org_matter": {
       "name": "org_matter",
@@ -3693,7 +3708,7 @@
         "organic matter"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "org_nitro": {
       "name": "org_nitro",
@@ -3701,7 +3716,7 @@
         "organic nitrogen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "org_particles": {
       "name": "org_particles",
@@ -3709,25 +3724,25 @@
         "organic particles"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "orgmod_note": {
       "name": "orgmod_note",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "outbreak": {
       "name": "outbreak",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "owc_tvdss": {
       "name": "owc_tvdss",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "oxy_stat_samp": {
       "name": "oxy_stat_samp",
@@ -3735,7 +3750,7 @@
         "oxygenation status of sample"
       ],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "aerobic",
         "anaerobic"
       ]
@@ -3746,7 +3761,7 @@
         "oxygen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "part_org_carb": {
       "name": "part_org_carb",
@@ -3754,7 +3769,7 @@
         "particulate organic carbon"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "part_org_nitro": {
       "name": "part_org_nitro",
@@ -3762,13 +3777,13 @@
         "particulate organic nitrogen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "part_plant_animal": {
       "name": "part_plant_animal",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "particle_class": {
       "name": "particle_class",
@@ -3776,25 +3791,25 @@
         "particle classification"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "passage_history": {
       "name": "passage_history",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "passage_method": {
       "name": "passage_method",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "passage_number": {
       "name": "passage_number",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "pathogenicity": {
       "name": "pathogenicity",
@@ -3802,7 +3817,7 @@
         "known pathogenicity"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "pathotype": {
       "name": "pathotype",
@@ -3811,19 +3826,19 @@
         "pathotype"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "pathovar": {
       "name": "pathovar",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "permeability": {
       "name": "permeability",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "perturbation": {
       "name": "perturbation",
@@ -3831,7 +3846,7 @@
         "perturbation"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "pesticide_regm": {
       "name": "pesticide_regm",
@@ -3839,7 +3854,7 @@
         "pesticide regimen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "pet_farm_animal": {
       "name": "pet_farm_animal",
@@ -3847,7 +3862,7 @@
         "presence of pets or farm animals"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "petroleum_hydrocarb": {
       "name": "petroleum_hydrocarb",
@@ -3855,13 +3870,13 @@
         "petroleum hydrocarbon"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ph": {
       "name": "ph",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ph_meth": {
       "name": "ph_meth",
@@ -3870,7 +3885,7 @@
       ],
       "type": "reference",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ph_regm": {
       "name": "ph_regm",
@@ -3878,7 +3893,7 @@
         "pH regimen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "phaeopigments": {
       "name": "phaeopigments",
@@ -3886,7 +3901,7 @@
         "phaeopigments"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "phenotype": {
       "name": "phenotype",
@@ -3894,7 +3909,7 @@
         "phenotype"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "phosphate": {
       "name": "phosphate",
@@ -3902,7 +3917,7 @@
         "phosphate"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "phosplipid_fatt_acid": {
       "name": "phosplipid_fatt_acid",
@@ -3910,7 +3925,7 @@
         "phospholipid fatty acid"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "photon_flux": {
       "name": "photon_flux",
@@ -3918,19 +3933,19 @@
         "photon flux"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "photosynt_activ": {
       "name": "photosynt_activ",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "photosynt_activ_meth": {
       "name": "photosynt_activ_meth",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "plant_body_site": {
       "name": "plant_body_site",
@@ -3938,19 +3953,19 @@
         "plant body site"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "plant_growth_med": {
       "name": "plant_growth_med",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "plant_part_maturity": {
       "name": "plant_part_maturity",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "plant_product": {
       "name": "plant_product",
@@ -3958,31 +3973,31 @@
         "plant product"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "plant_reprod_crop": {
       "name": "plant_reprod_crop",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "plant_sex": {
       "name": "plant_sex",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "plant_struc": {
       "name": "plant_struc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "plant_water_method": {
       "name": "plant_water_method",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ploidy": {
       "name": "ploidy",
@@ -3990,7 +4005,7 @@
         "ploidy"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "pollutants": {
       "name": "pollutants",
@@ -3998,7 +4013,7 @@
         "pollutants"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "pool_dna_extracts": {
       "name": "pool_dna_extracts",
@@ -4006,19 +4021,19 @@
         "pooling of DNA extracts (if done)"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "population": {
       "name": "population",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "population_description": {
       "name": "population_description",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "porosity": {
       "name": "porosity",
@@ -4026,13 +4041,13 @@
         "porosity"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "pos_cont_type": {
       "name": "pos_cont_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "potassium": {
       "name": "potassium",
@@ -4040,13 +4055,13 @@
         "potassium"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "pour_point": {
       "name": "pour_point",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "pre_treatment": {
       "name": "pre_treatment",
@@ -4054,7 +4069,7 @@
         "pre-treatment"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "pregnancy": {
       "name": "pregnancy",
@@ -4063,13 +4078,13 @@
       ],
       "type": "timestamp",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "pres_animal_insect": {
       "name": "pres_animal_insect",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "pressure": {
       "name": "pressure",
@@ -4077,7 +4092,7 @@
         "pressure"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "previous_land_use": {
       "name": "previous_land_use",
@@ -4085,7 +4100,7 @@
         "history/previous land use"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "previous_land_use_meth": {
       "name": "previous_land_use_meth",
@@ -4094,7 +4109,7 @@
       ],
       "type": "reference",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "primary_prod": {
       "name": "primary_prod",
@@ -4102,7 +4117,7 @@
         "primary production"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "primary_treatment": {
       "name": "primary_treatment",
@@ -4110,43 +4125,43 @@
         "primary treatment"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "prior_sars_cov_2_antiviral_treat": {
       "name": "prior_sars_cov_2_antiviral_treat",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "prior_sars_cov_2_infection": {
       "name": "prior_sars_cov_2_infection",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "prior_sars_cov_2_vaccination": {
       "name": "prior_sars_cov_2_vaccination",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "prod_label_claims": {
       "name": "prod_label_claims",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "prod_rate": {
       "name": "prod_rate",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "prod_start_date": {
       "name": "prod_start_date",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "profile_position": {
       "name": "profile_position",
@@ -4154,7 +4169,7 @@
         "profile position"
       ],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "summit",
         "shoulder",
         "backslope",
@@ -4168,7 +4183,7 @@
         "project name"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "pulmonary_disord": {
       "name": "pulmonary_disord",
@@ -4176,7 +4191,7 @@
         "lung/pulmonary disorder"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "pulse": {
       "name": "pulse",
@@ -4184,43 +4199,43 @@
         "pulse"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "purpose_of_sampling": {
       "name": "purpose_of_sampling",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "purpose_of_sequencing": {
       "name": "purpose_of_sequencing",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "purpose_of_ww_sampling": {
       "name": "purpose_of_ww_sampling",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "purpose_of_ww_sequencing": {
       "name": "purpose_of_ww_sequencing",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "quad_pos": {
       "name": "quad_pos",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "race": {
       "name": "race",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "radiation_regm": {
       "name": "radiation_regm",
@@ -4228,7 +4243,7 @@
         "radiation regimen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "rainfall_regm": {
       "name": "rainfall_regm",
@@ -4236,7 +4251,7 @@
         "rainfall regimen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "reactor_type": {
       "name": "reactor_type",
@@ -4244,7 +4259,7 @@
         "reactor type"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "redox_potential": {
       "name": "redox_potential",
@@ -4252,31 +4267,31 @@
         "redox potential"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "reference_material": {
       "name": "reference_material",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "rel_humidity_out": {
       "name": "rel_humidity_out",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "rel_location": {
       "name": "rel_location",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "rel_samp_loc": {
       "name": "rel_samp_loc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "rel_to_oxygen": {
       "name": "rel_to_oxygen",
@@ -4284,7 +4299,7 @@
         "relationship to oxygen"
       ],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "aerobe",
         "anaerobe",
         "facultative",
@@ -4298,19 +4313,19 @@
       "name": "repository",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "reservoir_name": {
       "name": "reservoir_name",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "resins_pc": {
       "name": "resins_pc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "resp_part_matter": {
       "name": "resp_part_matter",
@@ -4318,175 +4333,175 @@
         "respirable particulate matter"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "risk_group": {
       "name": "risk_group",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "room_air_exch_rate": {
       "name": "room_air_exch_rate",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "room_architec_elem": {
       "name": "room_architec_elem",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "room_condt": {
       "name": "room_condt",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "room_connected": {
       "name": "room_connected",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "room_count": {
       "name": "room_count",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "room_dim": {
       "name": "room_dim",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "room_door_dist": {
       "name": "room_door_dist",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "room_door_share": {
       "name": "room_door_share",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "room_hallway": {
       "name": "room_hallway",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "room_loc": {
       "name": "room_loc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "room_moist_dam_hist": {
       "name": "room_moist_dam_hist",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "room_net_area": {
       "name": "room_net_area",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "room_occup": {
       "name": "room_occup",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "room_samp_pos": {
       "name": "room_samp_pos",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "room_type": {
       "name": "room_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "room_vol": {
       "name": "room_vol",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "room_wall_share": {
       "name": "room_wall_share",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "room_window_count": {
       "name": "room_window_count",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "root_cond": {
       "name": "root_cond",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "root_med_carbon": {
       "name": "root_med_carbon",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "root_med_macronutr": {
       "name": "root_med_macronutr",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "root_med_micronutr": {
       "name": "root_med_micronutr",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "root_med_ph": {
       "name": "root_med_ph",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "root_med_regl": {
       "name": "root_med_regl",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "root_med_solid": {
       "name": "root_med_solid",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "root_med_suppl": {
       "name": "root_med_suppl",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "route_transmission": {
       "name": "route_transmission",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "salinity": {
       "name": "salinity",
@@ -4494,7 +4509,7 @@
         "salinity"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "salinity_meth": {
       "name": "salinity_meth",
@@ -4503,7 +4518,7 @@
       ],
       "type": "reference",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "salt_regm": {
       "name": "salt_regm",
@@ -4511,19 +4526,19 @@
         "salt regimen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "same_as": {
       "name": "same_as",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_capt_status": {
       "name": "samp_capt_status",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_collect_device": {
       "name": "samp_collect_device",
@@ -4531,43 +4546,43 @@
         "sample collection device or method"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_collect_method": {
       "name": "samp_collect_method",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_collect_point": {
       "name": "samp_collect_point",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_dis_stage": {
       "name": "samp_dis_stage",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_floor": {
       "name": "samp_floor",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_loc_condition": {
       "name": "samp_loc_condition",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_loc_corr_rate": {
       "name": "samp_loc_corr_rate",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_mat_process": {
       "name": "samp_mat_process",
@@ -4575,49 +4590,49 @@
         "sample material processing"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_mat_type": {
       "name": "samp_mat_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_md": {
       "name": "samp_md",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_pooling": {
       "name": "samp_pooling",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_preserv": {
       "name": "samp_preserv",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_rep_biol": {
       "name": "samp_rep_biol",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_rep_tech": {
       "name": "samp_rep_tech",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_room_id": {
       "name": "samp_room_id",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_salinity": {
       "name": "samp_salinity",
@@ -4625,37 +4640,37 @@
         "sample salinity"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_size": {
       "name": "samp_size",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_sort_meth": {
       "name": "samp_sort_meth",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_source_mat_cat": {
       "name": "samp_source_mat_cat",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_stor_device": {
       "name": "samp_stor_device",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_stor_media": {
       "name": "samp_stor_media",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_store_dur": {
       "name": "samp_store_dur",
@@ -4663,7 +4678,7 @@
         "sample storage duration"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_store_loc": {
       "name": "samp_store_loc",
@@ -4671,13 +4686,13 @@
         "sample storage location"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_store_sol": {
       "name": "samp_store_sol",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_store_temp": {
       "name": "samp_store_temp",
@@ -4685,55 +4700,55 @@
         "sample storage temperature"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_subtype": {
       "name": "samp_subtype",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_surf_moisture": {
       "name": "samp_surf_moisture",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_time_out": {
       "name": "samp_time_out",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_transport_cond": {
       "name": "samp_transport_cond",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_transport_cont": {
       "name": "samp_transport_cont",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_transport_dur": {
       "name": "samp_transport_dur",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_transport_temp": {
       "name": "samp_transport_temp",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_tvdss": {
       "name": "samp_tvdss",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_vol_we_dna_ext": {
       "name": "samp_vol_we_dna_ext",
@@ -4741,55 +4756,55 @@
         "sample weight for DNA extraction"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_weather": {
       "name": "samp_weather",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "samp_well_name": {
       "name": "samp_well_name",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "sars_cov_2_diag_gene_name_1": {
       "name": "sars_cov_2_diag_gene_name_1",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "sars_cov_2_diag_gene_name_2": {
       "name": "sars_cov_2_diag_gene_name_2",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "sars_cov_2_diag_pcr_ct_value_1": {
       "name": "sars_cov_2_diag_pcr_ct_value_1",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "sars_cov_2_diag_pcr_ct_value_2": {
       "name": "sars_cov_2_diag_pcr_ct_value_2",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "saturates_pc": {
       "name": "saturates_pc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "season": {
       "name": "season",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "season_environment": {
       "name": "season_environment",
@@ -4797,31 +4812,31 @@
         "seasonal environment"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "season_humidity": {
       "name": "season_humidity",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "season_precpt": {
       "name": "season_precpt",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "season_temp": {
       "name": "season_temp",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "season_use": {
       "name": "season_use",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "secondary_treatment": {
       "name": "secondary_treatment",
@@ -4829,7 +4844,7 @@
         "secondary treatment"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "sediment_type": {
       "name": "sediment_type",
@@ -4837,7 +4852,7 @@
         "sediment type"
       ],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "biogenous",
         "cosmogenous",
         "hydrogenous",
@@ -4848,31 +4863,31 @@
       "name": "sequenced_by",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "serogroup": {
       "name": "serogroup",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "serotype": {
       "name": "serotype",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "serovar": {
       "name": "serovar",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "serovar_or_serotype": {
       "name": "serovar_or_serotype",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "sewage_type": {
       "name": "sewage_type",
@@ -4880,7 +4895,7 @@
         "sewage type"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "sexual_act": {
       "name": "sexual_act",
@@ -4888,37 +4903,37 @@
         "sexual activity"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "shad_dev_water_mold": {
       "name": "shad_dev_water_mold",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "shading_device_cond": {
       "name": "shading_device_cond",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "shading_device_loc": {
       "name": "shading_device_loc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "shading_device_mat": {
       "name": "shading_device_mat",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "shading_device_type": {
       "name": "shading_device_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "sieving": {
       "name": "sieving",
@@ -4926,7 +4941,7 @@
         "composite design/sieving (if any)"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "silicate": {
       "name": "silicate",
@@ -4934,25 +4949,25 @@
         "silicate"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "size_frac": {
       "name": "size_frac",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "size_frac_low": {
       "name": "size_frac_low",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "size_frac_up": {
       "name": "size_frac_up",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "slope_aspect": {
       "name": "slope_aspect",
@@ -4960,7 +4975,7 @@
         "slope aspect"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "slope_gradient": {
       "name": "slope_gradient",
@@ -4968,7 +4983,7 @@
         "slope gradient"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "sludge_retent_time": {
       "name": "sludge_retent_time",
@@ -4976,7 +4991,7 @@
         "sludge retention time"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "smoker": {
       "name": "smoker",
@@ -4984,7 +4999,7 @@
         "smoker"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "sodium": {
       "name": "sodium",
@@ -4992,67 +5007,67 @@
         "sodium"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "soil_conductivity": {
       "name": "soil_conductivity",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "soil_cover": {
       "name": "soil_cover",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "soil_depth": {
       "name": "soil_depth",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "soil_horizon": {
       "name": "soil_horizon",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "soil_ph": {
       "name": "soil_ph",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "soil_porosity": {
       "name": "soil_porosity",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "soil_temp": {
       "name": "soil_temp",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "soil_text_measure": {
       "name": "soil_text_measure",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "soil_texture_class": {
       "name": "soil_texture_class",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "soil_texture_meth": {
       "name": "soil_texture_meth",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "soil_type": {
       "name": "soil_type",
@@ -5060,7 +5075,7 @@
         "soil type"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "soil_type_meth": {
       "name": "soil_type_meth",
@@ -5069,7 +5084,7 @@
       ],
       "type": "reference",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "solar_irradiance": {
       "name": "solar_irradiance",
@@ -5077,7 +5092,7 @@
         "solar irradiance"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "soluble_inorg_mat": {
       "name": "soluble_inorg_mat",
@@ -5085,7 +5100,7 @@
         "soluble inorganic material"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "soluble_org_mat": {
       "name": "soluble_org_mat",
@@ -5093,7 +5108,7 @@
         "soluble organic material"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "soluble_react_phosp": {
       "name": "soluble_react_phosp",
@@ -5101,7 +5116,7 @@
         "soluble reactive phosphorus"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "source_material_id": {
       "name": "source_material_id",
@@ -5109,13 +5124,13 @@
         "source material identifiers"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "source_name": {
       "name": "source_name",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "special_diet": {
       "name": "special_diet",
@@ -5123,7 +5138,7 @@
         "special diet"
       ],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "low carb",
         "reduced calorie",
         "vegetarian",
@@ -5134,13 +5149,13 @@
       "name": "specific",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "specific_humidity": {
       "name": "specific_humidity",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "specimen_voucher": {
       "name": "specimen_voucher",
@@ -5148,80 +5163,80 @@
         "specimen voucher"
       ],
       "format_pattern": "",
-      "cv_terms": [],
+      "allowed_values": [],
       "allow_multiple": true
     },
     "spikein_amr": {
       "name": "spikein_amr",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "spikein_antibiotic": {
       "name": "spikein_antibiotic",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "spikein_count": {
       "name": "spikein_count",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "spikein_growth_med": {
       "name": "spikein_growth_med",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "spikein_metal": {
       "name": "spikein_metal",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "spikein_org": {
       "name": "spikein_org",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "spikein_serovar": {
       "name": "spikein_serovar",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "spikein_strain": {
       "name": "spikein_strain",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "sr_dep_env": {
       "name": "sr_dep_env",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "sr_geol_age": {
       "name": "sr_geol_age",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "sr_kerog_type": {
       "name": "sr_kerog_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "sr_lithology": {
       "name": "sr_lithology",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "standing_water_regm": {
       "name": "standing_water_regm",
@@ -5229,13 +5244,13 @@
         "standing water regimen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ster_meth_samp_room": {
       "name": "ster_meth_samp_room",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "store_cond": {
       "name": "store_cond",
@@ -5243,19 +5258,19 @@
         "storage conditions (fresh/frozen/other)"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "stress": {
       "name": "stress",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "stud_book_number": {
       "name": "stud_book_number",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "study_complt_stat": {
       "name": "study_complt_stat",
@@ -5263,61 +5278,61 @@
         "study completion status"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "study_design": {
       "name": "study_design",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "study_inc_dur": {
       "name": "study_inc_dur",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "study_inc_temp": {
       "name": "study_inc_temp",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "study_timecourse": {
       "name": "study_timecourse",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "study_tmnt": {
       "name": "study_tmnt",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "sub_species": {
       "name": "sub_species",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "subclone": {
       "name": "subclone",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "subgroup": {
       "name": "subgroup",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "subject_is_affected": {
       "name": "subject_is_affected",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "subspecf_gen_lin": {
       "name": "subspecf_gen_lin",
@@ -5325,19 +5340,19 @@
         "subspecific genetic lineage"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "subsrc_note": {
       "name": "subsrc_note",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "substrain": {
       "name": "substrain",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "substrate": {
       "name": "substrate",
@@ -5345,13 +5360,13 @@
         "substrate"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "substructure_type": {
       "name": "substructure_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "crawlspace",
         "slab on grade",
         "basement"
@@ -5361,7 +5376,7 @@
       "name": "subtype",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "sulfate": {
       "name": "sulfate",
@@ -5369,13 +5384,13 @@
         "sulfate"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "sulfate_fw": {
       "name": "sulfate_fw",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "sulfide": {
       "name": "sulfide",
@@ -5383,13 +5398,13 @@
         "sulfide"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "super_population_code": {
       "name": "super_population_code",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "AFR",
         "AMR",
         "EAS",
@@ -5401,7 +5416,7 @@
       "name": "super_population_description",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "African",
         "Ad Mixed American",
         "East Asian",
@@ -5413,7 +5428,7 @@
       "name": "surf_air_cont",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "dust",
         "organic matter",
         "particulate matter",
@@ -5428,13 +5443,13 @@
       "name": "surf_humidity",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "surf_material": {
       "name": "surf_material",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "concrete",
         "wood",
         "stone",
@@ -5456,19 +5471,19 @@
       "name": "surf_moisture",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "surf_moisture_ph": {
       "name": "surf_moisture_ph",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "surf_temp": {
       "name": "surf_temp",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "suspend_part_matter": {
       "name": "suspend_part_matter",
@@ -5476,7 +5491,7 @@
         "suspended particulate matter"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "suspend_solids": {
       "name": "suspend_solids",
@@ -5484,31 +5499,31 @@
         "suspended solids"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "sym_life_cycle_type": {
       "name": "sym_life_cycle_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "symbiont_host_role": {
       "name": "symbiont_host_role",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "tan": {
       "name": "tan",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "teleomorph": {
       "name": "teleomorph",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "temp": {
       "name": "temp",
@@ -5516,13 +5531,13 @@
         "temperature"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "temp_out": {
       "name": "temp_out",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "tertiary_treatment": {
       "name": "tertiary_treatment",
@@ -5530,7 +5545,7 @@
         "tertiary treatment"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "tidal_stage": {
       "name": "tidal_stage",
@@ -5538,7 +5553,7 @@
         "tidal stage"
       ],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "low",
         "high"
       ]
@@ -5549,7 +5564,7 @@
         "history/tillage"
       ],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "drill",
         "cutting disc",
         "ridge till",
@@ -5565,7 +5580,7 @@
       "name": "time",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "time_last_toothbrush": {
       "name": "time_last_toothbrush",
@@ -5573,7 +5588,7 @@
         "time since last toothbrushing"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "time_since_last_wash": {
       "name": "time_since_last_wash",
@@ -5581,13 +5596,13 @@
         "time since last wash"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "timepoint": {
       "name": "timepoint",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "tiss_cult_growth_med": {
       "name": "tiss_cult_growth_med",
@@ -5596,19 +5611,19 @@
       ],
       "type": "reference",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "tissue_lib": {
       "name": "tissue_lib",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "toluene": {
       "name": "toluene",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "tot_carb": {
       "name": "tot_carb",
@@ -5616,7 +5631,7 @@
         "total carbon"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "tot_depth_water_col": {
       "name": "tot_depth_water_col",
@@ -5624,7 +5639,7 @@
         "total depth of water column"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "tot_diss_nitro": {
       "name": "tot_diss_nitro",
@@ -5632,7 +5647,7 @@
         "total dissolved nitrogen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "tot_inorg_nitro": {
       "name": "tot_inorg_nitro",
@@ -5640,13 +5655,13 @@
         "total inorganic nitrogen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "tot_iron": {
       "name": "tot_iron",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "tot_mass": {
       "name": "tot_mass",
@@ -5654,7 +5669,7 @@
         "total mass"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "tot_n_meth": {
       "name": "tot_n_meth",
@@ -5663,7 +5678,7 @@
       ],
       "type": "reference",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "tot_nitro": {
       "name": "tot_nitro",
@@ -5671,13 +5686,13 @@
         "total nitrogen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "tot_nitro_cont_meth": {
       "name": "tot_nitro_cont_meth",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "tot_org_c_meth": {
       "name": "tot_org_c_meth",
@@ -5686,7 +5701,7 @@
       ],
       "type": "reference",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "tot_org_carb": {
       "name": "tot_org_carb",
@@ -5694,7 +5709,7 @@
         "total organic carbon"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "tot_part_carb": {
       "name": "tot_part_carb",
@@ -5702,7 +5717,7 @@
         "total particulate carbon"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "tot_phosp": {
       "name": "tot_phosp",
@@ -5710,7 +5725,7 @@
         "total phosphorus"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "tot_phosphate": {
       "name": "tot_phosphate",
@@ -5718,31 +5733,31 @@
         "total phosphate"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "tot_sulfur": {
       "name": "tot_sulfur",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "train_line": {
       "name": "train_line",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "train_stat_loc": {
       "name": "train_stat_loc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "train_stop_loc": {
       "name": "train_stop_loc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "travel_out_six_month": {
       "name": "travel_out_six_month",
@@ -5750,13 +5765,13 @@
         "travel outside the country in last six months"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "treatment": {
       "name": "treatment",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "trophic_level": {
       "name": "trophic_level",
@@ -5764,7 +5779,7 @@
         "trophic level"
       ],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "autotroph",
         "carboxydotroph",
         "chemoautotroph",
@@ -5804,19 +5819,19 @@
         "turbidity"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "tvdss_of_hcr_press": {
       "name": "tvdss_of_hcr_press",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "tvdss_of_hcr_temp": {
       "name": "tvdss_of_hcr_temp",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "twin_sibling": {
       "name": "twin_sibling",
@@ -5824,25 +5839,25 @@
         "twin sibling presence"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "type_of_symbiosis": {
       "name": "type_of_symbiosis",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "type_status": {
       "name": "type_status",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "type_strain": {
       "name": "type_strain",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "urine_collect_meth": {
       "name": "urine_collect_meth",
@@ -5850,7 +5865,7 @@
         "urine/collection method"
       ],
       "format_pattern": "",
-      "cv_terms": [
+      "allowed_values": [
         "clean catch",
         "catheter"
       ]
@@ -5861,7 +5876,7 @@
         "urogenital disorder"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "urogenit_tract_disor": {
       "name": "urogenit_tract_disor",
@@ -5869,19 +5884,19 @@
         "urine/urogenital tract disorder"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "vaccine_received": {
       "name": "vaccine_received",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "variety": {
       "name": "variety",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ventilation_rate": {
       "name": "ventilation_rate",
@@ -5889,37 +5904,37 @@
         "ventilation rate"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "vfa": {
       "name": "vfa",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "vfa_fw": {
       "name": "vfa_fw",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "virus_isolate_of_prior_infection": {
       "name": "virus_isolate_of_prior_infection",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "vis_media": {
       "name": "vis_media",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "viscosity": {
       "name": "viscosity",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "volatile_org_comp": {
       "name": "volatile_org_comp",
@@ -5927,61 +5942,61 @@
         "volatile organic compounds"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "wall_area": {
       "name": "wall_area",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "wall_const_type": {
       "name": "wall_const_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "wall_finish_mat": {
       "name": "wall_finish_mat",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "wall_height": {
       "name": "wall_height",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "wall_loc": {
       "name": "wall_loc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "wall_surf_treatment": {
       "name": "wall_surf_treatment",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "wall_texture": {
       "name": "wall_texture",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "wall_thermal_mass": {
       "name": "wall_thermal_mass",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "wall_water_mold": {
       "name": "wall_water_mold",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "wastewater_type": {
       "name": "wastewater_type",
@@ -5989,7 +6004,7 @@
         "wastewater type"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "water_content": {
       "name": "water_content",
@@ -5997,7 +6012,7 @@
         "water content"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "water_content_soil": {
       "name": "water_content_soil",
@@ -6005,7 +6020,7 @@
         "water content of soil"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "water_content_soil_meth": {
       "name": "water_content_soil_meth",
@@ -6014,61 +6029,61 @@
       ],
       "type": "reference",
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "water_current": {
       "name": "water_current",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "water_cut": {
       "name": "water_cut",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "water_feat_size": {
       "name": "water_feat_size",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "water_feat_type": {
       "name": "water_feat_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "water_frequency": {
       "name": "water_frequency",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "water_ph": {
       "name": "water_ph",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "water_prod_rate": {
       "name": "water_prod_rate",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "water_source_adjac": {
       "name": "water_source_adjac",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "water_source_shared": {
       "name": "water_source_shared",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "water_temp_regm": {
       "name": "water_temp_regm",
@@ -6076,7 +6091,7 @@
         "water temperature regimen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "watering_regm": {
       "name": "watering_regm",
@@ -6084,13 +6099,13 @@
         "watering regimen"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "weekday": {
       "name": "weekday",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "weight_loss_3_month": {
       "name": "weight_loss_3_month",
@@ -6098,7 +6113,7 @@
         "weight loss in last three months"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "wet_mass": {
       "name": "wet_mass",
@@ -6106,13 +6121,13 @@
         "wet mass"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "win": {
       "name": "win",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "wind_direction": {
       "name": "wind_direction",
@@ -6120,7 +6135,7 @@
         "wind direction"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "wind_speed": {
       "name": "wind_speed",
@@ -6128,289 +6143,289 @@
         "wind speed"
       ],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "window_cond": {
       "name": "window_cond",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "window_cover": {
       "name": "window_cover",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "window_horiz_pos": {
       "name": "window_horiz_pos",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "window_loc": {
       "name": "window_loc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "window_mat": {
       "name": "window_mat",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "window_open_freq": {
       "name": "window_open_freq",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "window_size": {
       "name": "window_size",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "window_status": {
       "name": "window_status",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "window_type": {
       "name": "window_type",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "window_vert_pos": {
       "name": "window_vert_pos",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "window_water_mold": {
       "name": "window_water_mold",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_endog_control_1": {
       "name": "ww_endog_control_1",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_endog_control_1_conc": {
       "name": "ww_endog_control_1_conc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_endog_control_1_protocol": {
       "name": "ww_endog_control_1_protocol",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_endog_control_1_units": {
       "name": "ww_endog_control_1_units",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_endog_control_2": {
       "name": "ww_endog_control_2",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_endog_control_2_conc": {
       "name": "ww_endog_control_2_conc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_endog_control_2_protocol": {
       "name": "ww_endog_control_2_protocol",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_endog_control_2_units": {
       "name": "ww_endog_control_2_units",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_flow": {
       "name": "ww_flow",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_industrial_effluent_percent": {
       "name": "ww_industrial_effluent_percent",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_ph": {
       "name": "ww_ph",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_population_source": {
       "name": "ww_population_source",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_pre_treatment": {
       "name": "ww_pre_treatment",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_primary_sludge_retention_time": {
       "name": "ww_primary_sludge_retention_time",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_processing_protocol": {
       "name": "ww_processing_protocol",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_sample_salinity": {
       "name": "ww_sample_salinity",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_sample_site": {
       "name": "ww_sample_site",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_surv_jurisdiction": {
       "name": "ww_surv_jurisdiction",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_surv_system_sample_id": {
       "name": "ww_surv_system_sample_id",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_surv_target_1_conc": {
       "name": "ww_surv_target_1_conc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_surv_target_1_conc_unit": {
       "name": "ww_surv_target_1_conc_unit",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_surv_target_1_extract": {
       "name": "ww_surv_target_1_extract",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_surv_target_1_extract_unit": {
       "name": "ww_surv_target_1_extract_unit",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_surv_target_1_gene": {
       "name": "ww_surv_target_1_gene",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_surv_target_1_protocol": {
       "name": "ww_surv_target_1_protocol",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_surv_target_2": {
       "name": "ww_surv_target_2",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_surv_target_2_conc": {
       "name": "ww_surv_target_2_conc",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_surv_target_2_conc_unit": {
       "name": "ww_surv_target_2_conc_unit",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_surv_target_2_extract": {
       "name": "ww_surv_target_2_extract",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_surv_target_2_extract_unit": {
       "name": "ww_surv_target_2_extract_unit",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_surv_target_2_gene": {
       "name": "ww_surv_target_2_gene",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_surv_target_2_known_present": {
       "name": "ww_surv_target_2_known_present",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_surv_target_2_protocol": {
       "name": "ww_surv_target_2_protocol",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_temperature": {
       "name": "ww_temperature",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "ww_total_suspended_solids": {
       "name": "ww_total_suspended_solids",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     },
     "xylene": {
       "name": "xylene",
       "synonyms": [],
       "format_pattern": "",
-      "cv_terms": []
+      "allowed_values": []
     }
   },
   "packages": {
