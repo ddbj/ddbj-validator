@@ -66,7 +66,6 @@ def get_skipped_rules(skip_db=False, skip_ncbi=False, skip_auth=False):
         skipped_rules.update(rdb_hardcoded)
         
     # [B] Taxonomy / ネットワーク必須ルール 
-    # (NCBI APIが使えない Localモード のみスキップ。NCBI APIモードではスキップしない)
     if skip_ncbi:
         tax_hardcoded = [
             "ANN1025", 
@@ -75,6 +74,12 @@ def get_skipped_rules(skip_db=False, skip_ncbi=False, skip_auth=False):
             "ANN4210", "ANN4240"
         ]
         skipped_rules.update(tax_hardcoded)
+
+    # =========================================================
+    # [C] 認証必須ルール (Orchestrator直書きのため手動で追加)
+    # =========================================================
+    if skip_auth:
+        skipped_rules.update(["ANN0422", "ANN0463", "ANN0481"])
         
     return skipped_rules
 
@@ -267,10 +272,11 @@ def run_e2e_tests(target_rule_id=None, mode="curator", skip_only=False, docker_i
         
     skip_db = mode in ["local", "ncbi"]
     skip_ncbi = mode == "local"
-    skip_auth = mode == "auth-skip"
+    # 修正: DBスキップ時(local, ncbi)は、自動的に skip_auth も True になるよう変更
+    skip_auth = (mode == "auth-skip") or skip_db
 
     mode_skipped_rules = get_skipped_rules(skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
-    
+        
     auth_check_rules = {"ANN0422", "ANN0463", "ANN0481"}
     
     # モードに応じたルールの絞り込み・スキップ制御
