@@ -9,7 +9,6 @@ COMMON	SUBMITTER		ab_name	Mishima,H.
 			city	Mishima
 			street	Yata 1111
 			zip	411-8540
-	DATATYPE		type	EST
 	DIVISION		division	EST
 	KEYWORD		keyword	unspecified EST
 	REFERENCE		title	Mouse Genome Sequencing

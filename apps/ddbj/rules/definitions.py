@@ -26,9 +26,9 @@ class ANN_DICT_VALIDATOR(BaseRule):
         features_dict = ddbj_dict.get("features", {})
         qualifiers_dict = ddbj_dict.get("qualifiers", {})
         
-        # COMMON のフィーチャー数を事前にカウント
-        common_counts, active_datatypes = self._get_common_stats(records)
-
+        common_counts, _ = self._get_common_stats(records)
+        active_datatypes = context.active_datatypes
+        
         active_divisions_dict = get_active_divisions(records, ddbj_dict, tax_data)
         active_dt_divisions = active_divisions_dict.get("datatype", set())
 

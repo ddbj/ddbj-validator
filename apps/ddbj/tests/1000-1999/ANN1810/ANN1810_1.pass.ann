@@ -10,7 +10,6 @@ COMMON	SUBMITTER		ab_name	Mishima,H.
 			street	Yata 1111
 			zip	411-8540
 	DIVISION		division	ENV
-	DATATYPE		type	ENV
 	REFERENCE		title	Mouse Genome Sequencing
 			ab_name	Robertson,G.R.
 			ab_name	Mishima,H.

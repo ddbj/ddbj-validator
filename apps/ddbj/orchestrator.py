@@ -42,11 +42,12 @@ from apps.ddbj.utils.features import get_features
 # ============================================================================
 def _validate_single_file_set(args):
     (
-        ann_path, seq_path, context, tax_data, bs_data, is_web_mode, report_out_dir, tmp_dir_str
+        ann_path, seq_path, context, tax_data, bs_data, is_web_mode, report_out_dir, tmp_dir_str, unauthorized_accs
     ) = args
 
     from apps.ddbj.preprocessor import preprocess_files
     from apps.ddbj.parser import parse_ddbj_submission
+    from apps.ddbj.utils.features import get_features # 追加
     
     ann_lines, fasta_content, pre_warnings = preprocess_files(ann_path, seq_path)
     records, parse_errors = parse_ddbj_submission(
@@ -66,6 +67,27 @@ def _validate_single_file_set(args):
 
     file_results.extend(pre_warnings + parse_errors)
 
+    # ====================================================
+    # アカウント権限エラーのファイル単位判定
+    # ====================================================
+    if unauthorized_accs and any(unauthorized_accs.values()):
+        for entry_id, record in records.items():
+            for feature in get_features(record, "DBLINK"):
+                for acc in feature.qualifiers.get("project", []):
+                    if acc in unauthorized_accs.get("bioproject", set()):
+                        msg = f"BioProject accession is not associated with this account. (Found: '{acc}')"
+                        file_results.append({"file": Path(ann_path).name, "full_path": str(ann_path), "rule": "ANN0422", "level": "ERROR", "entry": entry_id, "feature_type": "DBLINK", "target": "project", "message": msg, "line_number": getattr(feature, "line_number", None), "category": "auth"})
+                
+                for acc in feature.qualifiers.get("biosample", []):
+                    if acc in unauthorized_accs.get("biosample", set()):
+                        msg = f"BioSample accession is not associated with this account. (Found: '{acc}')"
+                        file_results.append({"file": Path(ann_path).name, "full_path": str(ann_path), "rule": "ANN0463", "level": "ERROR", "entry": entry_id, "feature_type": "DBLINK", "target": "biosample", "message": msg, "line_number": getattr(feature, "line_number", None), "category": "auth"})
+                
+                for acc in feature.qualifiers.get("sequence read archive", []):
+                    if acc in unauthorized_accs.get("sra", set()):
+                        msg = f"DRR accession is not associated with this account. (Found: '{acc}')"
+                        file_results.append({"file": Path(ann_path).name, "full_path": str(ann_path), "rule": "ANN0481", "level": "ERROR", "entry": entry_id, "feature_type": "DBLINK", "target": "sequence read archive", "message": msg, "line_number": getattr(feature, "line_number", None), "category": "auth"})
+                        
     val_results = validator.run(records, ann_path, seq_path, ann_lines=ann_lines, fasta_content=fasta_content)
     file_results.extend(val_results)
     
@@ -102,7 +124,7 @@ def _validate_single_file_set(args):
                 "rule": rule_id,
                 "updates": updates
             })
-                                     
+                                      
     if tax_data:
         tax_proposals = propose_taxonomy_updates(records, tax_data, ann_path)
         file_proposals.extend(tax_proposals)
@@ -124,9 +146,10 @@ def _validate_single_file_set(args):
                 })
                                                 
         file_proposals.extend(propose_transl_table_fixes(records, tax_data, ann_path))
-                        
+
     if bs_data:
-        props, bs_warnings, skips = propose_qualifiers_updates(records, bs_data, ann_path)
+        unauth_bs = unauthorized_accs.get("biosample", set()) if unauthorized_accs else set()
+        props, bs_warnings, skips = propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=unauth_bs)
         file_proposals.extend(props)
         file_skipped_autofixes.extend(skips)
         file_results.extend(bs_warnings)
@@ -470,7 +493,7 @@ def fast_copy_and_fix_fasta(fasta_content, dst_fasta_path):
                 
                 
 class ValidatorPipeline:
-    def __init__(self, pairs, report_out_dir, is_web_mode, force_fix, jobs=1, skip_db=False, skip_ncbi=False, skip_auth=False):
+    def __init__(self, pairs, report_out_dir, is_web_mode, force_fix, jobs=1, skip_db=False, skip_ncbi=False, skip_auth=False, account_id=None, is_curator_mode=True):
         self.pairs = pairs
         self.report_out_dir = report_out_dir
         self.is_web_mode = is_web_mode
@@ -479,7 +502,13 @@ class ValidatorPipeline:
         
         self.skip_db = skip_db
         self.skip_ncbi = skip_ncbi
-        self.skip_auth = skip_auth
+        
+        # DBをスキップする(ローカル利用)場合は、権限必須ルールも強制スキップ
+        self.skip_auth = True if self.skip_db else skip_auth
+        
+        self.account_id = account_id
+        self.is_curator_mode = is_curator_mode
+        self.unauthorized_accs = {"bioproject": set(), "biosample": set(), "sra": set()}        
         
         self.all_interactive_proposals = []
         self.all_skipped_autofixes = []
@@ -524,6 +553,28 @@ class ValidatorPipeline:
             if not self.skip_db:
                 db_manager = DatabaseManager()
                 try:
+                    # =========================================================
+                    # ★ ゲートキーパー: アカウント権限の事前チェック
+                    # =========================================================
+                    if not self.is_curator_mode and self.account_id:
+                        print(f"\n[Auth Check] Verifying access rights for account: '{self.account_id}'...")
+                        from apps.ddbj.db_auth import fetch_authorized_accessions
+                        auth_prjs, auth_sams, auth_drrs = fetch_authorized_accessions(
+                            db_manager.get_bp_conn(),
+                            db_manager.get_bs_conn(),
+                            db_manager.get_dra_conn(),
+                            self.account_id
+                        )
+
+                        self.unauthorized_accs["bioproject"] = all_projects - auth_prjs
+                        self.unauthorized_accs["biosample"] = all_samds - auth_sams
+                        self.unauthorized_accs["sra"] = all_drrs - auth_drrs
+
+                        # 権限がないアクセッションが含まれていれば、以後の認証必須ルールをスキップする
+                        if any(self.unauthorized_accs.values()):
+                            print("[WARN] Unauthorized accession numbers referenced. Disable rules requiring account authorization.")
+                            self.skip_auth = True
+
                     if all_organisms or all_samds or all_projects or all_drrs:
                         print("\nChecking Internal DB...")
 
@@ -565,13 +616,6 @@ class ValidatorPipeline:
                                 smp_id_to_samd = fetch_samd_by_smp_id(db_manager.get_bs_conn(), list(dra_smps))
                 except Exception as e:
                     print(f"[ERROR] Database connection failed: {e}")
-                    print(f"\n[ ERROR ] Database connection failed: {e}")
-                    print("[ For users ] ")
-                    print("="*80)
-                    print("Please append:")
-                    print("   -n (or --ncbi-api) : Use public NCBI API for taxonomy/accession checks (Recommended)")
-                    print("   -l (or --local)    : Run offline (skips all DB/API dependent checks)")
-                    print("="*80 + "\n")
                 finally:
                     db_manager.close_all()
             else:
@@ -617,7 +661,7 @@ class ValidatorPipeline:
 
         # --- Context の初期化 (共通ルート) ---
         context = ValidationContext(
-            is_curator_mode=not self.skip_db,  # skip_db の場合はキュレーター権限オフ扱い
+            is_curator_mode=self.is_curator_mode and not self.skip_db,
             is_web_mode=self.is_web_mode,
             skip_db=self.skip_db,
             skip_ncbi=self.skip_ncbi,
@@ -659,7 +703,7 @@ class ValidatorPipeline:
 
         tasks = []
         for ann_path, seq_path in self.pairs:
-            tasks.append((ann_path, seq_path, context, self.tax_data, self.bs_data, self.is_web_mode, self.report_out_dir, str(self.tmp_dir)))
+            tasks.append((ann_path, seq_path, context, self.tax_data, self.bs_data, self.is_web_mode, self.report_out_dir, str(self.tmp_dir), self.unauthorized_accs))
             
         jsonl_paths = []
         with ProcessPoolExecutor(max_workers=self.jobs) as executor:
@@ -709,7 +753,7 @@ class ValidatorPipeline:
                     "file": "Submission (across files)", "full_path": "", "rule": "ANN2520",
                     "level": "ERROR", "entry": "ALL_ENTRIES", "feature_type": "locus_tag", "target": "locus_tag", "message": msg
                 })
-                                
+                
         # クロスファイルのチェック結果も専用の JSONL に書き出して先頭に追加
         if cross_file_results:
             cross_jsonl = self.tmp_dir / "Submission_Cross_File.jsonl"

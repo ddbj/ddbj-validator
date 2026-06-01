@@ -9,7 +9,6 @@ COMMON	SUBMITTER		ab_name	Mishima,H.
 			city	Mishima
 			street	Yata 1111
 			zip	411-8540
-	DATATYPE		type	TSA
 	DIVISION		division	TSA
 	KEYWORD		keyword	TSA 
 			keyword	Transcriptome Shotgun Assembly
