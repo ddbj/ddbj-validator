@@ -1,5 +1,4 @@
 COMMON	DIVISION		division	TSA
-	DATATYPE		type	TSA
 	KEYWORD		keyword	TSA
 			keyword	Transcriptome Shotgun Assembly
 	DBLINK		project	PRJDB4387
@@ -28,6 +27,6 @@ COMMON	DIVISION		division	TSA
 seq1	source	1..120	organism	Mus musculus
 			mol_type	transcribed RNA
 			collection_date	2020-01-01
-			geo_loc_name	Japan:Shizuoka, Mishima
+			geo_loc_name	Malaysia
 			tissue_type	brain
 			submitter_seqid	@@[entry]@@

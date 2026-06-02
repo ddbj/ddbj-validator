@@ -17,11 +17,13 @@ def _extract_samd_from_single_record(record):
                 if match: samd_list.append(match.group(1))
     return samd_list
 
-def propose_qualifiers_updates(records, bs_data, ann_path):
+def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None):
     proposals = []
     skipped_warnings = []
     validation_warnings = []
     
+    unauth_set = unauthorized_bs or set()
+
     target_attrs = ["bio_material", "collection_date", "geo_loc_name", "culture_collection",
                     "host", "lat_lon", "sex", "specimen_voucher", "strain", "isolate", "ecotype", 
                     "cultivar", "cell_line"]
@@ -36,12 +38,13 @@ def propose_qualifiers_updates(records, bs_data, ann_path):
         if not active_samds: continue
 
         valid_samds = [s for s in active_samds if s in bs_data]
-        missing_samds = [s for s in active_samds if s not in bs_data]
+        # 権限エラーで除外されたものは missing 扱いしない
+        missing_samds = [s for s in active_samds if s not in bs_data and s not in unauth_set]
         
         if missing_samds:
             print(f"[WARN] {entry_id}: BioSample data for {', '.join(missing_samds)} not found in DB.")
         if not valid_samds: continue
-
+        
         for feature in record.features:
             for attr in target_attrs:
                 if attr in feature.qualifiers:

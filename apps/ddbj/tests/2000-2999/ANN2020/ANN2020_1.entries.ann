@@ -89,7 +89,7 @@ seq11	source	1..120	organism	Mus musculus
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
 	variation	119	replace	c
-			note	ANN2020 pass            
+			note	ANN2020 pass
 seq12	source	1..120	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
@@ -101,7 +101,7 @@ seq13	source	1..120	organism	Mus musculus
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
 	variation	119^119	replace	c
-			note	ANN2020 fail         
+			note	ANN2020 fail
 seq14	source	1..120	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
@@ -119,13 +119,13 @@ seq16	source	1..120	organism	Mus musculus
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
 	CDS	join(20..50,40..60)	product	test10
-			note	ANN2020 fail            
+			note	ANN2020 fail
 seq17	source	1..120	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
 	CDS	20..050	product	test10
-			note	ANN2020 fail   
+			note	ANN2020 fail
 seq18	source	1..120	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01

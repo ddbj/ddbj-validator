@@ -10,7 +10,6 @@ COMMON	SUBMITTER		ab_name	Mishima,H.
 			street	Yata 1111
 			zip	411-8540
 	DIVISION		division	TSA
-	DATATYPE		type	TSA
 	DBLINK		project	PRJDB1
 			biosample	SAMD01797189
 			biosample	SAMD01797190

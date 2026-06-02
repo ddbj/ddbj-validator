@@ -30,4 +30,3 @@ seq3	source	1..120	organism	Mus musculus
 			geo_loc_name	Japan:Shizuoka, Mishima
 	assembly_gap	118..120	estimated_length	3
 			gap_type	contamination
-    

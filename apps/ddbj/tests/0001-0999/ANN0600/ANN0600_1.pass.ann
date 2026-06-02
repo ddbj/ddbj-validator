@@ -15,7 +15,6 @@ COMMON	SUBMITTER		ab_name	Mishima,H.
 			year	2026
 			status	Unpublished
 	DATE		hold_date	20280101
-	DATATYPE		type	TSA
 	DIVISION		division	TSA
 	KEYWORD		keyword	TSA
 			keyword	Transcriptome Shotgun Assembly

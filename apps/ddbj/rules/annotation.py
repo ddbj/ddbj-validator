@@ -826,8 +826,8 @@ class ANN0462(BaseRule):
         return results
 
 
-class ANN0463(BaseRule):
-    rule_id = "ANN0463"
+class ANN0464(BaseRule):
+    rule_id = "ANN0464"
     alternate_id = ""
     target = "DBLINK"
     description = "BioSample accession is cancelled/permanently suppressed/withdrawn in the BioSample database."
@@ -1847,7 +1847,7 @@ class ANN1320(BaseRule):
     rule_id = "ANN1320"
     alternate_id = "BS_R0115"
     target = "specimen_voucher"
-    description = "Specimen voucher for prokaryotes and environmental sequences."
+    description = "Specimen voucher cannot be used for prokaryotes and environmental sequences."
     requires_rdb = True
     is_file_level = False
 

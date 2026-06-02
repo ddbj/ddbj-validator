@@ -20,4 +20,3 @@ seq1	source	1..120	organism	Mus musculus
 			geo_loc_name	Japan:Shizuoka, Mishima
 	CDS	join(1..30,50..120)	product	test1
 			artificial_location	low-quality sequence region
-    

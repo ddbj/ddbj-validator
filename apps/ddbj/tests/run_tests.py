@@ -1,11 +1,19 @@
 #!/usr/bin/env python3
 
+import os
 import sys
 import subprocess
 import re
 import argparse
 import shutil
 from pathlib import Path
+
+# .env から変数を読み込むために追加
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 # ==============================================================================
 # プロジェクトルートをPythonのパスに追加 (モジュールインポートエラー回避)
@@ -58,7 +66,6 @@ def get_skipped_rules(skip_db=False, skip_ncbi=False, skip_auth=False):
         skipped_rules.update(rdb_hardcoded)
         
     # [B] Taxonomy / ネットワーク必須ルール 
-    # (NCBI APIが使えない Localモード のみスキップ。NCBI APIモードではスキップしない)
     if skip_ncbi:
         tax_hardcoded = [
             "ANN1025", 
@@ -67,6 +74,12 @@ def get_skipped_rules(skip_db=False, skip_ncbi=False, skip_auth=False):
             "ANN4210", "ANN4240"
         ]
         skipped_rules.update(tax_hardcoded)
+
+    # =========================================================
+    # [C] 認証必須ルール (Orchestrator直書きのため手動で追加)
+    # =========================================================
+    if skip_auth:
+        skipped_rules.update(["ANN0422", "ANN0463", "ANN0481"])
         
     return skipped_rules
 
@@ -242,18 +255,46 @@ def compare_fasta(fasta_ddbj, fasta_tool, ignore_ids=None):
         return False, " | ".join(error_msgs)
 
 
+def get_empty_result():
+    return {
+        "passed": 0, "mismatched": 0, "errors": [], "skipped": 0, "not_skipped_errors": [],
+        "autofix_fixed": 0, "autofix_not_fixed": 0, "autofix_errors": [],
+        "autocleanup_cleaned": 0, "autocleanup_not_cleaned": 0, "autocleanup_errors": [],
+        "translation_passed": 0, "translation_mismatched": 0, "translation_errors": []
+    }
+
 # ==============================================================================
 # メインテストランナー
 # ==============================================================================
-def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_image=None, use_pip=False):
+def run_e2e_tests(target_rule_id=None, mode="curator", skip_only=False, docker_image=None, use_pip=False):
     if not HAS_BIOPYTHON:
         print(f"{Colors.WARNINGYEL}[WARNING] Biopython is not installed. Amino acid FASTA comparisons will fail.{Colors.ENDC}\n")
         
     skip_db = mode in ["local", "ncbi"]
     skip_ncbi = mode == "local"
-    skip_auth = mode == "auth-skip"
+    # 修正: DBスキップ時(local, ncbi)は、自動的に skip_auth も True になるよう変更
+    skip_auth = (mode == "auth-skip") or skip_db
 
     mode_skipped_rules = get_skipped_rules(skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
+        
+    auth_check_rules = {"ANN0422", "ANN0463", "ANN0481"}
+    
+    # モードに応じたルールの絞り込み・スキップ制御
+    target_rules_set = set(target_rule_id.split('-')) if target_rule_id else set()
+
+    if mode == "web-app":
+        # web-app モードは時間がかかるため、アカウント権限の3ルールのみをターゲットにする
+        if not target_rules_set:
+            target_rules_set = auth_check_rules
+        else:
+            target_rules_set = target_rules_set.intersection(auth_check_rules)
+            
+        if not target_rules_set:
+            return get_empty_result()
+            
+    elif mode == "curator":
+        # curator モードではアカウントを指定しないため、この3ルールは意図的にスキップする
+        mode_skipped_rules.update(auth_check_rules)
 
     # シェルスクリプトではなく、Pythonとmain.pyのパスを指定
     python_bin = project_root / ".venv" / "bin" / "python"
@@ -267,13 +308,19 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
             print(f"{Colors.FAILRED}Error: {main_py} not found.{Colors.ENDC}")
             sys.exit(1)
 
-    target_dirs = sorted([d for d in tests_dir.glob("*/*") if d.is_dir() and any(d.glob("*.ann"))])
-    target_rules_set = set(target_rule_id.split('-')) if target_rule_id else set()
+    # サブディレクトリ対応: .annファイルが含まれるディレクトリを再帰的にすべて抽出する
+    target_dirs = []
+    for d in tests_dir.rglob("*"):
+        if d.is_dir() and not set(d.parts).intersection({".pytest_cache", "reports", "fixed", "aa", "expected", "__pycache__"}):
+            if any(f.is_file() and f.name.endswith(".ann") for f in d.iterdir()):
+                target_dirs.append(d)
+    target_dirs = sorted(target_dirs)
 
-    if target_rule_id:
-        target_dirs = [d for d in target_dirs if target_rule_id in d.name or any(r in d.name for r in target_rules_set)]
+    if target_rules_set:
+        # パスのどこかに target_rules_set に含まれるルール群が含まれていれば対象とする
+        target_dirs = [d for d in target_dirs if any(r in d.parts for r in target_rules_set)]
     elif skip_only:
-        target_dirs = [d for d in target_dirs if any(r in mode_skipped_rules for r in d.name.split('-'))]
+        target_dirs = [d for d in target_dirs if any(r in mode_skipped_rules for r in d.parts)]
 
     passed_count = 0
     mismatched_count = 0
@@ -294,12 +341,7 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
     translation_errors = []
     
     if not target_dirs:
-        return {
-            "passed": 0, "mismatched": 0, "errors": [], "skipped": 0, "not_skipped_errors": [],
-            "autofix_fixed": 0, "autofix_not_fixed": 0, "autofix_errors": [],
-            "autocleanup_cleaned": 0, "autocleanup_not_cleaned": 0, "autocleanup_errors": [],
-            "translation_passed": 0, "translation_mismatched": 0, "translation_errors": []
-        }
+        return get_empty_result()
 
     # ==============================================================================
     # テスト実行前の一括クリーンアップ
@@ -321,15 +363,27 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
         msg += f" [{Colors.OKCYAN}NCBI API MODE" + (" (SKIP ONLY)" if skip_only else " (FULL TEST)") + f"{Colors.ENDC}]"
     elif mode == "auth-skip":
         msg += f" [{Colors.OKBLUE}AUTH SKIP MODE" + (" (SKIP ONLY)" if skip_only else " (FULL TEST)") + f"{Colors.ENDC}]"
-    else:
-        msg += f" [{Colors.OKGREEN}ONLINE MODE{Colors.ENDC}]"
+    elif mode == "curator":
+        msg += f" [{Colors.OKGREEN}CURATOR MODE (No Account){Colors.ENDC}]"
+    elif mode == "web-app":
+        msg += f" [{Colors.OKGREEN}WEB APP MODE (Auth Check Only){Colors.ENDC}]"
     print(f"{msg}...")
 
     for target_dir in target_dirs:
-        print(f"Testing directory: {target_dir.relative_to(project_root)}")
+        dir_label = str(target_dir.relative_to(project_root))
+        print(f"Testing directory: {dir_label}")
+
+        # --- アカウント指定オプションの解決 (Web Appモードのみ適用) ---
+        account_val = None
+        if mode == "web-app":
+            if target_dir.name.endswith('a'):
+                account_val = os.environ.get("ACCOUNT_A")
+                if not account_val: print(f"[{Colors.WARNINGYEL}WARN{Colors.ENDC}] Directory ends with 'a', but ACCOUNT_A is not set in .env")
+            elif target_dir.name.endswith('b'):
+                account_val = os.environ.get("ACCOUNT_B")
+                if not account_val: print(f"[{Colors.WARNINGYEL}WARN{Colors.ENDC}] Directory ends with 'b', but ACCOUNT_B is not set in .env")
 
         if docker_image:
-            import os
             rel_target = target_dir.relative_to(project_root)
             container_target = f"/work/{rel_target}"
             
@@ -348,6 +402,8 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
                 cmd.append("--skip-auth")
                 
             cmd.extend(["-f", container_target])
+            if account_val:
+                cmd.extend(["--account", account_val])
             
         elif use_pip:
             cli_cmd = project_root / ".venv" / "bin" / "ddbj-validator"
@@ -366,6 +422,8 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
                 cmd.append("--skip-auth")
                 
             cmd.extend(["-f", str(target_dir)])
+            if account_val:
+                cmd.extend(["--account", account_val])
 
         else:
             cmd = [str(python_bin), str(main_py), "ddbj"]
@@ -378,6 +436,8 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
                 cmd.append("--skip-auth")
                 
             cmd.extend(["-f", str(target_dir)])
+            if account_val:
+                cmd.extend(["--account", account_val])
                         
         # コマンドの実行
         result = subprocess.run(cmd, capture_output=True, text=True)
@@ -398,33 +458,81 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
             if file_stem.endswith("_sub"): continue
                             
             parts = filename.split('.')
-            is_file_level = len(parts) >= 3 and parts[-2] in ["pass", "fail", "autofix", "cleanup"]
             is_entries_level = "entries" in parts
             
+            # --- 複合テスト(and, skip)のファイル名解析 ---
+            # 例: ANN0481_4.pass.and.ANN0490.ann または ANN0481_4.fail.skip.ANN0430.ann
+            is_composite = False
+            main_expect = None
+            relation = None
+            sec_rule = None
+            
+            if len(parts) >= 5 and parts[2] in ["and", "skip"]:
+                is_composite = True
+                main_expect = parts[1] # "pass" or "fail"
+                relation = parts[2]    # "and" or "skip"
+                sec_rule = parts[3]    # "ANNXXXX"
+                is_file_level = True
+            else:
+                is_file_level = len(parts) >= 3 and parts[-2] in ["pass", "fail", "autofix", "cleanup"]
+
             # ファイル名から正確にルールID部分だけを抽出
             file_rule_ids = parts[0].split('_')[0].split('-')
             
-            if target_rule_id and not any(r in target_rules_set for r in file_rule_ids) and target_dir.name != target_rule_id:
+            if is_composite:
+                file_rule_ids.append(sec_rule)
+            
+            # ファイル個別のフィルタリングでも d.parts を利用
+            rule_in_path = False
+            if target_rules_set:
+                rule_in_path = any(r in target_dir.parts for r in target_rules_set)
+                
+            if target_rules_set and not any(r in target_rules_set for r in file_rule_ids) and not rule_in_path:
                 continue
             
             test_cases = []
             
             if not is_entries_level:
-                expected_result = parts[-2] if is_file_level else extract_feature_expectations(ann_path)
-                if expected_result:
+                if is_composite:
                     actual_rules = triggered_rules_by_file.get(file_stem, set())
-                    for rule_id in file_rule_ids:
-                        if target_rule_id and rule_id not in target_rules_set and target_dir.name != target_rule_id: continue
+                    main_rule = file_rule_ids[0]
+                    
+                    # 主ルールがテスト対象かどうかの判定
+                    is_main_targeted = not target_rules_set or main_rule in target_rules_set or rule_in_path
+                    
+                    if is_main_targeted:
+                        # 主ルールのテストケース追加
                         test_cases.append({
-                            "filename": filename, "rule_id": rule_id, 
-                            "expected_result": expected_result, "rule_triggered": rule_id in actual_rules
+                            "filename": filename, "rule_id": main_rule, 
+                            "expected_result": main_expect, "rule_triggered": main_rule in actual_rules,
+                            "main_rule": main_rule
                         })
+                        
+                        # 副ルールのテストケース追加（and なら fail を期待、skip なら skipped を期待）
+                        sec_expect = "fail" if relation == "and" else "skipped"
+                        
+                        # 副ルールは、主ルールがテスト対象であれば連動してテストする（ターゲット制限をバイパス）
+                        test_cases.append({
+                            "filename": filename, "rule_id": sec_rule, 
+                            "expected_result": sec_expect, "rule_triggered": sec_rule in actual_rules,
+                            "main_rule": main_rule
+                        })
+                else:
+                    expected_result = parts[-2] if is_file_level else extract_feature_expectations(ann_path)
+                    if expected_result:
+                        actual_rules = triggered_rules_by_file.get(file_stem, set())
+                        for rule_id in file_rule_ids:
+                            if target_rules_set and rule_id not in target_rules_set and not rule_in_path: continue
+                            test_cases.append({
+                                "filename": filename, "rule_id": rule_id, 
+                                "expected_result": expected_result, "rule_triggered": rule_id in actual_rules
+                            })
             else:
                 entry_expectations = extract_entry_expectations(ann_path)
                 file_triggered_entries = triggered_rules_by_entry.get(file_stem, {})
                 for entry_name, rules in entry_expectations.items():
                     for rule_id, expected_result in rules.items():
-                        if target_rule_id and rule_id not in target_rules_set and target_dir.name != target_rule_id: continue
+                        if target_rules_set and rule_id not in target_rules_set and not rule_in_path: continue
                         entry_actual_rules = file_triggered_entries.get(entry_name, set())
                         global_rules = file_triggered_entries.get("ALL", set()).union(file_triggered_entries.get("COMMON", set()))
                         test_cases.append({
@@ -433,10 +541,21 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
                         })
 
             test_cases.sort(key=lambda x: (x["filename"], x["rule_id"]))
+            
+            test_dir_label = str(target_dir.relative_to(tests_dir))
+            
             for tc in test_cases:
                 tc_filename, tc_rule_id = tc["filename"], tc["rule_id"]
                 tc_expected_result, tc_rule_triggered = tc["expected_result"], tc["rule_triggered"]
+                main_rule_for_tc = tc.get("main_rule")
                 test_name = f"{tc_filename} (Rule: {tc_rule_id})"
+
+                # ==============================================================
+                # curatorモード時の連動テストの保護
+                # 主ルールがスキップ対象の場合、副ルールの検証前提が崩れるためスキップする
+                # ==============================================================
+                if main_rule_for_tc and main_rule_for_tc in mode_skipped_rules and tc_rule_id != main_rule_for_tc:
+                    continue
 
                 # ==============================================================
                 # ANN1810 に対する個別ハードコード除外
@@ -457,18 +576,29 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
                     # スキップされるべきルールが発火していないかを検証
                     if tc_rule_triggered:
                         print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name}: Expected to be SKIPPED, but it TRIGGERED.")
-                        errors.append(f"[{tc_rule_id}] {target_dir.name}/{test_name} (Expected SKIP)")
-                        not_skipped_errors.append(f"[{tc_rule_id}] {target_dir.name}/{test_name}")
+                        errors.append(f"[{tc_rule_id}] {test_dir_label}/{test_name} (Expected SKIP)")
+                        not_skipped_errors.append(f"[{tc_rule_id}] {test_dir_label}/{test_name}")
                         mismatched_count += 1
                     else:
                         print(f"  [{Colors.OKGREEN}Skipped{Colors.ENDC}]        {test_name} (Correctly Skipped)")
                         skipped_count += 1
                     continue
                 
+                # --- 副ルールのスキップ期待値の処理 ---
+                if tc_expected_result == "skipped":
+                    if tc_rule_triggered:
+                        print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name}: Expected secondary rule to be SKIPPED, but it TRIGGERED.")
+                        errors.append(f"[{tc_rule_id}] {test_dir_label}/{test_name} (Expected SKIP)")
+                        mismatched_count += 1
+                    else:
+                        print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name} (Secondary rule correctly skipped)")
+                        passed_count += 1
+                    continue
+                
                 if tc_expected_result == "pass":
                     if tc_rule_triggered:
                         print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name}: Expected PASS, but rule triggered.")
-                        errors.append(f"[{tc_rule_id}] {target_dir.name}/{test_name} (Expected PASS)")
+                        errors.append(f"[{tc_rule_id}] {test_dir_label}/{test_name} (Expected PASS)")
                         mismatched_count += 1
                     else:
                         print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name} (No error triggered)")
@@ -476,7 +606,7 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
                 else:
                     if not tc_rule_triggered:
                         print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name}: Expected rule to trigger, but it did NOT.")
-                        errors.append(f"[{tc_rule_id}] {target_dir.name}/{test_name} (Expected to trigger)")
+                        errors.append(f"[{tc_rule_id}] {test_dir_label}/{test_name} (Expected to trigger)")
                         mismatched_count += 1
                     else:
                         print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name} (Error correctly triggered)")
@@ -505,7 +635,7 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
                         translation_passed += 1
                     else:
                         print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name_trans}: {result_msg}")
-                        translation_errors.append(f"{rule_prefix} {target_dir.name}/{test_name_trans} ({result_msg})")
+                        translation_errors.append(f"{rule_prefix} {test_dir_label}/{test_name_trans} ({result_msg})")
                         translation_mismatched += 1
                             
         if not skip_only:
@@ -514,11 +644,11 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
                 for golden_file in expected_dir.glob("*"):
                     if not golden_file.is_file(): continue
                     
-                    # ".entries.ann" などを取り除いてからハイフン等で分割する (ANN4240のMismtachを防ぐため)
+                    # ".entries.ann" などを取り除いてからハイフン等で分割する
                     base_name = golden_file.name.split('.')[0]
                     file_rule_ids = base_name.split('_')[0].split('-')
                     
-                    if target_rule_id and not any(r in target_rules_set for r in file_rule_ids) and target_dir.name != target_rule_id:
+                    if target_rules_set and not any(r in target_rules_set for r in file_rule_ids) and not rule_in_path:
                         continue
                         
                     # このファイルに含まれるルールがスキップ対象の場合、Autofixのファイル比較処理自体を行わない
@@ -542,7 +672,7 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
     
                     if not fixed_file.exists():
                         print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name_golden}: Actual fixed file is missing ({fixed_file.name}).")
-                        err_msg = f"[{','.join(file_rule_ids)}] {target_dir.name}/{test_name_golden} (Fixed file missing: {fixed_file.name})"
+                        err_msg = f"[{','.join(file_rule_ids)}] {test_dir_label}/{test_name_golden} (Fixed file missing: {fixed_file.name})"
                         errors.append(err_msg)
                         err_list.append(err_msg)
                         mismatched_count += 1
@@ -552,7 +682,7 @@ def run_e2e_tests(target_rule_id=None, mode="online", skip_only=False, docker_im
                         is_match, diff_msg = compare_text_files(golden_file, fixed_file)
                         if not is_match:
                             print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name_golden}: Diff error -> {diff_msg}")
-                            err_msg = f"[{','.join(file_rule_ids)}] {target_dir.name}/{test_name_golden} ({diff_msg})"
+                            err_msg = f"[{','.join(file_rule_ids)}] {test_dir_label}/{test_name_golden} ({diff_msg})"
                             errors.append(err_msg)
                             err_list.append(err_msg)
                             mismatched_count += 1
@@ -590,13 +720,15 @@ def print_summary(results_list, docker_image=None):
     print("\n" + "="*80)
     if docker_image:
         print(f" {Colors.OKGREEN} FINAL E2E TEST SUMMARY (DOCKER: {docker_image}) {Colors.ENDC} ")
+    elif args.use_pip:
+        print(f" {Colors.OKGREEN} FINAL E2E TEST SUMMARY (PIP CLI) {Colors.ENDC} ")
     else:
-        print(f" {Colors.OKGREEN} FINAL E2E TEST SUMMARY (PIP) {Colors.ENDC} ")
+        print(f" {Colors.OKGREEN} FINAL E2E TEST SUMMARY (DIRECT EXECUTION) {Colors.ENDC} ")
     print("="*80)
     
     for title, res, color in results_list:
         print(f"\n{color}[ {title} ]{Colors.ENDC}")
-        passed_label = "Matched" if title == "ONLINE MODE RESULTS" else "Matched (Normal Rules)"
+        passed_label = "Matched" if "CURATOR MODE" in title or "WEB APP MODE" in title else "Matched (Normal Rules)"
         print(f"  {passed_label}: {res['passed']}")
         print(f"  Mismatched:             {Colors.FAILRED if res['mismatched'] > 0 else Colors.OKGREEN}{res['mismatched']}{Colors.ENDC}")
         
@@ -627,7 +759,7 @@ def print_summary(results_list, docker_image=None):
             for e in general_errors:
                 print(f"    - {e}")
                 
-        if title != "ONLINE MODE RESULTS":
+        if "CURATOR MODE" not in title and "WEB APP MODE" not in title:
             print(f"  Expectedly Skipped:     {Colors.OKGREEN}{res['skipped']}{Colors.ENDC}")
             print(f"  Not Skipped (Error!):   {Colors.FAILRED if len(res['not_skipped_errors']) > 0 else Colors.OKGREEN}{len(res['not_skipped_errors'])}{Colors.ENDC}")
             if res['not_skipped_errors']:
@@ -657,53 +789,58 @@ if __name__ == "__main__":
     parser.add_argument(
         "--mode", 
         nargs="+", 
-        choices=["online", "local", "local-skip", "ncbi", "ncbi-skip", "auth-skip", "all"], 
-        default=["online", "local-skip", "ncbi-skip", "auth-skip"], 
+        choices=["curator", "web-app", "local", "local-skip", "ncbi", "ncbi-skip", "auth-skip", "all"], 
+        default=["curator", "web-app", "local-skip", "ncbi-skip", "auth-skip"], 
         help="Execution mode(s). Multiple modes can be specified."
     )
     args = parser.parse_args()
 
     modes = args.mode
 
-    if args.docker_image and modes == ["online", "local-skip", "ncbi-skip", "auth-skip"]:
+    if args.docker_image and modes == ["curator", "web-app", "local-skip", "ncbi-skip", "auth-skip"]:
         modes = ["local", "ncbi", "auth-skip"]
 
     if "all" in modes:
         if args.docker_image:
             modes = ["local", "ncbi", "auth-skip"]
         else:
-            modes = ["online", "local", "ncbi", "auth-skip"]
+            modes = ["curator", "web-app", "local", "ncbi", "auth-skip"]
 
     results_to_print = []
     
-    if "online" in modes:
-        print_header("PHASE 1: ONLINE MODE TESTING (Standard Pass/Fail Check)", Colors.OKGREEN)
-        res_online = run_e2e_tests(target_rule_id=args.rule_id, mode="online", docker_image=args.docker_image)
-        results_to_print.append(("ONLINE MODE RESULTS", res_online, Colors.OKGREEN))
+    if "curator" in modes:
+        print_header("PHASE 1: CURATOR MODE TESTING (Skip ANN0422, 0463, 0481 / No Account)", Colors.OKGREEN)
+        res_cur = run_e2e_tests(target_rule_id=args.rule_id, mode="curator", docker_image=args.docker_image, use_pip=args.use_pip)
+        results_to_print.append(("CURATOR MODE RESULTS", res_cur, Colors.OKGREEN))
+
+    if "web-app" in modes:
+        print_header("PHASE 2: WEB APP MODE TESTING (Only ANN0422, 0463, 0481 / With Account)", Colors.OKGREEN)
+        res_web = run_e2e_tests(target_rule_id=args.rule_id, mode="web-app", docker_image=args.docker_image, use_pip=args.use_pip)
+        results_to_print.append(("WEB APP MODE RESULTS", res_web, Colors.OKGREEN))
 
     if "local" in modes:
-        print_header("PHASE 2: LOCAL MODE TESTING (Full test: Normal + Skip)", Colors.WARNINGYEL)
-        res_local = run_e2e_tests(target_rule_id=args.rule_id, mode="local", skip_only=False, docker_image=args.docker_image)
+        print_header("PHASE 3: LOCAL MODE TESTING (Full test: Normal + Skip)", Colors.WARNINGYEL)
+        res_local = run_e2e_tests(target_rule_id=args.rule_id, mode="local", skip_only=False, docker_image=args.docker_image, use_pip=args.use_pip)
         results_to_print.append(("LOCAL MODE RESULTS (FULL TEST)", res_local, Colors.WARNINGYEL))
         
     elif "local-skip" in modes:
-        print_header("PHASE 2: LOCAL MODE TESTING (Skip Verification Only)", Colors.WARNINGYEL)
-        res_local = run_e2e_tests(target_rule_id=args.rule_id, mode="local", skip_only=True, docker_image=args.docker_image)
+        print_header("PHASE 3: LOCAL MODE TESTING (Skip Verification Only)", Colors.WARNINGYEL)
+        res_local = run_e2e_tests(target_rule_id=args.rule_id, mode="local", skip_only=True, docker_image=args.docker_image, use_pip=args.use_pip)
         results_to_print.append(("LOCAL MODE RESULTS (SKIP ONLY)", res_local, Colors.WARNINGYEL))
 
     if "ncbi" in modes:
-        print_header("PHASE 3: NCBI API MODE TESTING (Full test: Normal + Skip)", Colors.OKCYAN)
-        res_ncbi = run_e2e_tests(target_rule_id=args.rule_id, mode="ncbi", skip_only=False, docker_image=args.docker_image)
+        print_header("PHASE 4: NCBI API MODE TESTING (Full test: Normal + Skip)", Colors.OKCYAN)
+        res_ncbi = run_e2e_tests(target_rule_id=args.rule_id, mode="ncbi", skip_only=False, docker_image=args.docker_image, use_pip=args.use_pip)
         results_to_print.append(("NCBI API MODE RESULTS (FULL TEST)", res_ncbi, Colors.OKCYAN))
         
     elif "ncbi-skip" in modes:
-        print_header("PHASE 3: NCBI API MODE TESTING (Skip Verification Only)", Colors.OKCYAN)
-        res_ncbi = run_e2e_tests(target_rule_id=args.rule_id, mode="ncbi", skip_only=True, docker_image=args.docker_image)
+        print_header("PHASE 4: NCBI API MODE TESTING (Skip Verification Only)", Colors.OKCYAN)
+        res_ncbi = run_e2e_tests(target_rule_id=args.rule_id, mode="ncbi", skip_only=True, docker_image=args.docker_image, use_pip=args.use_pip)
         results_to_print.append(("NCBI API MODE RESULTS (SKIP ONLY)", res_ncbi, Colors.OKCYAN))
 
     if "auth-skip" in modes:
-        print_header("PHASE 4: AUTH SKIP MODE TESTING (Skip Verification Only)", Colors.OKBLUE)
-        res_auth = run_e2e_tests(target_rule_id=args.rule_id, mode="auth-skip", skip_only=True, docker_image=args.docker_image)
+        print_header("PHASE 5: AUTH SKIP MODE TESTING (Skip Verification Only)", Colors.OKBLUE)
+        res_auth = run_e2e_tests(target_rule_id=args.rule_id, mode="auth-skip", skip_only=True, docker_image=args.docker_image, use_pip=args.use_pip)
         results_to_print.append(("AUTH SKIP MODE RESULTS (SKIP ONLY)", res_auth, Colors.OKBLUE))
 
     print_summary(results_to_print, docker_image=args.docker_image)

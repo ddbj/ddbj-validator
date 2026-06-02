@@ -1,5 +1,4 @@
 COMMON	DIVISION		division	TSA
-	DATATYPE		type	TSA
 	KEYWORD		keyword	TSA
 			keyword	Transcriptome Shotgun Assembly
 	DBLINK		project	PRJDB4387

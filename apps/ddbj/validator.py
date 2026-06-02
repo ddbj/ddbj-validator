@@ -43,7 +43,7 @@ class Validator:
             ANN0460(), # [WARNING] BioSample accession not found in the BioSample database
             ANN0461(), # [WARNING] Accession is not publicly available or invalid in NCBI/EBI."
             ANN0462(), # [ERROR] Multiple BioSample accessions are permitted only for TSA entries.
-            ANN0463(), # [ERROR] BioSample accession is cancelled/permanently suppressed/withdrawn in the BioSample database.
+            ANN0464(), # [ERROR] BioSample accession is cancelled/permanently suppressed/withdrawn in the BioSample database.
             ANN0470(), # [WARNING] Missing DRR accession
             ANN0480(), # [WARNING] DRR accession not found in the DRA database
             ANN0485(), # [ERROR] DRR accession is cancelled/permanently suppressed/withdrawn

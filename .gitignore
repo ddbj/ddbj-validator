@@ -55,6 +55,7 @@ build-push-docker-image.sh
 htmlcov/
 .tox/
 run_tests_*.sh
+cp_test.sh
 
 # =========================
 # エディタ・IDE固有ファイル
