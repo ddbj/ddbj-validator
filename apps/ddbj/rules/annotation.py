@@ -826,8 +826,8 @@ class ANN0462(BaseRule):
         return results
 
 
-class ANN0463(BaseRule):
-    rule_id = "ANN0463"
+class ANN0464(BaseRule):
+    rule_id = "ANN0464"
     alternate_id = ""
     target = "DBLINK"
     description = "BioSample accession is cancelled/permanently suppressed/withdrawn in the BioSample database."

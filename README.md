@@ -8,7 +8,7 @@ DDBJ の既存チェックツールである [jParser](https://www.ddbj.nig.ac.j
 
 ## ベータ版リリース
 
-2026年5月18日、本ツールをベータ版（0.1.0-beta）としてリリースいたしました。  
+2026年5月18日、本ツールをベータ版としてリリースいたしました。  
 いずれは正式版の公開を目指して開発を進めておりますが、現在は初期段階であり、一部に不具合が含まれている可能性がございます。今後の品質向上のため、広くユーザの皆様からのフィードバックを募集しております。  
 不具合の報告や改善のご要望などは [GitHub Issues](https://github.com/ddbj/ddbj-validator/issues) や [DDBJ Validator フォーム](https://docs.google.com/forms/d/e/1FAIpQLSeNybDSYLbS3oMHruheAtaXQOArsT_s7ezjJr-Q5r_YWENZIA/viewform?usp=header)よりお寄せください。
 
@@ -28,7 +28,7 @@ DDBJ の既存チェックツールである [jParser](https://www.ddbj.nig.ac.j
 以下のコマンドで最新のイメージを取得します。
 
 ```bash
-docker pull ghcr.io/ddbj/ddbj-validator:0.1.0-beta
+docker pull ghcr.io/ddbj/ddbj-validator:0.1.4-beta
 
 ```
 
@@ -64,10 +64,10 @@ ddbj-validator-seq.bat [オプション] [検証対象ディレクトリ]
 
 ```bash
 # macOS/Linux
-docker run -it --rm -v $(pwd):/data -w /data ghcr.io/ddbj/ddbj-validator:0.1.0-beta [オプション] target_directory
+docker run -it --rm -v $(pwd):/data -w /data ghcr.io/ddbj/ddbj-validator:0.1.4-beta [オプション] target_directory
 
 # Windows (PowerShell)
-docker run -it --rm -v "${PWD}:/data" -w /data ghcr.io/ddbj/ddbj-validator:0.1.0-beta [オプション] target_directory
+docker run -it --rm -v "${PWD}:/data" -w /data ghcr.io/ddbj/ddbj-validator:0.1.4-beta [オプション] target_directory
 
 ```
 
@@ -198,7 +198,7 @@ Alongside the syntax validation by DDBJ's existing tool [jParser](https://www.dd
 
 ## Beta Release
 
-On May 18, 2026, we released the tool as a beta version (0.1.0-beta).  
+On May 18, 2026, we released the tool as a beta version.  
 While we are developing with the goal of an official release in the future, it is currently in its early stages and may contain some bugs. To help us improve the tool, we are actively seeking feedback from our users.   
 Please submit bug reports, feature requests, or any other feedback via [GitHub Issues](https://github.com/ddbj/ddbj-validator/issues) or the [DDBJ Validator Form](https://docs.google.com/forms/d/e/1FAIpQLSeNybDSYLbS3oMHruheAtaXQOArsT_s7ezjJr-Q5r_YWENZIA/viewform?usp=header).
 
@@ -218,7 +218,7 @@ Docker must be installed to run this tool.
 Download the latest image using the following command:
 
 ```bash
-docker pull ghcr.io/ddbj/ddbj-validator:0.1.0-beta
+docker pull ghcr.io/ddbj/ddbj-validator:0.1.4-beta
 
 ```
 
@@ -254,10 +254,10 @@ The basic structure for executing the tool directly via `docker run` is as follo
 
 ```bash
 # macOS/Linux
-docker run -it --rm -v $(pwd):/data -w /data ghcr.io/ddbj/ddbj-validator:0.1.0-beta [Options] target_directory
+docker run -it --rm -v $(pwd):/data -w /data ghcr.io/ddbj/ddbj-validator:0.1.4-beta [Options] target_directory
 
 # Windows (PowerShell)
-docker run -it --rm -v "${PWD}:/data" -w /data ghcr.io/ddbj/ddbj-validator:0.1.0-beta [Options] target_directory
+docker run -it --rm -v "${PWD}:/data" -w /data ghcr.io/ddbj/ddbj-validator:0.1.4-beta [Options] target_directory
 
 ```
 

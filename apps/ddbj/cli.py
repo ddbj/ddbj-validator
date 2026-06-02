@@ -20,6 +20,7 @@ def main():
     parser.add_argument("-d", "--dir", action="append", help="Target directory (deprecated, use positional arguments)")
     parser.add_argument("-a", "--ann", help="Annotation file (deprecated, use positional arguments)")
     parser.add_argument("-s", "--seq", help="Sequence file (deprecated, use positional arguments)")
+    parser.add_argument("--account", type=str, help="Submitter account ID")
     parser.add_argument("-j", "--jobs", type=int, default=None, help="Number of parallel processes (default: up to 8. Use 0 to use all available cores)")
     parser.add_argument("-w", "--web", action="store_true", help="NSSS (web submission) mode")
     parser.add_argument("-f", "--force-fix", action="store_true", help="Automatically apply all auto-fixes without prompting")
@@ -205,11 +206,21 @@ def main():
         target_dirs_for_report = list(dict.fromkeys(target_dirs_for_report))
 
     # --- パイプラインの実行とレポート出力 --- #
+    account_id = args.account
+    
+    # ローカルモード (-l) や --skip-db が有効な場合はDBアクセスができないため、アカウント認証を無効化
+    if skip_db and account_id:
+        print("[WARN] Local mode or --skip-db is enabled. The --account option will be ignored.", file=sys.stderr)
+        account_id = None
+        
+    is_curator_mode = (account_id is None)  # --account が有効でなければ内部キュレーター扱い
+
     pipeline = ValidatorPipeline(
         pairs, report_out_dir, args.web, args.force_fix, jobs, 
-        skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=args.skip_auth
+        skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=args.skip_auth,
+        account_id=account_id, is_curator_mode=is_curator_mode
     )
-    
+        
     import time
     start_time = time.time()
     

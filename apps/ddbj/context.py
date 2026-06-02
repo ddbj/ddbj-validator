@@ -40,9 +40,18 @@ class ValidationContext:
     is_tsa: bool = False
     is_tpa: bool = False
     is_est: bool = False
+    is_tls: bool = False
+    is_mga: bool = False
+    is_con: bool = False
+    is_env: bool = False
+    is_gss: bool = False
+    is_htc: bool = False
+    is_htg: bool = False
+    is_sts: bool = False
+    is_syn: bool = False
     is_web_mode: bool = False
     active_datatypes: set = field(default_factory=set)
-    active_divisions: set = field(default_factory=set)
+    active_divisions: set = field(default_factory=set)    
     
     def __post_init__(self):
         # パッケージを基準としたリソースへのアクセス
@@ -128,9 +137,17 @@ class ValidationContext:
         self.is_tpa = False
         self.is_tls = False
         self.is_mga = False
+        self.is_est = False
+        self.is_con = False
+        self.is_env = False
+        self.is_gss = False
+        self.is_htc = False
+        self.is_htg = False
+        self.is_sts = False
+        self.is_syn = False
         self.active_datatypes = set()
         self.active_divisions = set()
-
+        
         # 1. DATATYPE と DIVISION の解析 (COMMONレコードから取得)
         common_rec = records.get("COMMON")
         if common_rec:
@@ -139,16 +156,44 @@ class ValidationContext:
                     for dt in feat.qualifiers.get("type", []):
                         dt_upper = dt.strip().upper()
                         self.active_datatypes.add(dt_upper)
+                        
                         if dt_upper == "WGS": self.is_wgs = True
-                        if dt_upper == "TSA": self.is_tsa = True
                         if dt_upper == "TPA": self.is_tpa = True
                         if dt_upper == "TLS": self.is_tls = True
                         if dt_upper == "MGA": self.is_mga = True
+                        if dt_upper == "TSA": self.is_tsa = True
+                        
+                        # TPA複合タイプの処理 (両方のフラグをTrueにする)
+                        if dt_upper == "TPA-WGS":
+                            self.is_wgs = True
+                            self.is_tpa = True
+                        if dt_upper == "TPA-TSA":
+                            self.is_tsa = True
+                            self.is_tpa = True
+                        if dt_upper == "TPA-TLS":
+                            self.is_tls = True
+                            self.is_tpa = True
                         
                 elif feat.type == "DIVISION":
                     for div in feat.qualifiers.get("division", []):
-                        self.active_divisions.add(div.strip().upper())
-
+                        div_upper = div.strip().upper()
+                        self.active_divisions.add(div_upper)
+                        
+                        # 特定の division を datatype としても扱う（下流ルール互換用）
+                        if div_upper in {"CON", "ENV", "EST", "GSS", "HTC", "HTG", "STS", "SYN", "TSA"}:
+                            self.active_datatypes.add(div_upper)
+                            
+                            # フラグのセット
+                            if div_upper == "CON": self.is_con = True
+                            if div_upper == "ENV": self.is_env = True
+                            if div_upper == "EST": self.is_est = True
+                            if div_upper == "GSS": self.is_gss = True
+                            if div_upper == "HTC": self.is_htc = True
+                            if div_upper == "HTG": self.is_htg = True
+                            if div_upper == "STS": self.is_sts = True
+                            if div_upper == "SYN": self.is_syn = True
+                            if div_upper == "TSA": self.is_tsa = True
+                                                                                
         # 2. Taxonomy (真核生物/原核生物) の解析
         for record in records.values():
             if record.id == "COMMON":
