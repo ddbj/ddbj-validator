@@ -1,9 +1,12 @@
 import re
 import shutil
 import json
+import logging
 from pathlib import Path
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
+
+logger = logging.getLogger(__name__)
 
 from Bio.Data import CodonTable
 from Bio.Seq import Seq
@@ -572,7 +575,7 @@ class ValidatorPipeline:
 
                         # 権限がないアクセッションが含まれていれば、以後の認証必須ルールをスキップする
                         if any(self.unauthorized_accs.values()):
-                            print("[WARN] Unauthorized accession numbers referenced. Disable rules requiring account authorization.")
+                            logger.warning("Unauthorized accession numbers referenced. Disable rules requiring account authorization.")
                             self.skip_auth = True
 
                     if all_organisms or all_samds or all_projects or all_drrs:
@@ -615,7 +618,7 @@ class ValidatorPipeline:
                             if dra_smps:
                                 smp_id_to_samd = fetch_samd_by_smp_id(db_manager.get_bs_conn(), list(dra_smps))
                 except Exception as e:
-                    print(f"[ERROR] Database connection failed: {e}")
+                    logger.error(f"Database connection failed: {e}", exc_info=True)
                 finally:
                     db_manager.close_all()
             else:
@@ -684,8 +687,8 @@ class ValidatorPipeline:
             db_manager = DatabaseManager()
             try:
                 context.load_valid_journals(list(all_journals), db_manager.get_tax_conn())
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Failed to load valid journals: {e}", exc_info=True)
             finally:
                 db_manager.close_all()
 

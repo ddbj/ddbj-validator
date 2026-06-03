@@ -1,6 +1,9 @@
 import psycopg2
 import re
+import logging
 from apps.ddbj.utils.features import get_features
+
+logger = logging.getLogger(__name__)
 
 # INSDC (DDBJ/ENA/GenBank) アクセッションを捕捉
 _PRJ_PATTERN = re.compile(r'\tproject\t(PRJ[DE][AB]\d+|PRJN[A]\d+)')
@@ -47,7 +50,7 @@ def fast_extract_db_keys(ann_path, seq_path):
                         organisms.add(m.group(1).strip())                                               
                         
     except Exception as e:
-        print(f"[WARN] Failed to fast-scan {ann_path}: {e}")
+        logger.warning(f"Failed to fast-scan {ann_path}: {e}")
 
     # NCBI APIとDDBJローカルDBで問い合わせを振り分けるためのセットもここで作ってしまう
     from common.ncbi_api import filter_target_accessions
@@ -376,7 +379,7 @@ def fetch_dra_library_metadata(db_conn, drr_list):
                         "drx": drx_acc
                     }
     except Exception as e:
-        print(f"[WARN] Failed to fetch DRA library metadata: {e}")
+        logger.warning(f"Failed to fetch DRA library metadata: {e}")
                 
     return results
 
@@ -415,7 +418,7 @@ def fetch_valid_journals(db_conn, journal_list):
                     if jr_name:
                         valid_journals.add(str(jr_name).strip())
     except Exception as e:
-        print(f"[WARN] Failed to fetch journal names from DB: {e}")
+        logger.warning(f"Failed to fetch journal names from DB: {e}")
         
     return valid_journals
     
@@ -485,7 +488,7 @@ def fetch_drr_status(db_conn, drr_list):
                     drr_status[drr_map[acc_no]] = final_status
                     
     except Exception as e:
-        print(f"[WARN] Failed to fetch DRR status: {e}")
+        logger.warning(f"Failed to fetch DRR status: {e}")
         
     return drr_status
     

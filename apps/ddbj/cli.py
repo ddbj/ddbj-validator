@@ -1,6 +1,7 @@
 import os
 import sys
 import argparse
+import logging
 from pathlib import Path
 from dotenv import load_dotenv
 from apps.ddbj.file_manager import find_file_pairs
@@ -40,7 +41,16 @@ def main():
     # NCBI API key 指定
     parser.add_argument("--ncbi-api-key", type=str, help="NCBI API key to increase rate limits (optional)")
 
+    # システム診断ログの詳細化（開発者向け）
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose system/debug logging to stderr (for developers)")
+
     args = parser.parse_args()
+
+    # --- ロギングの初期化 ---
+    # システム診断・警告ログは標準エラー出力(stderr)へ出す（標準出力＝検証結果と分離する）。
+    # 既定は WARNING 以上のみ表示。-v 指定時のみ DEBUG まで出力し、内部の握りつぶし例外なども可視化する。
+    log_level = logging.DEBUG if args.verbose else logging.WARNING
+    logging.basicConfig(level=log_level, format="%(levelname)s [%(name)s] %(message)s", stream=sys.stderr)
 
     if args.ncbi_api_key:
         os.environ["NCBI_API_KEY"] = args.ncbi_api_key

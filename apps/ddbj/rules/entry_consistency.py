@@ -1,5 +1,8 @@
 from common.rules.base import BaseRule
 import re
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ENTRY_CONSISTENCY_VALIDATOR(BaseRule):
     rule_id = "ENTRY_CONSISTENCY_MASTER"
@@ -45,8 +48,8 @@ class ENTRY_CONSISTENCY_VALIDATOR(BaseRule):
                 for line in f:
                     if line.startswith(">"):
                         fasta_entries.append(line[1:].split()[0].strip())
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to read FASTA for entry consistency check ({seq_path}): {e}", exc_info=True)
 
         all_ann_entries = [] # 重複チェック用 (COMMON含む全エントリ)
         ann_entries = []     # FASTA比較用 (COMMONを除いた実エントリ)

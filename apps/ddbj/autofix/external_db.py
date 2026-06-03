@@ -1,10 +1,13 @@
 import copy
 import re
+import logging
 from pathlib import Path
 from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
 from apps.ddbj.utils.features import get_features
 from apps.ddbj.db_metadata import get_expected_transl_table
+
+logger = logging.getLogger(__name__)
 
 _SAMD_PATTERN = re.compile(r'(SAMD\d+)')
 
@@ -42,7 +45,7 @@ def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None)
         missing_samds = [s for s in active_samds if s not in bs_data and s not in unauth_set]
         
         if missing_samds:
-            print(f"[WARN] {entry_id}: BioSample data for {', '.join(missing_samds)} not found in DB.")
+            logger.warning(f"{entry_id}: BioSample data for {', '.join(missing_samds)} not found in DB.")
         if not valid_samds: continue
         
         for feature in record.features:

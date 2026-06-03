@@ -1,10 +1,13 @@
 import os
 import time
+import logging
 import requests
 import defusedxml.ElementTree as ET
 import psycopg2
 from apps.ddbj.utils.features import get_features
 from apps.ddbj.db_metadata import get_organisms_from_records, get_expected_transl_table
+
+logger = logging.getLogger(__name__)
 
 
 def get_tax_group(org_name, lineage):
@@ -217,7 +220,7 @@ def fetch_taxonomy_data(db_conn, organism_list):
                         tax_data[org]["status"] = "fixable"
                         
         except Exception as e:
-            print(f"[WARN] Failed to check recursive taxonomy ranks: {e}")
+            logger.warning(f"Failed to check recursive taxonomy ranks: {e}")
 
     return tax_data
 
@@ -332,7 +335,7 @@ def fetch_taxonomy_from_ncbi(organism_list):
             time.sleep(0.15 if api_key else 0.35)
             
         except Exception as e:
-            print(f"[WARN] NCBI Taxonomy API failed for '{org}': {e}")
+            logger.warning(f"NCBI Taxonomy API failed for '{org}': {e}")
             tax_data[org] = {"status": "not_found", "is_species_or_below": False}
             
     return tax_data

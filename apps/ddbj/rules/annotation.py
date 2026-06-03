@@ -16,6 +16,9 @@ from apps.ddbj.parser import _parse_location_string, LocationParseError, Locatio
 from collections import defaultdict
 from common.ncbi_api import check_ncbi_public_status
 from intervaltree import IntervalTree
+import logging
+
+logger = logging.getLogger(__name__)
 
 POS_PATTERN = re.compile(r"pos:(.+?),aa:")
 
@@ -1626,7 +1629,7 @@ class ANN1275(BaseRule):
             from shapely.geometry import Point
             self.Point = Point
         except ImportError:
-            print("[WARN] geopandas or shapely is not installed. Geo-location validation will be skipped.")
+            logger.warning("geopandas or shapely is not installed. Geo-location validation will be skipped.")
             return False
 
         from importlib.resources import files, as_file
@@ -1645,7 +1648,7 @@ class ANN1275(BaseRule):
 
             # parquet の読み込み (Cライブラリが読めるように as_file で物理パスを保証する)
             if not parquet_path.is_file():
-                print(f"[WARN] GeoParquet file not found in resources.")
+                logger.warning("GeoParquet file not found in resources.")
                 return False
                 
             with as_file(parquet_path) as p_path:
@@ -1653,7 +1656,7 @@ class ANN1275(BaseRule):
                 _ = self.geo_df.sindex  # インデックスの強制構築
 
         except Exception as e:
-            print(f"[WARN] Failed to load geo_data: {e}")
+            logger.warning(f"Failed to load geo_data: {e}")
             return False
 
         # valid_land_names の初期化
@@ -2413,7 +2416,7 @@ class ANN2010(BaseRule):
                             results.append(res)
                             
         except Exception as e:
-            print(f"[WARN] Failed to read ANN for {self.rule_id} check: {e}")
+            logger.warning(f"Failed to read ANN for {self.rule_id} check: {e}")
 
         return results
 

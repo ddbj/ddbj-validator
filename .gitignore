@@ -20,6 +20,13 @@ log/
 .clineignore
 
 # =========================
+# claude logs setting
+# =========================
+CLAUDE.md
+ai_logs/
+.claudeignore
+
+# =========================
 # Python キャッシュ・バイトコード
 # =========================
 __pycache__/

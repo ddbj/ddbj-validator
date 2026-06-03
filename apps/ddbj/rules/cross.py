@@ -1,4 +1,5 @@
 import re
+import logging
 from common.rules.base import BaseRule
 from Bio.SeqFeature import CompoundLocation, BeforePosition, AfterPosition
 from Bio.Data import CodonTable
@@ -8,6 +9,8 @@ from apps.ddbj.db_metadata import get_expected_transl_table
 from apps.ddbj.parser import _parse_location_string
 from intervaltree import IntervalTree
 from apps.ddbj.utils.translation import get_cds_translation_params, get_insdc_translation
+
+logger = logging.getLogger(__name__)
 
 # =========================================================
 # 翻訳ヘルパー
@@ -43,9 +46,10 @@ def get_conceptual_translation(feature, record, table_id, codon_start):
     """
     try:
         seq = feature.extract(record.seq)
-    except Exception:
+    except Exception as e:
+        logger.debug(f"Failed to extract CDS sequence for conceptual translation: {e}", exc_info=True)
         return None
-        
+
     cds_seq = seq[codon_start - 1:]
     
     # 3の倍数への調整（端数の塩基がある場合は 'N' で埋める）
@@ -59,7 +63,8 @@ def get_conceptual_translation(feature, record, table_id, codon_start):
         if translation.endswith("*"):
             translation = translation[:-1]
         return translation
-    except Exception:
+    except Exception as e:
+        logger.debug(f"Failed to translate CDS sequence: {e}", exc_info=True)
         return None
 
 class AXS2080(BaseRule):
@@ -148,8 +153,8 @@ class AXS5090(BaseRule):
                     feat_seq = str(feature.extract(record.seq)).upper()
                     if feat_seq and len(feat_seq.replace('N', '')) > 0:
                         results.append(self.feature_result(record, feature, self.description, level="error"))
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Failed to extract gap/assembly_gap sequence ({f_type}): {e}", exc_info=True)
                     
         return results
         
@@ -191,8 +196,8 @@ class AXS5100(BaseRule):
                             
                     if is_extended:
                         results.append(self.feature_result(record, feature, self.description, level="warning"))
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Failed to check consecutive Ns around gap feature ({f_type}): {e}", exc_info=True)
                     
         return results                
 

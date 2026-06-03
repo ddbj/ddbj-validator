@@ -54,7 +54,7 @@ def parse_ddbj_submission(fasta_content, ann_path, ann_lines, ddbj_dict=None):
     # ---------------------------------------------------------
     # 4. パース後のロケーション後処理 (ANN2020の遅延チェックなど)
     # ---------------------------------------------------------
-    _validate_locations_post_parse(records, parse_errors, ann_path)
+    _validate_locations_post_parse(records, parse_errors, ann_path, features_dict)
 
     # ---------------------------------------------------------
     # 5. 空エントリの削除
@@ -419,8 +419,28 @@ def _parse_annotation_tasks(tasks, records, parse_errors, qualifiers_dict, METAD
                         records[current_entry_id].features_by_locus_tag[tag_val].append(target_feature)
 
 
-def _validate_locations_post_parse(records, parse_errors, ann_path):
+def _feature_allows_qualifier(features_dict, feature_type, qualifier):
+    """
+    definitions.json の feature 定義上、指定の feature_type にその qualifier を
+    記載できるかどうかを返す。
+    判定対象は mandatory_qualifiers（dict）と optional_qualifiers（list）のみとする。
+    """
+    f_def = features_dict.get(feature_type)
+    if not f_def:
+        return False
+
+    # mandatory_qualifiers は dict（キーが qualifier 名）
+    if qualifier in f_def.get("mandatory_qualifiers", {}):
+        return True
+    # optional_qualifiers は qualifier 名の list
+    if qualifier in f_def.get("optional_qualifiers", []):
+        return True
+    return False
+
+
+def _validate_locations_post_parse(records, parse_errors, ann_path, features_dict=None):
     """パース完了後のオブジェクトに対する遅延ロケーション検証 (順序、スリッページ等)"""
+    features_dict = features_dict or {}
     for seq_id, record in records.items():
         for feature in record.features:
             
@@ -453,7 +473,12 @@ def _validate_locations_post_parse(records, parse_errors, ann_path):
                                 
                 elif hasattr(feature.location, "_out_of_order_error"):
                     msg = f"Invalid location. {feature.location._out_of_order_error}"
-                    if getattr(feature.location, "_suggest_slippage", False):
+                    # ribosomal_slippage を記載できる feature（definitions.json 上で許可）の場合のみ、
+                    # スリッページの案内文言を付ける。
+                    # 現状は CDS のみだが、将来 JSON 側で許可 feature が増えれば自動的に追従する。
+                    # （例: mat_peptide のような記載不可 feature には付けない）
+                    if getattr(feature.location, "_suggest_slippage", False) and \
+                            _feature_allows_qualifier(features_dict, feature.type, "ribosomal_slippage"):
                         msg += " If this is a ribosomal slippage, please add a '/ribosomal_slippage' qualifier."
                     
                     parse_errors.append({

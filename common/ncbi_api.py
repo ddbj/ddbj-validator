@@ -1,7 +1,10 @@
 import os
 import re
 import time
+import logging
 import requests
+
+logger = logging.getLogger(__name__)
 
 # 対象とするNCBI/EBIのプレフィックス定義
 _TARGET_PATTERNS = {
@@ -115,6 +118,6 @@ def check_ncbi_public_status(db_name, accessions, chunk_size=100):
             results["private"].extend(priv)
             time.sleep(0.15 if current_api_key else 0.35)
         except Exception as e:
-            print(f"[Warning] NCBI API request failed for {db_name}: {e}")
+            logger.warning(f"NCBI API request failed for {db_name}: {e}")
             
     return results
