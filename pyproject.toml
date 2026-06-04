@@ -36,3 +36,8 @@ include = ["common*", "apps*"]
 "apps.ddbj.resources" = ["*.json"]
 "common.resources" = ["*.txt"]
 "common.resources.geo" = ["*.parquet", "*.json"]
+
+# ユニットテスト（純関数の挙動固定）。E2E ハーネス（apps/ddbj/tests）とは別物。
+[tool.pytest.ini_options]
+testpaths = ["tests/unit"]
+python_files = ["test_*.py"]

@@ -4,7 +4,7 @@ from common.rules.base import BaseRule
 from Bio.SeqFeature import CompoundLocation, BeforePosition, AfterPosition
 from Bio.Data import CodonTable
 from Bio.Seq import Seq
-from apps.ddbj.utils.location import get_introns_from_join
+from apps.ddbj.utils.location import get_introns_from_join, get_feature_positions
 from apps.ddbj.db_metadata import get_expected_transl_table
 from apps.ddbj.parser import _parse_location_string
 from intervaltree import IntervalTree
@@ -12,60 +12,8 @@ from apps.ddbj.utils.translation import get_cds_translation_params, get_insdc_tr
 
 logger = logging.getLogger(__name__)
 
-# =========================================================
-# 翻訳ヘルパー
-# =========================================================
-def get_cds_translation_params(feature, default_table_id):
-    """
-    CDSフィーチャーの transl_table と codon_start を安全に取得する共通関数
-    """
-    table_id = default_table_id
-    if "transl_table" in feature.qualifiers:
-        try:
-            table_id = int(feature.qualifiers["transl_table"][0])
-        except ValueError:
-            pass
-    if table_id == 0:
-        table_id = 1
-        
-    codon_start = 1
-    if "codon_start" in feature.qualifiers:
-        try:
-            codon_start = int(feature.qualifiers["codon_start"][0])
-        except ValueError:
-            pass
-    if codon_start not in [1, 2, 3]:
-        codon_start = 1
-        
-    return table_id, codon_start
-
-
-def get_conceptual_translation(feature, record, table_id, codon_start):
-    """
-    CDSフィーチャーの塩基配列から Conceptual Translation (理論上のアミノ酸配列) を生成する
-    """
-    try:
-        seq = feature.extract(record.seq)
-    except Exception as e:
-        logger.debug(f"Failed to extract CDS sequence for conceptual translation: {e}", exc_info=True)
-        return None
-
-    cds_seq = seq[codon_start - 1:]
-    
-    # 3の倍数への調整（端数の塩基がある場合は 'N' で埋める）
-    remainder = len(cds_seq) % 3
-    if remainder != 0:
-        cds_seq += "N" * (3 - remainder)
-        
-    try:
-        translation = str(cds_seq.translate(table=table_id))
-        # INSDCの仕様に合わせて末尾のストップコドンを除去
-        if translation.endswith("*"):
-            translation = translation[:-1]
-        return translation
-    except Exception as e:
-        logger.debug(f"Failed to translate CDS sequence: {e}", exc_info=True)
-        return None
+# 翻訳ヘルパーは apps/ddbj/utils/translation.py に一本化（get_cds_translation_params / get_insdc_translation）。
+# 旧 get_conceptual_translation は未使用（transl_except 非対応の簡易版）だったため削除した。
 
 class AXS2080(BaseRule):
     rule_id = "AXS2080"
@@ -669,19 +617,6 @@ class CDS_TRANSLATION_VALIDATOR(BaseRule):
         return results
                 
 TRANSL_EXCEPT_PATTERN = re.compile(r"^\(pos:(?P<pos>.+?),aa:(?P<aa>[a-zA-Z]+)\)$")
-
-def get_feature_positions(location):
-    pos_list = []
-    if not location: return pos_list
-    for part in location.parts:
-        start = int(part.start)
-        end = int(part.end)
-        strand = part.strand if part.strand is not None else 1
-        if strand == -1:
-            pos_list.extend(range(end - 1, start - 1, -1))
-        else:
-            pos_list.extend(range(start, end))
-    return pos_list
 
 def find_sublist(parent, child):
     if not child: return -1
