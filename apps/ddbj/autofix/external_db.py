@@ -6,7 +6,7 @@ from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
 from apps.ddbj.utils.features import get_features
 from apps.ddbj.db_metadata import get_expected_transl_table
-from apps.ddbj.autofix.proposal import update_qualifier_action
+from apps.ddbj.autofix.proposal import build_proposal, update_qualifier_action
 
 logger = logging.getLogger(__name__)
 
@@ -95,17 +95,14 @@ def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None)
                             })
 
                             updates = [update_qualifier_action(entry_id, feature.type, attr, ann_val, bs_val, feature_id=getattr(feature, 'line_number', id(feature)))]
-                                
-                            proposals.append({
-                                "ann_path": ann_path,
-                                "rule": "ANN1130",
-                                "target": attr,
-                                "target_level": "qualifier",
-                                "old": ann_val, "new": bs_val, "entry": entry_id,
-                                "positions": [{"entry": entry_id, "feature_id": getattr(feature, 'line_number', id(feature))}],
-                                "source_db": source_samd, 
-                                "updates": updates
-                            })
+
+                            proposals.append(build_proposal(
+                                ann_path=ann_path, entry=entry_id, feature_type=feature.type,
+                                qualifier=attr, target=attr, target_level="qualifier",
+                                positions=[{"entry": entry_id, "feature_id": getattr(feature, 'line_number', id(feature))}],
+                                old_value=ann_val, new_value=bs_val, rule="ANN1130",
+                                updates=updates, source_db=source_samd
+                            ))
                        
                     elif len(bs_values) > 1:
                         skipped_warnings.append({
@@ -200,16 +197,13 @@ def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None)
                                     
                                 updates.append(update_qualifier_action(entry_id, f.type, "locus_tag", old_tag, new_tag, feature_id=getattr(f, 'line_number', id(f))))
 
-                proposals.append({
-                    "ann_path": ann_path, 
-                    "rule": "ANN1130", 
-                    "target": "locus_tag_prefix",
-                    "target_level": "qualifier",
-                    "old": wp, "new": bs_prefix, "entry": entry_id,
-                    "positions": positions,
-                    "source_db": source_samd,
-                    "updates": updates
-                })
+                proposals.append(build_proposal(
+                    ann_path=ann_path, entry=entry_id, feature_type="",
+                    qualifier="locus_tag", target="locus_tag_prefix", target_level="qualifier",
+                    positions=positions,
+                    old_value=wp, new_value=bs_prefix, rule="ANN1130",
+                    updates=updates, source_db=source_samd
+                ))
         
         elif len(bs_prefixes) > 1:
             skipped_warnings.append({
@@ -246,16 +240,13 @@ def propose_taxonomy_updates(records, tax_data, ann_path):
                         updates.append(update_qualifier_action(entry_id, feature.type, "organism", org, sci_name, feature_id=getattr(feature, 'line_number', id(feature))))
                         
         if used_in_records:
-            proposals.append({
-                "ann_path": ann_path, 
-                "rule": "ANN1025",  
-                "target": "organism",
-                "target_level": "qualifier",
-                "old": org, "new": sci_name, "entry": "ALL_ENTRIES",
-                "positions": positions,
-                "source_db": source_str,
-                "updates": updates
-            })
+            proposals.append(build_proposal(
+                ann_path=ann_path, entry="ALL_ENTRIES", feature_type="source",
+                qualifier="organism", target="organism", target_level="qualifier",
+                positions=positions,
+                old_value=org, new_value=sci_name, rule="ANN1025",
+                updates=updates, source_db=source_str
+            ))
             
     return proposals
 
@@ -318,29 +309,23 @@ def propose_transl_table_fixes(records, tax_data, ann_path):
                     "new_value": str(table_id)
                 }]
                 
-                proposals.append({
-                    "ann_path": ann_path, 
-                    "rule": "ANN1050",  
-                    "target": "transl_table",
-                    "target_level": "qualifier",
-                    "old": "none", "new": str(table_id), "entry": entry_id,
-                    "positions": [{"entry": entry_id, "feature_id": getattr(feature, 'line_number', id(feature))}],
-                    "source_db": source_db_str,
-                    "updates": updates
-                })
+                proposals.append(build_proposal(
+                    ann_path=ann_path, entry=entry_id, feature_type=feature.type,
+                    qualifier="transl_table", target="transl_table", target_level="qualifier",
+                    positions=[{"entry": entry_id, "feature_id": getattr(feature, 'line_number', id(feature))}],
+                    old_value="none", new_value=str(table_id), rule="ANN1050",
+                    updates=updates, source_db=source_db_str
+                ))
             else:
                 ann_table = feature.qualifiers["transl_table"][0]
                 if str(ann_table) != str(table_id):
                     updates = [update_qualifier_action(entry_id, feature.type, "transl_table", str(ann_table), str(table_id), feature_id=getattr(feature, 'line_number', id(feature)))]
                     
-                    proposals.append({
-                        "ann_path": ann_path, 
-                        "rule": "ANN1050",  
-                        "target": "transl_table",
-                        "target_level": "qualifier",
-                        "old": str(ann_table), "new": str(table_id), "entry": entry_id,
-                        "positions": [{"entry": entry_id, "feature_id": getattr(feature, 'line_number', id(feature))}],
-                        "source_db": source_db_str,
-                        "updates": updates
-                    })
+                    proposals.append(build_proposal(
+                        ann_path=ann_path, entry=entry_id, feature_type=feature.type,
+                        qualifier="transl_table", target="transl_table", target_level="qualifier",
+                        positions=[{"entry": entry_id, "feature_id": getattr(feature, 'line_number', id(feature))}],
+                        old_value=str(ann_table), new_value=str(table_id), rule="ANN1050",
+                        updates=updates, source_db=source_db_str
+                    ))
     return proposals
