@@ -56,6 +56,42 @@ class BaseRule:
             return [f for f in record.features if locus_tag in f.qualifiers.get("locus_tag", [])]
 
     # ==============================================================
+    # クロスレコード走査ヘルパー（ルール共通の定型ロジック）
+    # ==============================================================
+    def iter_unique_qualifier_values(self, records, feature_type, qualifier, strip=False):
+        """
+        全レコードの指定フィーチャー／クオリファイアを走査し、値の重複を除きながら
+        (record, feature, value) を順に yield する。
+        strip=True の場合は値を strip() してから重複判定・yield する。
+        """
+        checked = set()
+        for record in records.values():
+            for feature in self.get_features(record, feature_type):
+                if qualifier in feature.qualifiers:
+                    for raw_value in feature.qualifiers[qualifier]:
+                        value = raw_value.strip() if strip else raw_value
+                        if value not in checked:
+                            checked.add(value)
+                            yield record, feature, value
+
+    def has_qualifier_anywhere(self, records, feature_type, qualifier):
+        """
+        records 全体で、指定フィーチャーに当該クオリファイアが1つでも存在すれば True を返す。
+        """
+        for record in records.values():
+            for feature in self.get_features(record, feature_type):
+                if qualifier in feature.qualifiers:
+                    return True
+        return False
+
+    @staticmethod
+    def extract_accessions(feature, qualifier, prefix):
+        """
+        feature の当該クオリファイア値のうち、prefix で始まるものをリストで返す。
+        """
+        return [v for v in feature.qualifiers.get(qualifier, []) if v.startswith(prefix)]
+
+    # ==============================================================
     # 既存の format_result をラップし、フィーチャーから自動でメタデータを取るメソッド
     # ==============================================================
     def feature_result(self, record, feature, message, level="error", qualifier="", **kwargs):

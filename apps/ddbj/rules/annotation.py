@@ -22,6 +22,20 @@ logger = logging.getLogger(__name__)
 
 POS_PATTERN = re.compile(r"pos:(.+?),aa:")
 
+# DB ステータスID → 文言マッピング（複数ルールで共用）
+# BioProject / BioSample 用（DDBJ 提出ステータス）
+BP_BS_STATUS_MAP = {
+    5600: "withdrawn",
+    5700: "cancelled",
+    5800: "permanently suppressed"
+}
+# DRA (DRR) 用。数値・文字列の両キーに対応
+DRA_STATUS_MAP = {
+    1000: "cancelled", "1000": "cancelled",
+    1100: "permanently suppressed", "1100": "permanently suppressed",
+    1200: "withdrawn", "1200": "withdrawn"
+}
+
 def normalize_name(s):
     if not s: return ""
     return re.sub(r'[^a-z]', '', s.lower())
@@ -510,15 +524,7 @@ class ANN0410(BaseRule):
     is_file_level = True
 
     def validate_file(self, records, context):
-        has_project = False
-        for record in records.values():
-            for feature in self.get_features(record, "DBLINK"):
-                if "project" in feature.qualifiers:
-                    has_project = True
-                    break
-            if has_project: break
-        
-        if not has_project:
+        if not self.has_qualifier_anywhere(records, "DBLINK", "project"):
             return [self.format_result(entry_id="ALL", message=self.description, level="warning")]
         return []
 
@@ -533,22 +539,13 @@ class ANN0420(BaseRule):
 
     def validate_file(self, records, context):
         results = []
-        checked = set()
-        
-        for record in records.values():
-            for feature in self.get_features(record, "DBLINK"):
-                if "project" in feature.qualifiers:
-                    for prj in feature.qualifiers["project"]:
-                        
-                        if not prj.startswith("PRJD"):
-                            continue
-                        
-                        if prj not in checked:
-                            checked.add(prj)
-                            # context.bp_psubs のキーに存在するかどうかで判定
-                            if prj.startswith("PRJDB") and prj not in context.bp_psubs:
-                                msg = f"{self.description} ('{prj}')"
-                                results.append(self.feature_result(record, feature, msg, level="error", qualifier="project"))
+        for record, feature, prj in self.iter_unique_qualifier_values(records, "DBLINK", "project"):
+            if not prj.startswith("PRJD"):
+                continue
+            # context.bp_psubs のキーに存在するかどうかで判定
+            if prj.startswith("PRJDB") and prj not in context.bp_psubs:
+                msg = f"{self.description} ('{prj}')"
+                results.append(self.feature_result(record, feature, msg, level="error", qualifier="project"))
         return results
 
 
@@ -563,35 +560,18 @@ class ANN0425(BaseRule):
 
     def validate_file(self, records, context):
         results = []
-        checked = set()
-        
-        # ステータスIDとメッセージ用文字列のマッピング
-        status_map = {
-            5600: "withdrawn",
-            5700: "cancelled",
-            5800: "permanently suppressed"
-        }
-        
-        for record in records.values():
-            for feature in self.get_features(record, "DBLINK"):
-                if "project" in feature.qualifiers:
-                    for raw_prj in feature.qualifiers["project"]:
-                        prj = raw_prj
-                        
-                        if not prj.startswith("PRJD"):
-                            continue
-                        
-                        if prj not in checked:
-                            checked.add(prj)
-                            if prj.startswith("PRJDB") and prj in context.bp_psubs:
-                                bp_info = context.bp_psubs[prj]
-                                status_id = bp_info.get("status_id")
-                                
-                                if status_id in status_map:
-                                    status_str = status_map[status_id]
-                                    # 実際のステータスに合わせてメッセージを動的に生成
-                                    msg = f"BioProject accession is {status_str} in the BioProject database. ('{prj}')"                                                                        
-                                    results.append(self.feature_result(record, feature, msg, level="error", qualifier="project"))
+        for record, feature, prj in self.iter_unique_qualifier_values(records, "DBLINK", "project"):
+            if not prj.startswith("PRJD"):
+                continue
+            if prj.startswith("PRJDB") and prj in context.bp_psubs:
+                bp_info = context.bp_psubs[prj]
+                status_id = bp_info.get("status_id")
+
+                if status_id in BP_BS_STATUS_MAP:
+                    status_str = BP_BS_STATUS_MAP[status_id]
+                    # 実際のステータスに合わせてメッセージを動的に生成
+                    msg = f"BioProject accession is {status_str} in the BioProject database. ('{prj}')"
+                    results.append(self.feature_result(record, feature, msg, level="error", qualifier="project"))
         return results
         
         
@@ -608,8 +588,8 @@ class ANN0430(BaseRule):
         results = []
         for record in records.values():
             for feature in self.get_features(record, "DBLINK"):
-                prjs = [p for p in feature.qualifiers.get("project", []) if p.startswith("PRJDB")]
-                drrs = [d for d in feature.qualifiers.get("sequence read archive", []) if d.startswith("DRR")]
+                prjs = self.extract_accessions(feature, "project", "PRJDB")
+                drrs = self.extract_accessions(feature, "sequence read archive", "DRR")
                 
                 if not prjs or not drrs:
                     continue
@@ -646,8 +626,8 @@ class ANN0440(BaseRule):
         results = []
         for record in records.values():
             for feature in self.get_features(record, "DBLINK"):
-                prjs = [p for p in feature.qualifiers.get("project", []) if p.startswith("PRJDB")]
-                samds = [s for s in feature.qualifiers.get("biosample", []) if s.startswith("SAMD")]
+                prjs = self.extract_accessions(feature, "project", "PRJDB")
+                samds = self.extract_accessions(feature, "biosample", "SAMD")
                 
                 if not prjs or not samds:
                     continue
@@ -674,27 +654,17 @@ class ANN0445(BaseRule):
 
     def validate_file(self, records, context):
         results = []
-        checked = set()
-        
-        for record in records.values():
-            for feature in self.get_features(record, "DBLINK"):
-                if "project" in feature.qualifiers:
-                    for prj in feature.qualifiers["project"]:
+        for record, feature, prj in self.iter_unique_qualifier_values(records, "DBLINK", "project"):
+            if not prj.startswith("PRJD"):
+                continue
+            if prj.startswith("PRJDB") and prj in context.bp_psubs:
+                project_info = context.bp_psubs[prj]
+                # 辞書型であることを前提に get を使用
+                project_type = project_info.get("project_type") if isinstance(project_info, dict) else None
 
-                        if not prj.startswith("PRJD"):
-                            continue
-                                                    
-                        if prj not in checked:
-                            checked.add(prj)
-                            
-                            if prj.startswith("PRJDB") and prj in context.bp_psubs:
-                                project_info = context.bp_psubs[prj]
-                                # 辞書型であることを前提に get を使用
-                                project_type = project_info.get("project_type") if isinstance(project_info, dict) else None
-                                
-                                if project_type and project_type == "umbrella":
-                                    msg = f"{self.description} ('{prj}')"
-                                    results.append(self.feature_result(record, feature, msg, level="error", qualifier="project"))
+                if project_type and project_type == "umbrella":
+                    msg = f"{self.description} ('{prj}')"
+                    results.append(self.feature_result(record, feature, msg, level="error", qualifier="project"))
         return results
         
 class ANN0450(BaseRule):
@@ -706,15 +676,7 @@ class ANN0450(BaseRule):
     is_file_level = True
 
     def validate_file(self, records, context):
-        has_biosample = False
-        for record in records.values():
-            for feature in self.get_features(record, "DBLINK"):
-                if "biosample" in feature.qualifiers:
-                    has_biosample = True
-                    break
-            if has_biosample: break
-        
-        if not has_biosample:
+        if not self.has_qualifier_anywhere(records, "DBLINK", "biosample"):
             return [self.format_result(entry_id="ALL", message=self.description, level="warning")]
         return []
 
@@ -729,22 +691,13 @@ class ANN0460(BaseRule):
 
     def validate_file(self, records, context):
         results = []
-        checked = set()
-        for record in records.values():
-            for feature in self.get_features(record, "DBLINK"):
-                if "biosample" in feature.qualifiers:
-                    for raw_samd in feature.qualifiers["biosample"]:
-                        samd = raw_samd
-
-                        if not samd.startswith("SAMD"):
-                            continue
-
-                        if samd not in checked:
-                            checked.add(samd)
-                            # context.bs_smp_ids と照合
-                            if samd not in context.bs_smp_ids:
-                                msg = f"{self.description} ('{samd}')"
-                                results.append(self.feature_result(record, feature, msg, level="error", qualifier="biosample"))
+        for record, feature, samd in self.iter_unique_qualifier_values(records, "DBLINK", "biosample"):
+            if not samd.startswith("SAMD"):
+                continue
+            # context.bs_smp_ids と照合
+            if samd not in context.bs_smp_ids:
+                msg = f"{self.description} ('{samd}')"
+                results.append(self.feature_result(record, feature, msg, level="error", qualifier="biosample"))
         return results
 
 
@@ -840,35 +793,18 @@ class ANN0464(BaseRule):
 
     def validate_file(self, records, context):
         results = []
-        checked = set()
-        
-        status_map = {
-            5600: "withdrawn",
-            5700: "cancelled",
-            5800: "permanently suppressed"
-        }
+        for record, feature, samd in self.iter_unique_qualifier_values(records, "DBLINK", "biosample"):
+            if not samd.startswith("SAMD"):
+                continue
+            # DBLINKに記載されたSAMD番号を使って直接 bs_data を参照
+            if hasattr(context, "bs_data") and context.bs_data:
+                samd_info = context.bs_data.get(samd, {})
+                status_id = samd_info.get("status_id")
 
-        for record in records.values():
-            for feature in self.get_features(record, "DBLINK"):
-                if "biosample" in feature.qualifiers:
-                    for raw_samd in feature.qualifiers["biosample"]:
-                        samd = raw_samd
-                        
-                        if not samd.startswith("SAMD"):
-                            continue
-                        
-                        if samd not in checked:
-                            checked.add(samd)
-                            
-                            # DBLINKに記載されたSAMD番号を使って直接 bs_data を参照
-                            if hasattr(context, "bs_data") and context.bs_data:
-                                samd_info = context.bs_data.get(samd, {})
-                                status_id = samd_info.get("status_id")
-                                
-                                if status_id in status_map:
-                                    status_str = status_map[status_id]
-                                    msg = f"BioSample accession is {status_str} in the BioSample database. ('{samd}')"
-                                    results.append(self.feature_result(record, feature, msg, level="error", qualifier="biosample"))
+                if status_id in BP_BS_STATUS_MAP:
+                    status_str = BP_BS_STATUS_MAP[status_id]
+                    msg = f"BioSample accession is {status_str} in the BioSample database. ('{samd}')"
+                    results.append(self.feature_result(record, feature, msg, level="error", qualifier="biosample"))
         return results
         
                                 
@@ -881,15 +817,7 @@ class ANN0470(BaseRule):
     is_file_level = True
 
     def validate_file(self, records, context):
-        has_drr = False
-        for record in records.values():
-            for feature in self.get_features(record, "DBLINK"):
-                if "sequence read archive" in feature.qualifiers:
-                    has_drr = True
-                    break
-            if has_drr: break
-        
-        if not has_drr:
+        if not self.has_qualifier_anywhere(records, "DBLINK", "sequence read archive"):
             return [self.format_result(entry_id="ALL", message=self.description, level="warning")]
         return []
 
@@ -903,20 +831,12 @@ class ANN0480(BaseRule):
 
     def validate_file(self, records, context):
         results = []
-        checked = set()
-        for record in records.values():
-            for feature in self.get_features(record, "DBLINK"):
-                if "sequence read archive" in feature.qualifiers:
-                    for drr in feature.qualifiers["sequence read archive"]:
-
-                        if not drr.startswith("DRR"):
-                            continue
-
-                        if drr not in checked:
-                            checked.add(drr)
-                            if drr.startswith("DRR") and drr not in context.dra_refs:
-                                msg = f"{self.description} ('{drr}')"
-                                results.append(self.feature_result(record, feature, msg, level="error", qualifier="sequence read archive"))
+        for record, feature, drr in self.iter_unique_qualifier_values(records, "DBLINK", "sequence read archive"):
+            if not drr.startswith("DRR"):
+                continue
+            if drr.startswith("DRR") and drr not in context.dra_refs:
+                msg = f"{self.description} ('{drr}')"
+                results.append(self.feature_result(record, feature, msg, level="error", qualifier="sequence read archive"))
         return results
 
 
@@ -931,36 +851,21 @@ class ANN0485(BaseRule):
 
     def validate_file(self, records: dict, context):
         results = []
-        checked = set()
-        
+
         # ユーザー指定のステータス定義（数値・文字列の両方に対応）
         invalid_statuses = {1000, 1100, 1200, "1000", "1100", "1200"}
-        status_map = {
-            1000: "cancelled", "1000": "cancelled",
-            1100: "permanently suppressed", "1100": "permanently suppressed",
-            1200: "withdrawn", "1200": "withdrawn"
-        }
 
-        for record in records.values():
-            for feature in self.get_features(record, "DBLINK"):
-                if "sequence read archive" in feature.qualifiers:
-                    for raw_drr in feature.qualifiers["sequence read archive"]:
-                        drr = raw_drr
-                        
-                        if not drr.startswith("DRR"):
-                            continue
-                        
-                        if drr not in checked:
-                            checked.add(drr)
-                            
-                            # コンテキストからステータスを取得
-                            if hasattr(context, "drr_status") and context.drr_status:
-                                status = context.drr_status.get(drr)
-                                
-                                if status in invalid_statuses:
-                                    status_str = status_map[status]
-                                    msg = f"DRR accession is {status_str} in the DRA database. ('{drr}')"
-                                    results.append(self.feature_result(record, feature, msg, level="error", qualifier="sequence read archive"))
+        for record, feature, drr in self.iter_unique_qualifier_values(records, "DBLINK", "sequence read archive"):
+            if not drr.startswith("DRR"):
+                continue
+            # コンテキストからステータスを取得
+            if hasattr(context, "drr_status") and context.drr_status:
+                status = context.drr_status.get(drr)
+
+                if status in invalid_statuses:
+                    status_str = DRA_STATUS_MAP[status]
+                    msg = f"DRR accession is {status_str} in the DRA database. ('{drr}')"
+                    results.append(self.feature_result(record, feature, msg, level="error", qualifier="sequence read archive"))
         return results
         
                 
@@ -977,8 +882,8 @@ class ANN0490(BaseRule):
         results = []
         for entry_id, record in records.items():
             for feature in self.get_features(record, "DBLINK"):
-                samds = [s for s in feature.qualifiers.get("biosample", []) if s.startswith("SAMD")]
-                drrs = [d for d in feature.qualifiers.get("sequence read archive", []) if d.startswith("DRR")]                    
+                samds = self.extract_accessions(feature, "biosample", "SAMD")
+                drrs = self.extract_accessions(feature, "sequence read archive", "DRR")                    
 
                 if not samds or not drrs:
                     continue
@@ -1095,15 +1000,7 @@ class ANN0820(BaseRule):
             return results
 
         # ST_COMMENT に Assembly Name が存在するかチェック
-        has_assembly_name = False
-        for record in records.values():
-            for feature in self.get_features(record, "ST_COMMENT"):
-                if "Assembly Name" in feature.qualifiers:
-                    has_assembly_name = True
-                    break
-            if has_assembly_name: break
-
-        if not has_assembly_name:
+        if not self.has_qualifier_anywhere(records, "ST_COMMENT", "Assembly Name"):
             msg = f"{self.description} (Organism: '{eukaryote_org_name}')"
             results.append(self.format_result(
                 entry_id="ALL",
@@ -1207,15 +1104,7 @@ class ANN1010(BaseRule):
     is_file_level = True
 
     def validate_file(self, records, context):
-        has_organism = False
-        for record in records.values():
-            for feature in self.get_features(record, "source"):
-                if "organism" in feature.qualifiers:
-                    has_organism = True
-                    break
-            if has_organism: break
-                
-        if not has_organism:
+        if not self.has_qualifier_anywhere(records, "source", "organism"):
             return [self.format_result(entry_id="ALL", message=self.description, level="error")]
         return []
 
@@ -1229,18 +1118,11 @@ class ANN1020(BaseRule):
 
     def validate_file(self, records, context):
         results = []
-        checked = set()
-        for record in records.values():
-            for feature in self.get_features(record, "source"):
-                if "organism" in feature.qualifiers:
-                    for org in feature.qualifiers["organism"]:
-                        org_clean = org.strip()
-                        if org_clean not in checked:
-                            checked.add(org_clean)
-                            t_data = context.tax_data.get(org_clean, {"status": "not_found"})
-                            if t_data["status"] == "not_found":
-                                msg = f"{self.description} ('{org_clean}')"
-                                results.append(self.feature_result(record, feature, msg, level="warning", qualifier="organism"))
+        for record, feature, org_clean in self.iter_unique_qualifier_values(records, "source", "organism", strip=True):
+            t_data = context.tax_data.get(org_clean, {"status": "not_found"})
+            if t_data["status"] == "not_found":
+                msg = f"{self.description} ('{org_clean}')"
+                results.append(self.feature_result(record, feature, msg, level="warning", qualifier="organism"))
         return results
 
 class ANN1040(BaseRule):
@@ -1253,20 +1135,13 @@ class ANN1040(BaseRule):
 
     def validate_file(self, records, context, ann_path=None, seq_path=None):
         results = []
-        checked = set()
-        for record in records.values():
-            for feature in self.get_features(record, "source"):
-                if "organism" in feature.qualifiers:
-                    for org in feature.qualifiers["organism"]:
-                        org_clean = org.strip()
-                        if org_clean not in checked:
-                            checked.add(org_clean)
-                            t_data = context.tax_data.get(org_clean, {})
-                            
-                            if t_data.get("status") == "invalid_rank":
-                                msg = f"{self.description} (Found: '{org_clean}', Rank: '{t_data.get('rank', 'unknown')}')"
-                                results.append(self.feature_result(record, feature, msg, level="error", qualifier="organism"))
-        return results        
+        for record, feature, org_clean in self.iter_unique_qualifier_values(records, "source", "organism", strip=True):
+            t_data = context.tax_data.get(org_clean, {})
+
+            if t_data.get("status") == "invalid_rank":
+                msg = f"{self.description} (Found: '{org_clean}', Rank: '{t_data.get('rank', 'unknown')}')"
+                results.append(self.feature_result(record, feature, msg, level="error", qualifier="organism"))
+        return results
         
 class ANN1050(BaseRule):
     rule_id = "ANN1050"
