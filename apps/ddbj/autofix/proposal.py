@@ -1,12 +1,9 @@
-"""autofix の proposal / updates 辞書を構築するファクトリ（提案 E）。
+"""autofix の proposal / updates 辞書を構築するファクトリ（提案 E / K）。
 
 proposal dict の組み立てが orchestrator・autofix/format・autofix/external_db に分散・重複していたため、
-構築ロジックをここに集約する。
-
-互換性のため、当面はスキーマを現状のまま維持する:
-- proposal は old_value/new_value と、エイリアスの old/new を両方持つ。
-- 既存サイトが出力していたキー集合をそのまま再現できるよう、任意フィールドはオプション引数にする。
-（old/new エイリアスの撤廃はテスト整備後の将来課題。）
+構築ロジックをここに集約する。全サイトがこのファクトリ経由になったため（提案 K）、
+スキーマは old_value/new_value に一本化した（旧 old/new エイリアスは撤廃済み）。
+source_db は指定された場合のみキーを付与する。
 """
 
 
@@ -42,10 +39,7 @@ def update_location_action(entry, feature_type, old_value, new_value, feature_id
 def build_proposal(ann_path, entry, feature_type, qualifier, target, target_level,
                    positions, old_value, new_value, rule, updates,
                    message="Value will be fixed.", source_db=None):
-    """
-    autofix proposal 辞書を構築する。old/new エイリアスを含む現行スキーマを再現する。
-    source_db は指定された場合のみキーを付与する（従来サイトのキー集合を変えないため）。
-    """
+    """autofix proposal 辞書を構築する（スキーマは old_value/new_value に一本化）。"""
     proposal = {
         "ann_path": ann_path,
         "entry": entry,
@@ -56,8 +50,6 @@ def build_proposal(ann_path, entry, feature_type, qualifier, target, target_leve
         "positions": positions,
         "old_value": old_value,
         "new_value": new_value,
-        "old": old_value,
-        "new": new_value,
         "message": message,
         "rule": rule,
         "updates": updates,

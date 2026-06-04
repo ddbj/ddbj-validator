@@ -26,7 +26,7 @@ def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None):
         rule_id = p.get("rule", "UNKNOWN_RULE")
         source_db = p.get("source_db", "")
         
-        change_key = (str(p.get("old", "")), str(p.get("new", "")), source_db)
+        change_key = (str(p.get("old_value", "")), str(p.get("new_value", "")), source_db)
         
         target_dict = summary[target][file_set][change_key]
         target_dict["target_level"] = p.get("target_level", "qualifier")

@@ -198,8 +198,8 @@ def _validate_single_file_set(args):
     if is_web_mode:
         for p in pcr_fixes:
             acc = p["entry"].split('_')[0]
-            current = p["old"]
-            fixed = p["new"]
+            current = p["old_value"]
+            fixed = p["new_value"]
             # -o オプションがあればそこへ。なければ入力ファイルの親へ
             base_out = Path(report_out_dir) if report_out_dir else Path(ann_path).parent
             out_name = f"{Path(ann_path).stem}.updQ.txt"
@@ -803,17 +803,11 @@ class ValidatorPipeline:
             print() 
 
         for p in self.all_interactive_proposals:
-            old_val = p.get("old_value") if p.get("old_value") is not None else p.get("old")
-            new_val = p.get("new_value") if p.get("new_value") is not None else p.get("new")
-            
-            p["old_value"] = old_val
-            p["old"] = old_val
-            p["new_value"] = new_val
-            p["new"] = new_val
-            
+            # proposal は build_proposal 経由で old_value/new_value を必ず持つ（old/new エイリアスは撤廃済み）。
+            # ここでは rule / target の欠損のみ防御的に補完する。
             if "rule" not in p or not p["rule"]:
                 p["rule"] = "UNKNOWN"
-                
+
             if "target" not in p:
                 p["target"] = p.get("qualifier", "feature")
             
