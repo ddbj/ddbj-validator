@@ -14,17 +14,20 @@ env/
 log/
 
 # =========================
-# 設定ファイル
-# =========================
-.clinerules
-.clineignore
-
-# =========================
 # claude logs setting
 # =========================
 CLAUDE.md
 ai_logs/
 .claudeignore
+.claude/
+.dev/
+Makefile
+
+# =========================
+# 設定ファイル
+# =========================
+.clinerules
+.clineignore
 
 # =========================
 # Python キャッシュ・バイトコード
