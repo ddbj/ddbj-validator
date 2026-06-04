@@ -519,7 +519,12 @@ class ValidatorPipeline:
         self.cv_terms = {}
 
     def run_validation(self):
-        """フェーズ1: ファイルの検証と Autofix 提案の収集"""
+        """検証パイプライン: 外部参照の一括取得 → 並列ファイル検証を順に実行する。"""
+        context = self._fetch_external()
+        return self._validate_files(context)
+
+    def _fetch_external(self):
+        """フェーズ1: 外部参照（内部DB / NCBI API）を一括取得し ValidationContext を構築して返す。"""
         all_samds, all_projects, all_drrs, all_organisms, all_journals = set(), set(), set(), set(), set()
         ncbi_check_prjs, ncbi_check_sams, ncbi_check_sras = set(), set() , set()
         
@@ -691,7 +696,10 @@ class ValidatorPipeline:
 
         self.tax_data = tax_data
         self.bs_data = bs_data
-            
+        return context
+
+    def _validate_files(self, context):
+        """フェーズ2: 各ファイルを並列検証し、クロスファイルチェックを行って JSONL パス一覧を返す。"""
         auto_updates_by_file = defaultdict(list)
         updq_data = defaultdict(list)
                 
