@@ -209,8 +209,7 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
                 else:
                     # 一意に決まらない場合は従来の Fatal エラー
                     msg = f"DIVISION '{req_div}' is required for DATATYPE '{tags_str}'."
-                    res = self.format_result(entry_id="COMMON", message=msg, level="error", feature_type="DIVISION")
-                    res["rule"] = "ANN0641"
+                    res = self.format_result(entry_id="COMMON", message=msg, level="error", feature_type="DIVISION", rule="ANN0641")
                     results.append(res)
                                     
         return results
@@ -242,8 +241,7 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
                     if allow_empty:
                         msg += " OR no keyword at all"
                         
-                    res = self.format_result(entry_id="COMMON", message=msg, level="error", feature_type="KEYWORD")
-                    res["rule"], res["target"] = "ANN0630", "KEYWORD"
+                    res = self.format_result(entry_id="COMMON", message=msg, level="error", feature_type="KEYWORD", rule="ANN0630", target="KEYWORD")
                     results.append(res)
         return results
 
@@ -263,14 +261,12 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
             if not found_tagset:
                 tags_str = ", ".join(active_tags)
                 msg = f"tagset_id qualifier is required for DATATYPE '{tags_str}' (Expected: '{req_tagset}')."
-                res = self.format_result(entry_id="COMMON", message=msg, level="error", feature_type="ST_COMMENT", qualifier="tagset_id")
-                res["rule"], res["target"] = "ANN0905", "ST_COMMENT"
+                res = self.format_result(entry_id="COMMON", message=msg, level="error", feature_type="ST_COMMENT", qualifier="tagset_id", rule="ANN0905", target="ST_COMMENT")
                 results.append(res)
             elif found_tagset != req_tagset:
                 tags_str = ", ".join(active_tags)
                 msg = f"Invalid tagset_id '{found_tagset}' for DATATYPE '{tags_str}'. Expected: '{req_tagset}'."
-                res = self.format_result(entry_id="COMMON", message=msg, level="error", feature_type="ST_COMMENT", qualifier="tagset_id")
-                res["rule"], res["target"] = "ANN0905", "ST_COMMENT"
+                res = self.format_result(entry_id="COMMON", message=msg, level="error", feature_type="ST_COMMENT", qualifier="tagset_id", rule="ANN0905", target="ST_COMMENT")
                 results.append(res)
         return results
 
@@ -287,8 +283,7 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
             if missing_stcs:
                 tags_str = ", ".join(active_tags)
                 msg = f"Missing required structured comment(s): {', '.join(missing_stcs)} (required for DATATYPE {tags_str})"
-                res = self.format_result(entry_id="COMMON", message=msg, level="error", feature_type="ST_COMMENT")
-                res["rule"], res["target"] = "ANN4003", "ST_COMMENT"
+                res = self.format_result(entry_id="COMMON", message=msg, level="error", feature_type="ST_COMMENT", rule="ANN4003", target="ST_COMMENT")
                 results.append(res)
         return results
 
@@ -324,8 +319,7 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
             if missing_dblinks:
                 tags_str = ", ".join(active_tags)
                 msg = f"Missing required DBLINK(s): {', '.join(missing_dblinks)} (required for DATATYPE {tags_str})"
-                res = self.format_result(entry_id="COMMON", message=msg, level="error", feature_type="DBLINK")
-                res["rule"], res["target"] = "ANN0910", "DBLINK"
+                res = self.format_result(entry_id="COMMON", message=msg, level="error", feature_type="DBLINK", rule="ANN0910", target="DBLINK")
                 results.append(res)
         return results
 
@@ -354,16 +348,14 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
                 missing_req = [rq for rq in req_quals if rq not in source_quals]
                 if missing_req:
                     msg = f"Missing required qualifier(s) in source: {', '.join(missing_req)} (required for DATATYPE {tags_str})"
-                    res = self.feature_result(record, source_feats[0], msg, level="error")
-                    res["rule"], res["target"] = "ANN4004", "source"
+                    res = self.feature_result(record, source_feats[0], msg, level="error", rule="ANN4004", target="source")
                     results.append(res)
                     
                 # 推奨
                 missing_rec = [rq for rq in rec_quals if rq not in source_quals]
                 if missing_rec:
                     msg = f"Missing recommended qualifier(s) in source: {', '.join(missing_rec)} (required for DATATYPE {tags_str}). If these are not appropriate, please ignore this message."
-                    res = self.feature_result(record, source_feats[0], msg, level="warning")
-                    res["rule"], res["target"] = "ANN4005", "source"
+                    res = self.feature_result(record, source_feats[0], msg, level="warning", rule="ANN4005", target="source")
                     results.append(res)
 
                 # 禁止Qualifier (unsupported_qualifiers) のチェック
@@ -374,8 +366,7 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
                                 iq, 
                                 {"rule_id": "ANNXXXX", "msg": f"The '{iq}' qualifier is not permitted for DATATYPE '{tags_str}'."}
                             )
-                            res = self.feature_result(record, feat, err_info["msg"], level="error", qualifier=iq)
-                            res["rule"], res["target"] = err_info["rule_id"], "source"
+                            res = self.feature_result(record, feat, err_info["msg"], level="error", qualifier=iq, rule=err_info["rule_id"], target="source")
                             results.append(res)
         return results
 
@@ -481,9 +472,7 @@ class ANN0640(BaseRule):
         target_feat = keyword_feats[0] if keyword_feats else None
         
         msg = f'Keywords require DATATYPE/type "{req_dts_str}".'
-        res = self.feature_result(common_rec, target_feat, msg, level="error", qualifier="keyword")
-        res["rule"] = self.rule_id
-        res["target"] = "KEYWORD"
+        res = self.feature_result(common_rec, target_feat, msg, level="error", qualifier="keyword", rule=self.rule_id, target="KEYWORD")
         results.append(res)
 
         return results
@@ -517,8 +506,7 @@ class DIV_TYPE_DYNAMIC_VALIDATOR(BaseRule):
             if kw_feat_ref:
                 res = self.feature_result(common_rec, kw_feat_ref, msg, level="error", qualifier="keyword")
             else:
-                res = self.format_result(entry_id="COMMON", message=msg, level="error", feature_type="KEYWORD")
-            res["rule"], res["target"] = "ANN0640", "KEYWORD"
+                res = self.format_result(entry_id="COMMON", message=msg, level="error", feature_type="KEYWORD", rule="ANN0640", target="KEYWORD")
             results.append(res)
 
         # [特例 B] EST の 3'-EST コメント必須チェック
@@ -538,8 +526,7 @@ class DIV_TYPE_DYNAMIC_VALIDATOR(BaseRule):
             
             if not has_required_comment:
                 msg = "Keyword '3'-end sequence (3'-EST)' requires a specific strand direction statement in COMMENT"
-                res = self.format_result(entry_id="COMMON", message=msg, level="error", feature_type="COMMENT")
-                res["rule"], res["target"] = "ANN4011", "COMMENT"
+                res = self.format_result(entry_id="COMMON", message=msg, level="error", feature_type="COMMENT", rule="ANN4011", target="COMMENT")
                 results.append(res)
                 
         return results

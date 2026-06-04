@@ -416,20 +416,17 @@ class DRA_CROSSCHECK_VALIDATOR(BaseRule):
 
                             if valid_sources and source and source not in valid_sources:
                                 msg = f"{desc_prefix}: Inconsistent SRA Experiment LIBRARY_SOURCE (Found: '{source}' in {drx} for {drr_upper})"
-                                res = self.feature_result(record, feature, msg, level="warning", qualifier="sequence read archive")
-                                res["rule"] = id_source
+                                res = self.feature_result(record, feature, msg, level="warning", qualifier="sequence read archive", rule=id_source)
                                 results.append(res)
 
                             if inv_strategies and strategy in inv_strategies:
                                 msg = f"{desc_prefix}: Inconsistent SRA Experiment LIBRARY_STRATEGY (Found: '{strategy}' in {drx} for {drr_upper})"
-                                res = self.feature_result(record, feature, msg, level="warning", qualifier="sequence read archive")
-                                res["rule"] = id_strat
+                                res = self.feature_result(record, feature, msg, level="warning", qualifier="sequence read archive", rule=id_strat)
                                 results.append(res)
 
                             if inv_selections and selection in inv_selections:
                                 msg = f"{desc_prefix}: Inconsistent SRA Experiment LIBRARY_SELECTION (Found: '{selection}' in {drx} for {drr_upper})"
-                                res = self.feature_result(record, feature, msg, level="warning", qualifier="sequence read archive")
-                                res["rule"] = id_sel
+                                res = self.feature_result(record, feature, msg, level="warning", qualifier="sequence read archive", rule=id_sel)
                                 results.append(res)
 
         return results
@@ -585,8 +582,7 @@ class CDS_TRANSLATION_VALIDATOR(BaseRule):
                 first_codon = codons[0]
                 if first_codon not in start_codons:
                     msg = f'"{first_codon}" is not a valid start codon for the 5\' complete CDS. (Found: {first_codon} at {location_str})'
-                    res = self.feature_result(record, feature, msg, level="error")
-                    res["rule"], res["target"] = "AXS6040", "CDS"
+                    res = self.feature_result(record, feature, msg, level="error", rule="AXS6040", target="CDS")
                     results.append(res)
 
             # 終止コドンのチェック (一括翻訳の結果を再利用)
@@ -604,8 +600,7 @@ class CDS_TRANSLATION_VALIDATOR(BaseRule):
                     
                     if not has_term_except:
                         msg = f'"{last_codon}" is not a valid stop codon for the 3\' complete CDS. (Found: {last_codon} at {location_str})'
-                        res = self.feature_result(record, feature, msg, level="error")
-                        res["rule"], res["target"] = "AXS6050", "CDS"
+                        res = self.feature_result(record, feature, msg, level="error", rule="AXS6050", target="CDS")
                         results.append(res)
                         
             has_transl_except = "transl_except" in feature.qualifiers
@@ -616,15 +611,13 @@ class CDS_TRANSLATION_VALIDATOR(BaseRule):
                 
                 if aa == "X":
                     msg = f'Untranslatable codon "{codon}" detected in the sequence. These codons will be translated to \'X\' (unknown amino acids) after loading to the DDBJ database. (Found: {codon} at codon {codon_pos} in {location_str})'
-                    res = self.feature_result(record, feature, msg, level="warning")
-                    res["rule"], res["target"] = "AXS6030", "CDS"
+                    res = self.feature_result(record, feature, msg, level="warning", rule="AXS6030", target="CDS")
                     results.append(res)
                     
                 elif aa == "*":
                     if i < len(codons) - 1 and not has_transl_except:
                         msg = f'Internal stop codon within the CDS. (Found: {codon} at codon {codon_pos} in {location_str})'
-                        res = self.feature_result(record, feature, msg, level="error")
-                        res["rule"], res["target"] = "AXS6060", "CDS"
+                        res = self.feature_result(record, feature, msg, level="error", rule="AXS6060", target="CDS")
                         results.append(res)
 
         return results
@@ -673,15 +666,13 @@ class CDS_TRANSL_EXCEPT_VALIDATOR(BaseRule):
             if "codon_start" in feature.qualifiers:
                 cs_val = feature.qualifiers["codon_start"][0].strip()
                 if cs_val not in ["1", "2", "3"]:
-                    res = self.feature_result(record, feature, f'Invalid value "{cs_val}" for the codon_start qualifier.', level="error", qualifier="codon_start")
-                    res["rule"], res["target"] = "AXS6420", "codon_start"
+                    res = self.feature_result(record, feature, f'Invalid value "{cs_val}" for the codon_start qualifier.', level="error", qualifier="codon_start", rule="AXS6420", target="codon_start")
                     results.append(res)
                 else:
                     codon_start = int(cs_val)
 
             if is_5_complete and codon_start != 1:
-                res = self.feature_result(record, feature, 'The codon_start qualifier value must be "1" for the 5\' complete CDS.', level="error", qualifier="codon_start")
-                res["rule"], res["target"] = "ANN6090", "codon_start"
+                res = self.feature_result(record, feature, 'The codon_start qualifier value must be "1" for the 5\' complete CDS.', level="error", qualifier="codon_start", rule="ANN6090", target="codon_start")
                 results.append(res)
 
             transl_excepts = feature.qualifiers.get("transl_except", [])
@@ -703,8 +694,7 @@ class CDS_TRANSL_EXCEPT_VALIDATOR(BaseRule):
             for te_val in transl_excepts:
                 m = TRANSL_EXCEPT_PATTERN.match(te_val.strip())
                 if not m:
-                    res = self.feature_result(record, feature, f'Invalid value "{te_val}" for the transl_except and codon_start qualifiers.', level="error", qualifier="transl_except")
-                    res["rule"], res["target"] = "AXS6420", "transl_except"
+                    res = self.feature_result(record, feature, f'Invalid value "{te_val}" for the transl_except and codon_start qualifiers.', level="error", qualifier="transl_except", rule="AXS6420", target="transl_except")
                     results.append(res)
                     continue
 
@@ -714,8 +704,7 @@ class CDS_TRANSL_EXCEPT_VALIDATOR(BaseRule):
                 aa_lower = aa_str.lower()
 
                 if aa_lower not in aa_name_map:
-                    res = self.feature_result(record, feature, 'Invalid amino acid abbreviation code in the transl_except qualifier.', level="error", qualifier="transl_except")
-                    res["rule"], res["target"] = "AXS6410", "transl_except"
+                    res = self.feature_result(record, feature, 'Invalid amino acid abbreviation code in the transl_except qualifier.', level="error", qualifier="transl_except", rule="AXS6410", target="transl_except")
                     results.append(res)
                     continue
                 
@@ -723,8 +712,7 @@ class CDS_TRANSL_EXCEPT_VALIDATOR(BaseRule):
                     te_loc = _parse_location_string(pos_str, seq_length=len(record.seq))
                 except Exception:
                     msg = f"Invalid base range in the transl_except qualifier. (Found: '{te_val.strip()}')"
-                    res = self.feature_result(record, feature, msg, level="error", qualifier="transl_except")
-                    res["rule"], res["target"] = "AXS6440", "transl_except"
+                    res = self.feature_result(record, feature, msg, level="error", qualifier="transl_except", rule="AXS6440", target="transl_except")
                     results.append(res)
                     continue
 
@@ -734,21 +722,18 @@ class CDS_TRANSL_EXCEPT_VALIDATOR(BaseRule):
                 
                 if rel_start_idx == -1:
                     msg = f"Invalid base range in the transl_except qualifier. (Found: '{te_val.strip()}')"
-                    res = self.feature_result(record, feature, msg, level="error", qualifier="transl_except")
-                    res["rule"], res["target"] = "AXS6440", "transl_except"
+                    res = self.feature_result(record, feature, msg, level="error", qualifier="transl_except", rule="AXS6440", target="transl_except")
                     results.append(res)
                     continue
                     
                 te_pos_set = set(te_positions)
                 if not te_pos_set.isdisjoint(used_positions):
-                    res = self.feature_result(record, feature, 'Overlapping base ranges in multiple transl_except qualifiers.', level="error", qualifier="transl_except")
-                    res["rule"], res["target"] = "AXS6430", "transl_except"
+                    res = self.feature_result(record, feature, 'Overlapping base ranges in multiple transl_except qualifiers.', level="error", qualifier="transl_except", rule="AXS6430", target="transl_except")
                     results.append(res)
                 used_positions.update(te_pos_set)
 
                 if (rel_start_idx - (codon_start - 1)) % 3 != 0:
-                    res = self.feature_result(record, feature, 'The transl_except qualifier base range mismatches with the reading frame of the CDS feature.', level="error", qualifier="transl_except")
-                    res["rule"], res["target"] = "AXS6470", "transl_except"
+                    res = self.feature_result(record, feature, 'The transl_except qualifier base range mismatches with the reading frame of the CDS feature.', level="error", qualifier="transl_except", rule="AXS6470", target="transl_except")
                     results.append(res)
 
                 if cds_seq_extracted is None:
@@ -764,8 +749,7 @@ class CDS_TRANSL_EXCEPT_VALIDATOR(BaseRule):
                         target_aa_1 = amino_acids_def.get(aa_normalized, {}).get("code", "?")
                         
                         if actual_aa == target_aa_1:
-                            res = self.feature_result(record, feature, 'Unnecessary transl_except: Specified amino acids are identical with the conceptual translation of the CDS feature.', level="error", qualifier="transl_except")
-                            res["rule"], res["target"] = "AXS6480", "transl_except"
+                            res = self.feature_result(record, feature, 'Unnecessary transl_except: Specified amino acids are identical with the conceptual translation of the CDS feature.', level="error", qualifier="transl_except", rule="AXS6480", target="transl_except")
                             results.append(res)
                     except Exception:
                         pass
@@ -775,20 +759,17 @@ class CDS_TRANSL_EXCEPT_VALIDATOR(BaseRule):
 
                 if codon_idx == 0:
                     if aa_normalized != "Met":
-                        res = self.feature_result(record, feature, 'Invalid start amino acid: [transl_except] at the 5\' end must be "Met".', level="warning", qualifier="transl_except")
-                        res["rule"], res["target"] = "AXS6490", "transl_except"
+                        res = self.feature_result(record, feature, 'Invalid start amino acid: [transl_except] at the 5\' end must be "Met".', level="warning", qualifier="transl_except", rule="AXS6490", target="transl_except")
                         results.append(res)
 
                 if codon_idx == num_codons - 1:
                     if aa_normalized != "TERM":
-                        res = self.feature_result(record, feature, 'Invalid stop amino acid: [transl_except] at the 3\' end must be "TERM".', level="error", qualifier="transl_except")
-                        res["rule"], res["target"] = "AXS6500", "transl_except"
+                        res = self.feature_result(record, feature, 'Invalid stop amino acid: [transl_except] at the 3\' end must be "TERM".', level="error", qualifier="transl_except", rule="AXS6500", target="transl_except")
                         results.append(res)
 
                 if codon_idx > 0 and codon_idx < num_codons - 1:
                     if aa_normalized == "TERM":
-                        res = self.feature_result(record, feature, 'Unexpected internal stop: [transl_except] specifies "TERM" internally.', level="error", qualifier="transl_except")
-                        res["rule"], res["target"] = "AXS6510", "transl_except"
+                        res = self.feature_result(record, feature, 'Unexpected internal stop: [transl_except] specifies "TERM" internally.', level="error", qualifier="transl_except", rule="AXS6510", target="transl_except")
                         results.append(res)
 
         return results      

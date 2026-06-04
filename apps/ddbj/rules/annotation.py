@@ -73,8 +73,7 @@ class ANN0160(BaseRule):
 
         if not is_valid:
             msg = f"{self.description} (Found: '{entry_name}')"
-            res = self.format_result(entry_id=entry_name, message=msg, level="fatal", feature_type="entry")
-            res["rule"], res["target"] = self.rule_id, "file"
+            res = self.format_result(entry_id=entry_name, message=msg, level="fatal", feature_type="entry", rule=self.rule_id, target="file")
             results.append(res)
 
         return results        
@@ -1032,8 +1031,7 @@ class ANN0830(BaseRule):
             
             if qual_keys and qual_keys[0] != "tagset_id":
                 msg = "The tagset_id must be the first qualifier in ST_COMMENT."
-                res = self.feature_result(record, feature, msg, level="error", qualifier=qual_keys[0])
-                res["rule"] = "ANN0870"
+                res = self.feature_result(record, feature, msg, level="error", qualifier=qual_keys[0], rule="ANN0870")
                 results.append(res)
 
             for q_name, q_values in feature.qualifiers.items():
@@ -1041,13 +1039,11 @@ class ANN0830(BaseRule):
                 if len(q_values) > 1:
                     if q_name == "tagset_id":
                         msg = "Duplicate tagset_id value."
-                        res = self.feature_result(record, feature, msg, level="error", qualifier=q_name)
-                        res["rule"] = "ANN0880"
+                        res = self.feature_result(record, feature, msg, level="error", qualifier=q_name, rule="ANN0880")
                         results.append(res)
                     else:
                         msg = "Duplicate ST_COMMENT qualifier."
-                        res = self.feature_result(record, feature, msg, level="error", qualifier=q_name)
-                        res["rule"] = "ANN0900"
+                        res = self.feature_result(record, feature, msg, level="error", qualifier=q_name, rule="ANN0900")
                         results.append(res)
                 
                 if len(q_name) > 64:
@@ -1059,8 +1055,7 @@ class ANN0830(BaseRule):
                     
                     if not val_str:
                         msg = "Missing value for ST_COMMENT qualifier."
-                        res = self.feature_result(record, feature, msg, level="error", qualifier=q_name)
-                        res["rule"] = "ANN0860"
+                        res = self.feature_result(record, feature, msg, level="error", qualifier=q_name, rule="ANN0860")
                         results.append(res)
                         continue  
                     
@@ -1291,8 +1286,7 @@ class ANN1110(BaseRule):
                         first_word = ""
                     
                     if first_word and first_word in inst_codes_lower:
-                        res = self.feature_result(record, feature, self.description, level="warning", qualifier=q_name)
-                        res["entry"] = getattr(feature, 'original_entry_id', entry_id)
+                        res = self.feature_result(record, feature, self.description, level="warning", qualifier=q_name, entry=getattr(feature, 'original_entry_id', entry_id))
                         results.append(res)
                         break # 1つのフィーチャーで1回エラーを出せばOK
 
@@ -2136,8 +2130,7 @@ class ANN1810(BaseRule):
             if len(occurrences) > 1:
                 for entry_id, record_obj, feature in occurrences:
                     msg = f"{self.description} (Duplicate clone: '{clone_val}')"
-                    res = self.feature_result(record_obj, feature, msg, level="error", qualifier="clone")
-                    res["entry"] = entry_id
+                    res = self.feature_result(record_obj, feature, msg, level="error", qualifier="clone", entry=entry_id)
                     results.append(res)
                     
         return results
@@ -2742,8 +2735,7 @@ class ANN2560(BaseRule):
 
                     if errors:
                         msg = f"{self.description} '{val}' ({', '.join(errors)})"
-                        res = self.feature_result(record, feature, msg, level="warning", qualifier="chromosome")
-                        res["entry"] = entry_id
+                        res = self.feature_result(record, feature, msg, level="warning", qualifier="chromosome", entry=entry_id)
                         results.append(res)
                         
         return results
@@ -2772,8 +2764,7 @@ class ANN2570(BaseRule):
 
                     if warnings:
                         msg = f"{self.description} '{val}' ({', '.join(warnings)})"
-                        res = self.feature_result(record, feature, msg, level="warning", qualifier="plasmid")
-                        res["entry"] = entry_id 
+                        res = self.feature_result(record, feature, msg, level="warning", qualifier="plasmid", entry=entry_id)
                         results.append(res)
         return results
 
@@ -3082,17 +3073,13 @@ class ANN2670(BaseRule):
             
             if f_type in discouraged_features:
                 msg = f"The '{f_type}' feature exists."
-                res = self.feature_result(record, feature, msg, level="info")
-                res["target"] = "feature"
-                res["rule"] = self.rule_id
+                res = self.feature_result(record, feature, msg, level="info", target="feature", rule=self.rule_id)
                 results.append(res)
                 
             for q_name in feature.qualifiers:
                 if q_name in discouraged_qualifiers:
                     msg = f"The '{q_name}' qualifier exists."
-                    res = self.feature_result(record, feature, msg, level="info", qualifier=q_name)
-                    res["target"] = "qualifier"
-                    res["rule"] = self.rule_id
+                    res = self.feature_result(record, feature, msg, level="info", qualifier=q_name, target="qualifier", rule=self.rule_id)
                     results.append(res)
                     
         return results
@@ -3178,8 +3165,7 @@ class ANTICODON_VALIDATOR(BaseRule):
                         else:
                             msg = f"Invalid 'aa' value in the anticodon qualifier. It must be a valid amino acid abbreviation. (Found: '{aa_str}')"
                             
-                        res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon")
-                        res["rule"] = "ANN2710"
+                        res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon", rule="ANN2710")
                         results.append(res)
                         is_aa_valid = False
 
@@ -3205,15 +3191,13 @@ class ANTICODON_VALIDATOR(BaseRule):
                             
                             if a_min < parent_start or a_max > parent_end:
                                 msg = "The anticodon location is out of the parent tRNA feature range."
-                                res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon")
-                                res["rule"] = "ANN2740"
+                                res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon", rule="ANN2740")
                                 results.append(res)
                                 anticodon_loc = None 
                                 
                     except (Exception):
                         msg = "Invalid 'pos' value in the anticodon qualifier. Could not parse as a valid location."
-                        res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon")
-                        res["rule"] = "ANN2730"
+                        res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon", rule="ANN2730")
                         results.append(res)
 
                     # --- posから実際の配列を切り出す ---
@@ -3229,15 +3213,13 @@ class ANTICODON_VALIDATOR(BaseRule):
                     if seq_str is not None:
                         if not self.seq_pattern.match(seq_str):
                             msg = "Invalid 'seq' value in the anticodon qualifier. It must be exactly 3 lowercase nucleotides (a, c, g, t)."
-                            res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon")
-                            res["rule"] = "ANN2720"
+                            res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon", rule="ANN2720")
                             results.append(res)
                             is_seq_valid = False
                             
                         elif actual_seq_str and actual_seq_str != seq_str:
                             msg = f"Invalid 'seq' value in the anticodon qualifier. It must be 3 nucleotides and match the corresponding tRNA bases. (Expected bases at pos: '{actual_seq_str}', Found: '{seq_str}')"
-                            res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon")
-                            res["rule"] = "ANN2720"
+                            res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon", rule="ANN2720")
                             results.append(res)
                             is_seq_valid = False
 
@@ -3256,8 +3238,7 @@ class ANTICODON_VALIDATOR(BaseRule):
                                     translated_aa_3letter = code_to_aa.get(translated_aa_code, translated_aa_code)
                                     
                                     msg = f"The translated amino acid from the anticodon sequence does not match the 'aa' value. (Value: '{aa_str}', Translated: '{translated_aa_3letter}')"
-                                    res = self.feature_result(record, feature, msg, level="warning", qualifier="anticodon")
-                                    res["rule"] = "ANN2715"
+                                    res = self.feature_result(record, feature, msg, level="warning", qualifier="anticodon", rule="ANN2715")
                                     results.append(res)
                             except Exception:
                                 pass 
@@ -3306,8 +3287,7 @@ class ANN2750(BaseRule):
                     
                     if parent_strand != pos_strand:
                         msg = f"{self.description} (tRNA location: '{loc_str}', anticodon pos: '{pos_str}')"
-                        res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon")
-                        res["target"] = self.target
+                        res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon", target=self.target)
                         results.append(res)
                 except Exception:
                     pass
@@ -3331,8 +3311,7 @@ class ANN3020(BaseRule):
             for q_name in feature.qualifiers:
                 if q_name in prohibited:
                     msg = f"'{q_name}' qualifier cannot be used."
-                    res = self.feature_result(record, feature, msg, level="error", qualifier=q_name)
-                    res["target"] = feature.type
+                    res = self.feature_result(record, feature, msg, level="error", qualifier=q_name, target=feature.type)
                     results.append(res)
         return results
 
@@ -3353,9 +3332,8 @@ class ANN3021(BaseRule):
                 # 未定義のQualifier名が使われている場合
                 if q_name not in defined_qualifiers:
                     msg = f"'{q_name}' qualifier is not defined."
-                    res = self.feature_result(record, feature, msg, level="error", qualifier=q_name)
+                    res = self.feature_result(record, feature, msg, level="error", qualifier=q_name, target=feature.type)
                     # target を feature.type に上書き
-                    res["target"] = feature.type
                     results.append(res)
         return results
 
@@ -3401,8 +3379,7 @@ class ANN3240(BaseRule):
         for entry_id, record in records.items():
             for feature in self.get_features(record):
                 if "artificial_location" in feature.qualifiers:
-                    res = self.feature_result(record, feature, self.description, level="error", qualifier="artificial_location")
-                    res["entry"] = entry_id
+                    res = self.feature_result(record, feature, self.description, level="error", qualifier="artificial_location", entry=entry_id)
                     results.append(res)
 
         return results
@@ -3500,8 +3477,7 @@ class ANN4100(BaseRule):
                     
                     msg = f"{self.description} (Found: '{original_val}')"
                     
-                    res = self.feature_result(record, feature, msg, level="warning", qualifier="inference")
-                    res["target"] = self.target
+                    res = self.feature_result(record, feature, msg, level="warning", qualifier="inference", target=self.target)
                     res["autofix"] = True
                     res["old_value"] = original_val
                     res["new_value"] = fixed_val
@@ -3563,8 +3539,7 @@ class ANN4200(BaseRule):
         if seq_count > 0 and all_circular:
             if common_topo == "circular" and len(circular_feats_list) == 1:
                 target_entry, target_feat = circular_feats_list[0]
-                res = self.feature_result(records[target_entry], target_feat, self.description, level="error")
-                res["target"] = "topology"
+                res = self.feature_result(records[target_entry], target_feat, self.description, level="error", target="topology")
                 results.append(res)
             else:
                 res = self.format_result(
@@ -3913,8 +3888,7 @@ class ANN5045(BaseRule):
                 
                 if seq_len < 1000:
                     msg = f"{self.description} (Length: {seq_len} bp)"
-                    res = self.feature_result(record, feature, msg, level="error")
-                    res["entry"] = entry_id
+                    res = self.feature_result(record, feature, msg, level="error", entry=entry_id)
                     results.append(res)
                 
                 break # source は1つチェックすれば十分
@@ -4021,8 +3995,7 @@ class ANN5242(BaseRule):
                 
                 if any(op in orig_loc for op in ["join", "order", "complement"]):
                     msg = f"Location operators 'join', 'order', and 'complement' cannot be used in '{feature.type}'."
-                    res = self.feature_result(record, feature, msg, level="warning")
-                    res["target"] = "location"
+                    res = self.feature_result(record, feature, msg, level="warning", target="location")
                     results.append(res)
                     
         return results
@@ -4224,8 +4197,7 @@ class ANN5270(BaseRule):
                     dynamic_desc = f"{overlap_type} between {target.type} and {gap.type} features."
                     
                     msg = f"{dynamic_desc} (at {t_start_0+1}..{t_end_0})"
-                    res = self.feature_result(record, target, msg, level="warning")
-                    res["target"] = "location"                
+                    res = self.feature_result(record, target, msg, level="warning", target="location")
                     res["description"] = dynamic_desc
                     
                     # autofix対象であり、かつ最初の警告(i == 0)の場合のみ情報を紐付ける
@@ -4545,8 +4517,7 @@ class FF_DEFINITION_VALIDATOR(BaseRule):
                 
                 if not is_main_source:
                     msg = "Non-main source feature has the ff_definition qualifier."
-                    res = self.feature_result(record, feature, msg, level="error", qualifier="ff_definition")
-                    res["rule"], res["target"] = "ANN4730", "ff_definition"
+                    res = self.feature_result(record, feature, msg, level="error", qualifier="ff_definition", rule="ANN4730", target="ff_definition")
                     results.append(res)
 
                 for val in ff_vals:
@@ -4555,14 +4526,12 @@ class FF_DEFINITION_VALIDATOR(BaseRule):
                     cleaned_val = re.sub(r'@@\[[a-zA-Z0-9_]+\]@@', '', val_str)
                     if '@' in cleaned_val:
                         msg = "Qualifier includes '@' not used as meta-description."
-                        res = self.feature_result(record, feature, msg, level="warning", qualifier="ff_definition")
-                        res["rule"], res["target"] = "ANN4620", "ff_definition"
+                        res = self.feature_result(record, feature, msg, level="warning", qualifier="ff_definition", rule="ANN4620", target="ff_definition")
                         results.append(res)
 
                     if "@@[organism]@@" in val_str and not val_str.startswith("@@[organism]@@"):
                         msg = "@@[organism]@@ must be at the start of the ff_definition value."
-                        res = self.feature_result(record, feature, msg, level="error", qualifier="ff_definition")
-                        res["rule"], res["target"] = "ANN4690", "ff_definition"
+                        res = self.feature_result(record, feature, msg, level="error", qualifier="ff_definition", rule="ANN4690", target="ff_definition")
                         results.append(res)
 
                     seen_tags = set()
@@ -4585,35 +4554,30 @@ class FF_DEFINITION_VALIDATOR(BaseRule):
 
                         if not (prev_valid and next_valid):
                             msg = "Meta-description must be delimited by space, comma-space, or ()."
-                            res = self.feature_result(record, feature, msg, level="warning", qualifier="ff_definition")
-                            res["rule"], res["target"] = "ANN4710", "ff_definition"
+                            res = self.feature_result(record, feature, msg, level="warning", qualifier="ff_definition", rule="ANN4710", target="ff_definition")
                             results.append(res)
 
                         if ref_qual in seen_tags:
                             msg = f"Duplicate meta-description @@[{ref_qual}]@@."
-                            res = self.feature_result(record, feature, msg, level="error", qualifier="ff_definition")
-                            res["rule"], res["target"] = "ANN4660", "ff_definition"
+                            res = self.feature_result(record, feature, msg, level="error", qualifier="ff_definition", rule="ANN4660", target="ff_definition")
                             results.append(res)
                         else:
                             seen_tags.add(ref_qual)
 
                             if not re.match(r'^[a-zA-Z0-9_]+$', ref_qual) or ref_qual not in allowed_quals:
                                 msg = "Invalid meta-description format."
-                                res = self.feature_result(record, feature, msg, level="error", qualifier="ff_definition")
-                                res["rule"], res["target"] = "ANN4630", "ff_definition"
+                                res = self.feature_result(record, feature, msg, level="error", qualifier="ff_definition", rule="ANN4630", target="ff_definition")
                                 results.append(res)
                                 
                             elif ref_qual != "entry": 
                                 if ref_qual not in feature.qualifiers:
                                     msg = "The qualifier referenced by the ff_definition does not exist."
-                                    res = self.feature_result(record, feature, msg, level="error", qualifier="ff_definition")
-                                    res["rule"], res["target"] = "ANN4640", "ff_definition"
+                                    res = self.feature_result(record, feature, msg, level="error", qualifier="ff_definition", rule="ANN4640", target="ff_definition")
                                     results.append(res)
                                     
                                 elif len(feature.qualifiers[ref_qual]) > 1:
                                     msg = f"The qualifier '{ref_qual}' referenced by ff_definition appears multiple times."
-                                    res = self.feature_result(record, feature, msg, level="error", qualifier="ff_definition")
-                                    res["rule"], res["target"] = "ANN4650", "ff_definition"
+                                    res = self.feature_result(record, feature, msg, level="error", qualifier="ff_definition", rule="ANN4650", target="ff_definition")
                                     results.append(res)
 
         return results
@@ -4664,10 +4628,7 @@ class OPERON_MASTER_VALIDATOR(BaseRule):
                     for part in op_feat.location.parts:
                         if getattr(part, 'ref', None) is not None:
                             msg = "The operon feature cannot refer to another entry."
-                            res = self.feature_result(record, op_feat, msg, level="error")
-                            res["entry"] = getattr(op_feat, 'original_entry_id', entry_id)
-                            res["rule"] = "ANN4010"
-                            res["target"] = "operon"
+                            res = self.feature_result(record, op_feat, msg, level="error", entry=getattr(op_feat, 'original_entry_id', entry_id), rule="ANN4010", target="operon")
                             results.append(res)
                             break  # 1つのフィーチャーにつきエラーは1回で十分なため抜ける
             
@@ -4680,9 +4641,7 @@ class OPERON_MASTER_VALIDATOR(BaseRule):
             if operon_feats and entry_mol_type != "genomic DNA":
                 for op_feat in operon_feats:
                     msg = "The operon features require a mol_type of 'genomic DNA'."
-                    res = self.feature_result(record, op_feat, msg, level="warning")
-                    res["entry"] = getattr(op_feat, 'original_entry_id', entry_id)
-                    res["rule"], res["target"] = "ANN4060", "mol_type"
+                    res = self.feature_result(record, op_feat, msg, level="warning", entry=getattr(op_feat, 'original_entry_id', entry_id), rule="ANN4060", target="mol_type")
                     results.append(res)
                     
             op_children_count = {id(op): 0 for op in operon_feats}
@@ -4715,9 +4674,7 @@ class OPERON_MASTER_VALIDATOR(BaseRule):
                             else:
                                 # 同名の親はいるが、locationがはみ出している (ANN4050)
                                 msg = f"Feature with operon qualifier does not overlap with the associated operon '{op_val}'."
-                                res = self.feature_result(record, other_feat, msg, level="error", qualifier="operon")
-                                res["entry"] = getattr(other_feat, 'original_entry_id', entry_id)
-                                res["rule"] = "ANN4050"
+                                res = self.feature_result(record, other_feat, msg, level="error", qualifier="operon", entry=getattr(other_feat, 'original_entry_id', entry_id), rule="ANN4050")
                                 results.append(res)
                         else:
                             # 2. 同名の親 operon が存在しない場合
@@ -4731,16 +4688,12 @@ class OPERON_MASTER_VALIDATOR(BaseRule):
                             if overlapping_parent:
                                 # 重なる親はいるが、/operon の名前が一致していない (ANN4030)
                                 msg = "Feature must have the same operon qualifier as the associated operon."
-                                res = self.feature_result(record, other_feat, msg, level="error", qualifier="operon")
-                                res["entry"] = getattr(other_feat, 'original_entry_id', entry_id)
-                                res["rule"] = "ANN4030"
+                                res = self.feature_result(record, other_feat, msg, level="error", qualifier="operon", entry=getattr(other_feat, 'original_entry_id', entry_id), rule="ANN4030")
                                 results.append(res)
                             else:
                                 # 重なる親も、同名の親も存在しない (ANN4050)
                                 msg = "Feature with operon qualifier does not overlap with any associated operon."
-                                res = self.feature_result(record, other_feat, msg, level="error", qualifier="operon")
-                                res["entry"] = getattr(other_feat, 'original_entry_id', entry_id)
-                                res["rule"] = "ANN4050"
+                                res = self.feature_result(record, other_feat, msg, level="error", qualifier="operon", entry=getattr(other_feat, 'original_entry_id', entry_id), rule="ANN4050")
                                 results.append(res)
                                 
                 # パターンB: 子フィーチャー候補が /operon を持っていない場合
@@ -4750,9 +4703,7 @@ class OPERON_MASTER_VALIDATOR(BaseRule):
                         p_loc = op_feat.location
                         if p_loc and max(o_loc.start, p_loc.start) < min(o_loc.end, p_loc.end):
                             msg = "Overlapped with the operon feature."
-                            res = self.feature_result(record, other_feat, msg, level="warning")
-                            res["entry"] = getattr(other_feat, 'original_entry_id', entry_id)
-                            res["rule"] = "ANN4020"
+                            res = self.feature_result(record, other_feat, msg, level="warning", entry=getattr(other_feat, 'original_entry_id', entry_id), rule="ANN4020")
                             results.append(res)
                             break 
                             
@@ -4765,9 +4716,7 @@ class OPERON_MASTER_VALIDATOR(BaseRule):
                     op_name = op_vals[0] if op_vals else "UNKNOWN"
                     
                     msg = f"An operon feature '{op_name}' must be associated with at least one related feature."
-                    res = self.feature_result(record, op_feat, msg, level="error")
-                    res["entry"] = getattr(op_feat, 'original_entry_id', entry_id)
-                    res["rule"] = "ANN4040"
+                    res = self.feature_result(record, op_feat, msg, level="error", entry=getattr(op_feat, 'original_entry_id', entry_id), rule="ANN4040")
                     results.append(res)
                                         
         return results
@@ -4818,8 +4767,7 @@ class ANN6400(BaseRule):
                         msg = f"{self.description} (CDS location: '{loc_str}', transl_except pos: '{pos_str}')"
                         
                         # feature_result で簡潔にエラーを生成
-                        res = self.feature_result(record, feature, msg, level="error", qualifier="transl_except")
-                        res["target"] = self.target
+                        res = self.feature_result(record, feature, msg, level="error", qualifier="transl_except", target=self.target)
                         results.append(res)
                         
                 except Exception:

@@ -31,9 +31,8 @@ class FASTA_FORMAT_VALIDATOR(BaseRule):
             if not stripped: continue
             if not stripped.startswith('>'):
                 msg = "Missing FASTA definition line (>Entry name)."
-                res = self.format_result(entry_id="ALL", message=msg, level="error", feature_type="sequence")
+                res = self.format_result(entry_id="ALL", message=msg, level="error", feature_type="sequence", rule="SEQ0080", target="sequence")
                 # alternate_id = "JP0013"
-                res["rule"], res["target"] = "SEQ0080", "sequence"
                 results.append(res)
             break
 
@@ -50,9 +49,8 @@ class FASTA_FORMAT_VALIDATOR(BaseRule):
             if stripped.startswith('>'):
                 if current_entry is not None and not has_terminator:
                     msg = "[Auto-cleanup] Missing sequence terminator (\"//\") was automatically appended."
-                    res = self.format_result(entry_id=current_entry, message=msg, level="warning", feature_type="sequence")
+                    res = self.format_result(entry_id=current_entry, message=msg, level="warning", feature_type="sequence", rule="SEQ0100", target="sequence")
                     # alternate_id = "JP0015"
-                    res["rule"], res["target"] = "SEQ0100", "sequence"
                     res["autofix"] = True
                     res["is_cleanup"] = True
                     results.append(res)
@@ -66,9 +64,8 @@ class FASTA_FORMAT_VALIDATOR(BaseRule):
                 
         if current_entry is not None and not has_terminator:
             msg = "[Auto-cleanup] Missing sequence terminator (\"//\") was automatically appended."
-            res = self.format_result(entry_id=current_entry, message=msg, level="warning", feature_type="sequence")
+            res = self.format_result(entry_id=current_entry, message=msg, level="warning", feature_type="sequence", rule="SEQ0100", target="sequence")
             # alternate_id = "JP0015"
-            res["rule"], res["target"] = "SEQ0100", "sequence"
             res["autofix"] = True
             res["is_cleanup"] = True
             results.append(res)

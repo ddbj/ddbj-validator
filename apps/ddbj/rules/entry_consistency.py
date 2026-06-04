@@ -86,8 +86,7 @@ class ENTRY_CONSISTENCY_VALIDATOR(BaseRule):
         for e in fasta_entries:
             if e in seen_seq:
                 msg = f"Duplicate entry name in sequence."
-                res = self.format_result(entry_id="ALL", message=msg, level="error", feature_type="file")
-                res["rule"], res["target"] = "SEQ0110", "file"
+                res = self.format_result(entry_id="ALL", message=msg, level="error", feature_type="file", rule="SEQ0110", target="file")
                 results.append(res)
             seen_seq.add(e)
 
@@ -97,8 +96,7 @@ class ENTRY_CONSISTENCY_VALIDATOR(BaseRule):
             if e in seen_ann:
                 msg = f"Duplicate entry name in annotation. ('{e}')"
                 level = "error"
-                res = self.format_result(entry_id="ALL", message=msg, level=level, feature_type="file")
-                res["rule"], res["target"] = "ANN0120", "file"
+                res = self.format_result(entry_id="ALL", message=msg, level=level, feature_type="file", rule="ANN0120", target="file")
                 results.append(res)
             seen_ann.add(e)
 
@@ -110,23 +108,20 @@ class ENTRY_CONSISTENCY_VALIDATOR(BaseRule):
 
         if is_template_mode and len(unique_fasta) > 0:
             msg = f"COMMON source information is propagated to {len(unique_fasta)} entries."
-            res = self.format_result(entry_id="ALL", message=msg, level="info", feature_type="file")
-            res["rule"], res["target"] = "MODE", "file"
+            res = self.format_result(entry_id="ALL", message=msg, level="info", feature_type="file", rule="MODE", target="file")
             results.append(res)
 
         if len(unique_fasta) != len(unique_ann):
             if not is_template_mode:
                 msg = f"Entry count mismatch: annotation ({len(unique_ann)}) and sequence ({len(unique_fasta)})."
-                res = self.format_result(entry_id="ALL", message=msg, level="error", feature_type="file")
-                res["rule"], res["target"] = "AXS0060", "file"
+                res = self.format_result(entry_id="ALL", message=msg, level="error", feature_type="file", rule="AXS0060", target="file")
                 results.append(res)
 
         if not (is_template_mode and len(unique_fasta) != len(unique_ann)):
             for f_ent, a_ent in zip(unique_fasta, unique_ann):
                 if f_ent != a_ent:
                     msg = f"Entry name mismatch: annotation {a_ent} and sequence {f_ent}."
-                    res = self.format_result(entry_id="ALL", message=msg, level="error", feature_type="file")
-                    res["rule"], res["target"] = "AXS0070", "file"
+                    res = self.format_result(entry_id="ALL", message=msg, level="error", feature_type="file", rule="AXS0070", target="file")
                     results.append(res)
                     break 
 
