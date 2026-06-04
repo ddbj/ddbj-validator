@@ -59,6 +59,7 @@ class Validator:
             ANN1040(), # [ERROR] Invalid taxonomic rank
             ANN1060(), # [ERROR] The metagenome_source qualifier value must be a valid scientific name
             ANN1050(), # [ERROR] The transl_table qualifier value mismatches with the Taxonomy database
+            ANN1070(), # [INFO] Cyanobacteria(Cyanobacteriota phylum) は生物名に strain を含める必要がある
             ANN1100(), # [ERROR] strain not permitted for environmental samples
             ANN1140(), # [WARNING] Source qualifiers must be identical across all WGS entries.            
             ANN1320(), # [ERROR] Specimen voucher for prokaryotes and unclassified sequences.

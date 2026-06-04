@@ -68,8 +68,9 @@ def get_skipped_rules(skip_db=False, skip_ncbi=False, skip_auth=False):
     # [B] Taxonomy / ネットワーク必須ルール 
     if skip_ncbi:
         tax_hardcoded = [
-            "ANN1025", 
-            "ANN1430", "ANN1440", "ANN1450", "ANN1460", 
+            "ANN1025",
+            "ANN1070",
+            "ANN1430", "ANN1440", "ANN1450", "ANN1460",
             "ANN1810", 
             "ANN4210", "ANN4240"
         ]

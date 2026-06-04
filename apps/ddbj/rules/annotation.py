@@ -1208,9 +1208,45 @@ class ANN1060(BaseRule):
                     if not (is_scientific_name and is_metagenome):
                         msg = f"{self.description} (Found: '{val_clean}')"
                         results.append(self.feature_result(record, feature, msg, level="error", qualifier="metagenome_source"))
-        return results        
+        return results
 
-        
+
+class ANN1070(BaseRule):
+    rule_id = "ANN1070"
+    target = "organism"
+    description = "This organism is Cyanobacteria (Cyanobacteriota phylum). The strain must be included in the organism name."
+    requires_rdb = False
+    is_file_level = False
+
+    def validate(self, record, context):
+        results = []
+
+        # Taxonomy(lineage)が必要なルール。DB も NCBI API も使えない Local モードではスキップする
+        if context.skip_db and context.skip_ncbi:
+            return results
+
+        for feature in self.get_features(record, "source"):
+            for org in feature.qualifiers.get("organism", []):
+                org_clean = org.strip()
+                lineage = context.tax_data.get(org_clean, {}).get("lineage", "")
+                if not lineage:
+                    continue
+
+                # lineage を ';' で分割し、各階層名を完全一致で判定する。
+                # 単なる部分一致だと上位の "Cyanobacteriota/Melainabacteria group" まで
+                # 拾ってしまい系統が広すぎる誤判定になるため、階層名そのものが
+                # "Cyanobacteriota" と一致するときだけシアノバクテリアと判定する。
+                # strain が生物名に含まれるかの判定は困難なため、シアノバクテリアであれば
+                # 一律でこの INFO メッセージを表示する。
+                taxa = [t.strip().rstrip('.') for t in lineage.split(';')]
+                if "Cyanobacteriota" in taxa:
+                    msg = f"{self.description} (organism: '{org_clean}')"
+                    results.append(self.feature_result(record, feature, msg, level="info", qualifier="organism"))
+                    break
+
+        return results
+
+
 class ANN1100(BaseRule):
     rule_id = "ANN1100"
     alternate_id = "JK"
