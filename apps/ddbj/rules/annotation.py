@@ -1406,9 +1406,9 @@ class ANN1240(BaseRule):
                         if is_future:
                             msg = f"{self.description} (Found: '{val_str}')"
                             results.append(self.feature_result(record, feature, msg, level="error", qualifier="collection_date"))
-                            
-                    except Exception:
-                        pass
+
+                    except Exception as e:
+                        logger.debug(f"Failed to check future collection_date: {e}", exc_info=True)
                         
         return results
 
@@ -3240,8 +3240,8 @@ class ANTICODON_VALIDATOR(BaseRule):
                                     msg = f"The translated amino acid from the anticodon sequence does not match the 'aa' value. (Value: '{aa_str}', Translated: '{translated_aa_3letter}')"
                                     res = self.feature_result(record, feature, msg, level="warning", qualifier="anticodon", rule="ANN2715")
                                     results.append(res)
-                            except Exception:
-                                pass 
+                            except Exception as e:
+                                logger.debug(f"Failed to check anticodon translation: {e}", exc_info=True)
 
         return results
 
@@ -3289,8 +3289,8 @@ class ANN2750(BaseRule):
                         msg = f"{self.description} (tRNA location: '{loc_str}', anticodon pos: '{pos_str}')"
                         res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon", target=self.target)
                         results.append(res)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Failed to check anticodon strand consistency: {e}", exc_info=True)
 
         return results
 
@@ -3797,8 +3797,8 @@ class ANN4300(BaseRule):
                     if seq_len < 90:
                         msg = f"{self.description} (Length: {seq_len} bases)"
                         results.append(self.feature_result(record, feature, msg, level="warning"))
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Failed to check feature length: {e}", exc_info=True)
 
         return results
 
@@ -4769,8 +4769,8 @@ class ANN6400(BaseRule):
                         # feature_result で簡潔にエラーを生成
                         res = self.feature_result(record, feature, msg, level="error", qualifier="transl_except", target=self.target)
                         results.append(res)
-                        
-                except Exception:
-                    pass
+
+                except Exception as e:
+                    logger.debug(f"Failed to validate transl_except: {e}", exc_info=True)
 
         return results

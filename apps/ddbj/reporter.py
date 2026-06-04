@@ -1,7 +1,10 @@
 import re
 import json
+import logging
 from pathlib import Path
 from collections import defaultdict
+
+logger = logging.getLogger(__name__)
 
 class ValidationReporter:
     def __init__(self, out_dir):
@@ -288,12 +291,12 @@ class ValidationReporter:
         try:
             with open(det_path, "w", encoding="utf-8") as f:
                 f.write(empty_msg_det)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to write empty details report to {det_path}: {e}", exc_info=True)
         try:
             with open(sum_path, "w", encoding="utf-8") as f:
                 f.write(empty_msg_sum)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to write empty summary report to {sum_path}: {e}", exc_info=True)
         if print_console:
             print(empty_msg_sum, end="")

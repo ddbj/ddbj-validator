@@ -1,7 +1,10 @@
 import re
+import logging
 from Bio.Data import CodonTable
 from Bio.Seq import Seq
 from Bio.SeqFeature import BeforePosition, AfterPosition, FeatureLocation, ExactPosition
+
+logger = logging.getLogger(__name__)
 
 def get_cds_translation_params(feature, default_table_id):
     """
@@ -33,7 +36,8 @@ def get_insdc_translation(feature, record, table_id, codon_start, cv_terms=None)
     """
     try:
         nuc_seq = feature.extract(record.seq)
-    except Exception:
+    except Exception as e:
+        logger.debug(f"Failed to extract CDS sequence for translation: {e}", exc_info=True)
         return None
 
     cds_seq = nuc_seq[codon_start - 1:]
@@ -63,8 +67,8 @@ def get_insdc_translation(feature, record, table_id, codon_start, cv_terms=None)
             extra_aa = str(Seq(padded_seq).translate(table=table_id))
             if extra_aa != "X":
                 aa_seq += extra_aa
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to translate 3' partial remainder codon: {e}", exc_info=True)
 
     # transl_except の処理
     if "transl_except" in feature.qualifiers:
@@ -111,8 +115,8 @@ def get_insdc_translation(feature, record, table_id, codon_start, cv_terms=None)
                         
                         if 0 <= aa_index < len(aa_list):
                             aa_list[aa_index] = aa_1letter
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Failed to apply transl_except substitution: {e}", exc_info=True)
         aa_seq = "".join(aa_list)
 
     # 開始コドンの 'M' 強制変換ロジック

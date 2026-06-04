@@ -535,7 +535,8 @@ class CDS_TRANSLATION_VALIDATOR(BaseRule):
             try:
                 # ここで str() に変換し、純粋な文字列として保持
                 seq_str = str(feature.extract(record.seq))
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Failed to extract feature sequence: {e}", exc_info=True)
                 continue
                 
             cds_seq = seq_str[codon_start - 1:]
@@ -554,8 +555,8 @@ class CDS_TRANSLATION_VALIDATOR(BaseRule):
                             aa = str(Seq(padded_codon).translate(table=table_id))
                             if aa != "X":
                                 codons.append(padded_codon)
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logger.debug(f"Failed to translate codon for stop-codon check: {e}", exc_info=True)
                                                         
             if not codons:
                 continue
@@ -751,8 +752,8 @@ class CDS_TRANSL_EXCEPT_VALIDATOR(BaseRule):
                         if actual_aa == target_aa_1:
                             res = self.feature_result(record, feature, 'Unnecessary transl_except: Specified amino acids are identical with the conceptual translation of the CDS feature.', level="error", qualifier="transl_except", rule="AXS6480", target="transl_except")
                             results.append(res)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Failed to check unnecessary transl_except: {e}", exc_info=True)
 
                 codon_idx = (rel_start_idx - (codon_start - 1)) // 3
                 num_codons = (len(cds_positions) - (codon_start - 1)) // 3
