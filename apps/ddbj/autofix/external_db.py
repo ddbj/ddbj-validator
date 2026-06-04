@@ -6,6 +6,7 @@ from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
 from apps.ddbj.utils.features import get_features
 from apps.ddbj.db_metadata import get_expected_transl_table
+from apps.ddbj.autofix.proposal import update_qualifier_action
 
 logger = logging.getLogger(__name__)
 
@@ -93,15 +94,7 @@ def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None)
                                 "location": getattr(feature, 'original_location', "")
                             })
 
-                            updates = [{
-                                "action": "update_qualifier",
-                                "entry": entry_id,
-                                "feature_type": feature.type,
-                                "feature_id": getattr(feature, 'line_number', id(feature)),
-                                "qualifier": attr,
-                                "old_value": ann_val,
-                                "new_value": bs_val
-                            }]
+                            updates = [update_qualifier_action(entry_id, feature.type, attr, ann_val, bs_val, feature_id=getattr(feature, 'line_number', id(feature)))]
                                 
                             proposals.append({
                                 "ann_path": ann_path,
@@ -188,15 +181,7 @@ def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None)
                                 else:
                                     new_tag = bs_prefix
                                     
-                                updates.append({
-                                    "action": "update_qualifier",
-                                    "entry": entry_id,
-                                    "feature_type": f.type,
-                                    "feature_id": getattr(f, 'line_number', id(f)),
-                                    "qualifier": "locus_tag",
-                                    "old_value": tag_str,
-                                    "new_value": new_tag
-                                })
+                                updates.append(update_qualifier_action(entry_id, f.type, "locus_tag", tag_str, new_tag, feature_id=getattr(f, 'line_number', id(f))))
                 else:
                     for f in record.features:
                         if "locus_tag" in f.qualifiers:
@@ -213,15 +198,7 @@ def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None)
                                 else:
                                     new_tag = bs_prefix
                                     
-                                updates.append({
-                                    "action": "update_qualifier",
-                                    "entry": entry_id,
-                                    "feature_type": f.type,
-                                    "feature_id": getattr(f, 'line_number', id(f)),
-                                    "qualifier": "locus_tag",
-                                    "old_value": old_tag,
-                                    "new_value": new_tag
-                                })
+                                updates.append(update_qualifier_action(entry_id, f.type, "locus_tag", old_tag, new_tag, feature_id=getattr(f, 'line_number', id(f))))
 
                 proposals.append({
                     "ann_path": ann_path, 
@@ -266,15 +243,7 @@ def propose_taxonomy_updates(records, tax_data, ann_path):
                         used_in_records = True
                         positions.append({"entry": entry_id, "feature_id": getattr(feature, 'line_number', id(feature))})
                         
-                        updates.append({
-                            "action": "update_qualifier",
-                            "entry": entry_id,
-                            "feature_type": feature.type,
-                            "feature_id": getattr(feature, 'line_number', id(feature)),
-                            "qualifier": "organism",
-                            "old_value": org,
-                            "new_value": sci_name
-                        })
+                        updates.append(update_qualifier_action(entry_id, feature.type, "organism", org, sci_name, feature_id=getattr(feature, 'line_number', id(feature))))
                         
         if used_in_records:
             proposals.append({
@@ -362,15 +331,7 @@ def propose_transl_table_fixes(records, tax_data, ann_path):
             else:
                 ann_table = feature.qualifiers["transl_table"][0]
                 if str(ann_table) != str(table_id):
-                    updates = [{
-                        "action": "update_qualifier",
-                        "entry": entry_id,
-                        "feature_type": feature.type,
-                        "feature_id": getattr(feature, 'line_number', id(feature)),
-                        "qualifier": "transl_table", 
-                        "old_value": str(ann_table), 
-                        "new_value": str(table_id)
-                    }]
+                    updates = [update_qualifier_action(entry_id, feature.type, "transl_table", str(ann_table), str(table_id), feature_id=getattr(feature, 'line_number', id(feature)))]
                     
                     proposals.append({
                         "ann_path": ann_path, 

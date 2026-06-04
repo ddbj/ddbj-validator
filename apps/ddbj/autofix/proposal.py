@@ -25,15 +25,18 @@ def update_qualifier_action(entry, feature_type, qualifier, old_value, new_value
     return action
 
 
-def update_location_action(entry, feature_type, old_value, new_value):
+def update_location_action(entry, feature_type, old_value, new_value, feature_id=None):
     """updates リストの 1 要素（location 更新）を構築する。"""
-    return {
+    action = {
         "action": "update_location",
         "entry": entry,
         "feature_type": feature_type,
-        "old_value": old_value,
-        "new_value": new_value,
     }
+    if feature_id is not None:
+        action["feature_id"] = feature_id
+    action["old_value"] = old_value
+    action["new_value"] = new_value
+    return action
 
 
 def build_proposal(ann_path, entry, feature_type, qualifier, target, target_level,

@@ -1,6 +1,7 @@
 import re
 from Bio.SeqFeature import BeforePosition, AfterPosition
 from apps.ddbj.utils.features import get_features
+from apps.ddbj.autofix.proposal import update_qualifier_action, update_location_action
 
 from common.format import (
     _INSDC_DATE_PATTERN,
@@ -58,15 +59,7 @@ def _propose_mapping_fixes(records, ann_path, target_qualifier, allowed_map, exi
                                 fixed_val = allowed_map[val_lower]
 
                     if fixed_val and fixed_val != val_str:
-                        updates = [{
-                            "action": "update_qualifier",
-                            "entry": entry_id,
-                            "feature_type": feature.type,
-                            "feature_id": feat_id,
-                            "qualifier": target_qualifier,
-                            "old_value": val_str,
-                            "new_value": fixed_val
-                        }]
+                        updates = [update_qualifier_action(entry_id, feature.type, target_qualifier, val_str, fixed_val, feature_id=feat_id)]
 
                         proposals.append({
                             "ann_path": ann_path,
@@ -127,15 +120,7 @@ def propose_format_errors(records, ann_path):
                     if not is_valid and can_autofix:
                         suggested = "; ".join(fixed_parts)
                         if suggested != val_str:
-                            updates = [{
-                                "action": "update_qualifier",
-                                "entry": entry_id,
-                                "feature_type": feature.type,
-                                "feature_id": getattr(feature, 'line_number', id(feature)),
-                                "qualifier": "Assembly Method",
-                                "old_value": val_str,
-                                "new_value": suggested
-                            }]
+                            updates = [update_qualifier_action(entry_id, feature.type, "Assembly Method", val_str, suggested, feature_id=getattr(feature, 'line_number', id(feature)))]
 
                             proposals.append({
                                 "ann_path": ann_path,
@@ -156,15 +141,7 @@ def propose_format_errors(records, ann_path):
                     if match:
                         suggested = f"{match.group(1)}x" 
                         
-                        updates = [{
-                            "action": "update_qualifier",
-                            "entry": entry_id,
-                            "feature_type": feature.type,
-                            "feature_id": getattr(feature, 'line_number', id(feature)),
-                            "qualifier": "Genome Coverage",
-                            "old_value": cov,
-                            "new_value": suggested
-                        }]
+                        updates = [update_qualifier_action(entry_id, feature.type, "Genome Coverage", cov, suggested, feature_id=getattr(feature, 'line_number', id(feature)))]
 
                         proposals.append({
                             "ann_path": ann_path,
@@ -226,14 +203,7 @@ def propose_location_overlap_fixes(records, ann_path):
                     match_found = True
                     
             if match_found and new_loc_str != original_loc_str:
-                updates = [{
-                    "action": "update_location",
-                    "entry": entry_id,
-                    "feature_type": target.type,
-                    "feature_id": getattr(target, 'line_number', id(target)),
-                    "old_value": original_loc_str,
-                    "new_value": new_loc_str
-                }]
+                updates = [update_location_action(entry_id, target.type, original_loc_str, new_loc_str, feature_id=getattr(target, 'line_number', id(target)))]
 
                 proposals.append({
                     "ann_path": ann_path,
@@ -269,15 +239,7 @@ def propose_pcr_primer_fixes(records, ann_path):
                         new_val
                     )
                     if new_val != val:
-                        updates = [{
-                            "action": "update_qualifier",
-                            "entry": entry_id,
-                            "feature_type": feature.type,
-                            "feature_id": getattr(feature, 'line_number', id(feature)),
-                            "qualifier": "PCR_primers",
-                            "old_value": val,
-                            "new_value": new_val
-                        }]
+                        updates = [update_qualifier_action(entry_id, feature.type, "PCR_primers", val, new_val, feature_id=getattr(feature, 'line_number', id(feature)))]
 
                         proposals.append({
                             "ann_path": ann_path,
@@ -330,15 +292,7 @@ def propose_date_fixes(records, ann_path, allowed_missing_reporting_terms=None, 
                     if val_norm in normalized_missing_map:
                         fixed_val = normalized_missing_map[val_norm]
                         if val_str != fixed_val:
-                            updates = [{
-                                "action": "update_qualifier",
-                                "entry": entry_id,
-                                "feature_type": feature.type,
-                                "feature_id": feat_id,
-                                "qualifier": "collection_date",
-                                "old_value": val_str,
-                                "new_value": fixed_val
-                            }]
+                            updates = [update_qualifier_action(entry_id, feature.type, "collection_date", val_str, fixed_val, feature_id=feat_id)]
 
                             proposals.append({
                                 "ann_path": ann_path,
@@ -356,15 +310,7 @@ def propose_date_fixes(records, ann_path, allowed_missing_reporting_terms=None, 
                         fixed_date = fix_insdc_date(val_str)
                         
                         if fixed_date and fixed_date != val_str and _INSDC_DATE_PATTERN.match(fixed_date):
-                            updates = [{
-                                "action": "update_qualifier",
-                                "entry": entry_id,
-                                "feature_type": feature.type,
-                                "feature_id": feat_id,
-                                "qualifier": "collection_date",
-                                "old_value": val_str,
-                                "new_value": fixed_date
-                            }]
+                            updates = [update_qualifier_action(entry_id, feature.type, "collection_date", val_str, fixed_date, feature_id=feat_id)]
 
                             proposals.append({
                                 "ann_path": ann_path, 
@@ -404,15 +350,7 @@ def propose_latlon_fixes(records, ann_path, existing_proposals=None):
                     fixed_val = fix_insdc_lat_lon(val)
                     
                     if fixed_val and fixed_val != val:
-                        updates = [{
-                            "action": "update_qualifier",
-                            "entry": entry_id,
-                            "feature_type": feature.type,
-                            "feature_id": feat_id,
-                            "qualifier": "lat_lon",
-                            "old_value": val,
-                            "new_value": fixed_val
-                        }]
+                        updates = [update_qualifier_action(entry_id, feature.type, "lat_lon", val, fixed_val, feature_id=feat_id)]
 
                         proposals.append({
                             "ann_path": ann_path,
@@ -509,14 +447,7 @@ def propose_partial_location_fixes(records, ann_path, tax_data):
                             break
 
             if fix_needed and new_loc_str != original_loc_str:
-                updates = [{
-                    "action": "update_location",
-                    "entry": entry_id,
-                    "feature_type": feature.type,
-                    "feature_id": getattr(feature, 'line_number', id(feature)),
-                    "old_value": original_loc_str,
-                    "new_value": new_loc_str
-                }]
+                updates = [update_location_action(entry_id, feature.type, original_loc_str, new_loc_str, feature_id=getattr(feature, 'line_number', id(feature)))]
 
                 proposals.append({
                     "ann_path": ann_path,
@@ -566,15 +497,7 @@ def propose_hold_date_fixes(records, ann_path, existing_proposals=None):
                         fixed_date = f"{match.group(1)}{match.group(2)}{match.group(3)}"
                         
                         if fixed_date != val_str:
-                            updates = [{
-                                "action": "update_qualifier",
-                                "entry": entry_id,
-                                "feature_type": feature.type,
-                                "feature_id": feat_id,
-                                "qualifier": "hold_date",
-                                "old_value": val_str,
-                                "new_value": fixed_date
-                            }]
+                            updates = [update_qualifier_action(entry_id, feature.type, "hold_date", val_str, fixed_date, feature_id=feat_id)]
 
                             proposals.append({
                                 "ann_path": ann_path,
@@ -605,14 +528,7 @@ def propose_location_whitespace_fixes(records, ann_path):
             if re.search(r'\s', original_loc_str):
                 new_loc_str = re.sub(r'\s+', '', original_loc_str)
                 
-                updates = [{
-                    "action": "update_location",
-                    "entry": entry_id,
-                    "feature_type": feature.type,
-                    "feature_id": getattr(feature, 'line_number', id(feature)),
-                    "old_value": original_loc_str,
-                    "new_value": new_loc_str
-                }]
+                updates = [update_location_action(entry_id, feature.type, original_loc_str, new_loc_str, feature_id=getattr(feature, 'line_number', id(feature)))]
 
                 proposals.append({
                     "ann_path": ann_path,
