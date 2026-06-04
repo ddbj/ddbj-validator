@@ -1,0 +1,5 @@
+=== Auto-Fix Confirmation ===
+
+[ Target: transl_table ]
+  ANN4210.entries
+    1 entry, 1 feature, 1 qualifier: '11' -> '1' (Homo sapiens, taxid: 9606) [Rule: ANN1050]

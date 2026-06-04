@@ -1,0 +1,5 @@
+=== Auto-Fix Confirmation ===
+
+[ Target: transl_table ]
+  ANN6520_1.fail
+    1 entry, 1 feature, 1 qualifier: 'none' -> '11' (Bacillus subtilis, taxid: 1423) [Rule: ANN1050]

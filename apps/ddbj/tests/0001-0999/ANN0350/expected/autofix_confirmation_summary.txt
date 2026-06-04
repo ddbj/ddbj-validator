@@ -1,0 +1,5 @@
+=== Auto-Fix Confirmation ===
+
+[ Target: title ]
+  ANN0350_1.cleanup.fail
+    1 entry, 1 feature, 1 qualifier: 'Mouse Genome Sequencing,' -> 'Mouse Genome Sequencing' [Rule: ANN0350]

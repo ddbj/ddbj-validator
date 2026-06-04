@@ -159,6 +159,10 @@ def parse_details_report(report_path):
                 
     return results, results_by_entry
 
+# autofix proposal の確認サマリ（外側 proposal dict の old/new/message 等を要約したもの）。
+# fixed/ には現れない出力なので、必要なときだけ別途ゴールデン突合する。
+CONFIRMATION_SUMMARY_FILENAME = "autofix_confirmation_summary.txt"
+
 # ==============================================================================
 # ファイル直接比較 (Diff)
 # ==============================================================================
@@ -260,13 +264,15 @@ def get_empty_result():
         "passed": 0, "mismatched": 0, "errors": [], "skipped": 0, "not_skipped_errors": [],
         "autofix_fixed": 0, "autofix_not_fixed": 0, "autofix_errors": [],
         "autocleanup_cleaned": 0, "autocleanup_not_cleaned": 0, "autocleanup_errors": [],
-        "translation_passed": 0, "translation_mismatched": 0, "translation_errors": []
+        "translation_passed": 0, "translation_mismatched": 0, "translation_errors": [],
+        "confirmation_passed": 0, "confirmation_mismatched": 0, "confirmation_errors": []
     }
 
 # ==============================================================================
 # メインテストランナー
 # ==============================================================================
-def run_e2e_tests(target_rule_id=None, mode="curator", skip_only=False, docker_image=None, use_pip=False):
+def run_e2e_tests(target_rule_id=None, mode="curator", skip_only=False, docker_image=None, use_pip=False,
+                  check_confirmation=False, update_confirmation=False):
     if not HAS_BIOPYTHON:
         print(f"{Colors.WARNINGYEL}[WARNING] Biopython is not installed. Amino acid FASTA comparisons will fail.{Colors.ENDC}\n")
         
@@ -339,7 +345,11 @@ def run_e2e_tests(target_rule_id=None, mode="curator", skip_only=False, docker_i
     translation_passed = 0
     translation_mismatched = 0
     translation_errors = []
-    
+
+    confirmation_passed = 0
+    confirmation_mismatched = 0
+    confirmation_errors = []
+
     if not target_dirs:
         return get_empty_result()
 
@@ -643,7 +653,12 @@ def run_e2e_tests(target_rule_id=None, mode="curator", skip_only=False, docker_i
             if expected_dir.exists() and expected_dir.is_dir():
                 for golden_file in expected_dir.glob("*"):
                     if not golden_file.is_file(): continue
-                    
+
+                    # autofix 確認サマリは fixed/ には現れないため、この一般ゴールデン突合では扱わない
+                    # （後段の専用ブロックで --check-confirmation 時のみ突合する）
+                    if golden_file.name == CONFIRMATION_SUMMARY_FILENAME:
+                        continue
+
                     # ".entries.ann" などを取り除いてからハイフン等で分割する
                     base_name = golden_file.name.split('.')[0]
                     file_rule_ids = base_name.split('_')[0].split('-')
@@ -694,6 +709,51 @@ def run_e2e_tests(target_rule_id=None, mode="curator", skip_only=False, docker_i
                             if is_cleanup: autocleanup_cleaned += 1
                             else: autofix_fixed += 1
 
+            # ==============================================================
+            # autofix 確認サマリ（proposal 要約）のゴールデン突合 / スナップショット
+            # ------------------------------------------------------------
+            # proposal の外側 dict（old/new/message 等）は fixed/ に現れないため別途突合する。
+            # 毎回走らせる必要はないので --check-confirmation / --update-confirmation で明示有効化。
+            # proposal を完全生成する内部 DB 使用の CURATOR モードを基準とし、そこでのみ扱う
+            # （local/ncbi では外部DB系 autofix が落ちてサマリ内容が変わるため）。
+            # ==============================================================
+            if (check_confirmation or update_confirmation) and mode == "curator":
+                test_dir_label = str(target_dir.relative_to(tests_dir))
+                actual_summary = target_dir / "reports" / CONFIRMATION_SUMMARY_FILENAME
+                golden_summary = target_dir / "expected" / CONFIRMATION_SUMMARY_FILENAME
+
+                if update_confirmation:
+                    # 現挙動を期待値としてスナップショット保存（＝ゴールデン整備）
+                    if actual_summary.exists():
+                        golden_summary.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copyfile(actual_summary, golden_summary)
+                        print(f"  [{Colors.OKCYAN}Updated{Colors.ENDC}]        {test_dir_label}/{CONFIRMATION_SUMMARY_FILENAME} (snapshot saved)")
+                    elif golden_summary.exists():
+                        # proposal が出なくなった → 古いゴールデンを削除して整合を取る
+                        golden_summary.unlink()
+                        print(f"  [{Colors.WARNINGYEL}Removed{Colors.ENDC}]        {test_dir_label}/{CONFIRMATION_SUMMARY_FILENAME} (no proposals; stale golden removed)")
+                else:
+                    # --check-confirmation: ゴールデンが存在するディレクトリのみ突合する
+                    if golden_summary.exists():
+                        test_name_conf = f"{CONFIRMATION_SUMMARY_FILENAME} (Confirmation Summary Match)"
+                        if not actual_summary.exists():
+                            print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name_conf}: Actual summary missing (no proposals generated?).")
+                            err_msg = f"{test_dir_label}/{test_name_conf} (Actual summary missing)"
+                            errors.append(err_msg)
+                            confirmation_errors.append(err_msg)
+                            confirmation_mismatched += 1
+                        else:
+                            is_match, diff_msg = compare_text_files(golden_summary, actual_summary)
+                            if is_match:
+                                print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name_conf} (Perfect match)")
+                                confirmation_passed += 1
+                            else:
+                                print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name_conf}: Diff error -> {diff_msg}")
+                                err_msg = f"{test_dir_label}/{test_name_conf} ({diff_msg})"
+                                errors.append(err_msg)
+                                confirmation_errors.append(err_msg)
+                                confirmation_mismatched += 1
+
     return {
         "passed": passed_count,
         "mismatched": mismatched_count,
@@ -708,7 +768,10 @@ def run_e2e_tests(target_rule_id=None, mode="curator", skip_only=False, docker_i
         "autocleanup_errors": autocleanup_errors,
         "translation_passed": translation_passed,
         "translation_mismatched": translation_mismatched,
-        "translation_errors": translation_errors
+        "translation_errors": translation_errors,
+        "confirmation_passed": confirmation_passed,
+        "confirmation_mismatched": confirmation_mismatched,
+        "confirmation_errors": confirmation_errors
     }
 
 def print_header(title, color):
@@ -749,10 +812,17 @@ def print_summary(results_list, docker_image=None):
                     for e in res['translation_errors']:
                         print(f"    - {e}")
 
-        general_errors = [e for e in res.get('errors', []) 
-                          if e not in res.get('autofix_errors', []) 
+            if res.get('confirmation_passed', 0) > 0 or res.get('confirmation_mismatched', 0) > 0:
+                print(f"  Confirm Summary:        {Colors.OKGREEN}{res['confirmation_passed']} matched{Colors.ENDC} / {Colors.FAILRED if res['confirmation_mismatched'] > 0 else Colors.OKGREEN}{res['confirmation_mismatched']} mismatched{Colors.ENDC}")
+                if res.get('confirmation_errors'):
+                    for e in res['confirmation_errors']:
+                        print(f"    - {e}")
+
+        general_errors = [e for e in res.get('errors', [])
+                          if e not in res.get('autofix_errors', [])
                           and e not in res.get('autocleanup_errors', [])
-                          and e not in res.get('translation_errors', [])]
+                          and e not in res.get('translation_errors', [])
+                          and e not in res.get('confirmation_errors', [])]
                           
         if general_errors:
             print("  General Errors:")
@@ -787,11 +857,24 @@ if __name__ == "__main__":
     )
     
     parser.add_argument(
-        "--mode", 
-        nargs="+", 
-        choices=["curator", "web-app", "local", "local-skip", "ncbi", "ncbi-skip", "auth-skip", "all"], 
-        default=["curator", "web-app", "local-skip", "ncbi-skip", "auth-skip"], 
+        "--mode",
+        nargs="+",
+        choices=["curator", "web-app", "local", "local-skip", "ncbi", "ncbi-skip", "auth-skip", "all"],
+        default=["curator", "web-app", "local-skip", "ncbi-skip", "auth-skip"],
         help="Execution mode(s). Multiple modes can be specified."
+    )
+
+    # autofix 確認サマリ（autofix_confirmation_summary.txt）のゴールデン突合制御。
+    # 毎回は不要なため既定では無効。CURATOR モードでのみ作用する。
+    parser.add_argument(
+        "--check-confirmation",
+        action="store_true",
+        help="Enable golden comparison of autofix_confirmation_summary.txt (CURATOR mode only; off by default)."
+    )
+    parser.add_argument(
+        "--update-confirmation",
+        action="store_true",
+        help="Snapshot the generated autofix_confirmation_summary.txt into expected/ (golden 整備; CURATOR mode only)."
     )
     args = parser.parse_args()
 
@@ -806,11 +889,17 @@ if __name__ == "__main__":
         else:
             modes = ["curator", "web-app", "local", "ncbi", "auth-skip"]
 
+    # 確認サマリ系フラグは CURATOR モードでのみ作用する。対象モードが無ければ無効である旨を通知。
+    if (args.check_confirmation or args.update_confirmation) and "curator" not in modes:
+        print(f"{Colors.WARNINGYEL}[WARN] --check-confirmation/--update-confirmation は CURATOR モードでのみ有効です"
+              f"（現在のモード: {modes}）。確認サマリの突合/更新は行われません。{Colors.ENDC}")
+
     results_to_print = []
-    
+
     if "curator" in modes:
         print_header("PHASE 1: CURATOR MODE TESTING (Skip ANN0422, 0463, 0481 / No Account)", Colors.OKGREEN)
-        res_cur = run_e2e_tests(target_rule_id=args.rule_id, mode="curator", docker_image=args.docker_image, use_pip=args.use_pip)
+        res_cur = run_e2e_tests(target_rule_id=args.rule_id, mode="curator", docker_image=args.docker_image, use_pip=args.use_pip,
+                                check_confirmation=args.check_confirmation, update_confirmation=args.update_confirmation)
         results_to_print.append(("CURATOR MODE RESULTS", res_cur, Colors.OKGREEN))
 
     if "web-app" in modes:
@@ -858,6 +947,7 @@ if __name__ == "__main__":
             res.get("translation_mismatched", 0) +
             res.get("autofix_not_fixed", 0) +
             res.get("autocleanup_not_cleaned", 0) +
+            res.get("confirmation_mismatched", 0) +
             len(res.get("not_skipped_errors", []))
         )
         if mode_errors > 0:

@@ -1,0 +1,5 @@
+=== Auto-Fix Confirmation ===
+
+[ Target: collection_date ]
+  ANN1130_1.fail
+    1 entry, 1 feature, 1 qualifier: '2019-01-01' -> '2020-01-01' (SAMD00133774) [Rule: ANN1130]
