@@ -78,20 +78,27 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
             return results
 
         type_rules = context.ddbj_dict.get("submission_types", {})
-
-        # ---------------------------------------------------
-        # 1. COMMONからタグを抽出 (DATATYPE のみを起点とする)
-        # ---------------------------------------------------
         active_tags = context.active_datatypes
         common_rec = records.get("COMMON")
 
         # DATATYPE の指定がなければ静的検証はスキップ (後続のANN0640で検知させる)
         if not active_tags:
-            return results 
+            return results
 
-        # ---------------------------------------------------
-        # 2. タグに基づいてルールを合成（継承の解決）
-        # ---------------------------------------------------
+        # タグに基づいてルールを合成（継承の解決）
+        compiled_rule = self._compile_rule(active_tags, type_rules)
+
+        # 合成されたルールを順に検証（実行順は従来どおり）
+        results.extend(self._check_required_division(compiled_rule, common_rec, context, active_tags))
+        results.extend(self._check_required_keywords(compiled_rule, common_rec, active_tags))
+        results.extend(self._check_required_tagset(compiled_rule, common_rec, active_tags))
+        results.extend(self._check_required_st_comments(compiled_rule, common_rec, active_tags))
+        results.extend(self._check_required_dblinks(compiled_rule, common_rec, active_tags))
+        results.extend(self._check_source_qualifiers(compiled_rule, records, active_tags))
+
+        return results
+
+    def _compile_rule(self, active_tags, type_rules):
         compiled_rule = {
             "required_division": None,
             "required_tagset_id": None,
@@ -132,10 +139,10 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
             compiled_rule["required_st_comments"].update(rule_def.get("required_st_comments", []))
             compiled_rule["required_dblinks"].update(rule_def.get("required_dblinks", []))
             compiled_rule["unsupported_qualifiers"].update(rule_def.get("unsupported_qualifiers", []))
-            
-        # ---------------------------------------------------
-        # 3. 合成されたルールの検証 (レベルはすべて FATAL)
-        # ---------------------------------------------------
+        return compiled_rule
+
+    def _check_required_division(self, compiled_rule, common_rec, context, active_tags):
+        results = []
         # --- (A) 必須DIVISIONのチェック ---
         req_div = compiled_rule["required_division"]
         
@@ -206,6 +213,10 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
                     res["rule"] = "ANN0641"
                     results.append(res)
                                     
+        return results
+
+    def _check_required_keywords(self, compiled_rule, common_rec, active_tags):
+        results = []
         # --- (B) 必須キーワードのチェック ---
         req_kws = compiled_rule["required_keywords"]
         allow_empty = compiled_rule["allow_empty_keywords"]
@@ -234,7 +245,10 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
                     res = self.format_result(entry_id="COMMON", message=msg, level="error", feature_type="KEYWORD")
                     res["rule"], res["target"] = "ANN0630", "KEYWORD"
                     results.append(res)
+        return results
 
+    def _check_required_tagset(self, compiled_rule, common_rec, active_tags):
+        results = []
         # ---------------------------------------------------
         # 必須 tagset_id のチェック (ANN0905)
         # ---------------------------------------------------
@@ -258,7 +272,10 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
                 res = self.format_result(entry_id="COMMON", message=msg, level="error", feature_type="ST_COMMENT", qualifier="tagset_id")
                 res["rule"], res["target"] = "ANN0905", "ST_COMMENT"
                 results.append(res)
-                    
+        return results
+
+    def _check_required_st_comments(self, compiled_rule, common_rec, active_tags):
+        results = []
         # --- (C) 必須ST_COMMENTのチェック ---
         req_stcs = compiled_rule["required_st_comments"]
         if req_stcs and common_rec:
@@ -273,7 +290,10 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
                 res = self.format_result(entry_id="COMMON", message=msg, level="error", feature_type="ST_COMMENT")
                 res["rule"], res["target"] = "ANN4003", "ST_COMMENT"
                 results.append(res)
+        return results
 
+    def _check_required_dblinks(self, compiled_rule, common_rec, active_tags):
+        results = []
         # ---------------------------------------------------
         # 必須DBLINKのチェック
         # ---------------------------------------------------
@@ -307,7 +327,10 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
                 res = self.format_result(entry_id="COMMON", message=msg, level="error", feature_type="DBLINK")
                 res["rule"], res["target"] = "ANN0910", "DBLINK"
                 results.append(res)
-                        
+        return results
+
+    def _check_source_qualifiers(self, compiled_rule, records, active_tags):
+        results = []
         # --- (D) sourceフィーチャーの Qualifier チェック ---
         req_quals = compiled_rule["required_qualifiers"]
         rec_quals = compiled_rule["recommended_qualifiers"]
@@ -354,8 +377,8 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
                             res = self.feature_result(record, feat, err_info["msg"], level="error", qualifier=iq)
                             res["rule"], res["target"] = err_info["rule_id"], "source"
                             results.append(res)
-                    
         return results
+
 
 
 class ANN0640(BaseRule):

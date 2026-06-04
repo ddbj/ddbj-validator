@@ -22,6 +22,10 @@ logger = logging.getLogger(__name__)
 
 POS_PATTERN = re.compile(r"pos:(.+?),aa:")
 
+# マジックナンバーの名前付き定数
+ENTRY_NAME_MAX_LENGTH = 32   # エントリ名・一部 qualifier 値の最大文字数
+DEGREES_TO_KM = 111.13       # 緯度経度1度あたりの概算距離(km)
+
 # DB ステータスID → 文言マッピング（複数ルールで共用）
 # BioProject / BioSample 用（DDBJ 提出ステータス）
 BP_BS_STATUS_MAP = {
@@ -58,7 +62,7 @@ class ANN0160(BaseRule):
         invalid_pattern = re.compile(r'[ ="|>\[\]\\]')
         is_valid = True
         
-        if len(entry_name) > 32:
+        if len(entry_name) > ENTRY_NAME_MAX_LENGTH:
             is_valid = False
         elif not re.match(r'^[A-Za-z0-9]', entry_name):
             is_valid = False
@@ -1641,7 +1645,7 @@ class ANN1275(BaseRule):
         if is_valid:
             min_dist_deg = min([geom.distance(pt) for geom in matched_geometries])
             if min_dist_deg > 0:
-                dist_km = round(min_dist_deg * 111.13, 1)
+                dist_km = round(min_dist_deg * DEGREES_TO_KM, 1)
 
         return is_valid, hit_names, dist_km
 
@@ -2723,7 +2727,7 @@ class ANN2560(BaseRule):
                     if not val: errors.append("must not be empty")
                     else:
                         if not self._valid_start_pattern.match(val): errors.append("must begin with a letter or number")
-                        if len(val) > 32: errors.append("must not be longer than 32 characters")
+                        if len(val) > ENTRY_NAME_MAX_LENGTH: errors.append("must not be longer than 32 characters")
                         if '\t' in val: errors.append("must not contain <tab>")
                         for ng_c in ng_contains:
                             if ng_c in v_lower:

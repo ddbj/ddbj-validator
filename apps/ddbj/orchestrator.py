@@ -15,6 +15,7 @@ from Bio.SeqFeature import BeforePosition, AfterPosition
 from apps.ddbj.preprocessor import preprocess_files, ANN_EXTENSIONS
 from apps.ddbj.parser import parse_ddbj_submission
 from apps.ddbj.validator import Validator
+from apps.ddbj.autofix.proposal import build_proposal, update_qualifier_action, update_location_action
 from common.db_manager import DatabaseManager
 from apps.ddbj.db_metadata import (
     get_samds_from_records, get_projects_from_records, get_drrs_from_records, 
@@ -105,28 +106,24 @@ def _validate_single_file_set(args):
             
             if "updates" in res:
                 updates = res["updates"]
+            elif fix_target == "location":
+                updates = [update_location_action(entry_name, res.get("feature_type", ""), old_v, new_v)]
             else:
-                if fix_target == "location":
-                    updates = [{"action": "update_location", "entry": entry_name, "feature_type": res.get("feature_type", ""), "old_value": old_v, "new_value": new_v}]
-                else:
-                    updates = [{"action": "update_qualifier", "entry": entry_name, "feature_type": res.get("feature_type", ""), "qualifier": qual_name, "old_value": old_v, "new_value": new_v}]
+                updates = [update_qualifier_action(entry_name, res.get("feature_type", ""), qual_name, old_v, new_v)]
 
-            file_proposals.append({
-                "ann_path": ann_path,
-                "entry": entry_name,
-                "feature_type": res.get("feature_type", ""),
-                "qualifier": qual_name,
-                "target": fix_target,
-                "target_level": res.get("fix_target", "qualifier"), 
-                "positions": [{"entry": entry_name, "feature_id": res.get("line_number", "unknown")}],
-                "old_value": old_v,
-                "new_value": new_v,
-                "old": old_v,
-                "new": new_v,
-                "message": res.get("message", "Value will be fixed."),
-                "rule": rule_id,
-                "updates": updates
-            })
+            file_proposals.append(build_proposal(
+                ann_path=ann_path,
+                entry=entry_name,
+                feature_type=res.get("feature_type", ""),
+                qualifier=qual_name,
+                target=fix_target,
+                target_level=res.get("fix_target", "qualifier"),
+                positions=[{"entry": entry_name, "feature_id": res.get("line_number", "unknown")}],
+                old_value=old_v,
+                new_value=new_v,
+                rule=rule_id,
+                updates=updates,
+            ))
                                       
     if tax_data:
         tax_proposals = propose_taxonomy_updates(records, tax_data, ann_path)

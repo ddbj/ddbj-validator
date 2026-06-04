@@ -407,57 +407,8 @@ class ANN_DICT_VALIDATOR(BaseRule):
                     
             if allowed:
                 for val in q_values:
-                    is_valid = False
-                    custom_msg = None 
-                    suggested_fix = None
-                    
-                    if q_name == "inference":
-                        parts = val.split(":")
-                        type_part = parts[1] if len(parts) >= 2 and parts[0] in {"COORDINATES", "DESCRIPTION", "EXISTENCE"} else parts[0]
-                        if type_part.replace(" (same species)", "").strip() in allowed: is_valid = True
-                        
-                    elif q_name == "geo_loc_name":
-                        val_lower = val.lower()
-                        if val_lower.startswith("missing:"):
-                            if val_lower in missing_reporting_terms: is_valid = True
-                        else:
-                            country_part = val.split(":")[0].strip()
-                            if country_part in allowed: 
-                                is_valid = True
-                            elif country_part.lower() in historical_countries:
-                                is_valid = True
-                                
-                    elif q_name == "mobile_element_type":
-                        parts = str(val).split(":", 1)
-                        m_type = parts[0].strip()
-                        m_name = parts[1].strip() if len(parts) > 1 else ""
-                        
-                        if m_type in allowed:
-                            if m_type == "other" and not m_name:
-                                custom_msg = "Value 'other' requires a mobile_element_name (e.g., 'other:name')."
-                                is_valid = False
-                            else:
-                                is_valid = True
-
-                    elif q_name == "satellite":
-                        s_type = re.split(r'[:\s]', str(val).strip(), 1)[0]
-                        if s_type in allowed:
-                            is_valid = True
-                                                                                                                                                                                                                                                                
-                    else:
-                        str_val = str(val)
-                        allowed_strs = [str(a) for a in allowed]
-                        
-                        if str_val in allowed_strs:
-                            is_valid = True
-                        else:
-                            val_lower = str_val.lower()
-                            for a_str in allowed_strs:
-                                if a_str.lower() == val_lower:
-                                    suggested_fix = a_str
-                                    custom_msg = f"{rule_info.get('message', '')}"
-                                    break
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+                    is_valid, custom_msg, suggested_fix = self._resolve_allowed_value(
+                        q_name, val, allowed, rule_info, historical_countries, missing_reporting_terms)
                     if not is_valid:
                         base_msg = custom_msg if custom_msg else rule_info.get('message', '')
                         msg = f"{base_msg} (Found: '{val}')".strip()
@@ -552,6 +503,64 @@ class ANN_DICT_VALIDATOR(BaseRule):
                         results.append(res)
                         
         return results
+
+    def _resolve_allowed_value(self, q_name, val, allowed, rule_info, historical_countries, missing_reporting_terms):
+        """
+        allowed_values チェックにおける値判定（qualifier 種別ごとの特例）。
+        (is_valid, custom_msg, suggested_fix) を返す。挙動は従来のインライン分岐と同一。
+        """
+        is_valid = False
+        custom_msg = None
+        suggested_fix = None
+
+        if q_name == "inference":
+            parts = val.split(":")
+            type_part = parts[1] if len(parts) >= 2 and parts[0] in {"COORDINATES", "DESCRIPTION", "EXISTENCE"} else parts[0]
+            if type_part.replace(" (same species)", "").strip() in allowed: is_valid = True
+
+        elif q_name == "geo_loc_name":
+            val_lower = val.lower()
+            if val_lower.startswith("missing:"):
+                if val_lower in missing_reporting_terms: is_valid = True
+            else:
+                country_part = val.split(":")[0].strip()
+                if country_part in allowed:
+                    is_valid = True
+                elif country_part.lower() in historical_countries:
+                    is_valid = True
+
+        elif q_name == "mobile_element_type":
+            parts = str(val).split(":", 1)
+            m_type = parts[0].strip()
+            m_name = parts[1].strip() if len(parts) > 1 else ""
+
+            if m_type in allowed:
+                if m_type == "other" and not m_name:
+                    custom_msg = "Value 'other' requires a mobile_element_name (e.g., 'other:name')."
+                    is_valid = False
+                else:
+                    is_valid = True
+
+        elif q_name == "satellite":
+            s_type = re.split(r'[:\s]', str(val).strip(), 1)[0]
+            if s_type in allowed:
+                is_valid = True
+
+        else:
+            str_val = str(val)
+            allowed_strs = [str(a) for a in allowed]
+
+            if str_val in allowed_strs:
+                is_valid = True
+            else:
+                val_lower = str_val.lower()
+                for a_str in allowed_strs:
+                    if a_str.lower() == val_lower:
+                        suggested_fix = a_str
+                        custom_msg = f"{rule_info.get('message', '')}"
+                        break
+
+        return is_valid, custom_msg, suggested_fix
 
     def _check_exclusions_and_dependencies(self, entry_id, record, feature, ddbj_dict):
         results = []

@@ -15,6 +15,38 @@ logger = logging.getLogger(__name__)
 # 翻訳ヘルパーは apps/ddbj/utils/translation.py に一本化（get_cds_translation_params / get_insdc_translation）。
 # 旧 get_conceptual_translation は未使用（transl_except 非対応の簡易版）だったため削除した。
 
+# 機器モデル名 → シーケンスプラットフォームの判定テーブル（_determine_platform 用）。
+# 完全一致を先に評価し、その後で正規表現を「リストの順序どおり」に評価する（順序依存のため変更不可）。
+_PLATFORM_EXACT_MAP = {
+    "UG 100": "ULTIMA",
+    "GENIUS": "GENAPSYS", "Genapsys Sequencer": "GENAPSYS", "GS111": "GENAPSYS",
+    "GenoCare 1600": "GENEMIND", "GenoLab M": "GENEMIND", "FASTASeq 300": "GENEMIND",
+    "SURFSeq 5000": "GENEMIND", "SURFSeq Q": "GENEMIND",
+    "Tapestri": "TAPESTRI",
+    "Sentosa SQ301": "VELA_DIAGNOSTICS",
+    "Saluseq Nimbo": "SALUS", "Salus Pro": "SALUS", "Salus EVO": "SALUS",
+    "G-seq500": "GENEUS_TECH",
+    "G4": "SINGULAR_GENOMICS",
+}
+# (正規表現パターン, フラグ, プラットフォーム) を上から順に評価する。
+_PLATFORM_REGEX_RULES = [
+    (r'454', re.IGNORECASE, "LS454"),
+    (r'illumina|nextseq|hiseq', re.IGNORECASE, "ILLUMINA"),
+    (r'solid', re.IGNORECASE, "ABI_SOLID"),
+    (r'pacbio', re.IGNORECASE, "PACBIO_SMRT"),
+    (r'onso|revio', re.IGNORECASE, "PACBIO_SMRT"),
+    (r'bgiseq|mgiseq|cycloneseq', re.IGNORECASE, "BGISEQ"),
+    (r'dnbseq', re.IGNORECASE, "DNBSEQ"),
+    (r'AB 5500', 0, "ABI_SOLID"),
+    (r'Ion', 0, "ION_TORRENT"),
+    (r'Sequel', 0, "PACBIO_SMRT"),
+    (r'ION', 0, "OXFORD_NANOPORE"),
+    (r'AB 3', 0, "CAPILLARY"),
+    (r'Helicos HeliScope', 0, "HELICOS"),
+    (r'Complete', 0, "COMPLETE_GENOMICS"),
+    (r'Element', 0, "ELEMENT"),
+]
+
 class AXS2080(BaseRule):
     rule_id = "AXS2080"
     alternate_id = "JP0039"
@@ -460,32 +492,13 @@ class ANN0560(BaseRule):
     def _determine_platform(self, model: str) -> str:
         if not model:
             return "UNKNOWN"
-            
-        if model == "UG 100": return "ULTIMA"
-        if model in ["GENIUS", "Genapsys Sequencer", "GS111"]: return "GENAPSYS"
-        if model in ["GenoCare 1600", "GenoLab M", "FASTASeq 300", "SURFSeq 5000", "SURFSeq Q"]: return "GENEMIND"
-        if model == "Tapestri": return "TAPESTRI"
-        if model == "Sentosa SQ301": return "VELA_DIAGNOSTICS"
-        if model in ["Saluseq Nimbo", "Salus Pro", "Salus EVO"]: return "SALUS"
-        if model == "G-seq500": return "GENEUS_TECH"
-        if model == "G4": return "SINGULAR_GENOMICS"
 
-        if re.search(r'454', model, re.IGNORECASE): return "LS454"
-        if re.search(r'illumina|nextseq|hiseq', model, re.IGNORECASE): return "ILLUMINA"
-        if re.search(r'solid', model, re.IGNORECASE): return "ABI_SOLID"
-        if re.search(r'pacbio', model, re.IGNORECASE): return "PACBIO_SMRT"
-        if re.search(r'onso|revio', model, re.IGNORECASE): return "PACBIO_SMRT"
-        if re.search(r'bgiseq|mgiseq|cycloneseq', model, re.IGNORECASE): return "BGISEQ"
-        if re.search(r'dnbseq', model, re.IGNORECASE): return "DNBSEQ"
+        if model in _PLATFORM_EXACT_MAP:
+            return _PLATFORM_EXACT_MAP[model]
 
-        if re.search(r'AB 5500', model): return "ABI_SOLID"
-        if re.search(r'Ion', model): return "ION_TORRENT"
-        if re.search(r'Sequel', model): return "PACBIO_SMRT"
-        if re.search(r'ION', model): return "OXFORD_NANOPORE"
-        if re.search(r'AB 3', model): return "CAPILLARY"
-        if re.search(r'Helicos HeliScope', model): return "HELICOS"
-        if re.search(r'Complete', model): return "COMPLETE_GENOMICS"
-        if re.search(r'Element', model): return "ELEMENT"
+        for pattern, flags, platform in _PLATFORM_REGEX_RULES:
+            if re.search(pattern, model, flags):
+                return platform
 
         return "UNKNOWN"
                 

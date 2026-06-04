@@ -2,6 +2,11 @@ import json
 from pathlib import Path
 from common.rules.base import BaseRule
 
+# マジックナンバーの名前付き定数
+MAX_N_RATIO = 0.5                    # N 塩基の許容割合の上限（超で警告）
+MIN_SEQUENCE_LENGTH = 100            # 最小推奨配列長(塩基)
+MAX_SEQUENCE_LENGTH = 1_000_000_000  # 1エントリの最大配列長(塩基)
+
 class FASTA_FORMAT_VALIDATOR(BaseRule):
     rule_id = "FASTA_FORMAT_MASTER"
     target = "file"
@@ -127,7 +132,7 @@ class SEQ5010(BaseRule):
             n_count = seq_str.count('n') + seq_str.count('N')
             n_ratio = n_count / seq_len
             
-            if n_ratio > 0.5:
+            if n_ratio > MAX_N_RATIO:
                 results.append(self.format_result(
                     entry_id=record.id, message=self.description, level="warning",
                     feature_type="sequence"
@@ -233,7 +238,7 @@ class SEQ5040(BaseRule):
         if seq_len == 0:
             return results
             
-        if seq_len < 100:
+        if seq_len < MIN_SEQUENCE_LENGTH:
             msg = f"{self.description} (Length: {seq_len} bases)"
             res = self.format_result(
                 entry_id=record.id, 
@@ -262,7 +267,7 @@ class SEQ5050(BaseRule):
             return results
             
         # 1Gbases (1,000,000,000 bases) を超える場合にエラー
-        if len(record.seq) > 1_000_000_000:
+        if len(record.seq) > MAX_SEQUENCE_LENGTH:
             msg = f"{self.description} (Length: {len(record.seq):,} bases)"
             res = self.format_result(
                 entry_id=record.id,

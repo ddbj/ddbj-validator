@@ -4,6 +4,23 @@ from pathlib import Path
 from dataclasses import dataclass, field
 from apps.ddbj.db_metadata import fetch_valid_journals
 
+# DATATYPE 値 → セットすべき is_* フラグ名（複合タイプは複数フラグ）
+_DATATYPE_FLAGS = {
+    "WGS": ("is_wgs",),
+    "TPA": ("is_tpa",),
+    "TLS": ("is_tls",),
+    "MGA": ("is_mga",),
+    "TSA": ("is_tsa",),
+    "TPA-WGS": ("is_wgs", "is_tpa"),
+    "TPA-TSA": ("is_tsa", "is_tpa"),
+    "TPA-TLS": ("is_tls", "is_tpa"),
+}
+# datatype としても扱う DIVISION 値 → 対応する is_* フラグ名
+_DIVISION_FLAGS = {
+    "CON": "is_con", "ENV": "is_env", "EST": "is_est", "GSS": "is_gss",
+    "HTC": "is_htc", "HTG": "is_htg", "STS": "is_sts", "SYN": "is_syn", "TSA": "is_tsa",
+}
+
 @dataclass
 class ValidationContext:
     """
@@ -157,22 +174,9 @@ class ValidationContext:
                         dt_upper = dt.strip().upper()
                         self.active_datatypes.add(dt_upper)
                         
-                        if dt_upper == "WGS": self.is_wgs = True
-                        if dt_upper == "TPA": self.is_tpa = True
-                        if dt_upper == "TLS": self.is_tls = True
-                        if dt_upper == "MGA": self.is_mga = True
-                        if dt_upper == "TSA": self.is_tsa = True
-                        
-                        # TPA複合タイプの処理 (両方のフラグをTrueにする)
-                        if dt_upper == "TPA-WGS":
-                            self.is_wgs = True
-                            self.is_tpa = True
-                        if dt_upper == "TPA-TSA":
-                            self.is_tsa = True
-                            self.is_tpa = True
-                        if dt_upper == "TPA-TLS":
-                            self.is_tls = True
-                            self.is_tpa = True
+                        # DATATYPE → is_* フラグ（複合タイプは複数フラグをセット）
+                        for flag in _DATATYPE_FLAGS.get(dt_upper, ()):
+                            setattr(self, flag, True)
                         
                 elif feat.type == "DIVISION":
                     for div in feat.qualifiers.get("division", []):
@@ -180,19 +184,9 @@ class ValidationContext:
                         self.active_divisions.add(div_upper)
                         
                         # 特定の division を datatype としても扱う（下流ルール互換用）
-                        if div_upper in {"CON", "ENV", "EST", "GSS", "HTC", "HTG", "STS", "SYN", "TSA"}:
+                        if div_upper in _DIVISION_FLAGS:
                             self.active_datatypes.add(div_upper)
-                            
-                            # フラグのセット
-                            if div_upper == "CON": self.is_con = True
-                            if div_upper == "ENV": self.is_env = True
-                            if div_upper == "EST": self.is_est = True
-                            if div_upper == "GSS": self.is_gss = True
-                            if div_upper == "HTC": self.is_htc = True
-                            if div_upper == "HTG": self.is_htg = True
-                            if div_upper == "STS": self.is_sts = True
-                            if div_upper == "SYN": self.is_syn = True
-                            if div_upper == "TSA": self.is_tsa = True
+                            setattr(self, _DIVISION_FLAGS[div_upper], True)
                                                                                 
         # 2. Taxonomy (真核生物/原核生物) の解析
         for record in records.values():
