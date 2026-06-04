@@ -245,56 +245,183 @@ def _expand_common_template(ann_lines, records, METADATA_FIELDS):
     return tasks
 
 
+def _split_annotation_columns(clean_line, line_no, current_entry_id,
+                              current_metadata_feature, current_biological_feature,
+                              qualifiers_dict, ann_path, parse_errors):
+    """1 行を列分割・検証し (entry, feat_type, loc_str, qualifier, value) を返す。
+
+    列数が不正な場合は parse_errors に記録して None を返す（呼び出し側で continue）。
+    qualifier の値欠落（ANN0190 / ANN2645）もここで検出する。
+    """
+    cols = clean_line.split("\t")
+
+    if len(cols) not in (3, 4, 5):
+        parse_errors.append(_parse_error(
+            ann_path, "ANN0140",
+            f"Invalid column count (Expected 3, 4 or 5, Found {len(cols)}).",
+            entry=current_entry_id or "UNKNOWN"))
+        return None
+
+    cols = [c.strip() for c in cols]
+
+    if len(cols) == 3:
+        entry, feat_type, loc_str = cols
+        qualifier = ""
+        value = ""
+    elif len(cols) == 4:
+        entry, feat_type, loc_str, qualifier = cols
+        value = ""
+    else:
+        entry, feat_type, loc_str, qualifier, value = cols
+
+    if not qualifier and value:
+        parse_errors.append(_parse_error(
+            ann_path, "ANN0190",
+            "A qualifier name is missing for the provided value column.",
+            entry=current_entry_id or entry or "UNKNOWN", target="file/format", line_number=line_no))
+
+    if qualifier:
+        q_def = qualifiers_dict.get(qualifier) or {}
+        is_value_less = (q_def.get("field_type") == "value-less")
+
+        if not is_value_less and not value:
+            current_f_type = feat_type
+            if not current_f_type:
+                target_feat = current_metadata_feature or current_biological_feature
+                current_f_type = target_feat.type if target_feat else "UNKNOWN"
+
+            parse_errors.append(_parse_error(
+                ann_path, "ANN2645",
+                f"Missing value for the qualifier '{qualifier}'.",
+                entry=current_entry_id or entry or "UNKNOWN", target="qualifier",
+                feature_type=current_f_type, line_number=line_no))
+
+    return entry, feat_type, loc_str, qualifier, value
+
+
+def _resolve_feature_location(loc_str, feat_type, seq_len, line_no, err_entry, ann_path, parse_errors):
+    """location 文字列を SeqFeature の location に変換する。
+
+    失敗時は対応する ANN ルールを parse_errors に記録し、None を返す。
+    """
+    location = None
+    try:
+        parsable_loc_str = loc_str
+        if seq_len > 0 and re.search(r'\bE\b', loc_str, re.IGNORECASE):
+            parsable_loc_str = re.sub(r'\bE\b', str(seq_len), loc_str, flags=re.IGNORECASE)
+
+        if seq_len == 0 and re.search(r'\bE\b', loc_str, re.IGNORECASE):
+            parse_errors.append(_parse_error(
+                ann_path, "ANN2020",
+                f"Invalid location. The corresponding sequence is missing in FASTA. (Found: '{loc_str}')",
+                entry=err_entry, target="location",
+                feature_type=feat_type, line_number=line_no))
+        else:
+            location = _parse_location_string(parsable_loc_str, seq_length=seq_len)
+
+    except LocationPartialDescriptorError as e:
+        parse_errors.append(_parse_error(
+            ann_path, "ANN2050", str(e),
+            entry=err_entry, target="location",
+            feature_type=feat_type, line_number=line_no))
+    except LocationParseError as e:
+        specific_msg = str(e).strip()
+        full_msg = f"Invalid location. {specific_msg}" if specific_msg else "Invalid location format."
+        parse_errors.append(_parse_error(
+            ann_path, "ANN2020", f"{full_msg} (Found: '{loc_str}')",
+            entry=err_entry, target="location",
+            feature_type=feat_type, line_number=line_no))
+    except Exception:
+        parse_errors.append(_parse_error(
+            ann_path, "ANN2020", f"Invalid location format. (Found: '{loc_str}')",
+            entry=err_entry, target="location",
+            feature_type=feat_type, line_number=line_no))
+    return location
+
+
+def _register_new_feature(records, current_entry_id, feat_type, location, original_loc_str,
+                          line_no, qualifier, value, METADATA_FIELDS, current_biological_feature):
+    """新しいフィーチャーを生成してレコードに登録する。
+
+    METADATA フィールドか生物学的フィーチャーかで現在の文脈を切り替え、
+    更新後の (current_metadata_feature, current_biological_feature) を返す。
+    """
+    new_feature = SeqFeature(location=location, type=feat_type, qualifiers={})
+    new_feature.original_location = original_loc_str
+    new_feature.line_number = line_no
+    new_feature.has_qualifier_on_first_line = bool(qualifier.strip())
+
+    if current_entry_id in records:
+        target_record = records[current_entry_id]
+        target_record.features.append(new_feature)
+
+        if feat_type not in target_record.features_by_type:
+            target_record.features_by_type[feat_type] = []
+        target_record.features_by_type[feat_type].append(new_feature)
+
+    feat_type_upper = feat_type.upper()
+
+    if feat_type_upper in METADATA_FIELDS:
+        current_metadata_feature = new_feature
+        if qualifier:
+            current_metadata_feature.qualifiers[qualifier] = [value]
+        return current_metadata_feature, current_biological_feature
+
+    current_biological_feature = new_feature
+    current_metadata_feature = None
+    if qualifier:
+        current_biological_feature.qualifiers[qualifier] = [value]
+        if qualifier == "locus_tag" and current_entry_id in records:
+            tag_val = value.strip()
+            if tag_val not in records[current_entry_id].features_by_locus_tag:
+                records[current_entry_id].features_by_locus_tag[tag_val] = []
+            records[current_entry_id].features_by_locus_tag[tag_val].append(new_feature)
+    return current_metadata_feature, current_biological_feature
+
+
+def _attach_qualifier_to_feature(records, current_entry_id, current_metadata_feature,
+                                 current_biological_feature, qualifier, value, line_no,
+                                 entry, ann_path, parse_errors):
+    """qualifier のみの行を、直前のフィーチャーに追加する。
+
+    対象フィーチャーが無ければ ANN2650 を parse_errors に記録する。
+    """
+    target_feature = current_metadata_feature or current_biological_feature
+
+    if not target_feature:
+        parse_errors.append(_parse_error(
+            ann_path, "ANN2650",
+            f"Missing feature for the qualifier. (cannot attach qualifier '{qualifier}')",
+            entry=current_entry_id or entry or "UNKNOWN", target="file",
+            feature_type="UNKNOWN", line_number=line_no))
+    else:
+        if qualifier not in target_feature.qualifiers:
+            target_feature.qualifiers[qualifier] = []
+        target_feature.qualifiers[qualifier].append(value)
+
+        if qualifier == "locus_tag" and current_entry_id in records:
+            tag_val = value.strip()
+            if tag_val not in records[current_entry_id].features_by_locus_tag:
+                records[current_entry_id].features_by_locus_tag[tag_val] = []
+            if target_feature not in records[current_entry_id].features_by_locus_tag[tag_val]:
+                records[current_entry_id].features_by_locus_tag[tag_val].append(target_feature)
+
+
 def _parse_annotation_tasks(tasks, records, parse_errors, qualifiers_dict, METADATA_FIELDS, ann_path):
     """アノテーションの各行をパースして SeqFeature を構築し、レコードに紐付ける"""
     current_entry_id = None
     current_biological_feature = None
-    current_metadata_feature = None    
+    current_metadata_feature = None
 
     for line_no, clean_line in tasks:
-        cols = clean_line.split("\t")
-        
-        if len(cols) not in (3, 4, 5):
-            parse_errors.append(_parse_error(
-                ann_path, "ANN0140",
-                f"Invalid column count (Expected 3, 4 or 5, Found {len(cols)}).",
-                entry=current_entry_id or "UNKNOWN"))
+        parsed = _split_annotation_columns(
+            clean_line, line_no, current_entry_id,
+            current_metadata_feature, current_biological_feature,
+            qualifiers_dict, ann_path, parse_errors)
+        if parsed is None:
             continue
-                        
-        cols = [c.strip() for c in cols]
-        
-        if len(cols) == 3:
-            entry, feat_type, loc_str = cols
-            qualifier = ""
-            value = ""
-        elif len(cols) == 4:
-            entry, feat_type, loc_str, qualifier = cols
-            value = ""
-        else:
-            entry, feat_type, loc_str, qualifier, value = cols
-            
-        if not qualifier and value:
-            parse_errors.append(_parse_error(
-                ann_path, "ANN0190",
-                "A qualifier name is missing for the provided value column.",
-                entry=current_entry_id or entry or "UNKNOWN", target="file/format", line_number=line_no))
+        entry, feat_type, loc_str, qualifier, value = parsed
 
-        if qualifier:
-            q_def = qualifiers_dict.get(qualifier) or {}
-            is_value_less = (q_def.get("field_type") == "value-less")
-            
-            if not is_value_less and not value:
-                current_f_type = feat_type
-                if not current_f_type:
-                    target_feat = current_metadata_feature or current_biological_feature
-                    current_f_type = target_feat.type if target_feat else "UNKNOWN"
-                    
-                parse_errors.append(_parse_error(
-                    ann_path, "ANN2645",
-                    f"Missing value for the qualifier '{qualifier}'.",
-                    entry=current_entry_id or entry or "UNKNOWN", target="qualifier",
-                    feature_type=current_f_type, line_number=line_no))
-                                            
         if loc_str.lower() == "location" or feat_type.lower() == "feature":
             continue
 
@@ -307,7 +434,7 @@ def _parse_annotation_tasks(tasks, records, parse_errors, qualifiers_dict, METAD
                 f"Removed whitespace(s) from location string. (Found: '{original_loc_str}')",
                 entry=current_entry_id or entry or "UNKNOWN", level="warning", is_cleanup=True,
                 target="location", feature_type=feat_type or "UNKNOWN", line_number=line_no))
-                        
+
         if entry and entry != current_entry_id:
             current_entry_id = entry
             current_biological_feature = None
@@ -318,95 +445,24 @@ def _parse_annotation_tasks(tasks, records, parse_errors, qualifiers_dict, METAD
             record.features_by_type = {}
             record.features_by_locus_tag = {}
             records[current_entry_id] = record
-        
+
+        err_entry = current_entry_id or entry or "UNKNOWN"
+
         # --- 新しいフィーチャーの処理 ---
         if feat_type:
             seq_len = len(records[current_entry_id].seq) if current_entry_id in records else 0
-            location = None
-            
-            try:
-                parsable_loc_str = loc_str
-                if seq_len > 0 and re.search(r'\bE\b', loc_str, re.IGNORECASE):
-                    parsable_loc_str = re.sub(r'\bE\b', str(seq_len), loc_str, flags=re.IGNORECASE)
+            location = _resolve_feature_location(
+                loc_str, feat_type, seq_len, line_no, err_entry, ann_path, parse_errors)
 
-                if seq_len == 0 and re.search(r'\bE\b', loc_str, re.IGNORECASE):
-                    parse_errors.append(_parse_error(
-                        ann_path, "ANN2020",
-                        f"Invalid location. The corresponding sequence is missing in FASTA. (Found: '{loc_str}')",
-                        entry=current_entry_id or entry or "UNKNOWN", target="location",
-                        feature_type=feat_type, line_number=line_no))
-                else:
-                    location = _parse_location_string(parsable_loc_str, seq_length=seq_len)                
-                                
-            except LocationPartialDescriptorError as e:
-                parse_errors.append(_parse_error(
-                    ann_path, "ANN2050", str(e),
-                    entry=current_entry_id or entry or "UNKNOWN", target="location",
-                    feature_type=feat_type, line_number=line_no))
-            except LocationParseError as e:
-                specific_msg = str(e).strip()
-                full_msg = f"Invalid location. {specific_msg}" if specific_msg else "Invalid location format."
-                parse_errors.append(_parse_error(
-                    ann_path, "ANN2020", f"{full_msg} (Found: '{loc_str}')",
-                    entry=current_entry_id or entry or "UNKNOWN", target="location",
-                    feature_type=feat_type, line_number=line_no))
-            except Exception:
-                parse_errors.append(_parse_error(
-                    ann_path, "ANN2020", f"Invalid location format. (Found: '{loc_str}')",
-                    entry=current_entry_id or entry or "UNKNOWN", target="location",
-                    feature_type=feat_type, line_number=line_no))
-                                                                
-            new_feature = SeqFeature(location=location, type=feat_type, qualifiers={})            
-            new_feature.original_location = original_loc_str
-            new_feature.line_number = line_no
-            new_feature.has_qualifier_on_first_line = bool(qualifier.strip())
+            current_metadata_feature, current_biological_feature = _register_new_feature(
+                records, current_entry_id, feat_type, location, original_loc_str,
+                line_no, qualifier, value, METADATA_FIELDS, current_biological_feature)
 
-            if current_entry_id in records:
-                target_record = records[current_entry_id]
-                target_record.features.append(new_feature)
-                
-                if feat_type not in target_record.features_by_type:
-                    target_record.features_by_type[feat_type] = []
-                target_record.features_by_type[feat_type].append(new_feature)
-
-            feat_type_upper = feat_type.upper()
-            
-            if feat_type_upper in METADATA_FIELDS:
-                current_metadata_feature = new_feature
-                if qualifier:
-                    current_metadata_feature.qualifiers[qualifier] = [value]
-            else:
-                current_biological_feature = new_feature
-                current_metadata_feature = None
-                if qualifier:
-                    current_biological_feature.qualifiers[qualifier] = [value]
-                    if qualifier == "locus_tag" and current_entry_id in records:
-                        tag_val = value.strip()
-                        if tag_val not in records[current_entry_id].features_by_locus_tag:
-                            records[current_entry_id].features_by_locus_tag[tag_val] = []
-                        records[current_entry_id].features_by_locus_tag[tag_val].append(new_feature)
-
-        # --- Qualifierの追加 ---
+        # --- Qualifier の追加 ---
         elif qualifier:
-            target_feature = current_metadata_feature or current_biological_feature
-      
-            if not target_feature:
-                parse_errors.append(_parse_error(
-                    ann_path, "ANN2650",
-                    f"Missing feature for the qualifier. (cannot attach qualifier '{qualifier}')",
-                    entry=current_entry_id or entry or "UNKNOWN", target="file",
-                    feature_type="UNKNOWN", line_number=line_no))
-            else:
-                if qualifier not in target_feature.qualifiers:
-                    target_feature.qualifiers[qualifier] = []
-                target_feature.qualifiers[qualifier].append(value)
-                
-                if qualifier == "locus_tag" and current_entry_id in records:
-                    tag_val = value.strip()
-                    if tag_val not in records[current_entry_id].features_by_locus_tag:
-                        records[current_entry_id].features_by_locus_tag[tag_val] = []
-                    if target_feature not in records[current_entry_id].features_by_locus_tag[tag_val]:
-                        records[current_entry_id].features_by_locus_tag[tag_val].append(target_feature)
+            _attach_qualifier_to_feature(
+                records, current_entry_id, current_metadata_feature, current_biological_feature,
+                qualifier, value, line_no, entry, ann_path, parse_errors)
 
 
 def _feature_allows_qualifier(features_dict, feature_type, qualifier):
