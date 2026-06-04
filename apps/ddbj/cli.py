@@ -11,7 +11,8 @@ from apps.ddbj.reporter import ValidationReporter
 
 load_dotenv()
 
-def main():
+
+def _build_parser():
     parser = argparse.ArgumentParser(description="DDBJ Validator")
     
     # 位置引数（ターゲット）を追加。0個以上の引数を受け付ける
@@ -43,9 +44,10 @@ def main():
 
     # システム診断ログの詳細化（開発者向け）
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose system/debug logging to stderr (for developers)")
+    return parser
 
-    args = parser.parse_args()
 
+def _init_logging(args):
     # --- ロギングの初期化 ---
     # システム診断・警告ログは標準エラー出力(stderr)へ出す（標準出力＝検証結果と分離する）。
     # 既定は WARNING 以上のみ表示。-v 指定時のみ DEBUG まで出力し、内部の握りつぶし例外なども可視化する。
@@ -54,7 +56,9 @@ def main():
 
     if args.ncbi_api_key:
         os.environ["NCBI_API_KEY"] = args.ncbi_api_key
-    
+
+
+def _resolve_modes(args):
     # --- オプションの論理解決 ---
     skip_db = False
     skip_ncbi = False
@@ -93,7 +97,10 @@ def main():
     else:
         # 明示的な指定 (例: -j 16)
         jobs = args.jobs
-                        
+    return skip_db, skip_ncbi, skip_auth, jobs
+
+
+def _resolve_targets(args):
     # --- 1. ターゲットの収集とデフォルト設定 ---
     raw_targets = list(args.targets)
     if args.dir: raw_targets.extend(args.dir)
@@ -214,7 +221,10 @@ def main():
             
         # 重複する出力先ディレクトリを整理
         target_dirs_for_report = list(dict.fromkeys(target_dirs_for_report))
+    return pairs, report_out_dir, target_dirs_for_report
 
+
+def _run(args, pairs, report_out_dir, target_dirs_for_report, skip_db, skip_ncbi, jobs):
     # --- パイプラインの実行とレポート出力 --- #
     account_id = args.account
     
@@ -264,6 +274,15 @@ def main():
     finally:
         # 4. コンテナやホストのディスクを圧迫しないよう、テンポラリファイルを確実に削除
         pipeline.cleanup_tmp_dir()
+
+
+def main():
+    args = _build_parser().parse_args()
+    _init_logging(args)
+    skip_db, skip_ncbi, skip_auth, jobs = _resolve_modes(args)
+    pairs, report_out_dir, target_dirs_for_report = _resolve_targets(args)
+    _run(args, pairs, report_out_dir, target_dirs_for_report, skip_db, skip_ncbi, jobs)
+
 
 if __name__ == "__main__":
     main()
