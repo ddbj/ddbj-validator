@@ -121,7 +121,9 @@ def fetch_drr_status(db_conn, drr_list):
     """
     DRRアクセッション番号から、DRAデータベースの submission status を取得する
     submission status 1000 cancelled 1100 permanently suppressed 1200 withdrawn の場合、Run も同じ status
-    800 public の場合、is_delete true AND was_public true で Run status permanently suppressed 1100
+    submission status 770 (temporarily suppressed) / 800 (public) の場合、
+    個々の Run が is_delete true AND was_public true なら、その Run は permanently suppressed (1100) 扱いとする
+    （submission 全体は生きているが、当該 Run だけが永久抑制されているケース）
     """
     if not drr_list: return {}
     
@@ -164,8 +166,9 @@ def fetch_drr_status(db_conn, drr_list):
                 # --- 判定ロジック ---
                 if status_code in (1000, 1100, 1200):
                     final_status = status_code
-                elif status_code == 800:
-                    # 800 (public) の場合、特定のフラグ条件を満たせば 1100 (permanently suppressed) 扱いにする
+                elif status_code in (770, 800):
+                    # 770 (temporarily suppressed) / 800 (public) の場合、
+                    # 当該 Run が is_delete true AND was_public true なら 1100 (permanently suppressed) 扱いにする
                     if was_public and is_delete:
                         final_status = 1100
                     else:
