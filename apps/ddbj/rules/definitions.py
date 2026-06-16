@@ -187,7 +187,6 @@ class ANN_DICT_VALIDATOR(BaseRule):
                                   global_seen_unique_values, entry_seen_unique_values, context):
         results = []
         f_type = feature.type
-        historical_countries = {c.lower() for c in cv_terms.get("historical_countries", [])}
         missing_reporting_terms = {m.lower() for m in cv_terms.get("missing_reporting_terms", [])}
 
         # DDBJ JSONのリスト構造に合わせて許可Qualifierを抽出
@@ -369,7 +368,7 @@ class ANN_DICT_VALIDATOR(BaseRule):
             if allowed:
                 for val in q_values:
                     is_valid, custom_msg, suggested_fix = self._resolve_allowed_value(
-                        q_name, val, allowed, rule_info, historical_countries, missing_reporting_terms)
+                        q_name, val, allowed, rule_info)
                     if not is_valid:
                         base_msg = custom_msg if custom_msg else rule_info.get('message', '')
                         msg = f"{base_msg} (Found: '{val}')".strip()
@@ -450,7 +449,7 @@ class ANN_DICT_VALIDATOR(BaseRule):
                         
         return results
 
-    def _resolve_allowed_value(self, q_name, val, allowed, rule_info, historical_countries, missing_reporting_terms):
+    def _resolve_allowed_value(self, q_name, val, allowed, rule_info):
         """
         allowed_values チェックにおける値判定（qualifier 種別ごとの特例）。
         (is_valid, custom_msg, suggested_fix) を返す。挙動は従来のインライン分岐と同一。
@@ -463,17 +462,6 @@ class ANN_DICT_VALIDATOR(BaseRule):
             parts = val.split(":")
             type_part = parts[1] if len(parts) >= 2 and parts[0] in {"COORDINATES", "DESCRIPTION", "EXISTENCE"} else parts[0]
             if type_part.replace(" (same species)", "").strip() in allowed: is_valid = True
-
-        elif q_name == "geo_loc_name":
-            val_lower = val.lower()
-            if val_lower.startswith("missing:"):
-                if val_lower in missing_reporting_terms: is_valid = True
-            else:
-                country_part = val.split(":")[0].strip()
-                if country_part in allowed:
-                    is_valid = True
-                elif country_part.lower() in historical_countries:
-                    is_valid = True
 
         elif q_name == "mobile_element_type":
             parts = str(val).split(":", 1)

@@ -649,7 +649,7 @@ class CDS_TRANSL_EXCEPT_VALIDATOR(BaseRule):
             return results
 
         amino_acids_def = context.cv_terms.get("amino_acids", {}) if context.cv_terms else {}
-        aa_name_map = {k.lower(): k for k in amino_acids_def.keys()}
+        aa_lower_map = {k.lower(): k for k in amino_acids_def.keys()}
 
         default_table_id = get_expected_transl_table(record, context.tax_data)
 
@@ -702,12 +702,26 @@ class CDS_TRANSL_EXCEPT_VALIDATOR(BaseRule):
                 pos_str = m.group("pos")
                 aa_str = m.group("aa")
 
-                aa_lower = aa_str.lower()
-
-                if aa_lower not in aa_name_map:
-                    res = self.feature_result(record, feature, 'Invalid amino acid abbreviation code in the transl_except qualifier.', level="error", qualifier="transl_except", rule="AXS6410", target="transl_except")
+                # アミノ酸略号を CV と照合する。完全一致なら OK。
+                # 大文字小文字のみ異なる場合は誤記として error を出し、正しい case へ autofix で正す
+                # （翻訳モジュールの case-insensitive 解釈と整合させるため）。
+                # どちらにも一致しなければ無効としてエラー（autofix なし）。
+                if aa_str in amino_acids_def:
+                    aa_normalized = aa_str
+                else:
+                    correct_aa = aa_lower_map.get(aa_str.lower())
+                    if correct_aa is None:
+                        res = self.feature_result(record, feature, 'Invalid amino acid abbreviation code in the transl_except qualifier.', level="error", qualifier="transl_except", rule="AXS6410", target="transl_except")
+                        results.append(res)
+                        continue
+                    new_val = te_val.strip().replace(f"aa:{aa_str}", f"aa:{correct_aa}", 1)
+                    res = self.feature_result(record, feature, f"Invalid amino acid abbreviation code in the transl_except qualifier. Check character case (Expected: '{correct_aa}', Found: '{aa_str}').", level="error", qualifier="transl_except", rule="AXS6410", target="transl_except")
+                    res["autofix"] = True
+                    res["fix_target"] = "qualifier"
+                    res["old_value"] = te_val.strip()
+                    res["new_value"] = new_val
                     results.append(res)
-                    continue
+                    aa_normalized = correct_aa
                 
                 try:
                     te_loc = _parse_location_string(pos_str, seq_length=len(record.seq))
@@ -717,7 +731,6 @@ class CDS_TRANSL_EXCEPT_VALIDATOR(BaseRule):
                     results.append(res)
                     continue
 
-                aa_normalized = aa_name_map[aa_lower]
                 te_positions = get_feature_positions(te_loc)
                 rel_start_idx = find_sublist(cds_positions, te_positions)
                 

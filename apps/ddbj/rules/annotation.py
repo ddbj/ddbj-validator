@@ -1463,10 +1463,17 @@ class ANN1250(BaseRule):
         # missing_reporting_terms は厳密一致
         missing_reporting_terms = set(context.cv_terms.get("missing_reporting_terms", []))
         
-        # 完全一致用のSetと、小文字から正しいCaseを引くためのマッピング辞書を作成
+        # 妥当性判定は countries + historical_countries の和集合に対して行う
+        # （historical 国名も有効な国名として扱う）。
         exact_countries = context.cv_terms.get("countries", [])
-        exact_countries_set = set(exact_countries)
+        historical_countries = context.cv_terms.get("historical_countries", [])
+        valid_set = set(exact_countries) | set(historical_countries)
+        # case 補正の autofix は countries / historical_countries の両方を ANN1250 でまとめて担当する。
+        # （historical 国名の case 補正もここで autofix する。ANN3260 は warning のみで autofix しない。）
         countries_lower_map = {c.lower(): c for c in exact_countries}
+        # 通常国名と重複する場合は通常国名を優先するため setdefault で追加する。
+        for c in historical_countries:
+            countries_lower_map.setdefault(c.lower(), c)
 
         for feature in self.get_features(record):
             if "geo_loc_name" in feature.qualifiers:
@@ -1483,30 +1490,32 @@ class ANN1250(BaseRule):
                     parts = val_str.split(":", 1)
                     country_part = parts[0].strip()
 
-                    # 1. まず完全一致（Case-sensitive）をチェック。一致すれば何もしない。
-                    if country_part in exact_countries_set:
+                    # 1. まず完全一致（Case-sensitive）をチェック。countries/historical のいずれかに
+                    #    一致すれば有効な国名なので何もしない。
+                    if country_part in valid_set:
                         continue
 
                     # 2. 完全一致しなかった場合、Case-insensitiveで照合する
+                    #    （countries / historical_countries のいずれでも case 補正の autofix を行う）
                     country_lower = country_part.lower()
                     if country_lower in countries_lower_map:
-                        # マッチした場合は大文字小文字の間違い（Autofix対象）
+                        # 国名の大文字小文字の間違い（Autofix対象）
                         correct_country = countries_lower_map[country_lower]
                         msg = f"{self.description} (Found: '{country_part}', Expected: '{correct_country}')"
                         res = self.feature_result(record, feature, msg, level="error", qualifier="geo_loc_name")
-                        
+
                         # Autofix: 正しい国名に、もしコロン以降があればそれも結合して新しい値を生成
                         if len(parts) > 1:
                             new_val = f"{correct_country}:{parts[1]}"
                         else:
                             new_val = correct_country
-                            
+
                         res["autofix"] = True
                         res["fix_target"] = "qualifier"
                         res["old_value"] = val_str
                         res["new_value"] = new_val
                         results.append(res)
-                        
+
                     # 3. 全くマッチしない不正な国名の場合
                     else:
                         msg = f"{self.description} (Found: '{country_part}')"
@@ -3193,17 +3202,27 @@ class ANTICODON_VALIDATOR(BaseRule):
                     pos_str, aa_str, seq_str = match.groups()
 
                     # --- ANN2710: アミノ酸の検証 ---
+                    # CV と照合。完全一致なら OK。大文字小文字のみ異なる場合は誤記として error を出し、
+                    # 正しい case へ autofix で正す（翻訳モジュールの case-insensitive 解釈と整合させるため）。
+                    # どちらにも一致しなければ無効としてエラー（autofix なし）。
                     is_aa_valid = True
                     if aa_str not in amino_acids:
-                        expected_aa = aa_lower_map.get(aa_str.lower())
-                        if expected_aa:
-                            msg = f"Invalid 'aa' value in the anticodon qualifier. Check character case (Expected: '{expected_aa}', Found: '{aa_str}')."
+                        correct_aa = aa_lower_map.get(aa_str.lower())
+                        if correct_aa:
+                            new_val = val_str.replace(f"aa:{aa_str}", f"aa:{correct_aa}", 1)
+                            msg = f"Invalid 'aa' value in the anticodon qualifier. Check character case (Expected: '{correct_aa}', Found: '{aa_str}')."
+                            res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon", rule="ANN2710")
+                            res["autofix"] = True
+                            res["fix_target"] = "qualifier"
+                            res["old_value"] = val_str
+                            res["new_value"] = new_val
+                            results.append(res)
+                            aa_str = correct_aa  # 下流の翻訳チェック (ANN2715) は正しい case で行う
                         else:
                             msg = f"Invalid 'aa' value in the anticodon qualifier. It must be a valid amino acid abbreviation. (Found: '{aa_str}')"
-                            
-                        res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon", rule="ANN2710")
-                        results.append(res)
-                        is_aa_valid = False
+                            res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon", rule="ANN2710")
+                            results.append(res)
+                            is_aa_valid = False
 
                     # --- ANN2730, ANN2740: pos のパースと範囲検証 ---
                     anticodon_loc = None
@@ -3430,18 +3449,21 @@ class ANN3260(BaseRule):
 
     def validate(self, record, context):
         results = []
-        historical_countries = {c.lower() for c in context.cv_terms.get("historical_countries", [])}
-        
+        # historical 国名は case-insensitive に検出して warning を出す。
+        # case 補正の autofix は ANN1250 がまとめて担当するため、ここでは autofix しない。
+        historical_lower = {c.lower() for c in context.cv_terms.get("historical_countries", [])}
+
         for feature in self.get_features(record):
             if "geo_loc_name" in feature.qualifiers:
                 for val in feature.qualifiers["geo_loc_name"]:
                     val_str = str(val)
                     if not val_str:
                         continue
-                        
-                    country_part = val_str.split(":")[0].strip()
 
-                    if country_part.lower() in historical_countries:
+                    parts = val_str.split(":", 1)
+                    country_part = parts[0].strip()
+
+                    if country_part.lower() in historical_lower:
                         msg = f"{self.description} (Found: '{country_part}')"
                         results.append(self.feature_result(record, feature, msg, level="warning", qualifier="geo_loc_name"))
         return results

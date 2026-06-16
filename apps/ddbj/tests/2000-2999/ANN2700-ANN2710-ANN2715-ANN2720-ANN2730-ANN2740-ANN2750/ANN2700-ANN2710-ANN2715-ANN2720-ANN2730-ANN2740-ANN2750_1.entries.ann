@@ -84,3 +84,10 @@ seq10	source	1..120	organism	Mus musculus
 	tRNA	1..100	product	tRNA-Ser
 			anticodon	(pos:34..36,aa:Sss)
 			note	ANN2710 fail
+seq11	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	tRNA	1..100	product	tRNA-Phe
+			anticodon	(pos:34..36,aa:phe)
+			note	ANN2710 fail
