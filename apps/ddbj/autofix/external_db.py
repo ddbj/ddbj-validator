@@ -22,8 +22,11 @@ def _extract_samd_from_single_record(record):
     return samd_list
 
 
-def _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, ann_path, target_attrs):
+def _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, ann_path, target_attrs, emit_additions=False):
     """source qualifier 群を BioSample 属性値と突合し、不一致なら修正提案を作る。
+
+    emit_additions=True (-b 時) の場合、ann にのみ値があり BioSample 側が空の qualifier を
+    「属性追加候補」として bs_addition 付き proposal で emit する（パッケージ定義ゲートは phase-3）。
 
     戻り値: (proposals, validation_warnings, skipped_warnings)
     """
@@ -78,13 +81,15 @@ def _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, an
 
                         updates = [update_qualifier_action(entry_id, feature.type, attr, ann_val, bs_val, feature_id=getattr(feature, 'line_number', id(feature)))]
 
-                        proposals.append(build_proposal(
+                        prop = build_proposal(
                             ann_path=ann_path, entry=entry_id, feature_type=feature.type,
                             qualifier=attr, target=attr, target_level="qualifier",
                             positions=[{"entry": entry_id, "feature_id": getattr(feature, 'line_number', id(feature))}],
                             old_value=ann_val, new_value=bs_val, rule="ANN1130",
                             updates=updates, source_db=source_samd
-                        ))
+                        )
+                        prop["bs_attr"] = attr  # 上書き対象の BioSample 属性名（common は同名）
+                        proposals.append(prop)
 
                 elif len(bs_values) > 1:
                     skipped_warnings.append({
@@ -92,11 +97,29 @@ def _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, an
                         "attr": attr, "values": bs_values
                     })
 
+                elif emit_additions and ann_val:
+                    # ann にのみ値があり BioSample 側が空 → 属性追加候補（bs_addition）。
+                    # パッケージ定義に含まれるかの判定は phase-3 で行う。
+                    for s in valid_samds:
+                        p = build_proposal(
+                            ann_path=ann_path, entry=entry_id, feature_type=feature.type,
+                            qualifier=attr, target=attr, target_level="qualifier",
+                            positions=[{"entry": entry_id, "feature_id": getattr(feature, 'line_number', id(feature))}],
+                            old_value=ann_val, new_value="", rule="ANN1130",
+                            updates=[], source_db=s,
+                        )
+                        p["bs_addition"] = True
+                        p["bs_attr"] = attr
+                        proposals.append(p)
+
     return proposals, validation_warnings, skipped_warnings
 
 
-def _propose_locus_tag_prefix_sync(record, entry_id, valid_samds, bs_data, ann_path):
+def _propose_locus_tag_prefix_sync(record, entry_id, valid_samds, bs_data, ann_path, emit_additions=False):
     """locus_tag prefix を BioSample の locus_tag_prefix と突合し、一括修正提案を作る。
+
+    emit_additions=True (-b 時) かつ BioSample に locus_tag_prefix が無い場合、ann の locus_tag の
+    先頭（最初の '_' より前）を prefix として「属性追加候補」を emit する。
 
     戻り値: (proposals, validation_warnings, skipped_warnings)
     """
@@ -190,13 +213,15 @@ def _propose_locus_tag_prefix_sync(record, entry_id, valid_samds, bs_data, ann_p
 
                             updates.append(update_qualifier_action(entry_id, f.type, "locus_tag", old_tag, new_tag, feature_id=getattr(f, 'line_number', id(f))))
 
-            proposals.append(build_proposal(
+            prop = build_proposal(
                 ann_path=ann_path, entry=entry_id, feature_type="",
                 qualifier="locus_tag", target="locus_tag_prefix", target_level="qualifier",
                 positions=positions,
                 old_value=wp, new_value=bs_prefix, rule="ANN1130",
                 updates=updates, source_db=source_samd
-            ))
+            )
+            prop["bs_attr"] = "locus_tag_prefix"
+            proposals.append(prop)
 
     elif len(bs_prefixes) > 1:
         skipped_warnings.append({
@@ -204,23 +229,103 @@ def _propose_locus_tag_prefix_sync(record, entry_id, valid_samds, bs_data, ann_p
             "attr": "locus_tag_prefix", "values": bs_prefixes
         })
 
+    elif emit_additions and not bs_prefixes:
+        # BioSample に locus_tag_prefix が無く ann に locus_tag がある → prefix を追加候補に
+        ann_prefix = None
+        if hasattr(record, 'features_by_locus_tag') and record.features_by_locus_tag:
+            for tag_str in record.features_by_locus_tag:
+                ann_prefix = tag_str.split("_", 1)[0] if "_" in tag_str else tag_str
+                if ann_prefix:
+                    break
+        else:
+            for feature in record.features:
+                if "locus_tag" in feature.qualifiers and feature.qualifiers["locus_tag"]:
+                    t = feature.qualifiers["locus_tag"][0]
+                    ann_prefix = t.split("_", 1)[0] if "_" in t else t
+                    if ann_prefix:
+                        break
+        if ann_prefix:
+            for s in valid_samds:
+                p = build_proposal(
+                    ann_path=ann_path, entry=entry_id, feature_type="",
+                    qualifier="locus_tag", target="locus_tag_prefix", target_level="qualifier",
+                    positions=[], old_value=ann_prefix, new_value="", rule="ANN1130",
+                    updates=[], source_db=s,
+                )
+                p["bs_addition"] = True
+                p["bs_attr"] = "locus_tag_prefix"
+                proposals.append(p)
+
     return proposals, validation_warnings, skipped_warnings
 
 
-def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None):
+def _propose_bioproject_sync(records, valid_samds, bs_data, ann_path, emit_additions=False):
+    """DBLINK の project(PRJDB) を BioSample の bioproject_id と突合する（mapping エントリ）。
+
+    競合(ann≠BS) は通常 proposal、ann のみ(BS 空) は bs_addition として emit。bs_attr="bioproject_id"。
+    """
+    from apps.ddbj.utils.features import get_features
+    proposals = []
+
+    ann_projects = []
+    for entry_id, record in records.items():
+        for feature in get_features(record, "DBLINK"):
+            for v in feature.qualifiers.get("project", []):
+                if v and str(v).strip():
+                    ann_projects.append(str(v).strip())
+    if not ann_projects:
+        return proposals, [], []
+    # 単一前提（複数 project は対象外）
+    if len(set(ann_projects)) != 1:
+        return proposals, [], []
+    ann_proj = ann_projects[0]
+
+    for samd in valid_samds:
+        bs_bp = str(bs_data[samd].get("bioproject_id", "") or "").strip()
+        if bs_bp and bs_bp != ann_proj:
+            prop = build_proposal(
+                ann_path=ann_path, entry="COMMON", feature_type="DBLINK",
+                qualifier="project", target="bioproject_id", target_level="qualifier",
+                positions=[], old_value=ann_proj, new_value=bs_bp, rule="ANN1130",
+                updates=[], source_db=samd,
+            )
+            prop["bs_attr"] = "bioproject_id"
+            proposals.append(prop)
+        elif emit_additions and not bs_bp:
+            p = build_proposal(
+                ann_path=ann_path, entry="COMMON", feature_type="DBLINK",
+                qualifier="project", target="bioproject_id", target_level="qualifier",
+                positions=[], old_value=ann_proj, new_value="", rule="ANN1130",
+                updates=[], source_db=samd,
+            )
+            p["bs_addition"] = True
+            p["bs_attr"] = "bioproject_id"
+            proposals.append(p)
+
+    return proposals, [], []
+
+
+def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None, sync_attrs=None, emit_additions=False):
+    """BioSample 値と source qualifier を突合して修正提案を作る。
+
+    sync_attrs を渡すと突合対象 qualifier をそれに置き換える（-b 時は biosample_sync.common を渡す。
+    organism 等も対象になる）。未指定時は従来のハードコード集合（一般挙動は不変）。
+    emit_additions=True で ann にしかない qualifier の属性追加候補も emit する。
+    """
     proposals = []
     skipped_warnings = []
     validation_warnings = []
 
     unauth_set = unauthorized_bs or set()
 
-    target_attrs = ["bio_material", "collection_date", "geo_loc_name", "culture_collection",
+    target_attrs = sync_attrs if sync_attrs else ["bio_material", "collection_date", "geo_loc_name", "culture_collection",
                     "host", "lat_lon", "sex", "specimen_voucher", "strain", "isolate", "ecotype",
                     "cultivar", "cell_line"]
     common_samds = []
     if "COMMON" in records:
         common_samds = _extract_samd_from_single_record(records["COMMON"])
 
+    all_valid_samds = set()
     for entry_id, record in records.items():
         if entry_id == "COMMON": continue
         entry_samds = _extract_samd_from_single_record(record)
@@ -228,6 +333,7 @@ def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None)
         if not active_samds: continue
 
         valid_samds = [s for s in active_samds if s in bs_data]
+        all_valid_samds.update(valid_samds)
         # 権限エラーで除外されたものは missing 扱いしない
         missing_samds = [s for s in active_samds if s not in bs_data and s not in unauth_set]
 
@@ -236,13 +342,20 @@ def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None)
         if not valid_samds: continue
 
         # source qualifier 群を BioSample 値と突合
-        p, w, s = _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, ann_path, target_attrs)
+        p, w, s = _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, ann_path, target_attrs, emit_additions=emit_additions)
         proposals.extend(p)
         validation_warnings.extend(w)
         skipped_warnings.extend(s)
 
         # locus_tag prefix を BioSample 値と突合
-        p, w, s = _propose_locus_tag_prefix_sync(record, entry_id, valid_samds, bs_data, ann_path)
+        p, w, s = _propose_locus_tag_prefix_sync(record, entry_id, valid_samds, bs_data, ann_path, emit_additions=emit_additions)
+        proposals.extend(p)
+        validation_warnings.extend(w)
+        skipped_warnings.extend(s)
+
+    # DBLINK project(PRJDB) → bioproject_id（mapping）。-b 時（sync_attrs 指定時）のみ。
+    if sync_attrs and all_valid_samds:
+        p, w, s = _propose_bioproject_sync(records, sorted(all_valid_samds), bs_data, ann_path, emit_additions=emit_additions)
         proposals.extend(p)
         validation_warnings.extend(w)
         skipped_warnings.extend(s)

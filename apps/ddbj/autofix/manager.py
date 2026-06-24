@@ -1,13 +1,32 @@
 from pathlib import Path
 from collections import defaultdict
 
-def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None):
+
+def _is_bs_sync(p):
+    """BioSample 値由来の同期提案か（source_db に SAMD アクセッションが入る）。"""
+    return str(p.get("source_db", "")).startswith("SAMD")
+
+
+def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None, biosample_mode=False):
     """
     全提案を集約し、target (修正対象項目) ごとにサマリーを表示。
     出力と同じ形式でディレクトリにサマリーファイルを保存し、一括または個別の承認を求める。
+
+    biosample_mode (= -b かつ単一 biosample) の場合、BioSample→ann 同期提案を N としたとき
+    「ann 値で BioSample を更新するか」を追加で質問し、各提案に bs_decision を付与する:
+      - bs_wins  : BioSample が正（ann を修正、SSUB TSV は BioSample 値）
+      - ann_wins : ann が正（ann は変更せず、SSUB TSV は ann 値で上書き）
+      - leave    : どちらも変更しない（両方要確認）
+    ※ ユーザ向け（-b なし）の挙動は一切変わらない。
     """
     if not all_proposals:
         return []
+
+    # biosample_mode では BioSample 同期提案の決定を leave で初期化（後段で上書き）
+    if biosample_mode:
+        for p in all_proposals:
+            if _is_bs_sync(p):
+                p.setdefault("bs_decision", "leave")
 
     summary = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: {"target_level": "qualifier", "positions": [], "rules": set()})))
 
@@ -103,15 +122,24 @@ def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None):
 
     if force_fix:
         print("  => Applying all auto-fixes (--force-fix)")
+        if biosample_mode:
+            for p in all_proposals:
+                if _is_bs_sync(p):
+                    p["bs_decision"] = "bs_wins"
         return all_proposals
 
     # 対話モード
     while True:
         ans = input("\nAction: [a] Apply all auto-fixes, [i] Interactive, [q] Quit/Skip all? ").strip().lower()
         if ans in ('a', 'all'):
+            if biosample_mode:
+                for p in all_proposals:
+                    if _is_bs_sync(p):
+                        p["bs_decision"] = "bs_wins"
             return all_proposals
         elif ans in ('q', 'quit'):
             print("  => Skipped auto-fix updates.")
+            # biosample_mode: 全て leave のまま（ann も BioSample も変更しない）
             return []
         elif ans in ('i', 'interactive'):
             break
@@ -127,12 +155,29 @@ def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None):
         
     for target in sorted(proposals_by_target.keys()):
         print(f"\n{target_text_blocks[target]}")
+        target_proposals = proposals_by_target[target]
+        bs_sync_in_target = [p for p in target_proposals if _is_bs_sync(p)]
         while True:
             sub_ans = input(f"  => Apply auto-fixes for Target [{target}]? (y/n): ").strip().lower()
             if sub_ans in ('y', 'yes'):
-                approved_proposals.extend(proposals_by_target[target])
+                approved_proposals.extend(target_proposals)
+                # BioSample が正 → SSUB TSV は BioSample 値
+                for p in bs_sync_in_target:
+                    p["bs_decision"] = "bs_wins"
                 break
             elif sub_ans in ('n', 'no'):
+                # biosample_mode かつ BioSample 同期提案がある場合のみ、ann 値での BioSample 更新を確認
+                if biosample_mode and bs_sync_in_target:
+                    while True:
+                        bs_ans = input(f"     -> Update BioSample with the ann value for [{target}]? (y/n): ").strip().lower()
+                        if bs_ans in ('y', 'yes'):
+                            for p in bs_sync_in_target:
+                                p["bs_decision"] = "ann_wins"  # ann が正 → SSUB TSV は ann 値
+                            break
+                        elif bs_ans in ('n', 'no'):
+                            for p in bs_sync_in_target:
+                                p["bs_decision"] = "leave"  # 両方要確認 → 変更しない
+                            break
                 break
 
     if not approved_proposals:

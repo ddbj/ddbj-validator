@@ -34,6 +34,7 @@ include = ["common*", "apps*"]
 # Python以外のリソースファイルをパッケージに同梱
 [tool.setuptools.package-data]
 "apps.ddbj.resources" = ["*.json"]
+"apps.biosample.resources" = ["*.json"]
 "common.resources" = ["*.txt"]
 "common.resources.geo" = ["*.parquet", "*.json"]
 

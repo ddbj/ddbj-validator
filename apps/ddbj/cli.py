@@ -26,6 +26,8 @@ def _build_parser():
     parser.add_argument("-j", "--jobs", type=int, default=None, help="Number of parallel processes (default: up to 8. Use 0 to use all available cores)")
     parser.add_argument("-w", "--web", action="store_true", help="NSSS (web submission) mode")
     parser.add_argument("-f", "--force-fix", action="store_true", help="Automatically apply all auto-fixes without prompting")
+    # 関連 BioSample を SSUB 単位の更新用 TSV として出力（内部使用のみ・要内部DB）
+    parser.add_argument("-b", "--biosample", action="store_true", help="Generate SSUB-unit BioSample update TSV from DBLINK biosample accessions (internal use; requires internal DB)")
     
     # --- ユーザー向けメインオプション ---
     # 出力ディレクトリの指定 (-o / --out-dir)
@@ -235,10 +237,21 @@ def _run(args, pairs, report_out_dir, target_dirs_for_report, skip_db, skip_ncbi
         
     is_curator_mode = (account_id is None)  # --account が有効でなければ内部キュレーター扱い
 
+    # -b/--biosample: SSUB 単位の BioSample 更新用 TSV を生成（内部 DB 必須）。
+    # --account と同様、ローカル/--skip-db 時は DB を引けないため警告して無効化する。
+    emit_biosample_tsv = args.biosample
+    if skip_db and emit_biosample_tsv:
+        print("[WARN] Local mode or --skip-db is enabled. The --biosample (-b) option will be ignored.", file=sys.stderr)
+        emit_biosample_tsv = False
+
+    # NSUB = ann/fasta のサブミッションID = 対象ディレクトリの basename（TSV ファイル名に使用）
+    nsub = target_dirs_for_report[0].name if target_dirs_for_report else None
+
     pipeline = ValidatorPipeline(
-        pairs, report_out_dir, args.web, args.force_fix, jobs, 
+        pairs, report_out_dir, args.web, args.force_fix, jobs,
         skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=args.skip_auth,
-        account_id=account_id, is_curator_mode=is_curator_mode
+        account_id=account_id, is_curator_mode=is_curator_mode,
+        emit_biosample_tsv=emit_biosample_tsv, nsub=nsub
     )
         
     import time
