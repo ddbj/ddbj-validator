@@ -15,8 +15,8 @@ _MIXS_GROUP = "MIxS"
 
 
 def _resource_path(*parts):
-    # apps/ddbj/biosample_tsv.py -> apps/<...>
-    return Path(__file__).resolve().parent.parent.joinpath(*parts)
+    # apps/ddbj/biosample/tsv.py -> parents[2] == apps/ ＝ リソース基点
+    return Path(__file__).resolve().parents[2].joinpath(*parts)
 
 
 def load_biosample_definitions():

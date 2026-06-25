@@ -7,6 +7,114 @@ def _is_bs_sync(p):
     return str(p.get("source_db", "")).startswith("SAMD")
 
 
+def _build_confirmation_summary(all_proposals):
+    """提案を target×file_set×change で集約し、表示用サマリーテキストと target 別ブロックを作る。
+
+    戻り値: (summary_text, target_text_blocks, target_dirs)。提案リストは変更しない（純粋）。
+    """
+    summary = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: {"target_level": "qualifier", "positions": [], "rules": set()})))
+
+    target_dirs = set()
+    for p in all_proposals:
+        path_obj = Path(p["ann_path"])
+        target_dirs.add(path_obj.parent)
+
+        base_group = path_obj.stem
+        if base_group.endswith('.ann'):
+            base_group = Path(base_group).stem
+
+        file_set = base_group
+
+        target = p.get("target", "unknown")
+        rule_id = p.get("rule", "UNKNOWN_RULE")
+        source_db = p.get("source_db", "")
+
+        change_key = (str(p.get("old_value", "")), str(p.get("new_value", "")), source_db)
+
+        target_dict = summary[target][file_set][change_key]
+        target_dict["target_level"] = p.get("target_level", "qualifier")
+        target_dict["positions"].extend(p.get("positions", []))
+        if rule_id:
+            target_dict["rules"].add(rule_id)
+        if p.get("bs_addition"):
+            target_dict["bs_addition"] = True
+
+    # --- サマリーテキストの構築とTargetごとのブロック保存 ---
+    target_text_blocks = {}
+    out_lines = ["\n=== Auto-Fix Confirmation ==="]
+
+    for target in sorted(summary.keys()):
+        target_lines = [f"[ Target: {target} ]"]
+        for file_set, changes in sorted(summary[target].items()):
+            target_lines.append(f"  {file_set}")
+            for (old_val, new_val, source_db), stats in sorted(changes.items()):
+                t_level = stats["target_level"]
+                positions = stats["positions"]
+                rules = stats["rules"]
+
+                num_fields = len(positions)
+                unique_entries = {pos["entry"] for pos in positions}
+                unique_features = {(pos["entry"], pos["feature_id"]) for pos in positions}
+
+                e_len, f_len = len(unique_entries), len(unique_features)
+                e_label = "entry" if e_len == 1 else "entries"
+                f_label = "feature" if f_len == 1 else "features"
+
+                # --- target_level に基づく動的フォーマット (スマート化) ---
+                if t_level == "field":
+                    count_str = f"{num_fields} field{'s' if num_fields != 1 else ''}"
+                elif t_level in ("feature", "location"):
+                    count_str = f"{e_len} {e_label}, {f_len} {f_label}"
+                elif t_level == "qualifier":
+                    q_label = "qualifier" if num_fields == 1 else "qualifiers"
+                    count_str = f"{e_len} {e_label}, {f_len} {f_label}, {num_fields} {q_label}"
+                else:
+                    count_str = f"{e_len} {e_label}"
+
+                source_str = f" ({source_db})" if source_db else ""
+                rule_str = f" [Rule: {', '.join(sorted(rules))}]" if rules and list(rules) != ["UNKNOWN_RULE"] else ""
+
+                # ann限定追加は new_value が空なので「(add to BioSample)」表記にする
+                if stats.get("bs_addition"):
+                    change_str = f"'{old_val}' (add to BioSample)"
+                else:
+                    change_str = f"'{old_val}' -> '{new_val}'"
+                target_lines.append(f"    {count_str}: {change_str}{source_str}{rule_str}")
+
+        target_text_blocks[target] = "\n".join(target_lines)
+        out_lines.append("\n" + target_text_blocks[target])
+
+    summary_text = "\n".join(out_lines)
+    return summary_text, target_text_blocks, target_dirs
+
+
+def _write_confirmation_summary(summary_text, out_dir, target_dirs):
+    """サマリーを標準出力と reports/autofix_confirmation_summary.txt に出力する。"""
+    print(summary_text)
+    summary_filename = "autofix_confirmation_summary.txt"
+
+    if out_dir:
+        reports_dir = Path(out_dir) / "reports"
+        reports_dir.mkdir(parents=True, exist_ok=True)
+        summary_file = reports_dir / summary_filename
+
+        with open(summary_file, "w", encoding="utf-8") as f:
+            f.write(summary_text.lstrip() + "\n")
+        print(f"\n  => Confirmation summary saved: {summary_file}")
+    else:
+        for d in target_dirs:
+            reports_dir = d / "reports"
+            reports_dir.mkdir(parents=True, exist_ok=True)
+            summary_file = reports_dir / summary_filename
+
+            with open(summary_file, "w", encoding="utf-8") as f:
+                f.write(summary_text.lstrip() + "\n")
+
+        if target_dirs:
+            dir_path = str(list(target_dirs)[0] / "reports" / summary_filename)
+            print(f"\n  => Confirmation summary saved: {dir_path}")
+
+
 def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None, biosample_mode=False,
                                  biosample_clean_samds=None, biosample_apply="bs2ann"):
     """
@@ -40,104 +148,9 @@ def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None, b
             if _bs_sync_clean(p):
                 p.setdefault("bs_decision", "leave")
 
-    summary = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: {"target_level": "qualifier", "positions": [], "rules": set()})))
-
-    target_dirs = set()
-    for p in all_proposals:
-        path_obj = Path(p["ann_path"])
-        target_dirs.add(path_obj.parent)
-        
-        base_group = path_obj.stem
-        if base_group.endswith('.ann'):
-            base_group = Path(base_group).stem
-            
-        file_set = base_group
-        
-        target = p.get("target", "unknown")
-        rule_id = p.get("rule", "UNKNOWN_RULE")
-        source_db = p.get("source_db", "")
-        
-        change_key = (str(p.get("old_value", "")), str(p.get("new_value", "")), source_db)
-        
-        target_dict = summary[target][file_set][change_key]
-        target_dict["target_level"] = p.get("target_level", "qualifier")
-        target_dict["positions"].extend(p.get("positions", []))
-        if rule_id:
-            target_dict["rules"].add(rule_id)
-        if p.get("bs_addition"):
-            target_dict["bs_addition"] = True
-
-    # --- サマリーテキストの構築とTargetごとのブロック保存 ---
-    target_text_blocks = {}
-    out_lines = ["\n=== Auto-Fix Confirmation ==="]
-    
-    for target in sorted(summary.keys()):
-        target_lines = [f"[ Target: {target} ]"]
-        for file_set, changes in sorted(summary[target].items()):
-            target_lines.append(f"  {file_set}")
-            for (old_val, new_val, source_db), stats in sorted(changes.items()):
-                t_level = stats["target_level"]
-                positions = stats["positions"]
-                rules = stats["rules"]
-                
-                num_fields = len(positions)
-                unique_entries = {pos["entry"] for pos in positions}
-                unique_features = {(pos["entry"], pos["feature_id"]) for pos in positions}
-                
-                e_len, f_len = len(unique_entries), len(unique_features)
-                e_label = "entry" if e_len == 1 else "entries"
-                f_label = "feature" if f_len == 1 else "features"
-                
-                # --- target_level に基づく動的フォーマット (スマート化) ---
-                if t_level == "field":
-                    count_str = f"{num_fields} field{'s' if num_fields != 1 else ''}"
-                elif t_level in ("feature", "location"):
-                    count_str = f"{e_len} {e_label}, {f_len} {f_label}"
-                elif t_level == "qualifier":
-                    q_label = "qualifier" if num_fields == 1 else "qualifiers"
-                    count_str = f"{e_len} {e_label}, {f_len} {f_label}, {num_fields} {q_label}"
-                else:
-                    count_str = f"{e_len} {e_label}"
-
-                source_str = f" ({source_db})" if source_db else ""
-                rule_str = f" [Rule: {', '.join(sorted(rules))}]" if rules and list(rules) != ["UNKNOWN_RULE"] else ""
-
-                # ann限定追加は new_value が空なので「(add to BioSample)」表記にする
-                if stats.get("bs_addition"):
-                    change_str = f"'{old_val}' (add to BioSample)"
-                else:
-                    change_str = f"'{old_val}' -> '{new_val}'"
-                target_lines.append(f"    {count_str}: {change_str}{source_str}{rule_str}")
-        
-        target_text_blocks[target] = "\n".join(target_lines)
-        out_lines.append("\n" + target_text_blocks[target])
-
-    summary_text = "\n".join(out_lines)
-    print(summary_text)
-
-    # --- 対象のディレクトリに標準出力と同じ形式のログを書き出す ---
-    summary_filename = "autofix_confirmation_summary.txt"
-    
-    if out_dir:
-        reports_dir = Path(out_dir) / "reports"
-        reports_dir.mkdir(parents=True, exist_ok=True)
-        summary_file = reports_dir / summary_filename
-        
-        with open(summary_file, "w", encoding="utf-8") as f:
-            f.write(summary_text.lstrip() + "\n")
-        print(f"\n  => Confirmation summary saved: {summary_file}")
-    else:
-        for d in target_dirs:
-            reports_dir = d / "reports"
-            reports_dir.mkdir(parents=True, exist_ok=True)
-            summary_file = reports_dir / summary_filename
-            
-            with open(summary_file, "w", encoding="utf-8") as f:
-                f.write(summary_text.lstrip() + "\n")
-                
-        if target_dirs:
-            dir_path = str(list(target_dirs)[0] / "reports" / summary_filename)
-            print(f"\n  => Confirmation summary saved: {dir_path}")
+    # サマリーの集約・整形と出力はヘルパに委譲（可読性のため抽出。挙動は不変）。
+    summary_text, target_text_blocks, target_dirs = _build_confirmation_summary(all_proposals)
+    _write_confirmation_summary(summary_text, out_dir, target_dirs)
 
     if force_fix:
         # ann2bs（内部/テスト用）: clean bs-sync を ann_wins にし、ann 自体は変更しない

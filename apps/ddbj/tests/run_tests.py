@@ -30,59 +30,10 @@ except ImportError:
     HAS_BIOPYTHON = False
 
 # ==============================================================================
-# モード時にスキップされるべきルールの動的取得 ＋ ハードコード除外設定
+# モード時にスキップされるべきルールは正本（apps/ddbj/rule_modes.py）から取得する。
+# テスト側で ID リストを二重管理しない（ドリフト防止）。
 # ==============================================================================
-def get_skipped_rules(skip_db=False, skip_ncbi=False, skip_auth=False):
-    skipped_rules = set()
-    
-    # --- 動的取得 (既存ロジック) ---
-    try:
-        from apps.ddbj.validator import Validator
-        from apps.ddbj.context import ValidationContext
-        val = Validator(ValidationContext(skip_db=False, skip_ncbi=False, skip_auth=False))
-        for r in val.active_rules:
-            # マスタークラス（または単一ルール）がスキップ条件に合致するか判定
-            should_skip = (skip_db and getattr(r, 'requires_rdb', False)) or \
-                          (skip_ncbi and getattr(r, 'requires_network', False)) or \
-                          (skip_auth and (getattr(r, 'requires_auth', False) or getattr(r, 'auth_required', False)))
-            
-            if should_skip:
-                skipped_rules.add(r.rule_id)
-                if hasattr(r, 'sub_rules') and isinstance(r.sub_rules, list):
-                    skipped_rules.update(r.sub_rules)
-                    
-    except Exception as e:
-        print(f"Warning: Failed to fetch skipped rules dynamically: {e}")
-
-    # --- ハードコードによる強制除外ロジック ---
-    
-    # [A] RDB必須ルール (Localモード、NCBI APIモードの両方でスキップ)
-    if skip_db:
-        # DRA/BioSample等DB必須ルール
-        rdb_hardcoded = [
-            "ANN0500", "ANN0510", "ANN0520", "ANN0530", "ANN0540", "ANN0550", 
-            "ANN1130"
-        ]
-        skipped_rules.update(rdb_hardcoded)
-        
-    # [B] Taxonomy / ネットワーク必須ルール 
-    if skip_ncbi:
-        tax_hardcoded = [
-            "ANN1025",
-            "ANN1070",
-            "ANN1430", "ANN1440", "ANN1450", "ANN1460",
-            "ANN1810", 
-            "ANN4210", "ANN4240"
-        ]
-        skipped_rules.update(tax_hardcoded)
-
-    # =========================================================
-    # [C] 認証必須ルール (Orchestrator直書きのため手動で追加)
-    # =========================================================
-    if skip_auth:
-        skipped_rules.update(["ANN0422", "ANN0463", "ANN0481"])
-        
-    return skipped_rules
+from apps.ddbj.rule_modes import get_mode_skipped_rules as get_skipped_rules, AUTH_CHECK_RULES
 
 class Colors:
     OKGREEN = '\033[92m'
@@ -272,6 +223,63 @@ def get_empty_result():
 # ==============================================================================
 # メインテストランナー
 # ==============================================================================
+def _build_cli_cmd(mode, target_dir, docker_image, use_pip, account_val, python_bin, main_py, project_root):
+    """モード／実行方式（docker/pip/直接）に応じた CLI コマンド配列を組み立てる。"""
+    if mode == "biosample":
+        # 内部 DB を使い -b で ann->bs 上書きした SSUB TSV を生成する（非対話・全 [b]）。
+        return [str(python_bin), str(main_py), "ddbj",
+                "-b", "-f", "--biosample-apply", "ann2bs", str(target_dir)]
+
+    if docker_image:
+        rel_target = target_dir.relative_to(project_root)
+        container_target = f"/work/{rel_target}"
+        cmd = [
+            "docker", "run", "--rm",
+            "-u", f"{os.getuid()}:{os.getgid()}",
+            "-v", f"{str(project_root)}:/work",
+            docker_image,
+        ]
+        if mode == "local":
+            cmd.append("--local")
+        elif mode == "ncbi":
+            cmd.append("-n")
+        elif mode == "auth-skip":
+            cmd.append("--skip-auth")
+        cmd.extend(["-f", container_target])
+        if account_val:
+            cmd.extend(["--account", account_val])
+        return cmd
+
+    if use_pip:
+        cli_cmd = project_root / ".venv" / "bin" / "ddbj-validator"
+        if not cli_cmd.exists():
+            print(f"{Colors.FAILRED}[ERROR] CLI command not found at {cli_cmd}. Did you run 'pip install .' ?{Colors.ENDC}")
+            sys.exit(1)
+        cmd = [str(cli_cmd)]
+        if mode == "local":
+            cmd.append("--local")
+        elif mode == "ncbi":
+            cmd.append("--ncbi-api")
+        elif mode == "auth-skip":
+            cmd.append("--skip-auth")
+        cmd.extend(["-f", str(target_dir)])
+        if account_val:
+            cmd.extend(["--account", account_val])
+        return cmd
+
+    cmd = [str(python_bin), str(main_py), "ddbj"]
+    if mode == "local":
+        cmd.append("--local")
+    elif mode == "ncbi":
+        cmd.append("--ncbi-api")
+    elif mode == "auth-skip":
+        cmd.append("--skip-auth")
+    cmd.extend(["-f", str(target_dir)])
+    if account_val:
+        cmd.extend(["--account", account_val])
+    return cmd
+
+
 def run_e2e_tests(target_rule_id=None, mode="curator", skip_only=False, docker_image=None, use_pip=False,
                   check_confirmation=False, update_confirmation=False):
     if not HAS_BIOPYTHON:
@@ -284,7 +292,7 @@ def run_e2e_tests(target_rule_id=None, mode="curator", skip_only=False, docker_i
 
     mode_skipped_rules = get_skipped_rules(skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
         
-    auth_check_rules = {"ANN0422", "ANN0463", "ANN0481"}
+    auth_check_rules = AUTH_CHECK_RULES
     
     # モードに応じたルールの絞り込み・スキップ制御
     target_rules_set = set(target_rule_id.split('-')) if target_rule_id else set()
@@ -406,67 +414,9 @@ def run_e2e_tests(target_rule_id=None, mode="curator", skip_only=False, docker_i
                 account_val = os.environ.get("ACCOUNT_B")
                 if not account_val: print(f"[{Colors.WARNINGYEL}WARN{Colors.ENDC}] Directory ends with 'b', but ACCOUNT_B is not set in .env")
 
-        if mode == "biosample":
-            # 内部 DB を使い -b で ann->bs 上書きした SSUB TSV を生成する（非対話・全 [b]）。
-            cmd = [str(python_bin), str(main_py), "ddbj",
-                   "-b", "-f", "--biosample-apply", "ann2bs", str(target_dir)]
+        cmd = _build_cli_cmd(mode, target_dir, docker_image, use_pip, account_val,
+                             python_bin, main_py, project_root)
 
-        elif docker_image:
-            rel_target = target_dir.relative_to(project_root)
-            container_target = f"/work/{rel_target}"
-            
-            cmd = [
-                "docker", "run", "--rm",
-                "-u", f"{os.getuid()}:{os.getgid()}",
-                "-v", f"{str(project_root)}:/work",
-                docker_image
-            ]
-            
-            if mode == "local": 
-                cmd.append("--local")
-            elif mode == "ncbi": 
-                cmd.append("-n")
-            elif mode == "auth-skip": 
-                cmd.append("--skip-auth")
-                
-            cmd.extend(["-f", container_target])
-            if account_val:
-                cmd.extend(["--account", account_val])
-            
-        elif use_pip:
-            cli_cmd = project_root / ".venv" / "bin" / "ddbj-validator"
-            
-            if not cli_cmd.exists():
-                print(f"{Colors.FAILRED}[ERROR] CLI command not found at {cli_cmd}. Did you run 'pip install .' ?{Colors.ENDC}")
-                sys.exit(1)
-                
-            cmd = [str(cli_cmd)]
-            
-            if mode == "local": 
-                cmd.append("--local")
-            elif mode == "ncbi": 
-                cmd.append("--ncbi-api")
-            elif mode == "auth-skip": 
-                cmd.append("--skip-auth")
-                
-            cmd.extend(["-f", str(target_dir)])
-            if account_val:
-                cmd.extend(["--account", account_val])
-
-        else:
-            cmd = [str(python_bin), str(main_py), "ddbj"]
-            
-            if mode == "local": 
-                cmd.append("--local")
-            elif mode == "ncbi": 
-                cmd.append("--ncbi-api")
-            elif mode == "auth-skip": 
-                cmd.append("--skip-auth")
-                
-            cmd.extend(["-f", str(target_dir)])
-            if account_val:
-                cmd.extend(["--account", account_val])
-                        
         # コマンドの実行
         result = subprocess.run(cmd, capture_output=True, text=True)
                 
