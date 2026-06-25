@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ddbj-validator"
-version = "0.1.2-beta"
+version = "0.1.5-beta"
 description = "Validation tools for DDBJ, BioProject, BioSample etc."
 dependencies = [
     "biopython",
