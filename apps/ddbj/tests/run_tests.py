@@ -323,6 +323,16 @@ def run_e2e_tests(target_rule_id=None, mode="curator", skip_only=False, docker_i
                 target_dirs.append(d)
     target_dirs = sorted(target_dirs)
 
+    # tests/biosample/ ツリーは内部専用の biosample モードでのみ対象にする（既定モードからは除外）。
+    def _in_biosample_tree(d):
+        rel = d.relative_to(tests_dir).parts
+        return len(rel) > 0 and rel[0] == "biosample"
+
+    if mode == "biosample":
+        target_dirs = [d for d in target_dirs if _in_biosample_tree(d)]
+    else:
+        target_dirs = [d for d in target_dirs if not _in_biosample_tree(d)]
+
     if target_rules_set:
         # パスのどこかに target_rules_set に含まれるルール群が含まれていれば対象とする
         target_dirs = [d for d in target_dirs if any(r in d.parts for r in target_rules_set)]
@@ -359,7 +369,7 @@ def run_e2e_tests(target_rule_id=None, mode="curator", skip_only=False, docker_i
     # ==============================================================================
     print(f"{Colors.OKCYAN}[INFO] Cleaning up previous test artifacts (reports, aa, fixed)...{Colors.ENDC}")
     for target_dir in target_dirs:
-        for folder_name in ["reports", "aa", "fixed"]:
+        for folder_name in ["reports", "aa", "fixed", "biosample"]:
             folder_path = target_dir / folder_name
             if folder_path.exists() and folder_path.is_dir():
                 shutil.rmtree(folder_path, ignore_errors=True)
@@ -378,6 +388,8 @@ def run_e2e_tests(target_rule_id=None, mode="curator", skip_only=False, docker_i
         msg += f" [{Colors.OKGREEN}CURATOR MODE (No Account){Colors.ENDC}]"
     elif mode == "web-app":
         msg += f" [{Colors.OKGREEN}WEB APP MODE (Auth Check Only){Colors.ENDC}]"
+    elif mode == "biosample":
+        msg += f" [{Colors.OKCYAN}BIOSAMPLE MODE (-b ann->bs TSV; requires internal DB){Colors.ENDC}]"
     print(f"{msg}...")
 
     for target_dir in target_dirs:
@@ -394,7 +406,12 @@ def run_e2e_tests(target_rule_id=None, mode="curator", skip_only=False, docker_i
                 account_val = os.environ.get("ACCOUNT_B")
                 if not account_val: print(f"[{Colors.WARNINGYEL}WARN{Colors.ENDC}] Directory ends with 'b', but ACCOUNT_B is not set in .env")
 
-        if docker_image:
+        if mode == "biosample":
+            # 内部 DB を使い -b で ann->bs 上書きした SSUB TSV を生成する（非対話・全 [b]）。
+            cmd = [str(python_bin), str(main_py), "ddbj",
+                   "-b", "-f", "--biosample-apply", "ann2bs", str(target_dir)]
+
+        elif docker_image:
             rel_target = target_dir.relative_to(project_root)
             container_target = f"/work/{rel_target}"
             
@@ -623,7 +640,7 @@ def run_e2e_tests(target_rule_id=None, mode="curator", skip_only=False, docker_i
                         print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name} (Error correctly triggered)")
                         passed_count += 1
 
-            if not skip_only:
+            if not skip_only and mode != "biosample":
                 aa_dir = target_dir / "aa"
                 current_faa_path = aa_dir / f"AA_{file_stem}.faa"
                 ddbj_faa_path = aa_dir / f"AA_{file_stem}.tc.faa"
@@ -649,6 +666,38 @@ def run_e2e_tests(target_rule_id=None, mode="curator", skip_only=False, docker_i
                         translation_errors.append(f"{rule_prefix} {test_dir_label}/{test_name_trans} ({result_msg})")
                         translation_mismatched += 1
                             
+        # ==============================================================
+        # biosample モード: ann->bs 上書き後の SSUB TSV を expected/biosample/ と突合
+        # ==============================================================
+        if mode == "biosample":
+            exp_bs = target_dir / "expected" / "biosample"
+            act_bs = target_dir / "biosample"
+            if exp_bs.is_dir():
+                for golden in sorted(exp_bs.glob("*.txt")):
+                    actual = act_bs / golden.name
+                    test_name_bs = f"{golden.name} (BioSample TSV Match)"
+                    if not actual.exists():
+                        # 生成されていない（DB 不通／対象 SAMD 不在など）→ ミスマッチ扱い
+                        print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name_bs}: Actual TSV missing ({actual.name}). DB 未接続または対象 SAMD 不在の可能性。")
+                        err_msg = f"{dir_label}/{test_name_bs} (Actual TSV missing)"
+                        errors.append(err_msg)
+                        autofix_errors.append(err_msg)
+                        mismatched_count += 1
+                        autofix_not_fixed += 1
+                    else:
+                        is_match, diff_msg = compare_text_files(golden, actual)
+                        if is_match:
+                            print(f"  [{Colors.OKGREEN}Matched{Colors.ENDC}]        {test_name_bs} (Perfect match)")
+                            passed_count += 1
+                            autofix_fixed += 1
+                        else:
+                            print(f"  [{Colors.FAILRED}MISMATCH{Colors.ENDC}] {test_name_bs}: Diff error -> {diff_msg}")
+                            err_msg = f"{dir_label}/{test_name_bs} ({diff_msg})"
+                            errors.append(err_msg)
+                            autofix_errors.append(err_msg)
+                            mismatched_count += 1
+                            autofix_not_fixed += 1
+
         if not skip_only:
             expected_dir = target_dir / "expected"
             if expected_dir.exists() and expected_dir.is_dir():
@@ -860,7 +909,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--mode",
         nargs="+",
-        choices=["curator", "web-app", "local", "local-skip", "ncbi", "ncbi-skip", "auth-skip", "all"],
+        choices=["curator", "web-app", "local", "local-skip", "ncbi", "ncbi-skip", "auth-skip", "biosample", "all"],
         default=["curator", "web-app", "local-skip", "ncbi-skip", "auth-skip"],
         help="Execution mode(s). Multiple modes can be specified."
     )
@@ -932,6 +981,12 @@ if __name__ == "__main__":
         print_header("PHASE 5: AUTH SKIP MODE TESTING (Skip Verification Only)", Colors.OKBLUE)
         res_auth = run_e2e_tests(target_rule_id=args.rule_id, mode="auth-skip", skip_only=True, docker_image=args.docker_image, use_pip=args.use_pip)
         results_to_print.append(("AUTH SKIP MODE RESULTS (SKIP ONLY)", res_auth, Colors.OKBLUE))
+
+    if "biosample" in modes:
+        print_header("PHASE 6: BIOSAMPLE MODE TESTING (-b ann->bs SSUB TSV / internal DB)", Colors.OKCYAN)
+        res_bs = run_e2e_tests(target_rule_id=args.rule_id, mode="biosample", skip_only=False,
+                               docker_image=args.docker_image, use_pip=args.use_pip)
+        results_to_print.append(("BIOSAMPLE MODE RESULTS", res_bs, Colors.OKCYAN))
 
     print_summary(results_to_print, docker_image=args.docker_image)
     

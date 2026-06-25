@@ -28,7 +28,10 @@ def _build_parser():
     parser.add_argument("-f", "--force-fix", action="store_true", help="Automatically apply all auto-fixes without prompting")
     # 関連 BioSample を SSUB 単位の更新用 TSV として出力（内部使用のみ・要内部DB）
     parser.add_argument("-b", "--biosample", action="store_true", help="Generate SSUB-unit BioSample update TSV from DBLINK biosample accessions (internal use; requires internal DB)")
-    
+    # -f -b 時の同期方向（内部/テスト用）。ann2bs は「全 [b]（ann 値で BioSample を更新）」を非対話で再現する。
+    parser.add_argument("--biosample-apply", choices=["bs2ann", "ann2bs"], default="bs2ann",
+                        help=argparse.SUPPRESS)
+
     # --- ユーザー向けメインオプション ---
     # 出力ディレクトリの指定 (-o / --out-dir)
     parser.add_argument("-o", "--out-dir", type=str, help="Output directory for reports and fixed files")
@@ -267,7 +270,8 @@ def _run(args, pairs, report_out_dir, target_dirs_for_report, skip_db, skip_ncbi
         pairs, report_out_dir, args.web, args.force_fix, jobs,
         skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=args.skip_auth,
         account_id=account_id, is_curator_mode=is_curator_mode,
-        emit_biosample_tsv=emit_biosample_tsv, nsub=nsub
+        emit_biosample_tsv=emit_biosample_tsv, nsub=nsub,
+        biosample_apply=args.biosample_apply
     )
         
     import time

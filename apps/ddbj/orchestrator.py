@@ -500,7 +500,7 @@ def fast_copy_and_fix_fasta(fasta_content, dst_fasta_path):
                 
                 
 class ValidatorPipeline:
-    def __init__(self, pairs, report_out_dir, is_web_mode, force_fix, jobs=1, skip_db=False, skip_ncbi=False, skip_auth=False, account_id=None, is_curator_mode=True, emit_biosample_tsv=False, nsub=None):
+    def __init__(self, pairs, report_out_dir, is_web_mode, force_fix, jobs=1, skip_db=False, skip_ncbi=False, skip_auth=False, account_id=None, is_curator_mode=True, emit_biosample_tsv=False, nsub=None, biosample_apply="bs2ann"):
         self.pairs = pairs
         self.report_out_dir = report_out_dir
         self.is_web_mode = is_web_mode
@@ -510,6 +510,8 @@ class ValidatorPipeline:
         # -b/--biosample: SSUB 単位の BioSample 更新用 TSV 生成フラグと NSUB(対象ディレクトリ名)
         self.emit_biosample_tsv = emit_biosample_tsv
         self.nsub = nsub
+        # force 時の biosample 同期方向（内部/テスト用）: "bs2ann"（既定）/ "ann2bs"
+        self.biosample_apply = biosample_apply
         self.biosample_ssub = {}  # {submission_id: {"samples": [...]}}（フェーズ1で構築）
         self.ann_to_samds = {}    # {ann_path: set(SAMD)}（-b: ann↔bs 曖昧性判定）
         
@@ -855,7 +857,8 @@ class ValidatorPipeline:
         # フォローアップ（ann→bs 更新）はクリーンな SAMD の提案のみ対象。
         approved_proposals = review_and_approve_proposals(
             self.all_interactive_proposals, self.force_fix, out_dir=self.report_out_dir,
-            biosample_mode=biosample_mode, biosample_clean_samds=self._biosample_clean_samds
+            biosample_mode=biosample_mode, biosample_clean_samds=self._biosample_clean_samds,
+            biosample_apply=self.biosample_apply
         )
         
         approved_by_file = defaultdict(list)
@@ -1014,12 +1017,12 @@ class ValidatorPipeline:
         # ann→bs 上書き（競合で ann を採用）のサマリー。TSV に ann 値が反映されたことを明示。
         for samd, items in override_summary.items():
             detail = ", ".join(f"{a}: {v}" for a, v in sorted(items.items()))
-            print(f"  annotation value applied to BioSample (ann->bs) for {samd}: {detail}")
+            print(f"  annotation value applied to BioSample for {samd}: {detail}")
         for samd, items in added_summary.items():
             detail = ", ".join(f"{a}: {v}" for a, v in sorted(items.items()))
             print(f"  annotation-only values added for {samd}: {detail}")
         for samd in sorted(taxid_cleared):
-            print(f"  taxonomy_id deleted for {samd} to avoid organism autofix by taxonomy_id")
+            print(f"  {samd} taxonomy_id deleted to avoid organism autofix by taxonomy_id")
 
         nsub = self.nsub or "submission"
         for ssub_id, info in sorted(self.biosample_ssub.items()):

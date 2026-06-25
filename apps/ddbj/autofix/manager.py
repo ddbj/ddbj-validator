@@ -7,7 +7,8 @@ def _is_bs_sync(p):
     return str(p.get("source_db", "")).startswith("SAMD")
 
 
-def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None, biosample_mode=False, biosample_clean_samds=None):
+def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None, biosample_mode=False,
+                                 biosample_clean_samds=None, biosample_apply="bs2ann"):
     """
     全提案を集約し、target (修正対象項目) ごとにサマリーを表示。
     出力と同じ形式でディレクトリにサマリーファイルを保存し、一括または個別の承認を求める。
@@ -18,6 +19,11 @@ def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None, b
       - ann_wins : ann が正（ann は変更せず、SSUB TSV は ann 値で上書き）
       - leave    : どちらも変更しない（両方要確認）
     ※ ユーザ向け（-b なし）の挙動は一切変わらない。
+
+    biosample_apply（force_fix 時のみ作用、内部/テスト用）:
+      - "bs2ann"（既定）: clean な bs-sync を bs_wins（= [a] と同じ。BioSample 値で ann を修正）
+      - "ann2bs"        : clean な bs-sync を ann_wins（= 全 [b]。ann 値で SSUB TSV を上書き／追加。
+                          ann ファイル自体は変更しない）。E2E で「all b」を非対話再現するため。
     """
     if not all_proposals:
         return []
@@ -134,6 +140,14 @@ def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None, b
             print(f"\n  => Confirmation summary saved: {dir_path}")
 
     if force_fix:
+        # ann2bs（内部/テスト用）: clean bs-sync を ann_wins にし、ann 自体は変更しない
+        # （SSUB TSV を ann 値で上書き／追加）。非 bs-sync の autofix は通常どおり適用。
+        if biosample_mode and biosample_apply == "ann2bs":
+            print("  => Applying all auto-fixes (--force-fix, biosample: annotation -> BioSample)")
+            for p in all_proposals:
+                if _bs_sync_clean(p):
+                    p["bs_decision"] = "ann_wins"
+            return [p for p in all_proposals if not _bs_sync_clean(p)]
         print("  => Applying all auto-fixes (--force-fix)")
         if biosample_mode:
             for p in all_proposals:
@@ -180,7 +194,7 @@ def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None, b
                 # ann にしかない値の BioSample への追加。BS→ann 方向は無いので [b]追加/[n]skip の2択。
                 while True:
                     sub_ans = input(
-                        f"  => [{target}]: [b] add to BioSample (annotation value), [n] skip? "
+                        f"  => [{target}]: [b] add to BioSample, [n] skip? "
                     ).strip().lower()
                     if sub_ans in ('b',):
                         approved_proposals.extend(non_bs)
@@ -194,7 +208,7 @@ def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None, b
                 continue
             while True:
                 sub_ans = input(
-                    f"  => [{target}]: [y] BioSample -> annotation, [b] annotation -> BioSample, [n] skip? "
+                    f"  => [{target}]: [y] BioSample -> ann, [b] ann -> BioSample, [n] skip? "
                 ).strip().lower()
                 if sub_ans in ('y', 'yes'):
                     approved_proposals.extend(target_proposals)  # ann を BioSample 値で修正
