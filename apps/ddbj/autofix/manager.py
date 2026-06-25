@@ -7,7 +7,7 @@ def _is_bs_sync(p):
     return str(p.get("source_db", "")).startswith("SAMD")
 
 
-def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None, biosample_mode=False):
+def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None, biosample_mode=False, biosample_clean_samds=None):
     """
     全提案を集約し、target (修正対象項目) ごとにサマリーを表示。
     出力と同じ形式でディレクトリにサマリーファイルを保存し、一括または個別の承認を求める。
@@ -23,9 +23,15 @@ def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None, b
         return []
 
     # biosample_mode では BioSample 同期提案の決定を leave で初期化（後段で上書き）
+    # ann→bs フォローアップは ann↔bs が 1:1 のクリーンな SAMD の提案のみ対象。
+    clean_samds = biosample_clean_samds if biosample_clean_samds is not None else None
+
+    def _bs_sync_clean(p):
+        return _is_bs_sync(p) and (clean_samds is None or p.get("source_db") in clean_samds)
+
     if biosample_mode:
         for p in all_proposals:
-            if _is_bs_sync(p):
+            if _bs_sync_clean(p):
                 p.setdefault("bs_decision", "leave")
 
     summary = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: {"target_level": "qualifier", "positions": [], "rules": set()})))
@@ -52,6 +58,8 @@ def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None, b
         target_dict["positions"].extend(p.get("positions", []))
         if rule_id:
             target_dict["rules"].add(rule_id)
+        if p.get("bs_addition"):
+            target_dict["bs_addition"] = True
 
     # --- サマリーテキストの構築とTargetごとのブロック保存 ---
     target_text_blocks = {}
@@ -87,8 +95,13 @@ def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None, b
 
                 source_str = f" ({source_db})" if source_db else ""
                 rule_str = f" [Rule: {', '.join(sorted(rules))}]" if rules and list(rules) != ["UNKNOWN_RULE"] else ""
-                
-                target_lines.append(f"    {count_str}: '{old_val}' -> '{new_val}'{source_str}{rule_str}")
+
+                # ann限定追加は new_value が空なので「(add to BioSample)」表記にする
+                if stats.get("bs_addition"):
+                    change_str = f"'{old_val}' (add to BioSample)"
+                else:
+                    change_str = f"'{old_val}' -> '{new_val}'"
+                target_lines.append(f"    {count_str}: {change_str}{source_str}{rule_str}")
         
         target_text_blocks[target] = "\n".join(target_lines)
         out_lines.append("\n" + target_text_blocks[target])
@@ -124,17 +137,18 @@ def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None, b
         print("  => Applying all auto-fixes (--force-fix)")
         if biosample_mode:
             for p in all_proposals:
-                if _is_bs_sync(p):
+                if _bs_sync_clean(p):
                     p["bs_decision"] = "bs_wins"
         return all_proposals
 
-    # 対話モード
+    # 対話モード（トップメニューは外部ユーザ・-b 共通。ann->BioSample の選択は interactive の対象 target でのみ提示）
     while True:
         ans = input("\nAction: [a] Apply all auto-fixes, [i] Interactive, [q] Quit/Skip all? ").strip().lower()
         if ans in ('a', 'all'):
+            # [a] は BioSample 値で ann を修正（bs_wins）。SSUB TSV は BioSample 現行値のまま。
             if biosample_mode:
                 for p in all_proposals:
-                    if _is_bs_sync(p):
+                    if _bs_sync_clean(p):
                         p["bs_decision"] = "bs_wins"
             return all_proposals
         elif ans in ('q', 'quit'):
@@ -156,28 +170,55 @@ def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None, b
     for target in sorted(proposals_by_target.keys()):
         print(f"\n{target_text_blocks[target]}")
         target_proposals = proposals_by_target[target]
-        bs_sync_in_target = [p for p in target_proposals if _is_bs_sync(p)]
+        bs_sync_in_target = [p for p in target_proposals if _bs_sync_clean(p)]
+
+        # -b キュレータ ＆ BioSample 同期(clean)を含む target は、1 プロンプトで方向を選ばせる（2 ステップ廃止）
+        if biosample_mode and bs_sync_in_target:
+            non_bs = [p for p in target_proposals if not _bs_sync_clean(p)]
+            addition_only = all(p.get("bs_addition") for p in bs_sync_in_target)
+            if addition_only:
+                # ann にしかない値の BioSample への追加。BS→ann 方向は無いので [b]追加/[n]skip の2択。
+                while True:
+                    sub_ans = input(
+                        f"  => [{target}]: [b] add to BioSample (annotation value), [n] skip? "
+                    ).strip().lower()
+                    if sub_ans in ('b',):
+                        approved_proposals.extend(non_bs)
+                        for p in bs_sync_in_target:
+                            p["bs_decision"] = "ann_wins"        # BioSample に追加
+                        break
+                    elif sub_ans in ('n', 'no'):
+                        for p in bs_sync_in_target:
+                            p["bs_decision"] = "leave"
+                        break
+                continue
+            while True:
+                sub_ans = input(
+                    f"  => [{target}]: [y] BioSample -> annotation, [b] annotation -> BioSample, [n] skip? "
+                ).strip().lower()
+                if sub_ans in ('y', 'yes'):
+                    approved_proposals.extend(target_proposals)  # ann を BioSample 値で修正
+                    for p in bs_sync_in_target:
+                        p["bs_decision"] = "bs_wins"
+                    break
+                elif sub_ans in ('b',):
+                    approved_proposals.extend(non_bs)            # 非 BioSample の autofix は適用
+                    for p in bs_sync_in_target:
+                        p["bs_decision"] = "ann_wins"            # ann 値で BioSample(TSV) を更新
+                    break
+                elif sub_ans in ('n', 'no'):
+                    for p in bs_sync_in_target:
+                        p["bs_decision"] = "leave"               # どちらも変更しない
+                    break
+            continue
+
+        # 通常（外部ユーザ／非 BioSample target）は従来どおり y/n
         while True:
             sub_ans = input(f"  => Apply auto-fixes for Target [{target}]? (y/n): ").strip().lower()
             if sub_ans in ('y', 'yes'):
                 approved_proposals.extend(target_proposals)
-                # BioSample が正 → SSUB TSV は BioSample 値
-                for p in bs_sync_in_target:
-                    p["bs_decision"] = "bs_wins"
                 break
             elif sub_ans in ('n', 'no'):
-                # biosample_mode かつ BioSample 同期提案がある場合のみ、ann 値での BioSample 更新を確認
-                if biosample_mode and bs_sync_in_target:
-                    while True:
-                        bs_ans = input(f"     -> Update BioSample with the ann value for [{target}]? (y/n): ").strip().lower()
-                        if bs_ans in ('y', 'yes'):
-                            for p in bs_sync_in_target:
-                                p["bs_decision"] = "ann_wins"  # ann が正 → SSUB TSV は ann 値
-                            break
-                        elif bs_ans in ('n', 'no'):
-                            for p in bs_sync_in_target:
-                                p["bs_decision"] = "leave"  # 両方要確認 → 変更しない
-                            break
                 break
 
     if not approved_proposals:

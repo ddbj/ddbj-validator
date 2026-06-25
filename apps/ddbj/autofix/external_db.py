@@ -136,7 +136,9 @@ def _propose_locus_tag_prefix_sync(record, entry_id, valid_samds, bs_data, ann_p
             bs_prefixes.add(clean_val)
             bs_prefix_samd_map[clean_val] = s
 
-    if len(bs_prefixes) == 1:
+    # -b（emit_additions=True）では locus_tag prefix の不一致 autofix は行わない（addition のみ）。
+    # 一般実行（emit_additions=False）は従来どおり ann←bs prefix 修正を提案する。
+    if not emit_additions and len(bs_prefixes) == 1:
         bs_prefix = bs_prefixes.pop()
         source_samd = bs_prefix_samd_map[bs_prefix]
         wrong_prefixes = set()
@@ -223,7 +225,7 @@ def _propose_locus_tag_prefix_sync(record, entry_id, valid_samds, bs_data, ann_p
             prop["bs_attr"] = "locus_tag_prefix"
             proposals.append(prop)
 
-    elif len(bs_prefixes) > 1:
+    elif not emit_additions and len(bs_prefixes) > 1:
         skipped_warnings.append({
             "ann_path": ann_path, "entry": entry_id,
             "attr": "locus_tag_prefix", "values": bs_prefixes
@@ -305,13 +307,16 @@ def _propose_bioproject_sync(records, valid_samds, bs_data, ann_path, emit_addit
     return proposals, [], []
 
 
-def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None, sync_attrs=None, emit_additions=False):
+def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None, sync_attrs=None, emit_additions=False, mapping_keys=None):
     """BioSample 値と source qualifier を突合して修正提案を作る。
 
     sync_attrs を渡すと突合対象 qualifier をそれに置き換える（-b 時は biosample_sync.common を渡す。
     organism 等も対象になる）。未指定時は従来のハードコード集合（一般挙動は不変）。
     emit_additions=True で ann にしかない qualifier の属性追加候補も emit する。
+    mapping_keys は biosample_sync.mapping の ddbj 側キー集合（-b 時）。locus_tag / DBLINK project の
+    同期はこの集合に含まれる場合のみ実行する（設定駆動）。
     """
+    mapping_keys = set(mapping_keys or [])
     proposals = []
     skipped_warnings = []
     validation_warnings = []
@@ -347,14 +352,16 @@ def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None,
         validation_warnings.extend(w)
         skipped_warnings.extend(s)
 
-        # locus_tag prefix を BioSample 値と突合
-        p, w, s = _propose_locus_tag_prefix_sync(record, entry_id, valid_samds, bs_data, ann_path, emit_additions=emit_additions)
-        proposals.extend(p)
-        validation_warnings.extend(w)
-        skipped_warnings.extend(s)
+        # locus_tag prefix を BioSample 値と突合。
+        # 一般実行（emit_additions=False）は従来どおり。-b 時は mapping に locus_tag がある場合のみ（addition のみ）。
+        if (not emit_additions) or ("locus_tag" in mapping_keys):
+            p, w, s = _propose_locus_tag_prefix_sync(record, entry_id, valid_samds, bs_data, ann_path, emit_additions=emit_additions)
+            proposals.extend(p)
+            validation_warnings.extend(w)
+            skipped_warnings.extend(s)
 
-    # DBLINK project(PRJDB) → bioproject_id（mapping）。-b 時（sync_attrs 指定時）のみ。
-    if sync_attrs and all_valid_samds:
+    # DBLINK project(PRJDB) → bioproject_id。-b 時かつ mapping に "DBLINK project" がある場合のみ。
+    if sync_attrs and all_valid_samds and "DBLINK project" in mapping_keys:
         p, w, s = _propose_bioproject_sync(records, sorted(all_valid_samds), bs_data, ann_path, emit_additions=emit_additions)
         proposals.extend(p)
         validation_warnings.extend(w)

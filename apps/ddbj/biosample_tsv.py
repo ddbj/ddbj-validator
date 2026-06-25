@@ -108,7 +108,22 @@ def build_ssub_tsv(samples, fixed_attributes, packages, overrides=None):
         return None, None
 
     attr_order = [name for name, _ in ordered_attributes(package_key, fixed_attributes, packages)]
+    pkg_set = set(attr_order)
+
+    # パッケージ定義に無いが既存サンプルが現に持つ属性（extra）を末尾に付与する。
+    # 登録システムの TSV と同様、サンプルの値を欠落させないため（更新作業で重要）。
+    # 複数サンプルで出現する extra は初出順に集約する（DB の seq_no 順を保持）。
+    extras = []
+    seen = set(pkg_set)
+    for s in samples:
+        for name in s.get("attributes", {}):
+            if name not in seen:
+                seen.add(name)
+                extras.append(name)
+
+    full_order = attr_order + extras
     header = build_header(package_key, fixed_attributes, packages, with_accession=True)
+    header.extend(extras)  # extra は必須マーク無し
 
     lines = ["\t".join(header)]
     for s in samples:
@@ -118,6 +133,6 @@ def build_ssub_tsv(samples, fixed_attributes, packages, overrides=None):
         if acc in overrides:
             attrs.update(overrides[acc])
         row = [_escape(acc)]
-        row.extend(_escape(attrs.get(name, "")) for name in attr_order)
+        row.extend(_escape(attrs.get(name, "")) for name in full_order)
         lines.append("\t".join(row))
     return "\n".join(lines) + "\n", package_key

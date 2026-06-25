@@ -244,8 +244,24 @@ def _run(args, pairs, report_out_dir, target_dirs_for_report, skip_db, skip_ncbi
         print("[WARN] Local mode or --skip-db is enabled. The --biosample (-b) option will be ignored.", file=sys.stderr)
         emit_biosample_tsv = False
 
-    # NSUB = ann/fasta のサブミッションID = 対象ディレクトリの basename（TSV ファイル名に使用）
-    nsub = target_dirs_for_report[0].name if target_dirs_for_report else None
+    # NSUB = ann/fasta のサブミッションID（TSV ファイル名 SSUBID_NSUBID.txt に使用）。
+    # 対象ディレクトリのパス／ann ファイル名から NSUB/DSUB を抽出する
+    # （例: ".../NSUB003703/20260608/" や "20260608NSUB003703....ann" → "NSUB003703"）。
+    # 見つからなければ対象ディレクトリの basename にフォールバック。
+    import re as _re
+    nsub = None
+    _search = []
+    if target_dirs_for_report:
+        _search.append(str(target_dirs_for_report[0].resolve()))
+    if pairs:
+        _search.append(str(pairs[0][0]))  # ann ファイルパス
+    for _s in _search:
+        _m = _re.search(r'[ND]SUB\d+', _s)
+        if _m:
+            nsub = _m.group(0)
+            break
+    if nsub is None:
+        nsub = target_dirs_for_report[0].name if target_dirs_for_report else None
 
     pipeline = ValidatorPipeline(
         pairs, report_out_dir, args.web, args.force_fix, jobs,

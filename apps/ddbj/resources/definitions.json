@@ -254,29 +254,18 @@
   },
   "biosample_sync": {
     "common": [
-      "bio_material",
       "collection_date",
       "cultivar",
-      "culture_collection",
       "geo_loc_name",
-      "host",
       "isolate",
-      "isolation_source",
-      "lab_host",
-      "lat_lon",
       "metagenome_source",
       "organism",
-      "specimen_voucher",
       "strain"
     ],
     "mapping": [
       { 
         "ddbj": "locus_tag",
         "biosample": "locus_tag_prefix"
-      },
-      { 
-        "ddbj": "DBLINK project",
-        "biosample": "bioproject_id"
       }
     ]    
   },
