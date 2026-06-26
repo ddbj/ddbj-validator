@@ -35,7 +35,7 @@ include = ["common*", "apps*"]
 [tool.setuptools.package-data]
 "apps.ddbj.resources" = ["*.json"]
 "apps.biosample.resources" = ["*.json"]
-"common.resources" = ["*.txt"]
+"common.resources" = ["*.txt", "*.json"]
 "common.resources.geo" = ["*.parquet", "*.json"]
 
 # ユニットテスト（純関数の挙動固定）。E2E ハーネス（apps/ddbj/tests）とは別物。
