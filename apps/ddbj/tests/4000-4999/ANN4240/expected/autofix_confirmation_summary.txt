@@ -1,0 +1,9 @@
+=== Auto-Fix Confirmation ===
+
+[ Target: location ]
+  ANN4240.entries
+    1 entry, 1 feature: '10..>119' -> '10..>120' [Rule: ANN4240]
+    1 entry, 1 feature: '10..>99' -> '10..>100' [Rule: ANN4240]
+    1 entry, 1 feature: '<2..100' -> '<1..100' [Rule: ANN4240]
+    1 entry, 1 feature: '<202..290' -> '<201..290' [Rule: ANN4240]
+    1 entry, 1 feature: '<3..100' -> '<1..100' [Rule: ANN4240]

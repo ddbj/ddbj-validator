@@ -1,10 +1,14 @@
 import os
 import time
+import logging
 import requests
 import defusedxml.ElementTree as ET
 import psycopg2
 from apps.ddbj.utils.features import get_features
 from apps.ddbj.db_metadata import get_organisms_from_records, get_expected_transl_table
+from common.db_manager import execute_in_query
+
+logger = logging.getLogger(__name__)
 
 
 def get_tax_group(org_name, lineage):
@@ -81,11 +85,10 @@ def fetch_taxonomy_data(db_conn, organism_list):
         return tax_data
         
     lower_orgs = [org.lower() for org in organism_list]
-    placeholders = ', '.join(['%s'] * len(lower_orgs))
-    
+
     # taxonomy division
-    query = f"""
-        SELECT 
+    query = """
+        SELECT
             trim(n.ut_name) AS input_name, 
             trim(n.ut_type) AS match_type, 
             trim(sci.ut_name) AS scientific_name,
@@ -104,27 +107,25 @@ def fetch_taxonomy_data(db_conn, organism_list):
     """
         
     temp_results = {}
-    with db_conn.cursor() as cursor:
-        cursor.execute(query, tuple(lower_orgs))
-        for row in cursor.fetchall():
-            input_org = row[0] if row[0] else ""
-            ut_type = row[1].lower() if row[1] else ""
-            sci_name = row[2] if row[2] else input_org
-            rank = row[3].lower() if row[3] else "unknown"
-            
-            gen_code = row[4] if row[4] is not None else 0
-            mi_code = row[5] if row[5] is not None else 0
-            pl_code = row[6] if row[6] is not None else 0
-            tax_id = row[7] if row[7] is not None else "unknown"
-            lineage = row[8] if row[8] else ""
-            division = row[9] if row[9] else ""
-            
-            priority = TYPE_PRIORITY.get(ut_type, 99)
-            inp_lower = input_org.lower()
-            if inp_lower not in temp_results:
-                temp_results[inp_lower] = []
-            
-            temp_results[inp_lower].append((priority, ut_type, sci_name, rank, gen_code, mi_code, pl_code, tax_id, lineage, division))
+    for row in execute_in_query(db_conn, query, lower_orgs):
+        input_org = row[0] if row[0] else ""
+        ut_type = row[1].lower() if row[1] else ""
+        sci_name = row[2] if row[2] else input_org
+        rank = row[3].lower() if row[3] else "unknown"
+
+        gen_code = row[4] if row[4] is not None else 0
+        mi_code = row[5] if row[5] is not None else 0
+        pl_code = row[6] if row[6] is not None else 0
+        tax_id = row[7] if row[7] is not None else "unknown"
+        lineage = row[8] if row[8] else ""
+        division = row[9] if row[9] else ""
+
+        priority = TYPE_PRIORITY.get(ut_type, 99)
+        inp_lower = input_org.lower()
+        if inp_lower not in temp_results:
+            temp_results[inp_lower] = []
+
+        temp_results[inp_lower].append((priority, ut_type, sci_name, rank, gen_code, mi_code, pl_code, tax_id, lineage, division))
 
     # 親階層をDBで再帰チェックする必要がある ut_id を保持する辞書
     pending_recursive_check = {}
@@ -217,7 +218,7 @@ def fetch_taxonomy_data(db_conn, organism_list):
                         tax_data[org]["status"] = "fixable"
                         
         except Exception as e:
-            print(f"[WARN] Failed to check recursive taxonomy ranks: {e}")
+            logger.warning(f"Failed to check recursive taxonomy ranks: {e}")
 
     return tax_data
 
@@ -332,7 +333,7 @@ def fetch_taxonomy_from_ncbi(organism_list):
             time.sleep(0.15 if api_key else 0.35)
             
         except Exception as e:
-            print(f"[WARN] NCBI Taxonomy API failed for '{org}': {e}")
+            logger.warning(f"NCBI Taxonomy API failed for '{org}': {e}")
             tax_data[org] = {"status": "not_found", "is_species_or_below": False}
             
     return tax_data

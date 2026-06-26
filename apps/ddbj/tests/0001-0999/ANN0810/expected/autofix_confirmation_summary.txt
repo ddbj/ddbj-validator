@@ -1,0 +1,5 @@
+=== Auto-Fix Confirmation ===
+
+[ Target: Coverage ]
+  ANN0810_1.fail
+    1 entry, 1 feature, 1 qualifier: '30' -> '30x' [Rule: ANN0810]

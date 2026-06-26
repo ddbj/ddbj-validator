@@ -14,6 +14,16 @@ env/
 log/
 
 # =========================
+# claude logs setting
+# =========================
+CLAUDE.md
+ai_logs/
+.claudeignore
+.claude/
+.dev/
+Makefile
+
+# =========================
 # 設定ファイル
 # =========================
 .clinerules
@@ -93,10 +103,13 @@ ANN0610_prompt.txt
 *memo*
 
 # =========================
-# BioSample
+# 仕様
 # =========================
-attribute.tsv
-package-attribute.tsv
-package.tsv
+docs/
+
+# =========================
+# テストデータ
+# =========================
+nsub/
 
 

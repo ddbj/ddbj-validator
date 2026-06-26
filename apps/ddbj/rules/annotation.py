@@ -16,8 +16,29 @@ from apps.ddbj.parser import _parse_location_string, LocationParseError, Locatio
 from collections import defaultdict
 from common.ncbi_api import check_ncbi_public_status
 from intervaltree import IntervalTree
+import logging
+
+logger = logging.getLogger(__name__)
 
 POS_PATTERN = re.compile(r"pos:(.+?),aa:")
+
+# マジックナンバーの名前付き定数
+ENTRY_NAME_MAX_LENGTH = 32   # エントリ名・一部 qualifier 値の最大文字数
+DEGREES_TO_KM = 111.13       # 緯度経度1度あたりの概算距離(km)
+
+# DB ステータスID → 文言マッピング（複数ルールで共用）
+# BioProject / BioSample 用（DDBJ 提出ステータス）
+BP_BS_STATUS_MAP = {
+    5600: "withdrawn",
+    5700: "cancelled",
+    5800: "permanently suppressed"
+}
+# DRA (DRR) 用。数値・文字列の両キーに対応
+DRA_STATUS_MAP = {
+    1000: "cancelled", "1000": "cancelled",
+    1100: "permanently suppressed", "1100": "permanently suppressed",
+    1200: "withdrawn", "1200": "withdrawn"
+}
 
 def normalize_name(s):
     if not s: return ""
@@ -41,7 +62,7 @@ class ANN0160(BaseRule):
         invalid_pattern = re.compile(r'[ ="|>\[\]\\]')
         is_valid = True
         
-        if len(entry_name) > 32:
+        if len(entry_name) > ENTRY_NAME_MAX_LENGTH:
             is_valid = False
         elif not re.match(r'^[A-Za-z0-9]', entry_name):
             is_valid = False
@@ -52,8 +73,7 @@ class ANN0160(BaseRule):
 
         if not is_valid:
             msg = f"{self.description} (Found: '{entry_name}')"
-            res = self.format_result(entry_id=entry_name, message=msg, level="fatal", feature_type="entry")
-            res["rule"], res["target"] = self.rule_id, "file"
+            res = self.format_result(entry_id=entry_name, message=msg, level="fatal", feature_type="entry", rule=self.rule_id, target="file")
             results.append(res)
 
         return results        
@@ -507,15 +527,7 @@ class ANN0410(BaseRule):
     is_file_level = True
 
     def validate_file(self, records, context):
-        has_project = False
-        for record in records.values():
-            for feature in self.get_features(record, "DBLINK"):
-                if "project" in feature.qualifiers:
-                    has_project = True
-                    break
-            if has_project: break
-        
-        if not has_project:
+        if not self.has_qualifier_anywhere(records, "DBLINK", "project"):
             return [self.format_result(entry_id="ALL", message=self.description, level="warning")]
         return []
 
@@ -530,22 +542,13 @@ class ANN0420(BaseRule):
 
     def validate_file(self, records, context):
         results = []
-        checked = set()
-        
-        for record in records.values():
-            for feature in self.get_features(record, "DBLINK"):
-                if "project" in feature.qualifiers:
-                    for prj in feature.qualifiers["project"]:
-                        
-                        if not prj.startswith("PRJD"):
-                            continue
-                        
-                        if prj not in checked:
-                            checked.add(prj)
-                            # context.bp_psubs のキーに存在するかどうかで判定
-                            if prj.startswith("PRJDB") and prj not in context.bp_psubs:
-                                msg = f"{self.description} ('{prj}')"
-                                results.append(self.feature_result(record, feature, msg, level="error", qualifier="project"))
+        for record, feature, prj in self.iter_unique_qualifier_values(records, "DBLINK", "project"):
+            if not prj.startswith("PRJD"):
+                continue
+            # context.bp_psubs のキーに存在するかどうかで判定
+            if prj.startswith("PRJDB") and prj not in context.bp_psubs:
+                msg = f"{self.description} ('{prj}')"
+                results.append(self.feature_result(record, feature, msg, level="error", qualifier="project"))
         return results
 
 
@@ -560,35 +563,18 @@ class ANN0425(BaseRule):
 
     def validate_file(self, records, context):
         results = []
-        checked = set()
-        
-        # ステータスIDとメッセージ用文字列のマッピング
-        status_map = {
-            5600: "withdrawn",
-            5700: "cancelled",
-            5800: "permanently suppressed"
-        }
-        
-        for record in records.values():
-            for feature in self.get_features(record, "DBLINK"):
-                if "project" in feature.qualifiers:
-                    for raw_prj in feature.qualifiers["project"]:
-                        prj = raw_prj
-                        
-                        if not prj.startswith("PRJD"):
-                            continue
-                        
-                        if prj not in checked:
-                            checked.add(prj)
-                            if prj.startswith("PRJDB") and prj in context.bp_psubs:
-                                bp_info = context.bp_psubs[prj]
-                                status_id = bp_info.get("status_id")
-                                
-                                if status_id in status_map:
-                                    status_str = status_map[status_id]
-                                    # 実際のステータスに合わせてメッセージを動的に生成
-                                    msg = f"BioProject accession is {status_str} in the BioProject database. ('{prj}')"                                                                        
-                                    results.append(self.feature_result(record, feature, msg, level="error", qualifier="project"))
+        for record, feature, prj in self.iter_unique_qualifier_values(records, "DBLINK", "project"):
+            if not prj.startswith("PRJD"):
+                continue
+            if prj.startswith("PRJDB") and prj in context.bp_psubs:
+                bp_info = context.bp_psubs[prj]
+                status_id = bp_info.get("status_id")
+
+                if status_id in BP_BS_STATUS_MAP:
+                    status_str = BP_BS_STATUS_MAP[status_id]
+                    # 実際のステータスに合わせてメッセージを動的に生成
+                    msg = f"BioProject accession is {status_str} in the BioProject database. ('{prj}')"
+                    results.append(self.feature_result(record, feature, msg, level="error", qualifier="project"))
         return results
         
         
@@ -605,8 +591,8 @@ class ANN0430(BaseRule):
         results = []
         for record in records.values():
             for feature in self.get_features(record, "DBLINK"):
-                prjs = [p for p in feature.qualifiers.get("project", []) if p.startswith("PRJDB")]
-                drrs = [d for d in feature.qualifiers.get("sequence read archive", []) if d.startswith("DRR")]
+                prjs = self.extract_accessions(feature, "project", "PRJDB")
+                drrs = self.extract_accessions(feature, "sequence read archive", "DRR")
                 
                 if not prjs or not drrs:
                     continue
@@ -643,8 +629,8 @@ class ANN0440(BaseRule):
         results = []
         for record in records.values():
             for feature in self.get_features(record, "DBLINK"):
-                prjs = [p for p in feature.qualifiers.get("project", []) if p.startswith("PRJDB")]
-                samds = [s for s in feature.qualifiers.get("biosample", []) if s.startswith("SAMD")]
+                prjs = self.extract_accessions(feature, "project", "PRJDB")
+                samds = self.extract_accessions(feature, "biosample", "SAMD")
                 
                 if not prjs or not samds:
                     continue
@@ -671,27 +657,17 @@ class ANN0445(BaseRule):
 
     def validate_file(self, records, context):
         results = []
-        checked = set()
-        
-        for record in records.values():
-            for feature in self.get_features(record, "DBLINK"):
-                if "project" in feature.qualifiers:
-                    for prj in feature.qualifiers["project"]:
+        for record, feature, prj in self.iter_unique_qualifier_values(records, "DBLINK", "project"):
+            if not prj.startswith("PRJD"):
+                continue
+            if prj.startswith("PRJDB") and prj in context.bp_psubs:
+                project_info = context.bp_psubs[prj]
+                # 辞書型であることを前提に get を使用
+                project_type = project_info.get("project_type") if isinstance(project_info, dict) else None
 
-                        if not prj.startswith("PRJD"):
-                            continue
-                                                    
-                        if prj not in checked:
-                            checked.add(prj)
-                            
-                            if prj.startswith("PRJDB") and prj in context.bp_psubs:
-                                project_info = context.bp_psubs[prj]
-                                # 辞書型であることを前提に get を使用
-                                project_type = project_info.get("project_type") if isinstance(project_info, dict) else None
-                                
-                                if project_type and project_type == "umbrella":
-                                    msg = f"{self.description} ('{prj}')"
-                                    results.append(self.feature_result(record, feature, msg, level="error", qualifier="project"))
+                if project_type and project_type == "umbrella":
+                    msg = f"{self.description} ('{prj}')"
+                    results.append(self.feature_result(record, feature, msg, level="error", qualifier="project"))
         return results
         
 class ANN0450(BaseRule):
@@ -703,15 +679,7 @@ class ANN0450(BaseRule):
     is_file_level = True
 
     def validate_file(self, records, context):
-        has_biosample = False
-        for record in records.values():
-            for feature in self.get_features(record, "DBLINK"):
-                if "biosample" in feature.qualifiers:
-                    has_biosample = True
-                    break
-            if has_biosample: break
-        
-        if not has_biosample:
+        if not self.has_qualifier_anywhere(records, "DBLINK", "biosample"):
             return [self.format_result(entry_id="ALL", message=self.description, level="warning")]
         return []
 
@@ -726,22 +694,13 @@ class ANN0460(BaseRule):
 
     def validate_file(self, records, context):
         results = []
-        checked = set()
-        for record in records.values():
-            for feature in self.get_features(record, "DBLINK"):
-                if "biosample" in feature.qualifiers:
-                    for raw_samd in feature.qualifiers["biosample"]:
-                        samd = raw_samd
-
-                        if not samd.startswith("SAMD"):
-                            continue
-
-                        if samd not in checked:
-                            checked.add(samd)
-                            # context.bs_smp_ids と照合
-                            if samd not in context.bs_smp_ids:
-                                msg = f"{self.description} ('{samd}')"
-                                results.append(self.feature_result(record, feature, msg, level="error", qualifier="biosample"))
+        for record, feature, samd in self.iter_unique_qualifier_values(records, "DBLINK", "biosample"):
+            if not samd.startswith("SAMD"):
+                continue
+            # context.bs_smp_ids と照合
+            if samd not in context.bs_smp_ids:
+                msg = f"{self.description} ('{samd}')"
+                results.append(self.feature_result(record, feature, msg, level="error", qualifier="biosample"))
         return results
 
 
@@ -837,35 +796,18 @@ class ANN0464(BaseRule):
 
     def validate_file(self, records, context):
         results = []
-        checked = set()
-        
-        status_map = {
-            5600: "withdrawn",
-            5700: "cancelled",
-            5800: "permanently suppressed"
-        }
+        for record, feature, samd in self.iter_unique_qualifier_values(records, "DBLINK", "biosample"):
+            if not samd.startswith("SAMD"):
+                continue
+            # DBLINKに記載されたSAMD番号を使って直接 bs_data を参照
+            if hasattr(context, "bs_data") and context.bs_data:
+                samd_info = context.bs_data.get(samd, {})
+                status_id = samd_info.get("status_id")
 
-        for record in records.values():
-            for feature in self.get_features(record, "DBLINK"):
-                if "biosample" in feature.qualifiers:
-                    for raw_samd in feature.qualifiers["biosample"]:
-                        samd = raw_samd
-                        
-                        if not samd.startswith("SAMD"):
-                            continue
-                        
-                        if samd not in checked:
-                            checked.add(samd)
-                            
-                            # DBLINKに記載されたSAMD番号を使って直接 bs_data を参照
-                            if hasattr(context, "bs_data") and context.bs_data:
-                                samd_info = context.bs_data.get(samd, {})
-                                status_id = samd_info.get("status_id")
-                                
-                                if status_id in status_map:
-                                    status_str = status_map[status_id]
-                                    msg = f"BioSample accession is {status_str} in the BioSample database. ('{samd}')"
-                                    results.append(self.feature_result(record, feature, msg, level="error", qualifier="biosample"))
+                if status_id in BP_BS_STATUS_MAP:
+                    status_str = BP_BS_STATUS_MAP[status_id]
+                    msg = f"BioSample accession is {status_str} in the BioSample database. ('{samd}')"
+                    results.append(self.feature_result(record, feature, msg, level="error", qualifier="biosample"))
         return results
         
                                 
@@ -878,15 +820,7 @@ class ANN0470(BaseRule):
     is_file_level = True
 
     def validate_file(self, records, context):
-        has_drr = False
-        for record in records.values():
-            for feature in self.get_features(record, "DBLINK"):
-                if "sequence read archive" in feature.qualifiers:
-                    has_drr = True
-                    break
-            if has_drr: break
-        
-        if not has_drr:
+        if not self.has_qualifier_anywhere(records, "DBLINK", "sequence read archive"):
             return [self.format_result(entry_id="ALL", message=self.description, level="warning")]
         return []
 
@@ -900,20 +834,12 @@ class ANN0480(BaseRule):
 
     def validate_file(self, records, context):
         results = []
-        checked = set()
-        for record in records.values():
-            for feature in self.get_features(record, "DBLINK"):
-                if "sequence read archive" in feature.qualifiers:
-                    for drr in feature.qualifiers["sequence read archive"]:
-
-                        if not drr.startswith("DRR"):
-                            continue
-
-                        if drr not in checked:
-                            checked.add(drr)
-                            if drr.startswith("DRR") and drr not in context.dra_refs:
-                                msg = f"{self.description} ('{drr}')"
-                                results.append(self.feature_result(record, feature, msg, level="error", qualifier="sequence read archive"))
+        for record, feature, drr in self.iter_unique_qualifier_values(records, "DBLINK", "sequence read archive"):
+            if not drr.startswith("DRR"):
+                continue
+            if drr.startswith("DRR") and drr not in context.dra_refs:
+                msg = f"{self.description} ('{drr}')"
+                results.append(self.feature_result(record, feature, msg, level="error", qualifier="sequence read archive"))
         return results
 
 
@@ -928,36 +854,21 @@ class ANN0485(BaseRule):
 
     def validate_file(self, records: dict, context):
         results = []
-        checked = set()
-        
+
         # ユーザー指定のステータス定義（数値・文字列の両方に対応）
         invalid_statuses = {1000, 1100, 1200, "1000", "1100", "1200"}
-        status_map = {
-            1000: "cancelled", "1000": "cancelled",
-            1100: "permanently suppressed", "1100": "permanently suppressed",
-            1200: "withdrawn", "1200": "withdrawn"
-        }
 
-        for record in records.values():
-            for feature in self.get_features(record, "DBLINK"):
-                if "sequence read archive" in feature.qualifiers:
-                    for raw_drr in feature.qualifiers["sequence read archive"]:
-                        drr = raw_drr
-                        
-                        if not drr.startswith("DRR"):
-                            continue
-                        
-                        if drr not in checked:
-                            checked.add(drr)
-                            
-                            # コンテキストからステータスを取得
-                            if hasattr(context, "drr_status") and context.drr_status:
-                                status = context.drr_status.get(drr)
-                                
-                                if status in invalid_statuses:
-                                    status_str = status_map[status]
-                                    msg = f"DRR accession is {status_str} in the DRA database. ('{drr}')"
-                                    results.append(self.feature_result(record, feature, msg, level="error", qualifier="sequence read archive"))
+        for record, feature, drr in self.iter_unique_qualifier_values(records, "DBLINK", "sequence read archive"):
+            if not drr.startswith("DRR"):
+                continue
+            # コンテキストからステータスを取得
+            if hasattr(context, "drr_status") and context.drr_status:
+                status = context.drr_status.get(drr)
+
+                if status in invalid_statuses:
+                    status_str = DRA_STATUS_MAP[status]
+                    msg = f"DRR accession is {status_str} in the DRA database. ('{drr}')"
+                    results.append(self.feature_result(record, feature, msg, level="error", qualifier="sequence read archive"))
         return results
         
                 
@@ -974,8 +885,8 @@ class ANN0490(BaseRule):
         results = []
         for entry_id, record in records.items():
             for feature in self.get_features(record, "DBLINK"):
-                samds = [s for s in feature.qualifiers.get("biosample", []) if s.startswith("SAMD")]
-                drrs = [d for d in feature.qualifiers.get("sequence read archive", []) if d.startswith("DRR")]                    
+                samds = self.extract_accessions(feature, "biosample", "SAMD")
+                drrs = self.extract_accessions(feature, "sequence read archive", "DRR")                    
 
                 if not samds or not drrs:
                     continue
@@ -1092,15 +1003,7 @@ class ANN0820(BaseRule):
             return results
 
         # ST_COMMENT に Assembly Name が存在するかチェック
-        has_assembly_name = False
-        for record in records.values():
-            for feature in self.get_features(record, "ST_COMMENT"):
-                if "Assembly Name" in feature.qualifiers:
-                    has_assembly_name = True
-                    break
-            if has_assembly_name: break
-
-        if not has_assembly_name:
+        if not self.has_qualifier_anywhere(records, "ST_COMMENT", "Assembly Name"):
             msg = f"{self.description} (Organism: '{eukaryote_org_name}')"
             results.append(self.format_result(
                 entry_id="ALL",
@@ -1128,8 +1031,7 @@ class ANN0830(BaseRule):
             
             if qual_keys and qual_keys[0] != "tagset_id":
                 msg = "The tagset_id must be the first qualifier in ST_COMMENT."
-                res = self.feature_result(record, feature, msg, level="error", qualifier=qual_keys[0])
-                res["rule"] = "ANN0870"
+                res = self.feature_result(record, feature, msg, level="error", qualifier=qual_keys[0], rule="ANN0870")
                 results.append(res)
 
             for q_name, q_values in feature.qualifiers.items():
@@ -1137,13 +1039,11 @@ class ANN0830(BaseRule):
                 if len(q_values) > 1:
                     if q_name == "tagset_id":
                         msg = "Duplicate tagset_id value."
-                        res = self.feature_result(record, feature, msg, level="error", qualifier=q_name)
-                        res["rule"] = "ANN0880"
+                        res = self.feature_result(record, feature, msg, level="error", qualifier=q_name, rule="ANN0880")
                         results.append(res)
                     else:
                         msg = "Duplicate ST_COMMENT qualifier."
-                        res = self.feature_result(record, feature, msg, level="error", qualifier=q_name)
-                        res["rule"] = "ANN0900"
+                        res = self.feature_result(record, feature, msg, level="error", qualifier=q_name, rule="ANN0900")
                         results.append(res)
                 
                 if len(q_name) > 64:
@@ -1155,8 +1055,7 @@ class ANN0830(BaseRule):
                     
                     if not val_str:
                         msg = "Missing value for ST_COMMENT qualifier."
-                        res = self.feature_result(record, feature, msg, level="error", qualifier=q_name)
-                        res["rule"] = "ANN0860"
+                        res = self.feature_result(record, feature, msg, level="error", qualifier=q_name, rule="ANN0860")
                         results.append(res)
                         continue  
                     
@@ -1204,15 +1103,7 @@ class ANN1010(BaseRule):
     is_file_level = True
 
     def validate_file(self, records, context):
-        has_organism = False
-        for record in records.values():
-            for feature in self.get_features(record, "source"):
-                if "organism" in feature.qualifiers:
-                    has_organism = True
-                    break
-            if has_organism: break
-                
-        if not has_organism:
+        if not self.has_qualifier_anywhere(records, "source", "organism"):
             return [self.format_result(entry_id="ALL", message=self.description, level="error")]
         return []
 
@@ -1226,18 +1117,11 @@ class ANN1020(BaseRule):
 
     def validate_file(self, records, context):
         results = []
-        checked = set()
-        for record in records.values():
-            for feature in self.get_features(record, "source"):
-                if "organism" in feature.qualifiers:
-                    for org in feature.qualifiers["organism"]:
-                        org_clean = org.strip()
-                        if org_clean not in checked:
-                            checked.add(org_clean)
-                            t_data = context.tax_data.get(org_clean, {"status": "not_found"})
-                            if t_data["status"] == "not_found":
-                                msg = f"{self.description} ('{org_clean}')"
-                                results.append(self.feature_result(record, feature, msg, level="warning", qualifier="organism"))
+        for record, feature, org_clean in self.iter_unique_qualifier_values(records, "source", "organism", strip=True):
+            t_data = context.tax_data.get(org_clean, {"status": "not_found"})
+            if t_data["status"] == "not_found":
+                msg = f"{self.description} ('{org_clean}')"
+                results.append(self.feature_result(record, feature, msg, level="warning", qualifier="organism"))
         return results
 
 class ANN1040(BaseRule):
@@ -1250,20 +1134,13 @@ class ANN1040(BaseRule):
 
     def validate_file(self, records, context, ann_path=None, seq_path=None):
         results = []
-        checked = set()
-        for record in records.values():
-            for feature in self.get_features(record, "source"):
-                if "organism" in feature.qualifiers:
-                    for org in feature.qualifiers["organism"]:
-                        org_clean = org.strip()
-                        if org_clean not in checked:
-                            checked.add(org_clean)
-                            t_data = context.tax_data.get(org_clean, {})
-                            
-                            if t_data.get("status") == "invalid_rank":
-                                msg = f"{self.description} (Found: '{org_clean}', Rank: '{t_data.get('rank', 'unknown')}')"
-                                results.append(self.feature_result(record, feature, msg, level="error", qualifier="organism"))
-        return results        
+        for record, feature, org_clean in self.iter_unique_qualifier_values(records, "source", "organism", strip=True):
+            t_data = context.tax_data.get(org_clean, {})
+
+            if t_data.get("status") == "invalid_rank":
+                msg = f"{self.description} (Found: '{org_clean}', Rank: '{t_data.get('rank', 'unknown')}')"
+                results.append(self.feature_result(record, feature, msg, level="error", qualifier="organism"))
+        return results
         
 class ANN1050(BaseRule):
     rule_id = "ANN1050"
@@ -1331,9 +1208,45 @@ class ANN1060(BaseRule):
                     if not (is_scientific_name and is_metagenome):
                         msg = f"{self.description} (Found: '{val_clean}')"
                         results.append(self.feature_result(record, feature, msg, level="error", qualifier="metagenome_source"))
-        return results        
+        return results
 
-        
+
+class ANN1070(BaseRule):
+    rule_id = "ANN1070"
+    target = "organism"
+    description = "This organism is Cyanobacteria (Cyanobacteriota phylum). The strain must be included in the organism name."
+    requires_rdb = False
+    is_file_level = False
+
+    def validate(self, record, context):
+        results = []
+
+        # Taxonomy(lineage)が必要なルール。DB も NCBI API も使えない Local モードではスキップする
+        if context.skip_db and context.skip_ncbi:
+            return results
+
+        for feature in self.get_features(record, "source"):
+            for org in feature.qualifiers.get("organism", []):
+                org_clean = org.strip()
+                lineage = context.tax_data.get(org_clean, {}).get("lineage", "")
+                if not lineage:
+                    continue
+
+                # lineage を ';' で分割し、各階層名を完全一致で判定する。
+                # 単なる部分一致だと上位の "Cyanobacteriota/Melainabacteria group" まで
+                # 拾ってしまい系統が広すぎる誤判定になるため、階層名そのものが
+                # "Cyanobacteriota" と一致するときだけシアノバクテリアと判定する。
+                # strain が生物名に含まれるかの判定は困難なため、シアノバクテリアであれば
+                # 一律でこの INFO メッセージを表示する。
+                taxa = [t.strip().rstrip('.') for t in lineage.split(';')]
+                if "Cyanobacteriota" in taxa:
+                    msg = f"{self.description} (organism: '{org_clean}')"
+                    results.append(self.feature_result(record, feature, msg, level="info", qualifier="organism"))
+                    break
+
+        return results
+
+
 class ANN1100(BaseRule):
     rule_id = "ANN1100"
     alternate_id = "JK"
@@ -1409,8 +1322,7 @@ class ANN1110(BaseRule):
                         first_word = ""
                     
                     if first_word and first_word in inst_codes_lower:
-                        res = self.feature_result(record, feature, self.description, level="warning", qualifier=q_name)
-                        res["entry"] = getattr(feature, 'original_entry_id', entry_id)
+                        res = self.feature_result(record, feature, self.description, level="warning", qualifier=q_name, entry=getattr(feature, 'original_entry_id', entry_id))
                         results.append(res)
                         break # 1つのフィーチャーで1回エラーを出せばOK
 
@@ -1530,9 +1442,9 @@ class ANN1240(BaseRule):
                         if is_future:
                             msg = f"{self.description} (Found: '{val_str}')"
                             results.append(self.feature_result(record, feature, msg, level="error", qualifier="collection_date"))
-                            
-                    except Exception:
-                        pass
+
+                    except Exception as e:
+                        logger.debug(f"Failed to check future collection_date: {e}", exc_info=True)
                         
         return results
 
@@ -1551,10 +1463,17 @@ class ANN1250(BaseRule):
         # missing_reporting_terms は厳密一致
         missing_reporting_terms = set(context.cv_terms.get("missing_reporting_terms", []))
         
-        # 完全一致用のSetと、小文字から正しいCaseを引くためのマッピング辞書を作成
+        # 妥当性判定は countries + historical_countries の和集合に対して行う
+        # （historical 国名も有効な国名として扱う）。
         exact_countries = context.cv_terms.get("countries", [])
-        exact_countries_set = set(exact_countries)
+        historical_countries = context.cv_terms.get("historical_countries", [])
+        valid_set = set(exact_countries) | set(historical_countries)
+        # case 補正の autofix は countries / historical_countries の両方を ANN1250 でまとめて担当する。
+        # （historical 国名の case 補正もここで autofix する。ANN3260 は warning のみで autofix しない。）
         countries_lower_map = {c.lower(): c for c in exact_countries}
+        # 通常国名と重複する場合は通常国名を優先するため setdefault で追加する。
+        for c in historical_countries:
+            countries_lower_map.setdefault(c.lower(), c)
 
         for feature in self.get_features(record):
             if "geo_loc_name" in feature.qualifiers:
@@ -1571,30 +1490,32 @@ class ANN1250(BaseRule):
                     parts = val_str.split(":", 1)
                     country_part = parts[0].strip()
 
-                    # 1. まず完全一致（Case-sensitive）をチェック。一致すれば何もしない。
-                    if country_part in exact_countries_set:
+                    # 1. まず完全一致（Case-sensitive）をチェック。countries/historical のいずれかに
+                    #    一致すれば有効な国名なので何もしない。
+                    if country_part in valid_set:
                         continue
 
                     # 2. 完全一致しなかった場合、Case-insensitiveで照合する
+                    #    （countries / historical_countries のいずれでも case 補正の autofix を行う）
                     country_lower = country_part.lower()
                     if country_lower in countries_lower_map:
-                        # マッチした場合は大文字小文字の間違い（Autofix対象）
+                        # 国名の大文字小文字の間違い（Autofix対象）
                         correct_country = countries_lower_map[country_lower]
                         msg = f"{self.description} (Found: '{country_part}', Expected: '{correct_country}')"
                         res = self.feature_result(record, feature, msg, level="error", qualifier="geo_loc_name")
-                        
+
                         # Autofix: 正しい国名に、もしコロン以降があればそれも結合して新しい値を生成
                         if len(parts) > 1:
                             new_val = f"{correct_country}:{parts[1]}"
                         else:
                             new_val = correct_country
-                            
+
                         res["autofix"] = True
                         res["fix_target"] = "qualifier"
                         res["old_value"] = val_str
                         res["new_value"] = new_val
                         results.append(res)
-                        
+
                     # 3. 全くマッチしない不正な国名の場合
                     else:
                         msg = f"{self.description} (Found: '{country_part}')"
@@ -1626,7 +1547,7 @@ class ANN1275(BaseRule):
             from shapely.geometry import Point
             self.Point = Point
         except ImportError:
-            print("[WARN] geopandas or shapely is not installed. Geo-location validation will be skipped.")
+            logger.warning("geopandas or shapely is not installed. Geo-location validation will be skipped.")
             return False
 
         from importlib.resources import files, as_file
@@ -1645,7 +1566,7 @@ class ANN1275(BaseRule):
 
             # parquet の読み込み (Cライブラリが読めるように as_file で物理パスを保証する)
             if not parquet_path.is_file():
-                print(f"[WARN] GeoParquet file not found in resources.")
+                logger.warning("GeoParquet file not found in resources.")
                 return False
                 
             with as_file(parquet_path) as p_path:
@@ -1653,7 +1574,7 @@ class ANN1275(BaseRule):
                 _ = self.geo_df.sindex  # インデックスの強制構築
 
         except Exception as e:
-            print(f"[WARN] Failed to load geo_data: {e}")
+            logger.warning(f"Failed to load geo_data: {e}")
             return False
 
         # valid_land_names の初期化
@@ -1763,7 +1684,7 @@ class ANN1275(BaseRule):
         if is_valid:
             min_dist_deg = min([geom.distance(pt) for geom in matched_geometries])
             if min_dist_deg > 0:
-                dist_km = round(min_dist_deg * 111.13, 1)
+                dist_km = round(min_dist_deg * DEGREES_TO_KM, 1)
 
         return is_valid, hit_names, dist_km
 
@@ -2254,8 +2175,7 @@ class ANN1810(BaseRule):
             if len(occurrences) > 1:
                 for entry_id, record_obj, feature in occurrences:
                     msg = f"{self.description} (Duplicate clone: '{clone_val}')"
-                    res = self.feature_result(record_obj, feature, msg, level="error", qualifier="clone")
-                    res["entry"] = entry_id
+                    res = self.feature_result(record_obj, feature, msg, level="error", qualifier="clone", entry=entry_id)
                     results.append(res)
                     
         return results
@@ -2413,7 +2333,7 @@ class ANN2010(BaseRule):
                             results.append(res)
                             
         except Exception as e:
-            print(f"[WARN] Failed to read ANN for {self.rule_id} check: {e}")
+            logger.warning(f"Failed to read ANN for {self.rule_id} check: {e}")
 
         return results
 
@@ -2845,7 +2765,7 @@ class ANN2560(BaseRule):
                     if not val: errors.append("must not be empty")
                     else:
                         if not self._valid_start_pattern.match(val): errors.append("must begin with a letter or number")
-                        if len(val) > 32: errors.append("must not be longer than 32 characters")
+                        if len(val) > ENTRY_NAME_MAX_LENGTH: errors.append("must not be longer than 32 characters")
                         if '\t' in val: errors.append("must not contain <tab>")
                         for ng_c in ng_contains:
                             if ng_c in v_lower:
@@ -2860,8 +2780,7 @@ class ANN2560(BaseRule):
 
                     if errors:
                         msg = f"{self.description} '{val}' ({', '.join(errors)})"
-                        res = self.feature_result(record, feature, msg, level="warning", qualifier="chromosome")
-                        res["entry"] = entry_id
+                        res = self.feature_result(record, feature, msg, level="warning", qualifier="chromosome", entry=entry_id)
                         results.append(res)
                         
         return results
@@ -2890,8 +2809,7 @@ class ANN2570(BaseRule):
 
                     if warnings:
                         msg = f"{self.description} '{val}' ({', '.join(warnings)})"
-                        res = self.feature_result(record, feature, msg, level="warning", qualifier="plasmid")
-                        res["entry"] = entry_id 
+                        res = self.feature_result(record, feature, msg, level="warning", qualifier="plasmid", entry=entry_id)
                         results.append(res)
         return results
 
@@ -3200,17 +3118,13 @@ class ANN2670(BaseRule):
             
             if f_type in discouraged_features:
                 msg = f"The '{f_type}' feature exists."
-                res = self.feature_result(record, feature, msg, level="info")
-                res["target"] = "feature"
-                res["rule"] = self.rule_id
+                res = self.feature_result(record, feature, msg, level="info", target="feature", rule=self.rule_id)
                 results.append(res)
                 
             for q_name in feature.qualifiers:
                 if q_name in discouraged_qualifiers:
                     msg = f"The '{q_name}' qualifier exists."
-                    res = self.feature_result(record, feature, msg, level="info", qualifier=q_name)
-                    res["target"] = "qualifier"
-                    res["rule"] = self.rule_id
+                    res = self.feature_result(record, feature, msg, level="info", qualifier=q_name, target="qualifier", rule=self.rule_id)
                     results.append(res)
                     
         return results
@@ -3288,18 +3202,27 @@ class ANTICODON_VALIDATOR(BaseRule):
                     pos_str, aa_str, seq_str = match.groups()
 
                     # --- ANN2710: アミノ酸の検証 ---
+                    # CV と照合。完全一致なら OK。大文字小文字のみ異なる場合は誤記として error を出し、
+                    # 正しい case へ autofix で正す（翻訳モジュールの case-insensitive 解釈と整合させるため）。
+                    # どちらにも一致しなければ無効としてエラー（autofix なし）。
                     is_aa_valid = True
                     if aa_str not in amino_acids:
-                        expected_aa = aa_lower_map.get(aa_str.lower())
-                        if expected_aa:
-                            msg = f"Invalid 'aa' value in the anticodon qualifier. Check character case (Expected: '{expected_aa}', Found: '{aa_str}')."
+                        correct_aa = aa_lower_map.get(aa_str.lower())
+                        if correct_aa:
+                            new_val = val_str.replace(f"aa:{aa_str}", f"aa:{correct_aa}", 1)
+                            msg = f"Invalid 'aa' value in the anticodon qualifier. Check character case (Expected: '{correct_aa}', Found: '{aa_str}')."
+                            res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon", rule="ANN2710")
+                            res["autofix"] = True
+                            res["fix_target"] = "qualifier"
+                            res["old_value"] = val_str
+                            res["new_value"] = new_val
+                            results.append(res)
+                            aa_str = correct_aa  # 下流の翻訳チェック (ANN2715) は正しい case で行う
                         else:
                             msg = f"Invalid 'aa' value in the anticodon qualifier. It must be a valid amino acid abbreviation. (Found: '{aa_str}')"
-                            
-                        res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon")
-                        res["rule"] = "ANN2710"
-                        results.append(res)
-                        is_aa_valid = False
+                            res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon", rule="ANN2710")
+                            results.append(res)
+                            is_aa_valid = False
 
                     # --- ANN2730, ANN2740: pos のパースと範囲検証 ---
                     anticodon_loc = None
@@ -3323,15 +3246,13 @@ class ANTICODON_VALIDATOR(BaseRule):
                             
                             if a_min < parent_start or a_max > parent_end:
                                 msg = "The anticodon location is out of the parent tRNA feature range."
-                                res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon")
-                                res["rule"] = "ANN2740"
+                                res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon", rule="ANN2740")
                                 results.append(res)
                                 anticodon_loc = None 
                                 
                     except (Exception):
                         msg = "Invalid 'pos' value in the anticodon qualifier. Could not parse as a valid location."
-                        res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon")
-                        res["rule"] = "ANN2730"
+                        res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon", rule="ANN2730")
                         results.append(res)
 
                     # --- posから実際の配列を切り出す ---
@@ -3347,15 +3268,13 @@ class ANTICODON_VALIDATOR(BaseRule):
                     if seq_str is not None:
                         if not self.seq_pattern.match(seq_str):
                             msg = "Invalid 'seq' value in the anticodon qualifier. It must be exactly 3 lowercase nucleotides (a, c, g, t)."
-                            res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon")
-                            res["rule"] = "ANN2720"
+                            res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon", rule="ANN2720")
                             results.append(res)
                             is_seq_valid = False
                             
                         elif actual_seq_str and actual_seq_str != seq_str:
                             msg = f"Invalid 'seq' value in the anticodon qualifier. It must be 3 nucleotides and match the corresponding tRNA bases. (Expected bases at pos: '{actual_seq_str}', Found: '{seq_str}')"
-                            res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon")
-                            res["rule"] = "ANN2720"
+                            res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon", rule="ANN2720")
                             results.append(res)
                             is_seq_valid = False
 
@@ -3374,11 +3293,10 @@ class ANTICODON_VALIDATOR(BaseRule):
                                     translated_aa_3letter = code_to_aa.get(translated_aa_code, translated_aa_code)
                                     
                                     msg = f"The translated amino acid from the anticodon sequence does not match the 'aa' value. (Value: '{aa_str}', Translated: '{translated_aa_3letter}')"
-                                    res = self.feature_result(record, feature, msg, level="warning", qualifier="anticodon")
-                                    res["rule"] = "ANN2715"
+                                    res = self.feature_result(record, feature, msg, level="warning", qualifier="anticodon", rule="ANN2715")
                                     results.append(res)
-                            except Exception:
-                                pass 
+                            except Exception as e:
+                                logger.debug(f"Failed to check anticodon translation: {e}", exc_info=True)
 
         return results
 
@@ -3424,11 +3342,10 @@ class ANN2750(BaseRule):
                     
                     if parent_strand != pos_strand:
                         msg = f"{self.description} (tRNA location: '{loc_str}', anticodon pos: '{pos_str}')"
-                        res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon")
-                        res["target"] = self.target
+                        res = self.feature_result(record, feature, msg, level="error", qualifier="anticodon", target=self.target)
                         results.append(res)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Failed to check anticodon strand consistency: {e}", exc_info=True)
 
         return results
 
@@ -3449,8 +3366,7 @@ class ANN3020(BaseRule):
             for q_name in feature.qualifiers:
                 if q_name in prohibited:
                     msg = f"'{q_name}' qualifier cannot be used."
-                    res = self.feature_result(record, feature, msg, level="error", qualifier=q_name)
-                    res["target"] = feature.type
+                    res = self.feature_result(record, feature, msg, level="error", qualifier=q_name, target=feature.type)
                     results.append(res)
         return results
 
@@ -3471,9 +3387,8 @@ class ANN3021(BaseRule):
                 # 未定義のQualifier名が使われている場合
                 if q_name not in defined_qualifiers:
                     msg = f"'{q_name}' qualifier is not defined."
-                    res = self.feature_result(record, feature, msg, level="error", qualifier=q_name)
+                    res = self.feature_result(record, feature, msg, level="error", qualifier=q_name, target=feature.type)
                     # target を feature.type に上書き
-                    res["target"] = feature.type
                     results.append(res)
         return results
 
@@ -3519,8 +3434,7 @@ class ANN3240(BaseRule):
         for entry_id, record in records.items():
             for feature in self.get_features(record):
                 if "artificial_location" in feature.qualifiers:
-                    res = self.feature_result(record, feature, self.description, level="error", qualifier="artificial_location")
-                    res["entry"] = entry_id
+                    res = self.feature_result(record, feature, self.description, level="error", qualifier="artificial_location", entry=entry_id)
                     results.append(res)
 
         return results
@@ -3535,18 +3449,21 @@ class ANN3260(BaseRule):
 
     def validate(self, record, context):
         results = []
-        historical_countries = {c.lower() for c in context.cv_terms.get("historical_countries", [])}
-        
+        # historical 国名は case-insensitive に検出して warning を出す。
+        # case 補正の autofix は ANN1250 がまとめて担当するため、ここでは autofix しない。
+        historical_lower = {c.lower() for c in context.cv_terms.get("historical_countries", [])}
+
         for feature in self.get_features(record):
             if "geo_loc_name" in feature.qualifiers:
                 for val in feature.qualifiers["geo_loc_name"]:
                     val_str = str(val)
                     if not val_str:
                         continue
-                        
-                    country_part = val_str.split(":")[0].strip()
 
-                    if country_part.lower() in historical_countries:
+                    parts = val_str.split(":", 1)
+                    country_part = parts[0].strip()
+
+                    if country_part.lower() in historical_lower:
                         msg = f"{self.description} (Found: '{country_part}')"
                         results.append(self.feature_result(record, feature, msg, level="warning", qualifier="geo_loc_name"))
         return results
@@ -3618,8 +3535,7 @@ class ANN4100(BaseRule):
                     
                     msg = f"{self.description} (Found: '{original_val}')"
                     
-                    res = self.feature_result(record, feature, msg, level="warning", qualifier="inference")
-                    res["target"] = self.target
+                    res = self.feature_result(record, feature, msg, level="warning", qualifier="inference", target=self.target)
                     res["autofix"] = True
                     res["old_value"] = original_val
                     res["new_value"] = fixed_val
@@ -3681,8 +3597,7 @@ class ANN4200(BaseRule):
         if seq_count > 0 and all_circular:
             if common_topo == "circular" and len(circular_feats_list) == 1:
                 target_entry, target_feat = circular_feats_list[0]
-                res = self.feature_result(records[target_entry], target_feat, self.description, level="error")
-                res["target"] = "topology"
+                res = self.feature_result(records[target_entry], target_feat, self.description, level="error", target="topology")
                 results.append(res)
             else:
                 res = self.format_result(
@@ -3940,8 +3855,8 @@ class ANN4300(BaseRule):
                     if seq_len < 90:
                         msg = f"{self.description} (Length: {seq_len} bases)"
                         results.append(self.feature_result(record, feature, msg, level="warning"))
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Failed to check feature length: {e}", exc_info=True)
 
         return results
 
@@ -4031,8 +3946,7 @@ class ANN5045(BaseRule):
                 
                 if seq_len < 1000:
                     msg = f"{self.description} (Length: {seq_len} bp)"
-                    res = self.feature_result(record, feature, msg, level="error")
-                    res["entry"] = entry_id
+                    res = self.feature_result(record, feature, msg, level="error", entry=entry_id)
                     results.append(res)
                 
                 break # source は1つチェックすれば十分
@@ -4139,8 +4053,7 @@ class ANN5242(BaseRule):
                 
                 if any(op in orig_loc for op in ["join", "order", "complement"]):
                     msg = f"Location operators 'join', 'order', and 'complement' cannot be used in '{feature.type}'."
-                    res = self.feature_result(record, feature, msg, level="warning")
-                    res["target"] = "location"
+                    res = self.feature_result(record, feature, msg, level="warning", target="location")
                     results.append(res)
                     
         return results
@@ -4342,8 +4255,7 @@ class ANN5270(BaseRule):
                     dynamic_desc = f"{overlap_type} between {target.type} and {gap.type} features."
                     
                     msg = f"{dynamic_desc} (at {t_start_0+1}..{t_end_0})"
-                    res = self.feature_result(record, target, msg, level="warning")
-                    res["target"] = "location"                
+                    res = self.feature_result(record, target, msg, level="warning", target="location")
                     res["description"] = dynamic_desc
                     
                     # autofix対象であり、かつ最初の警告(i == 0)の場合のみ情報を紐付ける
@@ -4663,8 +4575,7 @@ class FF_DEFINITION_VALIDATOR(BaseRule):
                 
                 if not is_main_source:
                     msg = "Non-main source feature has the ff_definition qualifier."
-                    res = self.feature_result(record, feature, msg, level="error", qualifier="ff_definition")
-                    res["rule"], res["target"] = "ANN4730", "ff_definition"
+                    res = self.feature_result(record, feature, msg, level="error", qualifier="ff_definition", rule="ANN4730", target="ff_definition")
                     results.append(res)
 
                 for val in ff_vals:
@@ -4673,14 +4584,12 @@ class FF_DEFINITION_VALIDATOR(BaseRule):
                     cleaned_val = re.sub(r'@@\[[a-zA-Z0-9_]+\]@@', '', val_str)
                     if '@' in cleaned_val:
                         msg = "Qualifier includes '@' not used as meta-description."
-                        res = self.feature_result(record, feature, msg, level="warning", qualifier="ff_definition")
-                        res["rule"], res["target"] = "ANN4620", "ff_definition"
+                        res = self.feature_result(record, feature, msg, level="warning", qualifier="ff_definition", rule="ANN4620", target="ff_definition")
                         results.append(res)
 
                     if "@@[organism]@@" in val_str and not val_str.startswith("@@[organism]@@"):
                         msg = "@@[organism]@@ must be at the start of the ff_definition value."
-                        res = self.feature_result(record, feature, msg, level="error", qualifier="ff_definition")
-                        res["rule"], res["target"] = "ANN4690", "ff_definition"
+                        res = self.feature_result(record, feature, msg, level="error", qualifier="ff_definition", rule="ANN4690", target="ff_definition")
                         results.append(res)
 
                     seen_tags = set()
@@ -4703,35 +4612,30 @@ class FF_DEFINITION_VALIDATOR(BaseRule):
 
                         if not (prev_valid and next_valid):
                             msg = "Meta-description must be delimited by space, comma-space, or ()."
-                            res = self.feature_result(record, feature, msg, level="warning", qualifier="ff_definition")
-                            res["rule"], res["target"] = "ANN4710", "ff_definition"
+                            res = self.feature_result(record, feature, msg, level="warning", qualifier="ff_definition", rule="ANN4710", target="ff_definition")
                             results.append(res)
 
                         if ref_qual in seen_tags:
                             msg = f"Duplicate meta-description @@[{ref_qual}]@@."
-                            res = self.feature_result(record, feature, msg, level="error", qualifier="ff_definition")
-                            res["rule"], res["target"] = "ANN4660", "ff_definition"
+                            res = self.feature_result(record, feature, msg, level="error", qualifier="ff_definition", rule="ANN4660", target="ff_definition")
                             results.append(res)
                         else:
                             seen_tags.add(ref_qual)
 
                             if not re.match(r'^[a-zA-Z0-9_]+$', ref_qual) or ref_qual not in allowed_quals:
                                 msg = "Invalid meta-description format."
-                                res = self.feature_result(record, feature, msg, level="error", qualifier="ff_definition")
-                                res["rule"], res["target"] = "ANN4630", "ff_definition"
+                                res = self.feature_result(record, feature, msg, level="error", qualifier="ff_definition", rule="ANN4630", target="ff_definition")
                                 results.append(res)
                                 
                             elif ref_qual != "entry": 
                                 if ref_qual not in feature.qualifiers:
                                     msg = "The qualifier referenced by the ff_definition does not exist."
-                                    res = self.feature_result(record, feature, msg, level="error", qualifier="ff_definition")
-                                    res["rule"], res["target"] = "ANN4640", "ff_definition"
+                                    res = self.feature_result(record, feature, msg, level="error", qualifier="ff_definition", rule="ANN4640", target="ff_definition")
                                     results.append(res)
                                     
                                 elif len(feature.qualifiers[ref_qual]) > 1:
                                     msg = f"The qualifier '{ref_qual}' referenced by ff_definition appears multiple times."
-                                    res = self.feature_result(record, feature, msg, level="error", qualifier="ff_definition")
-                                    res["rule"], res["target"] = "ANN4650", "ff_definition"
+                                    res = self.feature_result(record, feature, msg, level="error", qualifier="ff_definition", rule="ANN4650", target="ff_definition")
                                     results.append(res)
 
         return results
@@ -4782,10 +4686,7 @@ class OPERON_MASTER_VALIDATOR(BaseRule):
                     for part in op_feat.location.parts:
                         if getattr(part, 'ref', None) is not None:
                             msg = "The operon feature cannot refer to another entry."
-                            res = self.feature_result(record, op_feat, msg, level="error")
-                            res["entry"] = getattr(op_feat, 'original_entry_id', entry_id)
-                            res["rule"] = "ANN4010"
-                            res["target"] = "operon"
+                            res = self.feature_result(record, op_feat, msg, level="error", entry=getattr(op_feat, 'original_entry_id', entry_id), rule="ANN4010", target="operon")
                             results.append(res)
                             break  # 1つのフィーチャーにつきエラーは1回で十分なため抜ける
             
@@ -4798,9 +4699,7 @@ class OPERON_MASTER_VALIDATOR(BaseRule):
             if operon_feats and entry_mol_type != "genomic DNA":
                 for op_feat in operon_feats:
                     msg = "The operon features require a mol_type of 'genomic DNA'."
-                    res = self.feature_result(record, op_feat, msg, level="warning")
-                    res["entry"] = getattr(op_feat, 'original_entry_id', entry_id)
-                    res["rule"], res["target"] = "ANN4060", "mol_type"
+                    res = self.feature_result(record, op_feat, msg, level="warning", entry=getattr(op_feat, 'original_entry_id', entry_id), rule="ANN4060", target="mol_type")
                     results.append(res)
                     
             op_children_count = {id(op): 0 for op in operon_feats}
@@ -4833,9 +4732,7 @@ class OPERON_MASTER_VALIDATOR(BaseRule):
                             else:
                                 # 同名の親はいるが、locationがはみ出している (ANN4050)
                                 msg = f"Feature with operon qualifier does not overlap with the associated operon '{op_val}'."
-                                res = self.feature_result(record, other_feat, msg, level="error", qualifier="operon")
-                                res["entry"] = getattr(other_feat, 'original_entry_id', entry_id)
-                                res["rule"] = "ANN4050"
+                                res = self.feature_result(record, other_feat, msg, level="error", qualifier="operon", entry=getattr(other_feat, 'original_entry_id', entry_id), rule="ANN4050")
                                 results.append(res)
                         else:
                             # 2. 同名の親 operon が存在しない場合
@@ -4849,16 +4746,12 @@ class OPERON_MASTER_VALIDATOR(BaseRule):
                             if overlapping_parent:
                                 # 重なる親はいるが、/operon の名前が一致していない (ANN4030)
                                 msg = "Feature must have the same operon qualifier as the associated operon."
-                                res = self.feature_result(record, other_feat, msg, level="error", qualifier="operon")
-                                res["entry"] = getattr(other_feat, 'original_entry_id', entry_id)
-                                res["rule"] = "ANN4030"
+                                res = self.feature_result(record, other_feat, msg, level="error", qualifier="operon", entry=getattr(other_feat, 'original_entry_id', entry_id), rule="ANN4030")
                                 results.append(res)
                             else:
                                 # 重なる親も、同名の親も存在しない (ANN4050)
                                 msg = "Feature with operon qualifier does not overlap with any associated operon."
-                                res = self.feature_result(record, other_feat, msg, level="error", qualifier="operon")
-                                res["entry"] = getattr(other_feat, 'original_entry_id', entry_id)
-                                res["rule"] = "ANN4050"
+                                res = self.feature_result(record, other_feat, msg, level="error", qualifier="operon", entry=getattr(other_feat, 'original_entry_id', entry_id), rule="ANN4050")
                                 results.append(res)
                                 
                 # パターンB: 子フィーチャー候補が /operon を持っていない場合
@@ -4868,9 +4761,7 @@ class OPERON_MASTER_VALIDATOR(BaseRule):
                         p_loc = op_feat.location
                         if p_loc and max(o_loc.start, p_loc.start) < min(o_loc.end, p_loc.end):
                             msg = "Overlapped with the operon feature."
-                            res = self.feature_result(record, other_feat, msg, level="warning")
-                            res["entry"] = getattr(other_feat, 'original_entry_id', entry_id)
-                            res["rule"] = "ANN4020"
+                            res = self.feature_result(record, other_feat, msg, level="warning", entry=getattr(other_feat, 'original_entry_id', entry_id), rule="ANN4020")
                             results.append(res)
                             break 
                             
@@ -4883,9 +4774,7 @@ class OPERON_MASTER_VALIDATOR(BaseRule):
                     op_name = op_vals[0] if op_vals else "UNKNOWN"
                     
                     msg = f"An operon feature '{op_name}' must be associated with at least one related feature."
-                    res = self.feature_result(record, op_feat, msg, level="error")
-                    res["entry"] = getattr(op_feat, 'original_entry_id', entry_id)
-                    res["rule"] = "ANN4040"
+                    res = self.feature_result(record, op_feat, msg, level="error", entry=getattr(op_feat, 'original_entry_id', entry_id), rule="ANN4040")
                     results.append(res)
                                         
         return results
@@ -4936,11 +4825,10 @@ class ANN6400(BaseRule):
                         msg = f"{self.description} (CDS location: '{loc_str}', transl_except pos: '{pos_str}')"
                         
                         # feature_result で簡潔にエラーを生成
-                        res = self.feature_result(record, feature, msg, level="error", qualifier="transl_except")
-                        res["target"] = self.target
+                        res = self.feature_result(record, feature, msg, level="error", qualifier="transl_except", target=self.target)
                         results.append(res)
-                        
-                except Exception:
-                    pass
+
+                except Exception as e:
+                    logger.debug(f"Failed to validate transl_except: {e}", exc_info=True)
 
         return results

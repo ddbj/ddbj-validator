@@ -1,5 +1,8 @@
 import re
+import logging
 from dateutil import parser, tz
+
+logger = logging.getLogger(__name__)
 
 _INSDC_DATE_PATTERN = re.compile(r"^(?:\d{4}(?:-\d{2}(?:-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?)?)?)?|(?:\d{2}-)?[A-Za-z]{3}-\d{4})(?:/(?:\d{4}(?:-\d{2}(?:-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?)?)?)?|(?:\d{2}-)?[A-Za-z]{3}-\d{4}))?$")
 _LATLON_DMS_PATTERN = re.compile(r"^(?P<lat_deg>\d{1,2})\D+(?P<lat_min>\d{1,2})\D+(?P<lat_sec>\d{1,2}(?:\.\d+)?)\D+(?P<lat_hemi>[NS])[ ,_;]+(?P<lng_deg>\d{1,3})\D+(?P<lng_min>\d{1,2})\D+(?P<lng_sec>\d{1,2}(?:\.\d+)?)\D+(?P<lng_hemi>[EW])$")
@@ -31,7 +34,8 @@ def _parse_and_format_date(val):
             return dt.strftime("%Y-%m"), dt
         else:
             return dt.strftime("%Y-%m-%d"), dt
-    except Exception:
+    except Exception as e:
+        logger.debug(f"Failed to parse date '{val}': {e}", exc_info=True)
         return None, None
 
 def fix_insdc_date(val):

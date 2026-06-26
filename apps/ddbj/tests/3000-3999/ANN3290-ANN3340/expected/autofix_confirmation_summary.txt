@@ -1,0 +1,9 @@
+=== Auto-Fix Confirmation ===
+
+[ Target: PCR_primers ]
+  ANN3290-ANN3340.entries
+    1 entry, 1 feature, 1 qualifier: 'fwd_name: CO1P1, fwd_seq: TTGATTTTTTGGTCAYCCWGAAGT, rev_name: CO1R4, rev_seq: CCWVYTARDCCTARRAARTGTTG' -> 'fwd_name: CO1P1, fwd_seq: ttgattttttggtcayccwgaagt, rev_name: CO1R4, rev_seq: ccwvytardcctarraartgttg' [Rule: PCR_PRIMER_FORMAT]
+
+[ Target: qualifier ]
+  ANN3290-ANN3340.entries
+    1 entry, 1 feature, 1 qualifier: 'genomic dna' -> 'genomic DNA' [Rule: ANN3290]

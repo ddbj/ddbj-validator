@@ -1,0 +1,5 @@
+=== Auto-Fix Confirmation ===
+
+[ Target: inference ]
+  ANN4100_1.fail
+    1 entry, 1 feature, 1 qualifier: 'similar to DNA sequence:DDBJ:AY411252.1' -> 'similar to DNA sequence:INSD:AY411252.1' [Rule: ANN4100]

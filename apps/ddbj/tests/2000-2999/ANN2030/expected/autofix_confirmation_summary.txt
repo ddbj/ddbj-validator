@@ -1,0 +1,5 @@
+=== Auto-Fix Confirmation ===
+
+[ Target: location ]
+  ANN2030_1.entries
+    1 entry, 1 feature: 'join(1..100, 200..300)' -> 'join(1..100,200..300)' [Rule: ANN2020]

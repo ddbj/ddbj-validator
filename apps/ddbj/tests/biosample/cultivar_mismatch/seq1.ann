@@ -1,0 +1,19 @@
+COMMON	SUBMITTER		ab_name	Mishima,H.
+			contact	Hanako Mishima
+			email	mishima@ddbj.nig.ac.jp
+			institute	National Institute of Genetics
+			department	DNA Data Bank of Japan
+			country	Japan
+			city	Mishima
+			street	Yata 1111
+			zip	411-8540
+	REFERENCE		title	ddbj-validator E2E
+			ab_name	Mishima,H.
+			year	2026
+			status	Unpublished
+seq1	source	1..120	organism	Arabidopsis thaliana
+			mol_type	genomic DNA
+			cultivar	Ler-0
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Tokyo
+	DBLINK		biosample	SAMD01933909

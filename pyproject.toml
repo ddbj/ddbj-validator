@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ddbj-validator"
-version = "0.1.2-beta"
+version = "0.1.5-beta"
 description = "Validation tools for DDBJ, BioProject, BioSample etc."
 dependencies = [
     "biopython",
@@ -34,5 +34,11 @@ include = ["common*", "apps*"]
 # Python以外のリソースファイルをパッケージに同梱
 [tool.setuptools.package-data]
 "apps.ddbj.resources" = ["*.json"]
-"common.resources" = ["*.txt"]
+"apps.biosample.resources" = ["*.json"]
+"common.resources" = ["*.txt", "*.json"]
 "common.resources.geo" = ["*.parquet", "*.json"]
+
+# ユニットテスト（純関数の挙動固定）。E2E ハーネス（apps/ddbj/tests）とは別物。
+[tool.pytest.ini_options]
+testpaths = ["tests/unit"]
+python_files = ["test_*.py"]
