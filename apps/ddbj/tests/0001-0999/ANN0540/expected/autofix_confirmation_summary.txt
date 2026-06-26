@@ -1,0 +1,5 @@
+=== Auto-Fix Confirmation ===
+
+[ Target: geo_loc_name ]
+  ANN0540_1.pass
+    1 entry, 1 feature, 1 qualifier: 'Japan:Shizuoka, Mishima' -> 'Malaysia' (SAMD00059709) [Rule: ANN1130]

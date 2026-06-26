@@ -1,6 +1,7 @@
 import os
 import sys
 import argparse
+import logging
 from pathlib import Path
 from dotenv import load_dotenv
 from apps.ddbj.file_manager import find_file_pairs
@@ -10,7 +11,8 @@ from apps.ddbj.reporter import ValidationReporter
 
 load_dotenv()
 
-def main():
+
+def _build_parser():
     parser = argparse.ArgumentParser(description="DDBJ Validator")
     
     # 位置引数（ターゲット）を追加。0個以上の引数を受け付ける
@@ -24,7 +26,12 @@ def main():
     parser.add_argument("-j", "--jobs", type=int, default=None, help="Number of parallel processes (default: up to 8. Use 0 to use all available cores)")
     parser.add_argument("-w", "--web", action="store_true", help="NSSS (web submission) mode")
     parser.add_argument("-f", "--force-fix", action="store_true", help="Automatically apply all auto-fixes without prompting")
-    
+    # 関連 BioSample を SSUB 単位の更新用 TSV として出力（内部使用のみ・要内部DB）
+    parser.add_argument("-b", "--biosample", action="store_true", help="Generate SSUB-unit BioSample update TSV from DBLINK biosample accessions (internal use; requires internal DB)")
+    # -f -b 時の同期方向（内部/テスト用）。ann2bs は「全 [b]（ann 値で BioSample を更新）」を非対話で再現する。
+    parser.add_argument("--biosample-apply", choices=["bs2ann", "ann2bs"], default="bs2ann",
+                        help=argparse.SUPPRESS)
+
     # --- ユーザー向けメインオプション ---
     # 出力ディレクトリの指定 (-o / --out-dir)
     parser.add_argument("-o", "--out-dir", type=str, help="Output directory for reports and fixed files")
@@ -40,11 +47,23 @@ def main():
     # NCBI API key 指定
     parser.add_argument("--ncbi-api-key", type=str, help="NCBI API key to increase rate limits (optional)")
 
-    args = parser.parse_args()
+    # システム診断ログの詳細化（開発者向け）
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose system/debug logging to stderr (for developers)")
+    return parser
+
+
+def _init_logging(args):
+    # --- ロギングの初期化 ---
+    # システム診断・警告ログは標準エラー出力(stderr)へ出す（標準出力＝検証結果と分離する）。
+    # 既定は WARNING 以上のみ表示。-v 指定時のみ DEBUG まで出力し、内部の握りつぶし例外なども可視化する。
+    log_level = logging.DEBUG if args.verbose else logging.WARNING
+    logging.basicConfig(level=log_level, format="%(levelname)s [%(name)s] %(message)s", stream=sys.stderr)
 
     if args.ncbi_api_key:
         os.environ["NCBI_API_KEY"] = args.ncbi_api_key
-    
+
+
+def _resolve_modes(args):
     # --- オプションの論理解決 ---
     skip_db = False
     skip_ncbi = False
@@ -83,7 +102,10 @@ def main():
     else:
         # 明示的な指定 (例: -j 16)
         jobs = args.jobs
-                        
+    return skip_db, skip_ncbi, skip_auth, jobs
+
+
+def _resolve_targets(args):
     # --- 1. ターゲットの収集とデフォルト設定 ---
     raw_targets = list(args.targets)
     if args.dir: raw_targets.extend(args.dir)
@@ -204,7 +226,10 @@ def main():
             
         # 重複する出力先ディレクトリを整理
         target_dirs_for_report = list(dict.fromkeys(target_dirs_for_report))
+    return pairs, report_out_dir, target_dirs_for_report
 
+
+def _run(args, pairs, report_out_dir, target_dirs_for_report, skip_db, skip_ncbi, jobs):
     # --- パイプラインの実行とレポート出力 --- #
     account_id = args.account
     
@@ -215,10 +240,38 @@ def main():
         
     is_curator_mode = (account_id is None)  # --account が有効でなければ内部キュレーター扱い
 
+    # -b/--biosample: SSUB 単位の BioSample 更新用 TSV を生成（内部 DB 必須）。
+    # --account と同様、ローカル/--skip-db 時は DB を引けないため警告して無効化する。
+    emit_biosample_tsv = args.biosample
+    if skip_db and emit_biosample_tsv:
+        print("[WARN] Local mode or --skip-db is enabled. The --biosample (-b) option will be ignored.", file=sys.stderr)
+        emit_biosample_tsv = False
+
+    # NSUB = ann/fasta のサブミッションID（TSV ファイル名 SSUBID_NSUBID.txt に使用）。
+    # 対象ディレクトリのパス／ann ファイル名から NSUB/DSUB を抽出する
+    # （例: ".../NSUB003703/20260608/" や "20260608NSUB003703....ann" → "NSUB003703"）。
+    # 見つからなければ対象ディレクトリの basename にフォールバック。
+    import re as _re
+    nsub = None
+    _search = []
+    if target_dirs_for_report:
+        _search.append(str(target_dirs_for_report[0].resolve()))
+    if pairs:
+        _search.append(str(pairs[0][0]))  # ann ファイルパス
+    for _s in _search:
+        _m = _re.search(r'[ND]SUB\d+', _s)
+        if _m:
+            nsub = _m.group(0)
+            break
+    if nsub is None:
+        nsub = target_dirs_for_report[0].name if target_dirs_for_report else None
+
     pipeline = ValidatorPipeline(
-        pairs, report_out_dir, args.web, args.force_fix, jobs, 
+        pairs, report_out_dir, args.web, args.force_fix, jobs,
         skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=args.skip_auth,
-        account_id=account_id, is_curator_mode=is_curator_mode
+        account_id=account_id, is_curator_mode=is_curator_mode,
+        emit_biosample_tsv=emit_biosample_tsv, nsub=nsub,
+        biosample_apply=args.biosample_apply
     )
         
     import time
@@ -254,6 +307,15 @@ def main():
     finally:
         # 4. コンテナやホストのディスクを圧迫しないよう、テンポラリファイルを確実に削除
         pipeline.cleanup_tmp_dir()
+
+
+def main():
+    args = _build_parser().parse_args()
+    _init_logging(args)
+    skip_db, skip_ncbi, skip_auth, jobs = _resolve_modes(args)
+    pairs, report_out_dir, target_dirs_for_report = _resolve_targets(args)
+    _run(args, pairs, report_out_dir, target_dirs_for_report, skip_db, skip_ncbi, jobs)
+
 
 if __name__ == "__main__":
     main()

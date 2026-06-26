@@ -1,0 +1,6 @@
+=== Auto-Fix Confirmation ===
+
+[ Target: location ]
+  ANN5270.entries
+    1 entry, 1 feature: '41..60' -> '41..>50' [Rule: ANN5270]
+    1 entry, 1 feature: '61..80' -> '<71..80' [Rule: ANN5270]

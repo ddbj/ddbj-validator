@@ -1,66 +1,51 @@
 import re
+import logging
 from common.rules.base import BaseRule
 from Bio.SeqFeature import CompoundLocation, BeforePosition, AfterPosition
 from Bio.Data import CodonTable
 from Bio.Seq import Seq
-from apps.ddbj.utils.location import get_introns_from_join
+from apps.ddbj.utils.location import get_introns_from_join, get_feature_positions
 from apps.ddbj.db_metadata import get_expected_transl_table
 from apps.ddbj.parser import _parse_location_string
 from intervaltree import IntervalTree
 from apps.ddbj.utils.translation import get_cds_translation_params, get_insdc_translation
 
-# =========================================================
-# 翻訳ヘルパー
-# =========================================================
-def get_cds_translation_params(feature, default_table_id):
-    """
-    CDSフィーチャーの transl_table と codon_start を安全に取得する共通関数
-    """
-    table_id = default_table_id
-    if "transl_table" in feature.qualifiers:
-        try:
-            table_id = int(feature.qualifiers["transl_table"][0])
-        except ValueError:
-            pass
-    if table_id == 0:
-        table_id = 1
-        
-    codon_start = 1
-    if "codon_start" in feature.qualifiers:
-        try:
-            codon_start = int(feature.qualifiers["codon_start"][0])
-        except ValueError:
-            pass
-    if codon_start not in [1, 2, 3]:
-        codon_start = 1
-        
-    return table_id, codon_start
+logger = logging.getLogger(__name__)
 
+# 翻訳ヘルパーは apps/ddbj/utils/translation.py に一本化（get_cds_translation_params / get_insdc_translation）。
+# 旧 get_conceptual_translation は未使用（transl_except 非対応の簡易版）だったため削除した。
 
-def get_conceptual_translation(feature, record, table_id, codon_start):
-    """
-    CDSフィーチャーの塩基配列から Conceptual Translation (理論上のアミノ酸配列) を生成する
-    """
-    try:
-        seq = feature.extract(record.seq)
-    except Exception:
-        return None
-        
-    cds_seq = seq[codon_start - 1:]
-    
-    # 3の倍数への調整（端数の塩基がある場合は 'N' で埋める）
-    remainder = len(cds_seq) % 3
-    if remainder != 0:
-        cds_seq += "N" * (3 - remainder)
-        
-    try:
-        translation = str(cds_seq.translate(table=table_id))
-        # INSDCの仕様に合わせて末尾のストップコドンを除去
-        if translation.endswith("*"):
-            translation = translation[:-1]
-        return translation
-    except Exception:
-        return None
+# 機器モデル名 → シーケンスプラットフォームの判定テーブル（_determine_platform 用）。
+# 完全一致を先に評価し、その後で正規表現を「リストの順序どおり」に評価する（順序依存のため変更不可）。
+_PLATFORM_EXACT_MAP = {
+    "UG 100": "ULTIMA",
+    "GENIUS": "GENAPSYS", "Genapsys Sequencer": "GENAPSYS", "GS111": "GENAPSYS",
+    "GenoCare 1600": "GENEMIND", "GenoLab M": "GENEMIND", "FASTASeq 300": "GENEMIND",
+    "SURFSeq 5000": "GENEMIND", "SURFSeq Q": "GENEMIND",
+    "Tapestri": "TAPESTRI",
+    "Sentosa SQ301": "VELA_DIAGNOSTICS",
+    "Saluseq Nimbo": "SALUS", "Salus Pro": "SALUS", "Salus EVO": "SALUS",
+    "G-seq500": "GENEUS_TECH",
+    "G4": "SINGULAR_GENOMICS",
+}
+# (正規表現パターン, フラグ, プラットフォーム) を上から順に評価する。
+_PLATFORM_REGEX_RULES = [
+    (r'454', re.IGNORECASE, "LS454"),
+    (r'illumina|nextseq|hiseq', re.IGNORECASE, "ILLUMINA"),
+    (r'solid', re.IGNORECASE, "ABI_SOLID"),
+    (r'pacbio', re.IGNORECASE, "PACBIO_SMRT"),
+    (r'onso|revio', re.IGNORECASE, "PACBIO_SMRT"),
+    (r'bgiseq|mgiseq|cycloneseq', re.IGNORECASE, "BGISEQ"),
+    (r'dnbseq', re.IGNORECASE, "DNBSEQ"),
+    (r'AB 5500', 0, "ABI_SOLID"),
+    (r'Ion', 0, "ION_TORRENT"),
+    (r'Sequel', 0, "PACBIO_SMRT"),
+    (r'ION', 0, "OXFORD_NANOPORE"),
+    (r'AB 3', 0, "CAPILLARY"),
+    (r'Helicos HeliScope', 0, "HELICOS"),
+    (r'Complete', 0, "COMPLETE_GENOMICS"),
+    (r'Element', 0, "ELEMENT"),
+]
 
 class AXS2080(BaseRule):
     rule_id = "AXS2080"
@@ -148,8 +133,8 @@ class AXS5090(BaseRule):
                     feat_seq = str(feature.extract(record.seq)).upper()
                     if feat_seq and len(feat_seq.replace('N', '')) > 0:
                         results.append(self.feature_result(record, feature, self.description, level="error"))
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Failed to extract gap/assembly_gap sequence ({f_type}): {e}", exc_info=True)
                     
         return results
         
@@ -191,8 +176,8 @@ class AXS5100(BaseRule):
                             
                     if is_extended:
                         results.append(self.feature_result(record, feature, self.description, level="warning"))
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Failed to check consecutive Ns around gap feature ({f_type}): {e}", exc_info=True)
                     
         return results                
 
@@ -431,20 +416,17 @@ class DRA_CROSSCHECK_VALIDATOR(BaseRule):
 
                             if valid_sources and source and source not in valid_sources:
                                 msg = f"{desc_prefix}: Inconsistent SRA Experiment LIBRARY_SOURCE (Found: '{source}' in {drx} for {drr_upper})"
-                                res = self.feature_result(record, feature, msg, level="warning", qualifier="sequence read archive")
-                                res["rule"] = id_source
+                                res = self.feature_result(record, feature, msg, level="warning", qualifier="sequence read archive", rule=id_source)
                                 results.append(res)
 
                             if inv_strategies and strategy in inv_strategies:
                                 msg = f"{desc_prefix}: Inconsistent SRA Experiment LIBRARY_STRATEGY (Found: '{strategy}' in {drx} for {drr_upper})"
-                                res = self.feature_result(record, feature, msg, level="warning", qualifier="sequence read archive")
-                                res["rule"] = id_strat
+                                res = self.feature_result(record, feature, msg, level="warning", qualifier="sequence read archive", rule=id_strat)
                                 results.append(res)
 
                             if inv_selections and selection in inv_selections:
                                 msg = f"{desc_prefix}: Inconsistent SRA Experiment LIBRARY_SELECTION (Found: '{selection}' in {drx} for {drr_upper})"
-                                res = self.feature_result(record, feature, msg, level="warning", qualifier="sequence read archive")
-                                res["rule"] = id_sel
+                                res = self.feature_result(record, feature, msg, level="warning", qualifier="sequence read archive", rule=id_sel)
                                 results.append(res)
 
         return results
@@ -507,32 +489,13 @@ class ANN0560(BaseRule):
     def _determine_platform(self, model: str) -> str:
         if not model:
             return "UNKNOWN"
-            
-        if model == "UG 100": return "ULTIMA"
-        if model in ["GENIUS", "Genapsys Sequencer", "GS111"]: return "GENAPSYS"
-        if model in ["GenoCare 1600", "GenoLab M", "FASTASeq 300", "SURFSeq 5000", "SURFSeq Q"]: return "GENEMIND"
-        if model == "Tapestri": return "TAPESTRI"
-        if model == "Sentosa SQ301": return "VELA_DIAGNOSTICS"
-        if model in ["Saluseq Nimbo", "Salus Pro", "Salus EVO"]: return "SALUS"
-        if model == "G-seq500": return "GENEUS_TECH"
-        if model == "G4": return "SINGULAR_GENOMICS"
 
-        if re.search(r'454', model, re.IGNORECASE): return "LS454"
-        if re.search(r'illumina|nextseq|hiseq', model, re.IGNORECASE): return "ILLUMINA"
-        if re.search(r'solid', model, re.IGNORECASE): return "ABI_SOLID"
-        if re.search(r'pacbio', model, re.IGNORECASE): return "PACBIO_SMRT"
-        if re.search(r'onso|revio', model, re.IGNORECASE): return "PACBIO_SMRT"
-        if re.search(r'bgiseq|mgiseq|cycloneseq', model, re.IGNORECASE): return "BGISEQ"
-        if re.search(r'dnbseq', model, re.IGNORECASE): return "DNBSEQ"
+        if model in _PLATFORM_EXACT_MAP:
+            return _PLATFORM_EXACT_MAP[model]
 
-        if re.search(r'AB 5500', model): return "ABI_SOLID"
-        if re.search(r'Ion', model): return "ION_TORRENT"
-        if re.search(r'Sequel', model): return "PACBIO_SMRT"
-        if re.search(r'ION', model): return "OXFORD_NANOPORE"
-        if re.search(r'AB 3', model): return "CAPILLARY"
-        if re.search(r'Helicos HeliScope', model): return "HELICOS"
-        if re.search(r'Complete', model): return "COMPLETE_GENOMICS"
-        if re.search(r'Element', model): return "ELEMENT"
+        for pattern, flags, platform in _PLATFORM_REGEX_RULES:
+            if re.search(pattern, model, flags):
+                return platform
 
         return "UNKNOWN"
                 
@@ -572,7 +535,8 @@ class CDS_TRANSLATION_VALIDATOR(BaseRule):
             try:
                 # ここで str() に変換し、純粋な文字列として保持
                 seq_str = str(feature.extract(record.seq))
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Failed to extract feature sequence: {e}", exc_info=True)
                 continue
                 
             cds_seq = seq_str[codon_start - 1:]
@@ -591,8 +555,8 @@ class CDS_TRANSLATION_VALIDATOR(BaseRule):
                             aa = str(Seq(padded_codon).translate(table=table_id))
                             if aa != "X":
                                 codons.append(padded_codon)
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logger.debug(f"Failed to translate codon for stop-codon check: {e}", exc_info=True)
                                                         
             if not codons:
                 continue
@@ -619,8 +583,7 @@ class CDS_TRANSLATION_VALIDATOR(BaseRule):
                 first_codon = codons[0]
                 if first_codon not in start_codons:
                     msg = f'"{first_codon}" is not a valid start codon for the 5\' complete CDS. (Found: {first_codon} at {location_str})'
-                    res = self.feature_result(record, feature, msg, level="error")
-                    res["rule"], res["target"] = "AXS6040", "CDS"
+                    res = self.feature_result(record, feature, msg, level="error", rule="AXS6040", target="CDS")
                     results.append(res)
 
             # 終止コドンのチェック (一括翻訳の結果を再利用)
@@ -638,8 +601,7 @@ class CDS_TRANSLATION_VALIDATOR(BaseRule):
                     
                     if not has_term_except:
                         msg = f'"{last_codon}" is not a valid stop codon for the 3\' complete CDS. (Found: {last_codon} at {location_str})'
-                        res = self.feature_result(record, feature, msg, level="error")
-                        res["rule"], res["target"] = "AXS6050", "CDS"
+                        res = self.feature_result(record, feature, msg, level="error", rule="AXS6050", target="CDS")
                         results.append(res)
                         
             has_transl_except = "transl_except" in feature.qualifiers
@@ -650,33 +612,18 @@ class CDS_TRANSLATION_VALIDATOR(BaseRule):
                 
                 if aa == "X":
                     msg = f'Untranslatable codon "{codon}" detected in the sequence. These codons will be translated to \'X\' (unknown amino acids) after loading to the DDBJ database. (Found: {codon} at codon {codon_pos} in {location_str})'
-                    res = self.feature_result(record, feature, msg, level="warning")
-                    res["rule"], res["target"] = "AXS6030", "CDS"
+                    res = self.feature_result(record, feature, msg, level="warning", rule="AXS6030", target="CDS")
                     results.append(res)
                     
                 elif aa == "*":
                     if i < len(codons) - 1 and not has_transl_except:
                         msg = f'Internal stop codon within the CDS. (Found: {codon} at codon {codon_pos} in {location_str})'
-                        res = self.feature_result(record, feature, msg, level="error")
-                        res["rule"], res["target"] = "AXS6060", "CDS"
+                        res = self.feature_result(record, feature, msg, level="error", rule="AXS6060", target="CDS")
                         results.append(res)
 
         return results
                 
 TRANSL_EXCEPT_PATTERN = re.compile(r"^\(pos:(?P<pos>.+?),aa:(?P<aa>[a-zA-Z]+)\)$")
-
-def get_feature_positions(location):
-    pos_list = []
-    if not location: return pos_list
-    for part in location.parts:
-        start = int(part.start)
-        end = int(part.end)
-        strand = part.strand if part.strand is not None else 1
-        if strand == -1:
-            pos_list.extend(range(end - 1, start - 1, -1))
-        else:
-            pos_list.extend(range(start, end))
-    return pos_list
 
 def find_sublist(parent, child):
     if not child: return -1
@@ -702,7 +649,7 @@ class CDS_TRANSL_EXCEPT_VALIDATOR(BaseRule):
             return results
 
         amino_acids_def = context.cv_terms.get("amino_acids", {}) if context.cv_terms else {}
-        aa_name_map = {k.lower(): k for k in amino_acids_def.keys()}
+        aa_lower_map = {k.lower(): k for k in amino_acids_def.keys()}
 
         default_table_id = get_expected_transl_table(record, context.tax_data)
 
@@ -720,15 +667,13 @@ class CDS_TRANSL_EXCEPT_VALIDATOR(BaseRule):
             if "codon_start" in feature.qualifiers:
                 cs_val = feature.qualifiers["codon_start"][0].strip()
                 if cs_val not in ["1", "2", "3"]:
-                    res = self.feature_result(record, feature, f'Invalid value "{cs_val}" for the codon_start qualifier.', level="error", qualifier="codon_start")
-                    res["rule"], res["target"] = "AXS6420", "codon_start"
+                    res = self.feature_result(record, feature, f'Invalid value "{cs_val}" for the codon_start qualifier.', level="error", qualifier="codon_start", rule="AXS6420", target="codon_start")
                     results.append(res)
                 else:
                     codon_start = int(cs_val)
 
             if is_5_complete and codon_start != 1:
-                res = self.feature_result(record, feature, 'The codon_start qualifier value must be "1" for the 5\' complete CDS.', level="error", qualifier="codon_start")
-                res["rule"], res["target"] = "ANN6090", "codon_start"
+                res = self.feature_result(record, feature, 'The codon_start qualifier value must be "1" for the 5\' complete CDS.', level="error", qualifier="codon_start", rule="ANN6090", target="codon_start")
                 results.append(res)
 
             transl_excepts = feature.qualifiers.get("transl_except", [])
@@ -750,52 +695,59 @@ class CDS_TRANSL_EXCEPT_VALIDATOR(BaseRule):
             for te_val in transl_excepts:
                 m = TRANSL_EXCEPT_PATTERN.match(te_val.strip())
                 if not m:
-                    res = self.feature_result(record, feature, f'Invalid value "{te_val}" for the transl_except and codon_start qualifiers.', level="error", qualifier="transl_except")
-                    res["rule"], res["target"] = "AXS6420", "transl_except"
+                    res = self.feature_result(record, feature, f'Invalid value "{te_val}" for the transl_except and codon_start qualifiers.', level="error", qualifier="transl_except", rule="AXS6420", target="transl_except")
                     results.append(res)
                     continue
 
                 pos_str = m.group("pos")
                 aa_str = m.group("aa")
 
-                aa_lower = aa_str.lower()
-
-                if aa_lower not in aa_name_map:
-                    res = self.feature_result(record, feature, 'Invalid amino acid abbreviation code in the transl_except qualifier.', level="error", qualifier="transl_except")
-                    res["rule"], res["target"] = "AXS6410", "transl_except"
+                # アミノ酸略号を CV と照合する。完全一致なら OK。
+                # 大文字小文字のみ異なる場合は誤記として error を出し、正しい case へ autofix で正す
+                # （翻訳モジュールの case-insensitive 解釈と整合させるため）。
+                # どちらにも一致しなければ無効としてエラー（autofix なし）。
+                if aa_str in amino_acids_def:
+                    aa_normalized = aa_str
+                else:
+                    correct_aa = aa_lower_map.get(aa_str.lower())
+                    if correct_aa is None:
+                        res = self.feature_result(record, feature, 'Invalid amino acid abbreviation code in the transl_except qualifier.', level="error", qualifier="transl_except", rule="AXS6410", target="transl_except")
+                        results.append(res)
+                        continue
+                    new_val = te_val.strip().replace(f"aa:{aa_str}", f"aa:{correct_aa}", 1)
+                    res = self.feature_result(record, feature, f"Invalid amino acid abbreviation code in the transl_except qualifier. Check character case (Expected: '{correct_aa}', Found: '{aa_str}').", level="error", qualifier="transl_except", rule="AXS6410", target="transl_except")
+                    res["autofix"] = True
+                    res["fix_target"] = "qualifier"
+                    res["old_value"] = te_val.strip()
+                    res["new_value"] = new_val
                     results.append(res)
-                    continue
+                    aa_normalized = correct_aa
                 
                 try:
                     te_loc = _parse_location_string(pos_str, seq_length=len(record.seq))
                 except Exception:
                     msg = f"Invalid base range in the transl_except qualifier. (Found: '{te_val.strip()}')"
-                    res = self.feature_result(record, feature, msg, level="error", qualifier="transl_except")
-                    res["rule"], res["target"] = "AXS6440", "transl_except"
+                    res = self.feature_result(record, feature, msg, level="error", qualifier="transl_except", rule="AXS6440", target="transl_except")
                     results.append(res)
                     continue
 
-                aa_normalized = aa_name_map[aa_lower]
                 te_positions = get_feature_positions(te_loc)
                 rel_start_idx = find_sublist(cds_positions, te_positions)
                 
                 if rel_start_idx == -1:
                     msg = f"Invalid base range in the transl_except qualifier. (Found: '{te_val.strip()}')"
-                    res = self.feature_result(record, feature, msg, level="error", qualifier="transl_except")
-                    res["rule"], res["target"] = "AXS6440", "transl_except"
+                    res = self.feature_result(record, feature, msg, level="error", qualifier="transl_except", rule="AXS6440", target="transl_except")
                     results.append(res)
                     continue
                     
                 te_pos_set = set(te_positions)
                 if not te_pos_set.isdisjoint(used_positions):
-                    res = self.feature_result(record, feature, 'Overlapping base ranges in multiple transl_except qualifiers.', level="error", qualifier="transl_except")
-                    res["rule"], res["target"] = "AXS6430", "transl_except"
+                    res = self.feature_result(record, feature, 'Overlapping base ranges in multiple transl_except qualifiers.', level="error", qualifier="transl_except", rule="AXS6430", target="transl_except")
                     results.append(res)
                 used_positions.update(te_pos_set)
 
                 if (rel_start_idx - (codon_start - 1)) % 3 != 0:
-                    res = self.feature_result(record, feature, 'The transl_except qualifier base range mismatches with the reading frame of the CDS feature.', level="error", qualifier="transl_except")
-                    res["rule"], res["target"] = "AXS6470", "transl_except"
+                    res = self.feature_result(record, feature, 'The transl_except qualifier base range mismatches with the reading frame of the CDS feature.', level="error", qualifier="transl_except", rule="AXS6470", target="transl_except")
                     results.append(res)
 
                 if cds_seq_extracted is None:
@@ -811,31 +763,27 @@ class CDS_TRANSL_EXCEPT_VALIDATOR(BaseRule):
                         target_aa_1 = amino_acids_def.get(aa_normalized, {}).get("code", "?")
                         
                         if actual_aa == target_aa_1:
-                            res = self.feature_result(record, feature, 'Unnecessary transl_except: Specified amino acids are identical with the conceptual translation of the CDS feature.', level="error", qualifier="transl_except")
-                            res["rule"], res["target"] = "AXS6480", "transl_except"
+                            res = self.feature_result(record, feature, 'Unnecessary transl_except: Specified amino acids are identical with the conceptual translation of the CDS feature.', level="error", qualifier="transl_except", rule="AXS6480", target="transl_except")
                             results.append(res)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Failed to check unnecessary transl_except: {e}", exc_info=True)
 
                 codon_idx = (rel_start_idx - (codon_start - 1)) // 3
                 num_codons = (len(cds_positions) - (codon_start - 1)) // 3
 
                 if codon_idx == 0:
                     if aa_normalized != "Met":
-                        res = self.feature_result(record, feature, 'Invalid start amino acid: [transl_except] at the 5\' end must be "Met".', level="warning", qualifier="transl_except")
-                        res["rule"], res["target"] = "AXS6490", "transl_except"
+                        res = self.feature_result(record, feature, 'Invalid start amino acid: [transl_except] at the 5\' end must be "Met".', level="warning", qualifier="transl_except", rule="AXS6490", target="transl_except")
                         results.append(res)
 
                 if codon_idx == num_codons - 1:
                     if aa_normalized != "TERM":
-                        res = self.feature_result(record, feature, 'Invalid stop amino acid: [transl_except] at the 3\' end must be "TERM".', level="error", qualifier="transl_except")
-                        res["rule"], res["target"] = "AXS6500", "transl_except"
+                        res = self.feature_result(record, feature, 'Invalid stop amino acid: [transl_except] at the 3\' end must be "TERM".', level="error", qualifier="transl_except", rule="AXS6500", target="transl_except")
                         results.append(res)
 
                 if codon_idx > 0 and codon_idx < num_codons - 1:
                     if aa_normalized == "TERM":
-                        res = self.feature_result(record, feature, 'Unexpected internal stop: [transl_except] specifies "TERM" internally.', level="error", qualifier="transl_except")
-                        res["rule"], res["target"] = "AXS6510", "transl_except"
+                        res = self.feature_result(record, feature, 'Unexpected internal stop: [transl_except] specifies "TERM" internally.', level="error", qualifier="transl_except", rule="AXS6510", target="transl_except")
                         results.append(res)
 
         return results      

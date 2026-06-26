@@ -12,6 +12,14 @@
 !*.ann
 !*.fasta
 
+# autofix 確認サマリのゴールデンは expected/ 配下のものだけ追跡する
+# （reports/ 側は実行時に再生成される成果物なので除外のまま）
+!**/expected/autofix_confirmation_summary.txt
+
+# biosample ann->bs テストのゴールデン SSUB TSV は expected/biosample/ のものだけ追跡する
+# （各 fixture 直下の biosample/ は実行時に再生成される成果物なので除外のまま）
+!**/expected/biosample/*.txt
+
 # ディレクトリトラバース許可によって復活してしまう fixed ディレクトリを明示的に再度除外
 fixed/
 aa/

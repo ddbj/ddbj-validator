@@ -1,0 +1,9 @@
+=== Auto-Fix Confirmation ===
+
+[ Target: organism ]
+  ANN1020-ANN1025-ANN1040-ANN1050.entries
+    1 entry, 1 feature, 1 qualifier: 'house mouse' -> 'Mus musculus' (taxid: 10090, genbank common name) [Rule: ANN1025]
+
+[ Target: transl_table ]
+  ANN1020-ANN1025-ANN1040-ANN1050.entries
+    1 entry, 1 feature, 1 qualifier: '10' -> '1' (Mus musculus, taxid: 10090) [Rule: ANN1050]

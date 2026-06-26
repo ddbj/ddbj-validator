@@ -7,7 +7,10 @@ from apps.ddbj.rules.entry_consistency import ENTRY_CONSISTENCY_VALIDATOR
 from apps.ddbj.rules.division_datatype import *
 from pathlib import Path
 import inspect
+import logging
 from collections import defaultdict
+
+logger = logging.getLogger(__name__)
 
 class Validator:
     def __init__(self, context: ValidationContext):
@@ -56,6 +59,7 @@ class Validator:
             ANN1040(), # [ERROR] Invalid taxonomic rank
             ANN1060(), # [ERROR] The metagenome_source qualifier value must be a valid scientific name
             ANN1050(), # [ERROR] The transl_table qualifier value mismatches with the Taxonomy database
+            ANN1070(), # [INFO] Cyanobacteria(Cyanobacteriota phylum) は生物名に strain を含める必要がある
             ANN1100(), # [ERROR] strain not permitted for environmental samples
             ANN1140(), # [WARNING] Source qualifiers must be identical across all WGS entries.            
             ANN1320(), # [ERROR] Specimen voucher for prokaryotes and unclassified sequences.
@@ -252,10 +256,10 @@ class Validator:
                     if res:
                         results.extend(res)
                 except NotImplementedError:
-                    print(f"[WARN] Rule '{rule.__class__.__name__}' lacks validate_file(). Skipping.")
+                    logger.warning(f"Rule '{rule.__class__.__name__}' lacks validate_file(). Skipping.")
                     continue
                 except Exception as e:
-                    print(f"[ERROR] Rule '{rule.__class__.__name__}' failed during validation: {e}")
+                    logger.error(f"Rule '{rule.__class__.__name__}' failed during validation: {e}", exc_info=True)
                     continue
             else:
                 # ループ外でシグネチャを判定して高速化
@@ -270,7 +274,7 @@ class Validator:
                         if res:
                             results.extend(res)
                     except Exception as e:
-                        print(f"[ERROR] Rule '{rule.__class__.__name__}' failed on entry '{entry_id}': {e}")
+                        logger.error(f"Rule '{rule.__class__.__name__}' failed on entry '{entry_id}': {e}", exc_info=True)
 
             # 正しくカテゴリー情報とファイル名を付与して all_results に追加する
             if results:

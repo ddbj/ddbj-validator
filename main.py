@@ -3,21 +3,32 @@
 import sys
 import argparse
 
+# 既知のトップレベルサブコマンド（将来サブコマンドが増えたらここに追加）
+KNOWN_COMMANDS = {"ddbj"}
+
 def main():
     parser = argparse.ArgumentParser(
         description="DDBJ Validation Tools",
-        usage="ddbj-validator <command> [<args>]"
+        usage="ddbj-validator [ddbj] [<args>]",
     )
     subparsers = parser.add_subparsers(dest="command")
-    
-    # サブコマンドの登録
     subparsers.add_parser("ddbj", help="Run DDBJ Validator")
-    
-    # parse_known_args を使うことで、ddbj 特有の引数(-d, -wなど)を unknown として分離
-    args, unknown = parser.parse_known_args()
-    
+
+    # --- 'ddbj' サブコマンドの省略を許可する ---
+    # 第1引数が既知のサブコマンドでなければ、暗黙的に 'ddbj' を補完する。
+    # これにより内部キュレータは
+    #   ddbj-validator <dir>   （= ddbj-validator ddbj <dir>）
+    #   ddbj-validator         （= カレントディレクトリを検証）
+    # のように 'ddbj' を省略して実行できる。
+    raw = sys.argv[1:]
+    if not raw or raw[0] not in KNOWN_COMMANDS:
+        raw = ["ddbj"] + raw
+
+    # 補完済みの引数列を明示的に渡してパースする
+    args, unknown = parser.parse_known_args(raw)
+
     if args.command == "ddbj":
-        # sys.argvを書き換えて、ddbj側のargparseに綺麗に引数を引き継ぐ
+        # ddbj 側の argparse へ引数をきれいに引き継ぐため sys.argv を再構成
         sys.argv = [f"{sys.argv[0]} ddbj"] + unknown
         from apps.ddbj.cli import main as ddbj_main
         ddbj_main()
@@ -26,3 +37,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    

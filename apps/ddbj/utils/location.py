@@ -32,3 +32,22 @@ def get_introns_from_join(feature):
         })
 
     return introns
+
+
+def get_feature_positions(location):
+    """
+    フィーチャーの location が覆う 0-based の塩基位置を、parts 順・鎖の向きを考慮してリストで返す。
+    マイナス鎖の part は末尾から先頭に向かって列挙する。location が None なら空リスト。
+    """
+    pos_list = []
+    if not location:
+        return pos_list
+    for part in location.parts:
+        start = int(part.start)
+        end = int(part.end)
+        strand = part.strand if part.strand is not None else 1
+        if strand == -1:
+            pos_list.extend(range(end - 1, start - 1, -1))
+        else:
+            pos_list.extend(range(start, end))
+    return pos_list

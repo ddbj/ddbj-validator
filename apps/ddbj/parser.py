@@ -7,14 +7,34 @@ from Bio.SeqFeature import (
 from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
 
-class LocationParseError(Exception):
-    pass
+from apps.ddbj.location_parser import (
+    LocationParseError, LocationRangeError, LocationPartialDescriptorError,
+    _parse_location_string, _parse_single_location, _parse_position,
+)
 
-class LocationRangeError(LocationParseError):
-    pass
 
-class LocationPartialDescriptorError(LocationParseError):
-    pass
+def _parse_error(ann_path, rule, message, *, entry, level="error",
+                 target=None, feature_type=None, line_number=None, is_cleanup=False):
+    """
+    パースエラー dict を共通フォーマットで構築する（file / full_path / category の定型を集約）。
+    任意フィールド（target / feature_type / line_number / is_cleanup）は指定時のみ付与する。
+    """
+    err = {"level": level, "rule": rule}
+    if is_cleanup:
+        err["is_cleanup"] = True
+    if target is not None:
+        err["target"] = target
+    err["entry"] = entry
+    if feature_type is not None:
+        err["feature_type"] = feature_type
+    if line_number is not None:
+        err["line_number"] = line_number
+    err["message"] = message
+    err["file"] = Path(ann_path).name
+    err["full_path"] = str(ann_path)
+    err["category"] = "annotation"
+    return err
+
 
 def parse_ddbj_submission(fasta_content, ann_path, ann_lines, ddbj_dict=None):
     """
@@ -54,7 +74,7 @@ def parse_ddbj_submission(fasta_content, ann_path, ann_lines, ddbj_dict=None):
     # ---------------------------------------------------------
     # 4. パース後のロケーション後処理 (ANN2020の遅延チェックなど)
     # ---------------------------------------------------------
-    _validate_locations_post_parse(records, parse_errors, ann_path)
+    _validate_locations_post_parse(records, parse_errors, ann_path, features_dict)
 
     # ---------------------------------------------------------
     # 5. 空エントリの削除
@@ -225,64 +245,183 @@ def _expand_common_template(ann_lines, records, METADATA_FIELDS):
     return tasks
 
 
+def _split_annotation_columns(clean_line, line_no, current_entry_id,
+                              current_metadata_feature, current_biological_feature,
+                              qualifiers_dict, ann_path, parse_errors):
+    """1 行を列分割・検証し (entry, feat_type, loc_str, qualifier, value) を返す。
+
+    列数が不正な場合は parse_errors に記録して None を返す（呼び出し側で continue）。
+    qualifier の値欠落（ANN0190 / ANN2645）もここで検出する。
+    """
+    cols = clean_line.split("\t")
+
+    if len(cols) not in (3, 4, 5):
+        parse_errors.append(_parse_error(
+            ann_path, "ANN0140",
+            f"Invalid column count (Expected 3, 4 or 5, Found {len(cols)}).",
+            entry=current_entry_id or "UNKNOWN"))
+        return None
+
+    cols = [c.strip() for c in cols]
+
+    if len(cols) == 3:
+        entry, feat_type, loc_str = cols
+        qualifier = ""
+        value = ""
+    elif len(cols) == 4:
+        entry, feat_type, loc_str, qualifier = cols
+        value = ""
+    else:
+        entry, feat_type, loc_str, qualifier, value = cols
+
+    if not qualifier and value:
+        parse_errors.append(_parse_error(
+            ann_path, "ANN0190",
+            "A qualifier name is missing for the provided value column.",
+            entry=current_entry_id or entry or "UNKNOWN", target="file/format", line_number=line_no))
+
+    if qualifier:
+        q_def = qualifiers_dict.get(qualifier) or {}
+        is_value_less = (q_def.get("field_type") == "value-less")
+
+        if not is_value_less and not value:
+            current_f_type = feat_type
+            if not current_f_type:
+                target_feat = current_metadata_feature or current_biological_feature
+                current_f_type = target_feat.type if target_feat else "UNKNOWN"
+
+            parse_errors.append(_parse_error(
+                ann_path, "ANN2645",
+                f"Missing value for the qualifier '{qualifier}'.",
+                entry=current_entry_id or entry or "UNKNOWN", target="qualifier",
+                feature_type=current_f_type, line_number=line_no))
+
+    return entry, feat_type, loc_str, qualifier, value
+
+
+def _resolve_feature_location(loc_str, feat_type, seq_len, line_no, err_entry, ann_path, parse_errors):
+    """location 文字列を SeqFeature の location に変換する。
+
+    失敗時は対応する ANN ルールを parse_errors に記録し、None を返す。
+    """
+    location = None
+    try:
+        parsable_loc_str = loc_str
+        if seq_len > 0 and re.search(r'\bE\b', loc_str, re.IGNORECASE):
+            parsable_loc_str = re.sub(r'\bE\b', str(seq_len), loc_str, flags=re.IGNORECASE)
+
+        if seq_len == 0 and re.search(r'\bE\b', loc_str, re.IGNORECASE):
+            parse_errors.append(_parse_error(
+                ann_path, "ANN2020",
+                f"Invalid location. The corresponding sequence is missing in FASTA. (Found: '{loc_str}')",
+                entry=err_entry, target="location",
+                feature_type=feat_type, line_number=line_no))
+        else:
+            location = _parse_location_string(parsable_loc_str, seq_length=seq_len)
+
+    except LocationPartialDescriptorError as e:
+        parse_errors.append(_parse_error(
+            ann_path, "ANN2050", str(e),
+            entry=err_entry, target="location",
+            feature_type=feat_type, line_number=line_no))
+    except LocationParseError as e:
+        specific_msg = str(e).strip()
+        full_msg = f"Invalid location. {specific_msg}" if specific_msg else "Invalid location format."
+        parse_errors.append(_parse_error(
+            ann_path, "ANN2020", f"{full_msg} (Found: '{loc_str}')",
+            entry=err_entry, target="location",
+            feature_type=feat_type, line_number=line_no))
+    except Exception:
+        parse_errors.append(_parse_error(
+            ann_path, "ANN2020", f"Invalid location format. (Found: '{loc_str}')",
+            entry=err_entry, target="location",
+            feature_type=feat_type, line_number=line_no))
+    return location
+
+
+def _register_new_feature(records, current_entry_id, feat_type, location, original_loc_str,
+                          line_no, qualifier, value, METADATA_FIELDS, current_biological_feature):
+    """新しいフィーチャーを生成してレコードに登録する。
+
+    METADATA フィールドか生物学的フィーチャーかで現在の文脈を切り替え、
+    更新後の (current_metadata_feature, current_biological_feature) を返す。
+    """
+    new_feature = SeqFeature(location=location, type=feat_type, qualifiers={})
+    new_feature.original_location = original_loc_str
+    new_feature.line_number = line_no
+    new_feature.has_qualifier_on_first_line = bool(qualifier.strip())
+
+    if current_entry_id in records:
+        target_record = records[current_entry_id]
+        target_record.features.append(new_feature)
+
+        if feat_type not in target_record.features_by_type:
+            target_record.features_by_type[feat_type] = []
+        target_record.features_by_type[feat_type].append(new_feature)
+
+    feat_type_upper = feat_type.upper()
+
+    if feat_type_upper in METADATA_FIELDS:
+        current_metadata_feature = new_feature
+        if qualifier:
+            current_metadata_feature.qualifiers[qualifier] = [value]
+        return current_metadata_feature, current_biological_feature
+
+    current_biological_feature = new_feature
+    current_metadata_feature = None
+    if qualifier:
+        current_biological_feature.qualifiers[qualifier] = [value]
+        if qualifier == "locus_tag" and current_entry_id in records:
+            tag_val = value.strip()
+            if tag_val not in records[current_entry_id].features_by_locus_tag:
+                records[current_entry_id].features_by_locus_tag[tag_val] = []
+            records[current_entry_id].features_by_locus_tag[tag_val].append(new_feature)
+    return current_metadata_feature, current_biological_feature
+
+
+def _attach_qualifier_to_feature(records, current_entry_id, current_metadata_feature,
+                                 current_biological_feature, qualifier, value, line_no,
+                                 entry, ann_path, parse_errors):
+    """qualifier のみの行を、直前のフィーチャーに追加する。
+
+    対象フィーチャーが無ければ ANN2650 を parse_errors に記録する。
+    """
+    target_feature = current_metadata_feature or current_biological_feature
+
+    if not target_feature:
+        parse_errors.append(_parse_error(
+            ann_path, "ANN2650",
+            f"Missing feature for the qualifier. (cannot attach qualifier '{qualifier}')",
+            entry=current_entry_id or entry or "UNKNOWN", target="file",
+            feature_type="UNKNOWN", line_number=line_no))
+    else:
+        if qualifier not in target_feature.qualifiers:
+            target_feature.qualifiers[qualifier] = []
+        target_feature.qualifiers[qualifier].append(value)
+
+        if qualifier == "locus_tag" and current_entry_id in records:
+            tag_val = value.strip()
+            if tag_val not in records[current_entry_id].features_by_locus_tag:
+                records[current_entry_id].features_by_locus_tag[tag_val] = []
+            if target_feature not in records[current_entry_id].features_by_locus_tag[tag_val]:
+                records[current_entry_id].features_by_locus_tag[tag_val].append(target_feature)
+
+
 def _parse_annotation_tasks(tasks, records, parse_errors, qualifiers_dict, METADATA_FIELDS, ann_path):
     """アノテーションの各行をパースして SeqFeature を構築し、レコードに紐付ける"""
     current_entry_id = None
     current_biological_feature = None
-    current_metadata_feature = None    
+    current_metadata_feature = None
 
     for line_no, clean_line in tasks:
-        cols = clean_line.split("\t")
-        
-        if len(cols) not in (3, 4, 5):
-            parse_errors.append({
-                "level": "error", "rule": "ANN0140",
-                "entry": current_entry_id or "UNKNOWN",
-                "message": f"Invalid column count (Expected 3, 4 or 5, Found {len(cols)}).",
-                "file": Path(ann_path).name,
-                "full_path": str(ann_path), "category": "annotation"
-            })
+        parsed = _split_annotation_columns(
+            clean_line, line_no, current_entry_id,
+            current_metadata_feature, current_biological_feature,
+            qualifiers_dict, ann_path, parse_errors)
+        if parsed is None:
             continue
-                        
-        cols = [c.strip() for c in cols]
-        
-        if len(cols) == 3:
-            entry, feat_type, loc_str = cols
-            qualifier = ""
-            value = ""
-        elif len(cols) == 4:
-            entry, feat_type, loc_str, qualifier = cols
-            value = ""
-        else:
-            entry, feat_type, loc_str, qualifier, value = cols
-            
-        if not qualifier and value:
-            parse_errors.append({
-                "level": "error", "rule": "ANN0190", "target": "file/format",
-                "entry": current_entry_id or entry or "UNKNOWN", "line_number": line_no,
-                "message": "A qualifier name is missing for the provided value column.",
-                "file": Path(ann_path).name, "full_path": str(ann_path), "category": "annotation"
-            })
+        entry, feat_type, loc_str, qualifier, value = parsed
 
-        if qualifier:
-            q_def = qualifiers_dict.get(qualifier) or {}
-            is_value_less = (q_def.get("field_type") == "value-less")
-            
-            if not is_value_less and not value:
-                current_f_type = feat_type
-                if not current_f_type:
-                    target_feat = current_metadata_feature or current_biological_feature
-                    current_f_type = target_feat.type if target_feat else "UNKNOWN"
-                    
-                parse_errors.append({
-                    "level": "error", "rule": "ANN2645", "target": "qualifier",
-                    "entry": current_entry_id or entry or "UNKNOWN", 
-                    "feature_type": current_f_type,
-                    "line_number": line_no,
-                    "message": f"Missing value for the qualifier '{qualifier}'.",
-                    "file": Path(ann_path).name, "full_path": str(ann_path), "category": "annotation"
-                })
-                                            
         if loc_str.lower() == "location" or feat_type.lower() == "feature":
             continue
 
@@ -290,20 +429,12 @@ def _parse_annotation_tasks(tasks, records, parse_errors, qualifiers_dict, METAD
 
         if loc_str and re.search(r'\s', loc_str):
             loc_str = re.sub(r'\s+', '', loc_str)
-            parse_errors.append({
-                "level": "warning",
-                "is_cleanup": True,
-                "rule": "ANN2020",
-                "target": "location",
-                "entry": current_entry_id or entry or "UNKNOWN",
-                "feature_type": feat_type or "UNKNOWN",
-                "line_number": line_no,
-                "message": f"Removed whitespace(s) from location string. (Found: '{original_loc_str}')",
-                "file": Path(ann_path).name,
-                "full_path": str(ann_path),
-                "category": "annotation"
-            })
-                        
+            parse_errors.append(_parse_error(
+                ann_path, "ANN2020",
+                f"Removed whitespace(s) from location string. (Found: '{original_loc_str}')",
+                entry=current_entry_id or entry or "UNKNOWN", level="warning", is_cleanup=True,
+                target="location", feature_type=feat_type or "UNKNOWN", line_number=line_no))
+
         if entry and entry != current_entry_id:
             current_entry_id = entry
             current_biological_feature = None
@@ -314,113 +445,48 @@ def _parse_annotation_tasks(tasks, records, parse_errors, qualifiers_dict, METAD
             record.features_by_type = {}
             record.features_by_locus_tag = {}
             records[current_entry_id] = record
-        
+
+        err_entry = current_entry_id or entry or "UNKNOWN"
+
         # --- 新しいフィーチャーの処理 ---
         if feat_type:
             seq_len = len(records[current_entry_id].seq) if current_entry_id in records else 0
-            location = None
-            
-            try:
-                parsable_loc_str = loc_str
-                if seq_len > 0 and re.search(r'\bE\b', loc_str, re.IGNORECASE):
-                    parsable_loc_str = re.sub(r'\bE\b', str(seq_len), loc_str, flags=re.IGNORECASE)
+            location = _resolve_feature_location(
+                loc_str, feat_type, seq_len, line_no, err_entry, ann_path, parse_errors)
 
-                if seq_len == 0 and re.search(r'\bE\b', loc_str, re.IGNORECASE):
-                    parse_errors.append({
-                        "level": "error", "rule": "ANN2020", "target": "location",
-                        "entry": current_entry_id or entry or "UNKNOWN",
-                        "feature_type": feat_type, "line_number": line_no,
-                        "message": f"Invalid location. The corresponding sequence is missing in FASTA. (Found: '{loc_str}')",
-                        "file": Path(ann_path).name, "full_path": str(ann_path), "category": "annotation"
-                    })
-                else:
-                    location = _parse_location_string(parsable_loc_str, seq_length=seq_len)                
-                                
-            except LocationPartialDescriptorError as e:
-                parse_errors.append({
-                    "level": "error", "rule": "ANN2050", "target": "location",
-                    "entry": current_entry_id or entry or "UNKNOWN",
-                    "feature_type": feat_type, "line_number": line_no,
-                    "message": str(e),
-                    "file": Path(ann_path).name, "full_path": str(ann_path), "category": "annotation"
-                })
-            except LocationParseError as e:
-                specific_msg = str(e).strip()
-                full_msg = f"Invalid location. {specific_msg}" if specific_msg else "Invalid location format."
-                parse_errors.append({
-                    "level": "error", "rule": "ANN2020", "target": "location",
-                    "entry": current_entry_id or entry or "UNKNOWN",
-                    "feature_type": feat_type, "line_number": line_no,
-                    "message": f"{full_msg} (Found: '{loc_str}')",
-                    "file": Path(ann_path).name, "full_path": str(ann_path), "category": "annotation"
-                })
-            except Exception:
-                parse_errors.append({
-                    "level": "error", "rule": "ANN2020", "target": "location",
-                    "entry": current_entry_id or entry or "UNKNOWN",
-                    "feature_type": feat_type, "line_number": line_no,
-                    "message": f"Invalid location format. (Found: '{loc_str}')",
-                    "file": Path(ann_path).name, "full_path": str(ann_path), "category": "annotation"
-                })
-                                                                
-            new_feature = SeqFeature(location=location, type=feat_type, qualifiers={})            
-            new_feature.original_location = original_loc_str
-            new_feature.line_number = line_no
-            new_feature.has_qualifier_on_first_line = bool(qualifier.strip())
+            current_metadata_feature, current_biological_feature = _register_new_feature(
+                records, current_entry_id, feat_type, location, original_loc_str,
+                line_no, qualifier, value, METADATA_FIELDS, current_biological_feature)
 
-            if current_entry_id in records:
-                target_record = records[current_entry_id]
-                target_record.features.append(new_feature)
-                
-                if feat_type not in target_record.features_by_type:
-                    target_record.features_by_type[feat_type] = []
-                target_record.features_by_type[feat_type].append(new_feature)
-
-            feat_type_upper = feat_type.upper()
-            
-            if feat_type_upper in METADATA_FIELDS:
-                current_metadata_feature = new_feature
-                if qualifier:
-                    current_metadata_feature.qualifiers[qualifier] = [value]
-            else:
-                current_biological_feature = new_feature
-                current_metadata_feature = None
-                if qualifier:
-                    current_biological_feature.qualifiers[qualifier] = [value]
-                    if qualifier == "locus_tag" and current_entry_id in records:
-                        tag_val = value.strip()
-                        if tag_val not in records[current_entry_id].features_by_locus_tag:
-                            records[current_entry_id].features_by_locus_tag[tag_val] = []
-                        records[current_entry_id].features_by_locus_tag[tag_val].append(new_feature)
-
-        # --- Qualifierの追加 ---
+        # --- Qualifier の追加 ---
         elif qualifier:
-            target_feature = current_metadata_feature or current_biological_feature
-      
-            if not target_feature:
-                parse_errors.append({
-                    "level": "error", "rule": "ANN2650", "target": "file",
-                    "entry": current_entry_id or entry or "UNKNOWN",
-                    "feature_type": "UNKNOWN",
-                    "line_number": line_no,
-                    "message": f"Missing feature for the qualifier. (cannot attach qualifier '{qualifier}')",
-                    "file": Path(ann_path).name, "full_path": str(ann_path), "category": "annotation"
-                })
-            else:
-                if qualifier not in target_feature.qualifiers:
-                    target_feature.qualifiers[qualifier] = []
-                target_feature.qualifiers[qualifier].append(value)
-                
-                if qualifier == "locus_tag" and current_entry_id in records:
-                    tag_val = value.strip()
-                    if tag_val not in records[current_entry_id].features_by_locus_tag:
-                        records[current_entry_id].features_by_locus_tag[tag_val] = []
-                    if target_feature not in records[current_entry_id].features_by_locus_tag[tag_val]:
-                        records[current_entry_id].features_by_locus_tag[tag_val].append(target_feature)
+            _attach_qualifier_to_feature(
+                records, current_entry_id, current_metadata_feature, current_biological_feature,
+                qualifier, value, line_no, entry, ann_path, parse_errors)
 
 
-def _validate_locations_post_parse(records, parse_errors, ann_path):
+def _feature_allows_qualifier(features_dict, feature_type, qualifier):
+    """
+    definitions.json の feature 定義上、指定の feature_type にその qualifier を
+    記載できるかどうかを返す。
+    判定対象は mandatory_qualifiers（dict）と optional_qualifiers（list）のみとする。
+    """
+    f_def = features_dict.get(feature_type)
+    if not f_def:
+        return False
+
+    # mandatory_qualifiers は dict（キーが qualifier 名）
+    if qualifier in f_def.get("mandatory_qualifiers", {}):
+        return True
+    # optional_qualifiers は qualifier 名の list
+    if qualifier in f_def.get("optional_qualifiers", []):
+        return True
+    return False
+
+
+def _validate_locations_post_parse(records, parse_errors, ann_path, features_dict=None):
     """パース完了後のオブジェクトに対する遅延ロケーション検証 (順序、スリッページ等)"""
+    features_dict = features_dict or {}
     for seq_id, record in records.items():
         for feature in record.features:
             
@@ -435,45 +501,42 @@ def _validate_locations_post_parse(records, parse_errors, ann_path):
                             if diff in (0, 1, 2, -1, 3):
                                 pass
                             elif diff > 3:
-                                parse_errors.append({
-                                    "level": "warning", "rule": "ANN2022", "target": "location",
-                                    "entry": seq_id,
-                                    "feature_type": feature.type, "line_number": getattr(feature, 'line_number', 0),
-                                    "message": f"Large gap ({diff}, usually -1, 0, 2, 3 bases) for ribosomal_slippage.",
-                                    "file": Path(ann_path).name, "full_path": str(ann_path), "category": "annotation"
-                                })
+                                parse_errors.append(_parse_error(
+                                    ann_path, "ANN2022",
+                                    f"Large gap ({diff}, usually -1, 0, 2, 3 bases) for ribosomal_slippage.",
+                                    entry=seq_id, level="warning", target="location",
+                                    feature_type=feature.type, line_number=getattr(feature, 'line_number', 0)))
                             elif diff < -1:
-                                parse_errors.append({
-                                    "level": "warning", "rule": "ANN2022", "target": "location",
-                                    "entry": seq_id,
-                                    "feature_type": feature.type, "line_number": getattr(feature, 'line_number', 0),
-                                    "message": f"Unusual overlap ({diff}, usually -1, 0, 2, 3 bases) for ribosomal_slippage.",
-                                    "file": Path(ann_path).name, "full_path": str(ann_path), "category": "annotation"
-                                })
+                                parse_errors.append(_parse_error(
+                                    ann_path, "ANN2022",
+                                    f"Unusual overlap ({diff}, usually -1, 0, 2, 3 bases) for ribosomal_slippage.",
+                                    entry=seq_id, level="warning", target="location",
+                                    feature_type=feature.type, line_number=getattr(feature, 'line_number', 0)))
                                 
                 elif hasattr(feature.location, "_out_of_order_error"):
                     msg = f"Invalid location. {feature.location._out_of_order_error}"
-                    if getattr(feature.location, "_suggest_slippage", False):
+                    # ribosomal_slippage を記載できる feature（definitions.json 上で許可）の場合のみ、
+                    # スリッページの案内文言を付ける。
+                    # 現状は CDS のみだが、将来 JSON 側で許可 feature が増えれば自動的に追従する。
+                    # （例: mat_peptide のような記載不可 feature には付けない）
+                    if getattr(feature.location, "_suggest_slippage", False) and \
+                            _feature_allows_qualifier(features_dict, feature.type, "ribosomal_slippage"):
                         msg += " If this is a ribosomal slippage, please add a '/ribosomal_slippage' qualifier."
                     
-                    parse_errors.append({
-                        "level": "error", "rule": "ANN2020", "target": "location",
-                        "entry": seq_id,
-                        "feature_type": feature.type, "line_number": getattr(feature, 'line_number', 0),
-                        "message": f"{msg} (Found: '{getattr(feature, 'original_location', '')}')",
-                        "file": Path(ann_path).name, "full_path": str(ann_path), "category": "annotation"
-                    })
+                    parse_errors.append(_parse_error(
+                        ann_path, "ANN2020",
+                        f"{msg} (Found: '{getattr(feature, 'original_location', '')}')",
+                        entry=seq_id, target="location",
+                        feature_type=feature.type, line_number=getattr(feature, 'line_number', 0)))
                     
             if hasattr(feature.location, "_mixed_strands"):
                 exception_quals = ["artificial_location", "trans_splicing", "circular_RNA"]
                 if not any(q in feature.qualifiers for q in exception_quals):
-                    parse_errors.append({
-                        "level": "warning", "rule": "ANN2020", "target": "location",
-                        "entry": seq_id,
-                        "feature_type": feature.type, "line_number": getattr(feature, 'line_number', 0),
-                        "message": f"Mixed strands in join() is invalid unless 'trans_splicing' (or similar exceptions) is present. (Found: '{getattr(feature, 'original_location', '')}')",
-                        "file": Path(ann_path).name, "full_path": str(ann_path), "category": "annotation"
-                    })
+                    parse_errors.append(_parse_error(
+                        ann_path, "ANN2020",
+                        f"Mixed strands in join() is invalid unless 'trans_splicing' (or similar exceptions) is present. (Found: '{getattr(feature, 'original_location', '')}')",
+                        entry=seq_id, level="warning", target="location",
+                        feature_type=feature.type, line_number=getattr(feature, 'line_number', 0)))
 
 
 def _remove_empty_entries(records):
@@ -489,208 +552,3 @@ def _remove_empty_entries(records):
 # =========================================================
 # Location パース用ヘルパー関数 (変更なし)
 # =========================================================
-def _parse_location_string(loc_str, seq_length=0, default_strand=1):
-    if not loc_str: return None
-    
-    # 外部参照アクセッション（例: AB000001.1:）の数値を誤検知しないよう一時的に除外
-    loc_no_acc = re.sub(r'[a-zA-Z0-9_.]+:', '', loc_str)
-    
-    match = re.search(r'\b(0\d*)\b', loc_no_acc)
-    if match:
-        matched_val = match.group(1)
-        if matched_val == "0":
-            raise LocationParseError("Position coordinate cannot be '0' (coordinates must be 1-based).")
-        else:
-            raise LocationParseError(f"Zero-padded position numbers are not allowed. (Found: '{matched_val}')")
-
-    if "order(" in loc_str:
-        raise LocationParseError("The 'order' operator is not supported for DDBJ submissions.")
-                
-    if loc_str.count("join(") > 1:
-        raise LocationParseError("Nested 'join' is not allowed.")
-        
-    strand = default_strand
-    
-    if loc_str.startswith("complement(") and loc_str.endswith(")"):
-        strand = -1
-        loc_str = loc_str[11:-1]
-        
-    if loc_str.startswith("join(") and loc_str.endswith(")"):
-        inner_loc = loc_str[5:-1] 
-
-        parts = [p.strip() for p in inner_loc.split(",")]
-        if len(parts) == 1:
-            raise LocationParseError("join() with a single element is invalid.")
-
-        for i, part in enumerate(parts):
-            if i > 0 and '<' in part:
-                raise LocationPartialDescriptorError("Invalid location. Partial operator '<' must only appear at the start of the entire location.")
-            if i < len(parts) - 1 and '>' in part:
-                raise LocationPartialDescriptorError("Invalid location. Partial operator '>' must only appear at the end of the entire location.")
-
-        explicit_complements = ["complement(" in p for p in parts]
-        
-        if all(explicit_complements):
-            raise LocationParseError("Found complement() inside join(). Use complement(join(...)) instead.")
-
-        locations = []
-        for part in parts:
-            parsed_loc = _parse_location_string(part, seq_length=seq_length, default_strand=strand)
-            locations.append(parsed_loc)
-            
-        out_of_order_err = None
-        suggest_slippage = False
-        join_diffs = [] 
-        
-        local_locations = [loc for loc in locations if getattr(loc, 'ref', None) is None]
-        
-        seen_intervals = set()
-        for loc in local_locations:
-            interval = (int(loc.start), int(loc.end), loc.strand)
-            if interval in seen_intervals:
-                out_of_order_err = f"Duplicated location interval found in join: {int(loc.start) + 1}..{int(loc.end)}"
-                break
-            seen_intervals.add(interval)
-
-        if not out_of_order_err:
-            for i in range(len(local_locations) - 1):
-                prev_loc = local_locations[i]
-                next_loc = local_locations[i+1]
-                
-                B_val = int(prev_loc.end)
-                C_val = int(next_loc.start) + 1
-                
-                user_diff = C_val - B_val
-                join_diffs.append(user_diff)
-                
-                if B_val >= C_val:
-                    if strand == 1 and seq_length > 0 and B_val == seq_length and C_val == 1:
-                        pass
-                    else:
-                        if user_diff in (0, -1):
-                            out_of_order_err = "Overlapping location intervals."
-                            suggest_slippage = True
-                        else:
-                            is_spanning_origin = (seq_length > 0 and B_val > seq_length * 0.5 and C_val < seq_length * 0.5) or (B_val - C_val > 1000)
-                            if is_spanning_origin:
-                                out_of_order_err = f"The location interval appears to span the origin of a circular sequence improperly. Consider shifting the starting coordinate of the sequence. (Found end {B_val} >= next start {C_val})"
-                            else:
-                                out_of_order_err = f"Joined segments must be in increasing order. (Found end {B_val} >= next start {C_val})"
-                        break
-                        
-        if strand == -1:
-            locations.reverse()
-            
-        comp_loc = CompoundLocation(locations)
-        
-        comp_loc._join_diffs = join_diffs
-                
-        if out_of_order_err:
-            comp_loc._out_of_order_error = out_of_order_err
-            if suggest_slippage:
-                comp_loc._suggest_slippage = True
-            
-        if any(explicit_complements) and not all(explicit_complements):
-            comp_loc._mixed_strands = True
-            
-        return comp_loc
-        
-    if "," in loc_str:
-        raise LocationParseError(f"Location contains comma but lacks 'join': {loc_str}")
-        
-    return _parse_single_location(loc_str, seq_length=seq_length, default_strand=strand)
-    
-
-def _parse_position(pos_str):
-    pos_str = pos_str.strip()
-    if pos_str.startswith('<'):
-        return BeforePosition(int(pos_str[1:]) - 1)
-    elif pos_str.startswith('>'):
-        return AfterPosition(int(pos_str[1:]) - 1)
-    else:
-        return ExactPosition(int(pos_str) - 1)
-
-
-def _parse_single_location(loc_str, seq_length=None, default_strand=1):
-    loc_str = loc_str.strip()
-    ref_seq = None
-    
-    if ':' in loc_str:
-        parts = loc_str.split(':', 1)
-        ref_seq = parts[0]
-        
-        accession_pattern = re.compile(
-            r'^([A-Z]{1}\d{5}|[A-Z]{2}\d{6}|[A-Z]{2}\d{8}|[A-Z]{4}\d{8,10}|[A-Z]{6}\d{9,11})\.\d+$', 
-            re.IGNORECASE
-        )
-        if not accession_pattern.match(ref_seq):
-            raise LocationParseError(f"Invalid remote entry reference format: '{ref_seq}'. Accession with version (e.g., AB000001.1) is required.")
-            
-        loc_str = parts[1]
-        
-    for part in loc_str.split('..'):
-        part_clean = part.replace('^', '').strip()
-        if '<' in part_clean[1:] or '>' in part_clean[1:]:
-            raise LocationPartialDescriptorError(f"Invalid location. Partial operators '<' or '>' must only appear at the start or end. (operator placed after position numbers in '{loc_str}')")
-
-    try:
-        if '^' in loc_str:
-            start_str, end_str = loc_str.split('^')
-            s_val = int(start_str)
-            e_val = int(end_str)
-            
-            is_adjacent = (e_val - s_val == 1)
-            is_circular = (seq_length and s_val == seq_length and e_val == 1)
-            
-            if not (is_adjacent or is_circular):
-                raise LocationParseError(f"Invalid caret notation '{loc_str}'. Must be n^n+1, or E^1 for circular molecules.")
-                
-            pos = s_val
-            return FeatureLocation(ExactPosition(pos), ExactPosition(pos), strand=default_strand, ref=ref_seq)
-
-        if '...' in loc_str:
-            raise LocationParseError("Three or more consecutive dots (e.g., '1...120') are not allowed. Use '..' for ranges.")
-                                                
-        if '..' not in loc_str and '.' in loc_str:
-            raise LocationParseError("Unknown location description with single dot (e.g., '10.12') is not supported.")
-
-        if '..' not in loc_str:
-            val = int(loc_str.replace('<', '').replace('>', ''))
-            start_pos = _parse_position(loc_str)
-            
-            if loc_str.startswith('<'):
-                end_pos = ExactPosition(val)
-            elif loc_str.startswith('>'):
-                end_pos = AfterPosition(val)
-            else:
-                end_pos = ExactPosition(val)
-                
-            return FeatureLocation(start_pos, end_pos, strand=default_strand, ref=ref_seq)
-        
-        start_str, end_str = loc_str.split('..')
-        
-        if start_str.startswith('>'):
-            raise LocationParseError("Partial operator '>' cannot be used at the start position of a range.")
-        if end_str.startswith('<'):
-            raise LocationParseError("Partial operator '<' cannot be used at the end position of a range.")
-
-        start_pos = _parse_position(start_str)
-        
-        end_val = int(end_str.replace('<', '').replace('>', ''))
-        if end_str.startswith('>'):
-            end_pos = AfterPosition(end_val)            
-        elif end_str.startswith('<'):
-            end_pos = BeforePosition(end_val)
-        else:
-            end_pos = ExactPosition(end_val)
-        
-        return FeatureLocation(start_pos, end_pos, strand=default_strand, ref=ref_seq)
-        
-    except ValueError as e:
-        if "greater than or equal to start location" in str(e):
-            raise LocationRangeError(f"Invalid start and end positions: {e}")
-        raise LocationParseError(f"Invalid location coordinates or syntax: {e}")
-    except Exception as e:
-        if isinstance(e, LocationParseError):
-            raise
-        raise LocationParseError(f"Failed to parse location: {e}")

@@ -1,0 +1,5 @@
+=== Auto-Fix Confirmation ===
+
+[ Target: journal ]
+  ANN0345_2.fail
+    1 entry, 1 feature, 1 qualifier: 'nature' -> 'Nature' [Rule: ANN0345]

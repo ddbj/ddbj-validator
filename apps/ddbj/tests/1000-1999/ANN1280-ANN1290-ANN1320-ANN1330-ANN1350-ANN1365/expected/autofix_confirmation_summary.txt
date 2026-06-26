@@ -1,0 +1,5 @@
+=== Auto-Fix Confirmation ===
+
+[ Target: culture_collection ]
+  ANN1280-ANN1290-ANN1320-ANN1330-ANN1350-ANN1365.entries
+    1 entry, 1 feature, 1 qualifier: 'atcc:1' -> 'ATCC:1' [Rule: ANN1290]

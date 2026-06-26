@@ -1,0 +1,9 @@
+=== Auto-Fix Confirmation ===
+
+[ Target: Assembly Method ]
+  ANN0800_1.fail
+    1 field: 'Trinity v.3.0' -> 'Trinity v. 3.0' [Rule: ANN0800]
+  ANN0800_2.fail
+    1 field: 'Flye ver. 2.9.3-b1797' -> 'Flye v. 2.9.3-b1797' [Rule: ANN0800]
+  ANN0800_3.fail
+    1 field: 'metabat2 v.2.12.1; concoct 1.0.0; MaxBin 2.2.6' -> 'metabat2 v. 2.12.1; concoct v. 1.0.0; MaxBin v. 2.2.6' [Rule: ANN0800]

@@ -138,3 +138,15 @@ seq19	source	1..120	organism	Mus musculus
 			geo_loc_name	Japan:Shizuoka, Mishima
 	CDS	join(30..40,50..100)	product	test10
 			note	ANN2020 fail autofix
+seq20	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mat_peptide	join(20..50,50..60)	product	test10
+			note	ANN2020 fail
+seq21	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	CDS	join(20..50,50..60)	product	test10
+			note	ANN2020 fail

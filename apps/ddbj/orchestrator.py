@@ -1,9 +1,14 @@
 import re
 import shutil
 import json
+import logging
 from pathlib import Path
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
+from dataclasses import dataclass
+from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from Bio.Data import CodonTable
 from Bio.Seq import Seq
@@ -12,6 +17,7 @@ from Bio.SeqFeature import BeforePosition, AfterPosition
 from apps.ddbj.preprocessor import preprocess_files, ANN_EXTENSIONS
 from apps.ddbj.parser import parse_ddbj_submission
 from apps.ddbj.validator import Validator
+from apps.ddbj.autofix.proposal import build_proposal, update_qualifier_action, update_location_action
 from common.db_manager import DatabaseManager
 from apps.ddbj.db_metadata import (
     get_samds_from_records, get_projects_from_records, get_drrs_from_records, 
@@ -37,13 +43,54 @@ from apps.ddbj.utils.translation import get_cds_translation_params, get_insdc_tr
 from apps.ddbj.utils.features import get_features
 
 
+@dataclass(frozen=True)
+class ValidateTask:
+    """検証ワーカー (_validate_single_file_set) へ渡す入力一式。
+
+    位置引数タプルだと項目追加（biosample 用フィールド追加など）で順序ずれが起きやすいため構造体化。
+    ProcessPoolExecutor へ渡すため pickle 可能なモジュールレベル dataclass にしている。
+    """
+    ann_path: Any
+    seq_path: Any
+    context: Any
+    tax_data: Any
+    bs_data: Any
+    is_web_mode: Any
+    report_out_dir: Any
+    tmp_dir_str: Any
+    unauthorized_accs: Any
+    emit_biosample_tsv: Any
+    biosample_sync_common: Any
+    biosample_sync_mapping_keys: Any
+
+
+@dataclass(frozen=True)
+class AutofixTask:
+    """Autofix 適用ワーカー (_apply_autofix_worker) へ渡す入力一式。"""
+    ann_path: Any
+    seq_path: Any
+    file_updates: Any
+    tax_data: Any
+    cv_terms: Any
+    report_out_dir: Any
+
+
 # ============================================================================
 # ワーカー1: 1つのファイルセットに対する検証と Autofix 提案の生成を行う
 # ============================================================================
-def _validate_single_file_set(args):
-    (
-        ann_path, seq_path, context, tax_data, bs_data, is_web_mode, report_out_dir, tmp_dir_str, unauthorized_accs
-    ) = args
+def _validate_single_file_set(task):
+    ann_path = task.ann_path
+    seq_path = task.seq_path
+    context = task.context
+    tax_data = task.tax_data
+    bs_data = task.bs_data
+    is_web_mode = task.is_web_mode
+    report_out_dir = task.report_out_dir
+    tmp_dir_str = task.tmp_dir_str
+    unauthorized_accs = task.unauthorized_accs
+    emit_biosample_tsv = task.emit_biosample_tsv
+    biosample_sync_common = task.biosample_sync_common
+    biosample_sync_mapping_keys = task.biosample_sync_mapping_keys
 
     from apps.ddbj.preprocessor import preprocess_files
     from apps.ddbj.parser import parse_ddbj_submission
@@ -102,28 +149,24 @@ def _validate_single_file_set(args):
             
             if "updates" in res:
                 updates = res["updates"]
+            elif fix_target == "location":
+                updates = [update_location_action(entry_name, res.get("feature_type", ""), old_v, new_v)]
             else:
-                if fix_target == "location":
-                    updates = [{"action": "update_location", "entry": entry_name, "feature_type": res.get("feature_type", ""), "old_value": old_v, "new_value": new_v}]
-                else:
-                    updates = [{"action": "update_qualifier", "entry": entry_name, "feature_type": res.get("feature_type", ""), "qualifier": qual_name, "old_value": old_v, "new_value": new_v}]
+                updates = [update_qualifier_action(entry_name, res.get("feature_type", ""), qual_name, old_v, new_v)]
 
-            file_proposals.append({
-                "ann_path": ann_path,
-                "entry": entry_name,
-                "feature_type": res.get("feature_type", ""),
-                "qualifier": qual_name,
-                "target": fix_target,
-                "target_level": res.get("fix_target", "qualifier"), 
-                "positions": [{"entry": entry_name, "feature_id": res.get("line_number", "unknown")}],
-                "old_value": old_v,
-                "new_value": new_v,
-                "old": old_v,
-                "new": new_v,
-                "message": res.get("message", "Value will be fixed."),
-                "rule": rule_id,
-                "updates": updates
-            })
+            file_proposals.append(build_proposal(
+                ann_path=ann_path,
+                entry=entry_name,
+                feature_type=res.get("feature_type", ""),
+                qualifier=qual_name,
+                target=fix_target,
+                target_level=res.get("fix_target", "qualifier"),
+                positions=[{"entry": entry_name, "feature_id": res.get("line_number", "unknown")}],
+                old_value=old_v,
+                new_value=new_v,
+                rule=rule_id,
+                updates=updates,
+            ))
                                       
     if tax_data:
         tax_proposals = propose_taxonomy_updates(records, tax_data, ann_path)
@@ -149,7 +192,13 @@ def _validate_single_file_set(args):
 
     if bs_data:
         unauth_bs = unauthorized_accs.get("biosample", set()) if unauthorized_accs else set()
-        props, bs_warnings, skips = propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=unauth_bs)
+        # -b 時は biosample_sync.common を突合対象にし（organism 等も網羅）、ann限定属性の追加候補も emit
+        sync_attrs = biosample_sync_common if emit_biosample_tsv else None
+        props, bs_warnings, skips = propose_qualifiers_updates(
+            records, bs_data, ann_path, unauthorized_bs=unauth_bs,
+            sync_attrs=sync_attrs, emit_additions=emit_biosample_tsv,
+            mapping_keys=biosample_sync_mapping_keys
+        )
         file_proposals.extend(props)
         file_skipped_autofixes.extend(skips)
         file_results.extend(bs_warnings)
@@ -198,8 +247,8 @@ def _validate_single_file_set(args):
     if is_web_mode:
         for p in pcr_fixes:
             acc = p["entry"].split('_')[0]
-            current = p["old"]
-            fixed = p["new"]
+            current = p["old_value"]
+            fixed = p["new_value"]
             # -o オプションがあればそこへ。なければ入力ファイルの親へ
             base_out = Path(report_out_dir) if report_out_dir else Path(ann_path).parent
             out_name = f"{Path(ann_path).stem}.updQ.txt"
@@ -252,9 +301,13 @@ def _validate_single_file_set(args):
 # ============================================================================
 # ワーカー2: Autofix 適用とファイル生成を行う
 # ============================================================================
-def _apply_autofix_worker(args):
-    # report_out_dir を引数で受け取る
-    ann_path, seq_path, file_updates, tax_data, cv_terms, report_out_dir = args
+def _apply_autofix_worker(task):
+    ann_path = task.ann_path
+    seq_path = task.seq_path
+    file_updates = task.file_updates
+    tax_data = task.tax_data
+    cv_terms = task.cv_terms
+    report_out_dir = task.report_out_dir
     
     from apps.ddbj.preprocessor import preprocess_files
     from apps.ddbj.parser import parse_ddbj_submission
@@ -493,12 +546,20 @@ def fast_copy_and_fix_fasta(fasta_content, dst_fasta_path):
                 
                 
 class ValidatorPipeline:
-    def __init__(self, pairs, report_out_dir, is_web_mode, force_fix, jobs=1, skip_db=False, skip_ncbi=False, skip_auth=False, account_id=None, is_curator_mode=True):
+    def __init__(self, pairs, report_out_dir, is_web_mode, force_fix, jobs=1, skip_db=False, skip_ncbi=False, skip_auth=False, account_id=None, is_curator_mode=True, emit_biosample_tsv=False, nsub=None, biosample_apply="bs2ann"):
         self.pairs = pairs
         self.report_out_dir = report_out_dir
         self.is_web_mode = is_web_mode
         self.force_fix = force_fix
         self.jobs = jobs
+
+        # -b/--biosample: SSUB 単位の BioSample 更新用 TSV 生成フラグと NSUB(対象ディレクトリ名)
+        self.emit_biosample_tsv = emit_biosample_tsv
+        self.nsub = nsub
+        # force 時の biosample 同期方向（内部/テスト用）: "bs2ann"（既定）/ "ann2bs"
+        self.biosample_apply = biosample_apply
+        self.biosample_ssub = {}  # {submission_id: {"samples": [...]}}（フェーズ1で構築）
+        self.ann_to_samds = {}    # {ann_path: set(SAMD)}（-b: ann↔bs 曖昧性判定）
         
         self.skip_db = skip_db
         self.skip_ncbi = skip_ncbi
@@ -519,7 +580,12 @@ class ValidatorPipeline:
         self.cv_terms = {}
 
     def run_validation(self):
-        """フェーズ1: ファイルの検証と Autofix 提案の収集"""
+        """検証パイプライン: 外部参照の一括取得 → 並列ファイル検証を順に実行する。"""
+        context = self._fetch_external()
+        return self._validate_files(context)
+
+    def _fetch_external(self):
+        """フェーズ1: 外部参照（内部DB / NCBI API）を一括取得し ValidationContext を構築して返す。"""
         all_samds, all_projects, all_drrs, all_organisms, all_journals = set(), set(), set(), set(), set()
         ncbi_check_prjs, ncbi_check_sams, ncbi_check_sras = set(), set() , set()
         
@@ -538,8 +604,11 @@ class ValidatorPipeline:
                 
             with ProcessPoolExecutor(max_workers=self.jobs) as executor:
                 futures = [executor.submit(fast_extract_db_keys, ann, seq) for ann, seq in self.pairs]
-                for future in futures:
+                for (ann, seq), future in zip(self.pairs, futures):
                     res = future.result()
+                    # -b 用: ann ファイル単位の参照 BioSample 集合（ann↔bs マッピングの曖昧性判定に使う）
+                    if self.emit_biosample_tsv:
+                        self.ann_to_samds[ann] = set(res["samds"])
                     all_samds.update(res["samds"])
                     all_projects.update(res["projects"])
                     all_drrs.update(res["drrs"])
@@ -572,7 +641,7 @@ class ValidatorPipeline:
 
                         # 権限がないアクセッションが含まれていれば、以後の認証必須ルールをスキップする
                         if any(self.unauthorized_accs.values()):
-                            print("[WARN] Unauthorized accession numbers referenced. Disable rules requiring account authorization.")
+                            logger.warning("Unauthorized accession numbers referenced. Disable rules requiring account authorization.")
                             self.skip_auth = True
 
                     if all_organisms or all_samds or all_projects or all_drrs:
@@ -596,6 +665,13 @@ class ValidatorPipeline:
                         bs_submitters = fetch_biosample_submitters(db_manager.get_bs_conn(), samd_list)
                         bs_smp_ids = fetch_biosample_smp_ids(db_manager.get_bs_conn(), samd_list)
 
+                        # -b/--biosample: SSUB 単位の全サンプル＋属性を取得（更新用 TSV 生成のため）
+                        if self.emit_biosample_tsv:
+                            from apps.ddbj.db_meta_biosample import fetch_biosample_ssub
+                            self.biosample_ssub, found = fetch_biosample_ssub(db_manager.get_bs_conn(), samd_list)
+                            self._biosample_found_samds = found
+                            self._biosample_input_samds = set(samd_list)
+
                     if all_drrs:
                         lbl = "DRA Run" if len(all_drrs) == 1 else "DRA Runs"
                         print(f"[DRA DB] Checking {len(all_drrs)} {lbl}...")
@@ -615,7 +691,7 @@ class ValidatorPipeline:
                             if dra_smps:
                                 smp_id_to_samd = fetch_samd_by_smp_id(db_manager.get_bs_conn(), list(dra_smps))
                 except Exception as e:
-                    print(f"[ERROR] Database connection failed: {e}")
+                    logger.error(f"Database connection failed: {e}", exc_info=True)
                 finally:
                     db_manager.close_all()
             else:
@@ -684,14 +760,17 @@ class ValidatorPipeline:
             db_manager = DatabaseManager()
             try:
                 context.load_valid_journals(list(all_journals), db_manager.get_tax_conn())
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Failed to load valid journals: {e}", exc_info=True)
             finally:
                 db_manager.close_all()
 
         self.tax_data = tax_data
         self.bs_data = bs_data
-            
+        return context
+
+    def _validate_files(self, context):
+        """フェーズ2: 各ファイルを並列検証し、クロスファイルチェックを行って JSONL パス一覧を返す。"""
         auto_updates_by_file = defaultdict(list)
         updq_data = defaultdict(list)
                 
@@ -701,9 +780,28 @@ class ValidatorPipeline:
         self.tmp_dir = base_tmp_dir / ".val_tmp"
         self.tmp_dir.mkdir(parents=True, exist_ok=True)
 
+        # -b 用: biosample_sync.common を一度だけ読み込みワーカーへ渡す
+        biosample_sync_common = []
+        biosample_sync_mapping_keys = []
+        if self.emit_biosample_tsv:
+            try:
+                from apps.ddbj.biosample.tsv import load_biosample_sync
+                _sync = load_biosample_sync()
+                biosample_sync_common = _sync.get("common", [])
+                biosample_sync_mapping_keys = [m["ddbj"] for m in _sync.get("mapping", []) if "ddbj" in m]
+            except Exception:
+                biosample_sync_common = []
+                biosample_sync_mapping_keys = []
+
         tasks = []
         for ann_path, seq_path in self.pairs:
-            tasks.append((ann_path, seq_path, context, self.tax_data, self.bs_data, self.is_web_mode, self.report_out_dir, str(self.tmp_dir), self.unauthorized_accs))
+            tasks.append(ValidateTask(
+                ann_path=ann_path, seq_path=seq_path, context=context,
+                tax_data=self.tax_data, bs_data=self.bs_data, is_web_mode=self.is_web_mode,
+                report_out_dir=self.report_out_dir, tmp_dir_str=str(self.tmp_dir),
+                unauthorized_accs=self.unauthorized_accs, emit_biosample_tsv=self.emit_biosample_tsv,
+                biosample_sync_common=biosample_sync_common,
+                biosample_sync_mapping_keys=biosample_sync_mapping_keys))
             
         jsonl_paths = []
         with ProcessPoolExecutor(max_workers=self.jobs) as executor:
@@ -725,7 +823,7 @@ class ValidatorPipeline:
         # 5. JSONL からメタデータと提案を読み出してクロスチェック
         cross_locus_tags = defaultdict(list)
         all_interactive_proposals = []
-        
+
         for j_path in jsonl_paths:
             with open(j_path, "r", encoding="utf-8") as f:
                 for line in f:
@@ -736,6 +834,7 @@ class ValidatorPipeline:
                         data["file"] = j_path
                         cross_locus_tags[data["tag"]].append(data)
                     elif r_type == "proposal":
+                        # ann限定追加候補(bs_addition)も含め対話式レビューに載せる（自動適用しない）
                         all_interactive_proposals.append(data)
 
         # クロスファイル（Submission全体）のユニークチェック
@@ -795,22 +894,24 @@ class ValidatorPipeline:
             print() 
 
         for p in self.all_interactive_proposals:
-            old_val = p.get("old_value") if p.get("old_value") is not None else p.get("old")
-            new_val = p.get("new_value") if p.get("new_value") is not None else p.get("new")
-            
-            p["old_value"] = old_val
-            p["old"] = old_val
-            p["new_value"] = new_val
-            p["new"] = new_val
-            
+            # proposal は build_proposal 経由で old_value/new_value を必ず持つ（old/new エイリアスは撤廃済み）。
+            # ここでは rule / target の欠損のみ防御的に補完する。
             if "rule" not in p or not p["rule"]:
                 p["rule"] = "UNKNOWN"
-                
+
             if "target" not in p:
                 p["target"] = p.get("qualifier", "feature")
             
-        # out_dir を渡して、提案サマリーを同じ場所に出力させる
-        approved_proposals = review_and_approve_proposals(self.all_interactive_proposals, self.force_fix, out_dir=self.report_out_dir)
+        # -b: ann↔bs が 1:1 の「クリーンな」SAMD のみ autofix 対象。曖昧（1 ann→複数 bs / 複数 ann→1 bs）は skip。
+        self._biosample_clean_samds = self._compute_clean_samds() if self.emit_biosample_tsv else set()
+        biosample_mode = self.emit_biosample_tsv and bool(self._biosample_clean_samds)
+        # out_dir を渡して、提案サマリーを同じ場所に出力させる。
+        # フォローアップ（ann→bs 更新）はクリーンな SAMD の提案のみ対象。
+        approved_proposals = review_and_approve_proposals(
+            self.all_interactive_proposals, self.force_fix, out_dir=self.report_out_dir,
+            biosample_mode=biosample_mode, biosample_clean_samds=self._biosample_clean_samds,
+            biosample_apply=self.biosample_apply
+        )
         
         approved_by_file = defaultdict(list)
         if approved_proposals:
@@ -832,7 +933,9 @@ class ValidatorPipeline:
                 file_updates.extend(interactive_updates)
                 
             # report_out_dir を引数に追加
-            autofix_tasks.append((ann_path, seq_path, file_updates, self.tax_data, self.cv_terms, self.report_out_dir))
+            autofix_tasks.append(AutofixTask(
+                ann_path=ann_path, seq_path=seq_path, file_updates=file_updates,
+                tax_data=self.tax_data, cv_terms=self.cv_terms, report_out_dir=self.report_out_dir))
 
         with ProcessPoolExecutor(max_workers=self.jobs) as executor:
             for msg in executor.map(_apply_autofix_worker, autofix_tasks):
@@ -844,3 +947,120 @@ class ValidatorPipeline:
                 with open(out_path, "w", encoding="utf-8", newline="\n") as f:
                     f.writelines(lines)
                 print(f"  => DB update TSV saved to: {out_path}")
+
+        # -b/--biosample: SSUB 単位の BioSample 更新用 TSV を生成
+        if self.emit_biosample_tsv:
+            self._generate_biosample_tsv()
+
+    def _compute_clean_samds(self):
+        """ann↔bs が 1:1 でマッピングできる（autofix 可能な）SAMD 集合を返す。
+
+        SAMD が「クリーン」= その SAMD を参照する ann がちょうど 1 つ、かつ その ann が参照する SAMD も
+        その 1 つだけ。これ以外（1 ann→複数 bs / 複数 ann→1 bs）は曖昧なので autofix を skip する。
+        """
+        a2s = getattr(self, "ann_to_samds", {})
+        if not a2s:
+            return set()
+        samd_to_anns = defaultdict(set)
+        for ann, samds in a2s.items():
+            for s in samds:
+                samd_to_anns[s].add(ann)
+        clean = set()
+        for samd, anns in samd_to_anns.items():
+            if len(anns) == 1:
+                only_ann = next(iter(anns))
+                if len(a2s.get(only_ann, set())) == 1:
+                    clean.add(samd)
+        return clean
+
+    def _generate_biosample_tsv(self):
+        """SSUB 単位の BioSample 更新用 TSV を `<out>/biosample/` に出力する。
+
+        - クリーンな SAMD（ann↔bs が 1:1）: autofix の判定（bs_decision）/ann限定追加を反映。
+        - 曖昧な SAMD（1 ann→複数 bs / 複数 ann→1 bs）: autofix を skip し、BioSample 現行値のまま。
+        ファイル名の `_unmodified` は **その SSUB TSV が実際に無修正か**で決まる（skip 有無に依らない）:
+        - override（ann→bs 上書き・属性追加）が1つも適用されなかった SSUB → `<SSUB>_<NSUB>_unmodified.txt`
+        - 何らか適用された SSUB → `<SSUB>_<NSUB>.txt`
+        列順・必須 '*' 表記は登録システムと同一（attributes_packages.json に焼き込み済み）。
+        """
+        from apps.ddbj.biosample.tsv import load_biosample_definitions, build_ssub_tsv
+
+        print("\n=== BioSample Submission TSV ===")
+
+        # 出力先（実行時に既存の SSUB TSV を削除して旧命名の残留を防ぐ。aa/reports/fixed と同様の運用）
+        out_dir = Path(self.report_out_dir) / "biosample" if self.report_out_dir else Path("biosample")
+        out_dir.mkdir(parents=True, exist_ok=True)
+        for f in out_dir.glob("*.txt"):
+            f.unlink()
+
+        # 要件: DBLINK に biosample アクセッション番号が無い → メッセージ表示し生成しない
+        input_samds = getattr(self, "_biosample_input_samds", set())
+        if not input_samds:
+            print("  No BioSample accession found in DBLINK. Submission TSV not generated.")
+            return
+
+        # 要件: biosample アクセッションが BioSample DB で見つからない → 同様
+        found = getattr(self, "_biosample_found_samds", set())
+        not_found = sorted(input_samds - found)
+        if not_found:
+            print(f"  [WARN] BioSample accession(s) not found in DB: {', '.join(not_found)}")
+        if not self.biosample_ssub:
+            print("  No corresponding SSUB found in BioSample DB. Submission TSV not generated.")
+            return
+
+        # ann↔bs が 1:1 のクリーンな SAMD のみ autofix 対象。曖昧（1 ann→複数 bs / 複数 ann→1 bs）は skip。
+        clean_samds = getattr(self, "_biosample_clean_samds", None)
+        if clean_samds is None:
+            clean_samds = self._compute_clean_samds()
+        ambiguous = sorted(input_samds - clean_samds)
+        if ambiguous:
+            n_amb = len(ambiguous)
+            print(f"  Non-unique BioSample and annotation file relationship for {n_amb}/{len(input_samds)} BioSamples.")
+            print(f"  BioSample autofix skipped for these {n_amb} sample{'' if n_amb == 1 else 's'}.")
+
+        fixed_attributes, packages = load_biosample_definitions()
+        from apps.ddbj.biosample.tsv import resolve_package_key, ordered_attributes
+
+        # SAMD → (パッケージ定義の属性集合, 現行 BioSample 属性) を構築
+        samd_pkg_attrs = {}
+        samd_sample = {}
+        for info in self.biosample_ssub.values():
+            for s in info.get("samples", []):
+                acc = s.get("accession_id")
+                if not acc:
+                    continue
+                samd_sample[acc] = s
+                pk = resolve_package_key(s.get("package"), s.get("env_package"), s.get("package_group"), packages)
+                samd_pkg_attrs[acc] = {n for n, _ in ordered_attributes(pk, fixed_attributes, packages)} if pk else set()
+
+        # ann_wins と判定された提案を SSUB TSV の上書き・追加値に変換（純粋ロジックは biosample.emit へ）。
+        from apps.ddbj.biosample.emit import compute_overrides
+        overrides, override_summary, added_summary, taxid_cleared = compute_overrides(
+            self.all_interactive_proposals, clean_samds, samd_pkg_attrs, samd_sample)
+
+        # ann→bs 上書き（競合で ann を採用）のサマリー。TSV に ann 値が反映されたことを明示。
+        for samd, items in override_summary.items():
+            detail = ", ".join(f"{a}: {v}" for a, v in sorted(items.items()))
+            print(f"  annotation value applied to BioSample for {samd}: {detail}")
+        for samd, items in added_summary.items():
+            detail = ", ".join(f"{a}: {v}" for a, v in sorted(items.items()))
+            print(f"  annotation-only values added for {samd}: {detail}")
+        for samd in sorted(taxid_cleared):
+            print(f"  {samd} taxonomy_id deleted to avoid organism autofix by taxonomy_id")
+
+        nsub = self.nsub or "submission"
+        for ssub_id, info in sorted(self.biosample_ssub.items()):
+            samples = info.get("samples", [])
+            tsv_text, package_key = build_ssub_tsv(samples, fixed_attributes, packages, overrides=overrides)
+            if tsv_text is None:
+                print(f"  [WARN] Package definition not resolved for SSUB {ssub_id}. Skipped.")
+                continue
+            # この SSUB のサンプルに override（ann→bs 上書き・属性追加）が1つでも適用されたか。
+            # 適用ゼロ（skip／完全一致／追加なし）なら _unmodified を付ける。
+            modified = any(overrides.get(s.get("accession_id")) for s in samples)
+            suffix = "" if modified else "_unmodified"
+            out_path = out_dir / f"{ssub_id}_{nsub}{suffix}.txt"
+            out_path.write_text(tsv_text, encoding="utf-8", newline="\n")
+            n = len(samples)
+            print(f"  => {out_path}  (package={package_key}, {n} sample{'' if n == 1 else 's'})")
+

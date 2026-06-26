@@ -1,0 +1,17 @@
+=== Auto-Fix Confirmation ===
+
+[ Target: collection_date ]
+  ANN1210-ANN1220-ANN1230-ANN1240-ANN1250-ANN1270-ANN1275.entries
+    1 entry, 1 feature, 1 qualifier: '2020/01/01' -> '2020-01-01' [Rule: ANN1230]
+
+[ Target: geo_loc_name ]
+  ANN1210-ANN1220-ANN1230-ANN1240-ANN1250-ANN1270-ANN1275.entries
+    1 entry, 1 feature, 1 qualifier: 'japan:Shizuoka, Mishima' -> 'Japan:Shizuoka, Mishima' [Rule: ANN1250]
+
+[ Target: lat_lon ]
+  ANN1210-ANN1220-ANN1230-ANN1240-ANN1250-ANN1270-ANN1275.entries
+    1 entry, 1 feature, 1 qualifier: '35.11897899999 N 138.937790 E' -> '35.11897899 N 138.937790 E' [Rule: ANN1270]
+
+[ Target: qualifier ]
+  ANN1210-ANN1220-ANN1230-ANN1240-ANN1250-ANN1270-ANN1275.entries
+    1 entry, 1 feature, 1 qualifier: 'japan:Shizuoka, Mishima' -> 'Japan:Shizuoka, Mishima' [Rule: ANN1250]
