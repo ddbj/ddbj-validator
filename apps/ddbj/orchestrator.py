@@ -1044,7 +1044,7 @@ class ValidatorPipeline:
             print(f"  annotation value applied to BioSample for {samd}: {detail}")
         for samd, items in added_summary.items():
             detail = ", ".join(f"{a}: {v}" for a, v in sorted(items.items()))
-            print(f"  annotation-only values added for {samd}: {detail}")
+            print(f"  annotation-only values added to {samd}: {detail}")
         for samd in sorted(taxid_cleared):
             print(f"  {samd} taxonomy_id deleted to avoid organism autofix by taxonomy_id")
 
