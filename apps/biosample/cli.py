@@ -62,12 +62,39 @@ def run(args):
         counts = write_reports(pre_errors, out_dir, in_path.name)
         return 1 if counts.get("error") else 0
 
+    # taxonomy 取得（local では skip。default=内部DB、-n=NCBI API）
+    if not context.skip_ncbi:
+        organisms = sorted({r.organism for r in submission.records if r.organism})
+        if organisms:
+            _fetch_taxonomy(context, organisms)
+
     results = pre_errors + Validator(context).run(submission)
     counts = write_reports(results, out_dir, in_path.name)
     return 1 if counts.get("error") else 0
 
 
+def _fetch_taxonomy(context, organisms):
+    """organism 群の taxonomy 情報を context.tax_data へ。default=内部DB / -n=NCBI。失敗時は空。"""
+    try:
+        if not context.skip_db:
+            from common.db_manager import DatabaseManager
+            from common.db_taxonomy import fetch_taxonomy_data
+            context.tax_data = fetch_taxonomy_data(DatabaseManager().get_tax_conn(), organisms)
+        else:
+            from common.db_taxonomy import fetch_taxonomy_from_ncbi
+            context.tax_data = fetch_taxonomy_from_ncbi(organisms)
+    except Exception as e:
+        print(f"[WARN] taxonomy fetch failed: {e}", file=sys.stderr)
+        context.tax_data = {}
+
+
 def main():
+    # 内部 DB（taxonomy 等）接続のため .env を読み込む（ddbj cli と同様）
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
     args = _build_parser().parse_args()
     sys.exit(run(args))
 

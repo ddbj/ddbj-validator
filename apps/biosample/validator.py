@@ -6,9 +6,11 @@
 from apps.biosample.rules.mandatory import BS_R0018, BS_R0020, BS_R0025, BS_R0026, BS_R0027
 from apps.biosample.rules.structure import BS_R0003, BS_R0061, BS_R0126
 from apps.biosample.rules.value_format import BS_R0007, BS_R0009, BS_R0011, BS_R0040, BS_R0093
-from apps.biosample.rules.consistency import BS_R0024, BS_R0036, BS_R0073, BS_R0135, BS_R0137
+from apps.biosample.rules.consistency import BS_R0024, BS_R0036, BS_R0062, BS_R0073, BS_R0135, BS_R0137
 from apps.biosample.rules.value_ascii import BS_R0058, BS_R0100
-from apps.biosample.rules.identifier import BS_R0005, BS_R0099, BS_R0102, BS_R0122
+from apps.biosample.rules.identifier import BS_R0005, BS_R0069, BS_R0099, BS_R0102, BS_R0122
+from apps.biosample.rules.geo import BS_R0008
+from apps.biosample.rules.taxonomy import BS_R0004, BS_R0096
 
 
 class Validator:
@@ -43,7 +45,13 @@ class Validator:
             BS_R0011(),  # publication identifier
             BS_R0122(),  # GISAID accession
             BS_R0024(),  # 同一属性（区別情報なし）
-            # 以降フェーズ B/C でルールを追記（taxonomy / DB 系）
+            BS_R0008(),  # 不正 country（geo_loc_name）
+            BS_R0069(),  # BioProject 連番
+            BS_R0062(),  # voucher 同一機関重複
+            # --- フェーズ B: taxonomy（DB/NCBI 依存。local ではスキップ）---
+            BS_R0004(),  # organism ↔ taxonomy_id 不一致
+            BS_R0096(),  # species/infraspecific rank
+            # 以降 package_vs_organism（lineage）/ C（DB/account）/ autofix
         ]
 
         self.active_rules = []

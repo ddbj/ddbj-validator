@@ -22,10 +22,25 @@ from apps.biosample.validator import Validator
 
 GREEN = "\033[92m"; RED = "\033[91m"; END = "\033[0m"
 
+# 決定的テストのための mock taxonomy（DB/NCBI に依存しない）。
+# fixture が使う organism を網羅すること。
+MOCK_TAX = {
+    "Arabidopsis thaliana": {"tax_id": "3702", "rank": "species", "scientific_name": "Arabidopsis thaliana",
+                              "is_species_or_below": True, "status": "valid", "lineage": "Eukaryota; Viridiplantae"},
+    "Escherichia coli": {"tax_id": "562", "rank": "species", "scientific_name": "Escherichia coli",
+                          "is_species_or_below": True, "status": "valid", "lineage": "Bacteria; Proteobacteria"},
+    "Homo sapiens": {"tax_id": "9606", "rank": "species", "scientific_name": "Homo sapiens",
+                     "is_species_or_below": True, "status": "valid", "lineage": "Eukaryota; Metazoa; Homo"},
+    "Homo": {"tax_id": "9605", "rank": "genus", "scientific_name": "Homo",
+             "is_species_or_below": False, "status": "invalid_rank", "lineage": "Eukaryota; Metazoa"},
+}
 
-def _fired_rules(fixture_path, mode_local=True):
-    """fixture を検証し、発火したルール ID 集合を返す。"""
-    ctx = ValidationContext(skip_db=mode_local, skip_ncbi=mode_local, skip_auth=mode_local)
+
+def _fired_rules(fixture_path):
+    """fixture を検証し、発火したルール ID 集合を返す。
+    taxonomy ルールも有効化（skip_ncbi=False）し、mock taxonomy を注入して決定的に評価する。
+    """
+    ctx = ValidationContext(skip_db=False, skip_ncbi=False, skip_auth=True, tax_data=dict(MOCK_TAX))
     path = Path(fixture_path)
     if path.suffix.lower() in (".txt", ".tsv"):
         import tempfile

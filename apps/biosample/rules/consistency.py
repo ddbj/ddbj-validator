@@ -129,6 +129,33 @@ class BS_R0024(BsRule):
         return out
 
 
+class BS_R0062(BsRule):
+    rule_id = "BS_R0062"
+    level = "warning"
+    target = "specimen_voucher, culture_collection, bio_material"
+    description = "Multiple voucher attributes detected with the same institution code. Only one value is allowed."
+
+    _VOUCHERS = ("culture_collection", "specimen_voucher", "bio_material")
+
+    def validate(self, submission, context):
+        out = []
+        for rec in submission.records:
+            # 各 voucher 属性の institution-code（最初の ':' より前）を収集
+            inst = {}
+            for name in self._VOUCHERS:
+                v = rec.attr(name)
+                if _empty(v):
+                    continue
+                code = v.split(":", 1)[0].strip()
+                if code:
+                    inst.setdefault(code, []).append(name)
+            for code, names in inst.items():
+                if len(names) > 1:
+                    out.append(self.result(sample=(rec.sample_name or rec.accession),
+                                           message=f"Multiple voucher attributes with the same institution code '{code}': {', '.join(names)}"))
+        return out
+
+
 class BS_R0137(BsRule):
     rule_id = "BS_R0137"
     level = "error"

@@ -74,6 +74,34 @@ class BS_R0102(BsRule):
         return out
 
 
+class BS_R0069(BsRule):
+    rule_id = "BS_R0069"
+    level = "warning"
+    target = "bioproject_id"
+    description = "Consecutive BioProjects are referenced in this submission. This is often a mistake caused by incrementing autofill in Excel."
+
+    _NUM_RE = re.compile(r"^(PRJ[A-Z]{2}|PSUB)(\d+)$")
+
+    def validate(self, submission, context):
+        # prefix ごとに数値を集め、連番（n, n+1）があれば警告
+        by_prefix = {}
+        for rec in submission.records:
+            v = rec.attr("bioproject_id")
+            if _empty(v):
+                continue
+            m = self._NUM_RE.match(v.strip())
+            if m:
+                by_prefix.setdefault(m.group(1), set()).add(int(m.group(2)))
+        consecutive = False
+        for pfx, nums in by_prefix.items():
+            s = sorted(nums)
+            if any(b - a == 1 for a, b in zip(s, s[1:])):
+                consecutive = True
+        if consecutive:
+            return [self.result(message="Consecutive BioProjects are referenced in this submission. Please check your file.")]
+        return []
+
+
 class BS_R0122(BsRule):
     rule_id = "BS_R0122"
     level = "warning"

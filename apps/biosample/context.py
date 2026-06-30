@@ -10,12 +10,22 @@ from dataclasses import dataclass, field
 from typing import Any
 
 _RES = Path(__file__).resolve().parent / "resources"
+# 共通 CV（国名リスト等）は common/resources/definitions.json を再利用
+_COMMON_DEF = Path(__file__).resolve().parents[2] / "common" / "resources" / "definitions.json"
 
 
 def load_packages():
     """attributes_packages.json を読み込み (fixed_attributes, packages) を返す。"""
     data = json.loads((_RES / "attributes_packages.json").read_text(encoding="utf-8"))
     return data.get("fixed_attributes", {}), data.get("packages", {})
+
+
+def load_cv_terms():
+    """common/resources/definitions.json の cv_terms（countries 等）を返す。"""
+    try:
+        return json.loads(_COMMON_DEF.read_text(encoding="utf-8")).get("cv_terms", {})
+    except Exception:
+        return {}
 
 
 @dataclass
@@ -26,10 +36,15 @@ class ValidationContext:
     skip_auth: bool = False
     fixed_attributes: dict = field(default_factory=dict)
     packages: dict = field(default_factory=dict)
+    cv_terms: dict = field(default_factory=dict)
+    # organism 名 -> taxonomy 情報（common/db_taxonomy or NCBI で取得。local では空）
+    tax_data: dict = field(default_factory=dict)
 
     def __post_init__(self):
         if not self.packages:
             self.fixed_attributes, self.packages = load_packages()
+        if not self.cv_terms:
+            self.cv_terms = load_cv_terms()
 
     def package_def(self, package_key):
         """パッケージ定義（attributes/lineage 等）を返す。無ければ None。"""
