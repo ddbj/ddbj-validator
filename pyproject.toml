@@ -16,7 +16,8 @@ dependencies = [
     "defusedxml",
     "geopandas",
     "pyarrow",
-    "shapely"
+    "shapely",
+    "lxml"
 ]
 
 [project.scripts]

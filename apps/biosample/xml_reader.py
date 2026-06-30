@@ -9,17 +9,51 @@ from pathlib import Path
 
 from apps.biosample.model import BioSampleRecord, BioSampleSubmission
 
+_XSD = Path(__file__).resolve().parent / "resources" / "xsd" / "biosample_set.xsd"
+_SCHEMA_ERR_CAP = 20  # スキーマエラーは大量に出るため上限
+
 
 def _text(elem, path):
     found = elem.find(path)
     return found.text.strip() if (found is not None and found.text) else None
 
 
+def schema_validate(xml_path):
+    """lxml(libxml2) で XSD スキーマ検証（R0098）。
+    戻り値: 結果 dict のリスト（well-formed 失敗は R0097、schema 不適合は R0098）。
+    lxml が無い／XSD 読込失敗時は空（検証スキップ）。
+    """
+    try:
+        import lxml.etree as LE
+    except ImportError:
+        return []
+    try:
+        doc = LE.parse(str(xml_path))
+    except LE.XMLSyntaxError as e:
+        return [{"rule_id": "BS_R0097", "level": "error", "target": "#file_format",
+                 "sample": None, "message": f"XML document is not well-formed. ({e})"}]
+    try:
+        schema = LE.XMLSchema(LE.parse(str(_XSD)))
+    except Exception:
+        return []  # XSD 自体が読めなければ検証スキップ
+    if schema.validate(doc):
+        return []
+    out = []
+    for err in list(schema.error_log)[:_SCHEMA_ERR_CAP]:
+        out.append({"rule_id": "BS_R0098", "level": "error", "target": "#file_format",
+                    "sample": None, "message": f"Invalid against schema (line {err.line}): {err.message}"})
+    return out
+
+
 def parse_xml(xml_path, submission_id=None, account=None):
     """XML ファイルを BioSampleSubmission へ。戻り値: (submission, errors)。
     errors は整形不正など、パース前段で確定する結果（R0097 等）のリスト。
     """
-    errors = []
+    # R0097(well-formed) / R0098(XSD) は lxml で検証
+    errors = schema_validate(xml_path)
+    if any(e["rule_id"] == "BS_R0097" for e in errors):
+        return None, errors  # 整形不正はモデル構築不可
+
     try:
         tree = ET.parse(xml_path)
     except ET.ParseError as e:

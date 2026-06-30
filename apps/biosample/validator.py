@@ -4,6 +4,11 @@
 モード別スキップは能力フラグ（requires_rdb/network/auth）で行う。
 """
 from apps.biosample.rules.mandatory import BS_R0018, BS_R0020, BS_R0025, BS_R0026, BS_R0027
+from apps.biosample.rules.structure import BS_R0003, BS_R0061, BS_R0126
+from apps.biosample.rules.value_format import BS_R0007, BS_R0009, BS_R0011, BS_R0040, BS_R0093
+from apps.biosample.rules.consistency import BS_R0024, BS_R0036, BS_R0073, BS_R0135, BS_R0137
+from apps.biosample.rules.value_ascii import BS_R0058, BS_R0100
+from apps.biosample.rules.identifier import BS_R0005, BS_R0099, BS_R0102, BS_R0122
 
 
 class Validator:
@@ -13,12 +18,32 @@ class Validator:
 
         available_rules = [
             # --- フェーズ1: 必須・パッケージ（DB 非依存）---
+            BS_R0126(),  # 複数 package
             BS_R0025(),  # Package 欠落
             BS_R0026(),  # 未知 Package
             BS_R0018(),  # sample_name 欠落
             BS_R0020(),  # organism 欠落
             BS_R0027(),  # 必須属性欠落
-            # 以降フェーズ2/3 でルールを追記（taxonomy / 値形式 / DB 系）
+            # --- フェーズ A: 構造・重複・値形式（DB 非依存）---
+            BS_R0061(),  # 同名属性の複数値
+            BS_R0003(),  # sample_title 重複
+            BS_R0007(),  # collection_date 形式
+            BS_R0040(),  # collection_date 未来日
+            BS_R0009(),  # lat_lon 形式
+            BS_R0093(),  # 整数属性
+            BS_R0036(),  # either_one_mandatory 群欠落
+            BS_R0137(),  # collection_date/geo_loc_name の reporting term
+            BS_R0073(),  # 冗長 taxonomy 属性
+            BS_R0135(),  # 不正 strain 値
+            BS_R0058(),  # 非 ASCII 値
+            BS_R0100(),  # 任意属性の missing 値
+            BS_R0005(),  # BioProject 形式
+            BS_R0099(),  # locus_tag_prefix 形式
+            BS_R0102(),  # locus_tag_prefix 重複(submission)
+            BS_R0011(),  # publication identifier
+            BS_R0122(),  # GISAID accession
+            BS_R0024(),  # 同一属性（区別情報なし）
+            # 以降フェーズ B/C でルールを追記（taxonomy / DB 系）
         ]
 
         self.active_rules = []

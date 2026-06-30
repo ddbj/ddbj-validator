@@ -35,11 +35,18 @@ class ValidationContext:
         """パッケージ定義（attributes/lineage 等）を返す。無ければ None。"""
         return self.packages.get(package_key)
 
-    def mandatory_attributes(self, package_key):
-        """そのパッケージで use=='mandatory' の属性名集合（fixed_attributes 含む）。"""
-        result = {n for n, info in self.fixed_attributes.items() if info.get("use") == "mandatory"}
+    def attribute_uses(self, package_key):
+        """そのパッケージの属性名 -> use（fixed_attributes ＋ package.attributes）。"""
+        uses = {n: info.get("use", "") for n, info in self.fixed_attributes.items()}
         pkg = self.packages.get(package_key) or {}
         for n, info in pkg.get("attributes", {}).items():
-            if info.get("use") == "mandatory":
-                result.add(n)
-        return result
+            uses[n] = info.get("use", "")
+        return uses
+
+    def mandatory_attributes(self, package_key):
+        """そのパッケージで use=='mandatory' の属性名集合（fixed_attributes 含む）。"""
+        return {n for n, u in self.attribute_uses(package_key).items() if u == "mandatory"}
+
+    def either_one_attributes(self, package_key):
+        """use=='either_one_mandatory' の属性名集合（「いずれか1つ必須」群）。"""
+        return {n for n, u in self.attribute_uses(package_key).items() if u == "either_one_mandatory"}

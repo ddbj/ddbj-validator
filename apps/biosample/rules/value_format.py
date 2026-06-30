@@ -1,0 +1,142 @@
+"""値形式ルール（DB 非依存。フェーズ A）。
+
+- BS_R0007: collection_date が ISO8601 形式でない
+- BS_R0040: collection_date が未来日
+- BS_R0009: lat_lon の形式不正
+- BS_R0093: 整数であるべき属性が非整数（taxonomy_id, host_spec_range, host_taxid, num_replicons）
+missing 値（not collected / not applicable / missing[: term]）は値検証の対象外（別ルールで扱う）。
+"""
+import datetime
+import re
+from apps.biosample.rules.base import BsRule
+
+# missing 値表記（これらは形式検証をスキップ）
+_MISSING_RE = re.compile(r"^(not collected|not applicable|missing)(\s*:.*)?$", re.IGNORECASE)
+
+# ISO8601: YYYY-mm-dd / YYYY-mm / YYYY-mm-ddThh:mm:ssZ
+_DATE_FULL = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_DATE_YM = re.compile(r"^\d{4}-\d{2}$")
+_DATE_DT = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+
+# lat_lon: "d[d.ddd] N|S d[dd.ddd] W|E"
+_LATLON_RE = re.compile(r"^\d{1,3}(\.\d+)?\s+[NS]\s+\d{1,3}(\.\d+)?\s+[EW]$")
+
+_INTEGER_ATTRS = ("taxonomy_id", "host_spec_range", "host_taxid", "num_replicons")
+
+# publication identifier: PubMed(数字) / DOI(10.xxxx/...) / URL
+_PUB_RE = re.compile(r"^(\d+|10\.\d+/\S+|https?://\S+)$", re.IGNORECASE)
+
+
+def _is_missing(v):
+    return bool(_MISSING_RE.match(v.strip())) if v else False
+
+
+def _parse_date(v):
+    """collection_date を date へ。解釈不能なら None。"""
+    try:
+        if _DATE_FULL.match(v):
+            return datetime.datetime.strptime(v, "%Y-%m-%d").date()
+        if _DATE_YM.match(v):
+            return datetime.datetime.strptime(v + "-01", "%Y-%m-%d").date()
+        if _DATE_DT.match(v):
+            return datetime.datetime.strptime(v, "%Y-%m-%dT%H:%M:%SZ").date()
+    except ValueError:
+        return None
+    return None
+
+
+class BS_R0007(BsRule):
+    rule_id = "BS_R0007"
+    level = "error"
+    target = "collection_date"
+    description = 'Invalid datetime. Follow ISO 8601 "YYYY-mm-dd", "YYYY-mm" or "YYYY-mm-ddThh:mm:ssZ".'
+
+    def validate(self, submission, context):
+        out = []
+        for rec in submission.records:
+            v = rec.attr("collection_date")
+            if not v or _is_missing(v):
+                continue
+            if _parse_date(v) is None:
+                out.append(self.result(sample=(rec.sample_name or rec.accession),
+                                       message=f"Invalid datetime. (Found: '{v}')"))
+        return out
+
+
+class BS_R0040(BsRule):
+    rule_id = "BS_R0040"
+    level = "error"
+    target = "collection_date"
+    description = "Sample collection date is a future date, please specify a date from the past."
+
+    def validate(self, submission, context):
+        out = []
+        today = datetime.date.today()
+        for rec in submission.records:
+            v = rec.attr("collection_date")
+            if not v or _is_missing(v):
+                continue
+            d = _parse_date(v)
+            if d is not None and d > today:
+                out.append(self.result(sample=(rec.sample_name or rec.accession),
+                                       message=f"Sample collection date is a future date. (Found: '{v}')"))
+        return out
+
+
+class BS_R0009(BsRule):
+    rule_id = "BS_R0009"
+    level = "warning"
+    target = "lat_lon"
+    description = 'Invalid lat_lon format. Specify as "d[d.dddd] N|S d[dd.dddd] W|E".'
+
+    def validate(self, submission, context):
+        out = []
+        for rec in submission.records:
+            v = rec.attr("lat_lon")
+            if not v or _is_missing(v):
+                continue
+            if not _LATLON_RE.match(v):
+                out.append(self.result(sample=(rec.sample_name or rec.accession),
+                                       message=f"Invalid lat_lon format. (Found: '{v}')"))
+        return out
+
+
+class BS_R0011(BsRule):
+    rule_id = "BS_R0011"
+    level = "warning"
+    target = "ref_biomaterial OR isol_growth_condt"
+    description = "Invalid publication identifier, enter pubmed id, DOI or URL."
+
+    _TARGETS = ("ref_biomaterial", "isol_growth_condt")
+
+    def validate(self, submission, context):
+        out = []
+        for rec in submission.records:
+            for name in self._TARGETS:
+                v = rec.attr(name)
+                if not v or _is_missing(v):
+                    continue
+                if not _PUB_RE.match(v.strip()):
+                    out.append(self.result(sample=(rec.sample_name or rec.accession), target=name,
+                                           message=f"Invalid publication identifier. ({name}: '{v}')"))
+        return out
+
+
+class BS_R0093(BsRule):
+    rule_id = "BS_R0093"
+    level = "error"
+    target = "taxonomy_id, host_spec_range, host_taxid, num_replicons"
+    description = "Attribute value must be integer."
+
+    def validate(self, submission, context):
+        out = []
+        for rec in submission.records:
+            checks = {name: rec.attr(name) for name in _INTEGER_ATTRS}
+            checks["taxonomy_id"] = checks.get("taxonomy_id") or rec.taxonomy_id
+            for name, v in checks.items():
+                if not v or _is_missing(v):
+                    continue
+                if not str(v).strip().isdigit():
+                    out.append(self.result(sample=(rec.sample_name or rec.accession), target=name,
+                                           message=f"Attribute value must be integer. ({name}: '{v}')"))
+        return out
