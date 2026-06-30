@@ -3025,45 +3025,6 @@ class ANN2625(BaseRule):
         return results
         
         
-class ANN2630(BaseRule):
-    rule_id = "ANN2630"
-    alternate_id = "FFmaker"
-    target = "feature"
-    description = "Entry must contain at least one feature in addition to the source feature except EST."
-    requires_rdb = False
-    is_file_level = True
-
-    def validate_file(self, records, context, ann_path=None, seq_path=None):
-        results = []
-
-        if "EST" in context.active_divisions:
-            return results
-
-        raw_metadata_fields = context.ddbj_dict.get("metadata_fields", [])
-        metadata_features = {m for m in raw_metadata_fields}
-
-        for entry_id, record in records.items():
-            if entry_id == "COMMON":
-                continue
-
-            has_biological_feature = False
-            for feature in self.get_features(record):
-                f_type = feature.type
-                
-                if f_type != "source" and f_type not in metadata_features:
-                    has_biological_feature = True
-                    break
-            
-            if not has_biological_feature:
-                results.append(self.format_result(
-                    entry_id=entry_id,
-                    message=self.description,
-                    level="warning",
-                    feature_type="feature"
-                ))
-
-        return results
-
 class ANN2660(BaseRule):
     rule_id = "ANN2660"
     alternate_id = "JP0026"

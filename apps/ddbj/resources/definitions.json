@@ -4160,11 +4160,6 @@
         "ENTRY"
       ],
       "allow_both_sections": true,
-      "singleton_feature": {
-        "rule_id": "ANN0645",
-        "level": "error",
-        "message": "More than one COMMENT is not allowed."
-      },
       "mandatory_qualifiers": {
         "line": {
           "rule_id": "ANN3050",
