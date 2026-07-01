@@ -28,6 +28,26 @@ def load_cv_terms():
         return {}
 
 
+_COLL_DUMP = Path(__file__).resolve().parents[2] / "common" / "resources" / "coll_dump.txt"
+
+
+def load_institution_codes():
+    """NCBI BioCollections の機関コード集合（common/resources/coll_dump.txt。ddbj と同一ファイル）。
+    戻り値: {code_lower: code}。"""
+    codes = {}
+    try:
+        with _COLL_DUMP.open("r", encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("#"):
+                    continue
+                code = line.split("\t", 1)[0].strip()
+                if code:
+                    codes[code.lower()] = code
+    except Exception:
+        pass
+    return codes
+
+
 @dataclass
 class ValidationContext:
     account: Any = None
@@ -39,12 +59,16 @@ class ValidationContext:
     cv_terms: dict = field(default_factory=dict)
     # organism 名 -> taxonomy 情報（common/db_taxonomy or NCBI で取得。local では空）
     tax_data: dict = field(default_factory=dict)
+    # NCBI BioCollections 機関コード {code_lower: code}
+    institution_codes: dict = field(default_factory=dict)
 
     def __post_init__(self):
         if not self.packages:
             self.fixed_attributes, self.packages = load_packages()
         if not self.cv_terms:
             self.cv_terms = load_cv_terms()
+        if not self.institution_codes:
+            self.institution_codes = load_institution_codes()
 
     def package_def(self, package_key):
         """パッケージ定義（attributes/lineage 等）を返す。無ければ None。"""

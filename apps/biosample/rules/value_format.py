@@ -24,6 +24,28 @@ _INTEGER_ATTRS = ("taxonomy_id", "host_spec_range", "host_taxid", "num_replicons
 # publication identifier: PubMed(数字) / DOI(10.xxxx/...) / URL
 _PUB_RE = re.compile(r"^(\d+|10\.\d+/\S+|https?://\S+)$", re.IGNORECASE)
 
+# sample_name 許可文字: 英数字・空白・(){}[]+-_.（最大 100 文字）
+_SAMPLE_NAME_RE = re.compile(r"^[A-Za-z0-9 (){}\[\]+\-_.]{1,100}$")
+
+
+class BS_R0101(BsRule):
+    rule_id = "BS_R0101"
+    level = "error"
+    target = "sample_name"
+    description = "Maximum length of Sample Name is 100 characters (alphanumeric, spaces and (){}[]+-_.)."
+
+    def validate(self, submission, context):
+        out = []
+        for rec in submission.records:
+            v = rec.sample_name
+            if not v:
+                continue
+            if not _SAMPLE_NAME_RE.match(v):
+                reason = "too long (>100)" if len(v) > 100 else "invalid characters"
+                out.append(self.result(sample=(rec.sample_name or rec.accession),
+                                       message=f"Invalid Sample Name format ({reason})."))
+        return out
+
 
 def _parse_date(v):
     """collection_date を date へ。解釈不能なら None。"""

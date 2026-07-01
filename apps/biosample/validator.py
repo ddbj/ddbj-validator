@@ -5,13 +5,14 @@
 """
 from apps.biosample.rules.mandatory import BS_R0018, BS_R0020, BS_R0025, BS_R0026, BS_R0027
 from apps.biosample.rules.structure import BS_R0003, BS_R0061, BS_R0126
-from apps.biosample.rules.value_format import BS_R0007, BS_R0009, BS_R0011, BS_R0040, BS_R0093
+from apps.biosample.rules.value_format import BS_R0007, BS_R0009, BS_R0011, BS_R0040, BS_R0093, BS_R0101
 from apps.biosample.rules.consistency import BS_R0024, BS_R0036, BS_R0062, BS_R0073, BS_R0135, BS_R0137
 from apps.biosample.rules.value_ascii import BS_R0058, BS_R0100
 from apps.biosample.rules.identifier import BS_R0005, BS_R0069, BS_R0099, BS_R0102, BS_R0122
 from apps.biosample.rules.geo import BS_R0008
-from apps.biosample.rules.taxonomy import BS_R0004, BS_R0096
+from apps.biosample.rules.taxonomy import BS_R0004, BS_R0096, BS_R0059, BS_R0115, BS_R0106, BS_R0141
 from apps.biosample.rules.package_organism import PackageOrganismValidator
+from apps.biosample.rules.voucher import CultureCollectionValidator, SpecimenVoucherValidator, BioMaterialValidator
 
 
 class Validator:
@@ -53,6 +54,15 @@ class Validator:
             BS_R0004(),  # organism ↔ taxonomy_id 不一致
             BS_R0096(),  # species/infraspecific rank
             PackageOrganismValidator(),  # package_vs_organism（BS_R0048＋R0074-0130）
+            BS_R0059(),  # sex for bacteria
+            BS_R0115(),  # specimen_voucher for bacteria/unclassified
+            BS_R0106(),  # metagenome_source
+            BS_R0141(),  # uncultured × MIMAG
+            # --- 値形式・voucher（A/E 群） ---
+            BS_R0101(),  # sample_name 形式
+            CultureCollectionValidator(),  # BS_R0113/0114
+            SpecimenVoucherValidator(),    # BS_R0116/0117
+            BioMaterialValidator(),        # BS_R0118/0119
             # 以降 C（DB/account）/ autofix
         ]
 
