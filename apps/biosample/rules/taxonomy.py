@@ -8,9 +8,19 @@ tax_data は DB(common/db_taxonomy) または NCBI API で取得。local（skip_
 - BS_R0045: organism を学名へ補正し taxonomy_id を補完（autofix）
 - BS_R0105: component_organism を学名へ補正（autofix）
 """
+import re
 from apps.biosample.rules.base import BsRule
-from apps.biosample.rules._util import is_empty as _empty
+from apps.biosample.rules._util import is_empty as _empty, is_missing_value as _is_missing
 from common.db_taxonomy import tax_has_lineage
+
+# informal name（"Genus sp. strain"）判定用（R0104/R0134/R0140）
+_SP_KEYWORDS = [
+    re.compile(r"\ssp\.", re.I),      # "sp." は前が空白
+    re.compile(r"\bbacterium\b", re.I),
+    re.compile(r"\barchaeon\b", re.I),
+]
+_SP_END = re.compile(r"\ssp\.\s*$", re.I)                    # 末尾が " sp."
+_SP_INEX = re.compile(r".+sp\.\s*\((in:|ex)\s.*\)$", re.I)   # "xxx sp. (in: yyy)" / "(ex yyy)"
 
 
 def _resolved(info):
@@ -209,4 +219,101 @@ class BS_R0105(BsRule):
                         sample=(rec.sample_name or rec.accession),
                         message=f"Taxonomy warning. component_organism will be corrected to the scientific name. (Found: '{v}', Suggested: '{sci}')",
                         autofix=True, attribute="component_organism", old_value=v, new_value=sci))
+        return out
+
+
+class BS_R0134(BsRule):
+    rule_id = "BS_R0134"
+    level = "warning"
+    target = "organism, strain, isolate"
+    description = "Non-identical identifiers among organism/strain/isolate."
+
+    def validate(self, submission, context):
+        # MIGS.ba.* で organism の "sp./bacterium/archaeon" 以降の識別子が strain/isolate と一致しない場合に警告。
+        out = []
+        for rec in submission.records:
+            if not rec.package or not rec.package.startswith("MIGS.ba"):
+                continue
+            org = rec.organism
+            if _empty(org):
+                continue
+            m = None
+            for rx in _SP_KEYWORDS:
+                m = rx.search(org)
+                if m:
+                    break
+            if not m:
+                continue
+            suffix = org[m.end():].strip()
+            if not suffix:
+                continue
+            strain = rec.attr("strain")
+            isolate = rec.attr("isolate")
+            if strain and not _is_missing(strain) and suffix == strain:
+                continue
+            if isolate and not _is_missing(isolate) and suffix == isolate:
+                continue
+            out.append(self.result(
+                sample=(rec.sample_name or rec.accession),
+                message=(f"Non-identical identifiers among organism/strain/isolate. "
+                         f"(organism: '{org}', strain: '{strain or ''}', isolate: '{isolate or ''}')")))
+        return out
+
+
+class BS_R0140(BsRule):
+    rule_id = "BS_R0140"
+    level = "warning"
+    target = "organism"
+    description = "Invalid taxonomy for genome sample."
+
+    _PKG = ("Microbe", "Pathogen.cl", "Pathogen.env")
+
+    def validate(self, submission, context):
+        # Microbe / Pathogen.cl / Pathogen.env（完全一致）で organism が " sp." 終わりなら警告。
+        out = []
+        for rec in submission.records:
+            if rec.package not in self._PKG:
+                continue
+            org = rec.organism
+            if _empty(org):
+                continue
+            if _SP_END.search(org):
+                out.append(self.result(
+                    sample=(rec.sample_name or rec.accession),
+                    message=f"Invalid taxonomy for genome sample. (organism: '{org}')"))
+        return out
+
+
+class BS_R0104(BsRule):
+    rule_id = "BS_R0104"
+    level = "error"
+    target = "organism"
+    description = "Invalid taxonomy for genome sample."
+    requires_network = True  # taxonomy_id の rank 判定に tax_data を参照
+
+    def validate(self, submission, context):
+        # MIGS.ba/eu で organism が "genus sp." 形式のとき:
+        #   taxonomy_id 未指定/無効 → 新規種の可能性でエラー（strain 名を促す）
+        #   taxonomy_id あり & infraspecific（種以下）→ エラー
+        #   taxonomy_id あり & 種より上位 → R0096 の領分としてスルー
+        out = []
+        for rec in submission.records:
+            if not rec.package or not (rec.package.startswith("MIGS.ba") or rec.package.startswith("MIGS.eu")):
+                continue
+            org = rec.organism
+            if _empty(org):
+                continue
+            if not (org.lower().endswith("sp.") or _SP_INEX.search(org)):
+                continue
+            taxid = rec.taxonomy_id
+            if _empty(taxid) or str(taxid).strip() == "1":
+                fire = True
+            else:
+                info = context.tax_data.get(org)
+                # 種以下（infraspecific）なら error、上位/未解決ならスルー
+                fire = bool(info) and bool(info.get("is_species_or_below"))
+            if fire:
+                out.append(self.result(
+                    sample=(rec.sample_name or rec.accession),
+                    message=f"Invalid taxonomy for genome sample. (organism: '{org}')"))
         return out

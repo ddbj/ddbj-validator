@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BioSampleSet>
+  <BioSample access="public">
+    <Ids><Id namespace="BioSample" is_primary="1">SAMD00000001</Id></Ids>
+    <Description>
+      <SampleName>S1</SampleName>
+      <Title>S1</Title>
+      <Organism taxonomy_id="562"><OrganismName>Bacillus sp.</OrganismName></Organism>
+    </Description>
+    <Owner><Name>BSI</Name><Contacts><Contact email="test1@ddbj.nig.ac.jp"><Name><First>Hanako</First><Last>Mishima</Last></Name></Contact></Contacts></Owner>
+    <Models><Model>Microbe</Model></Models>
+    <Attributes>
+        <Attribute attribute_name="sample_name">S1</Attribute>
+        <Attribute attribute_name="strain">K-12</Attribute>
+    </Attributes>
+  </BioSample>
+</BioSampleSet>

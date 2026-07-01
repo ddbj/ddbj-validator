@@ -5,6 +5,7 @@
 - BS_R0135: strain に不適切な値
 - BS_R0137: collection_date / geo_loc_name の reporting level term 欠落
 """
+import re
 from apps.biosample.rules.base import BsRule
 from apps.biosample.rules._util import (
     is_empty as _empty,
@@ -12,6 +13,33 @@ from apps.biosample.rules._util import (
     is_missing_without_term,
     is_missing_value as _is_missing,
 )
+
+
+def _normalize_missing_value(val, null_accepted, null_not_recommended, date_or_geo):
+    """missing 値の表記揺れ/非推奨値を正規表記へ補正した値を返す（不要なら None）。Ruby rule:1 準拠。"""
+    result = None
+    low = val.lower()
+    low_ns = low.replace(" ", "")
+    # 推奨 null 値（"missing: control sample" 等）の表記を揃える
+    for accepted in null_accepted:
+        prefix = accepted.split(":")[0].lower()
+        suffix = "".join(accepted.split(":")[1:]).replace(" ", "").lower()
+        if low.startswith(prefix) and low_ns.endswith(suffix):
+            if date_or_geo and not accepted.startswith("missing:"):
+                continue  # date/geo は "missing" 等の無用な置換をしない
+            result = accepted
+    # 非推奨 null 値（"N.A." 等）を "missing" へ（date/geo は対象外）
+    if not date_or_geo:
+        for pat in null_not_recommended:
+            try:
+                if re.fullmatch(pat, val, re.I):
+                    result = "missing"
+                    break
+            except re.error:
+                continue
+    if result is None or result == val:
+        return None
+    return result
 
 
 # strain に使ってはいけない値（case-insensitive）
@@ -179,6 +207,39 @@ def _no_meaningful_identifier(rec, attrs):
         if not _empty(v) and not _is_missing(v):
             return False
     return True
+
+
+class BS_R0001(BsRule):
+    rule_id = "BS_R0001"
+    level = "warning"
+    target = "#attributes"
+    description = "Invalid missing value."
+
+    def validate(self, submission, context):
+        # 必須属性（either_one 含む）の値が missing 値の表記揺れ/非推奨値なら正規表記へ補正（autofix）。
+        # 任意属性は R0100 の領分のため対象外。
+        na = list(context.cv_terms.get("missing_terms", [])) + \
+            list(context.cv_terms.get("missing_reporting_terms", []))
+        nnr = context.null_not_recommended or []
+        if not na and not nnr:
+            return []
+        out = []
+        for rec in submission.records:
+            if not rec.package or context.package_def(rec.package) is None:
+                continue
+            mandatory = context.mandatory_attributes(rec.package) | context.either_one_attributes(rec.package)
+            for name in sorted(mandatory):
+                date_or_geo = name in ("collection_date", "geo_loc_name")
+                for v in rec.attr_values(name):
+                    if _empty(v):
+                        continue
+                    fixed = _normalize_missing_value(v, na, nnr, date_or_geo)
+                    if fixed:
+                        out.append(self.result(
+                            sample=(rec.sample_name or rec.accession), target=name,
+                            message=f"Invalid missing value. ({name}: '{v}', Suggested: '{fixed}')",
+                            autofix=True, attribute=name, old_value=v, new_value=fixed))
+        return out
 
 
 class BS_R0132(BsRule):

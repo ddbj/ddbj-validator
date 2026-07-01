@@ -46,6 +46,14 @@ def load_special_chars():
         return {}
 
 
+def load_null_not_recommended():
+    """非推奨 null 値の正規表現リスト（"NA"/"N/A"/"Unknown"/"." 等）。R0001 用。"""
+    try:
+        return json.loads((_RES / "null_not_recommended.json").read_text(encoding="utf-8"))
+    except Exception:
+        return []
+
+
 _COLL_DUMP = Path(__file__).resolve().parents[2] / "common" / "resources" / "coll_dump.txt"
 
 
@@ -79,6 +87,8 @@ class ValidationContext:
     cv_attr: dict = field(default_factory=dict)
     # 特殊文字→置換 {"℃": "degree Celsius", ...}（R0012）
     special_chars: dict = field(default_factory=dict)
+    # 非推奨 null 値の正規表現リスト（R0001）
+    null_not_recommended: list = field(default_factory=list)
     # organism 名 -> taxonomy 情報（common/db_taxonomy or NCBI で取得。local では空）
     tax_data: dict = field(default_factory=dict)
     # NCBI BioCollections 機関コード {code_lower: code}
@@ -102,6 +112,8 @@ class ValidationContext:
             self.cv_attr = load_cv_attr()
         if not self.special_chars:
             self.special_chars = load_special_chars()
+        if not self.null_not_recommended:
+            self.null_not_recommended = load_null_not_recommended()
         if not self.institution_codes:
             self.institution_codes = load_institution_codes()
 

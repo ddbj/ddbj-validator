@@ -6,11 +6,11 @@
 from apps.biosample.rules.mandatory import BS_R0018, BS_R0020, BS_R0025, BS_R0026, BS_R0027
 from apps.biosample.rules.structure import BS_R0003, BS_R0061, BS_R0126
 from apps.biosample.rules.value_format import BS_R0007, BS_R0009, BS_R0011, BS_R0040, BS_R0093, BS_R0101, BS_R0136, BS_R0139
-from apps.biosample.rules.consistency import BS_R0024, BS_R0036, BS_R0062, BS_R0073, BS_R0135, BS_R0137, BS_R0132, BS_R0133
+from apps.biosample.rules.consistency import BS_R0024, BS_R0036, BS_R0062, BS_R0073, BS_R0135, BS_R0137, BS_R0132, BS_R0133, BS_R0001
 from apps.biosample.rules.value_ascii import BS_R0058, BS_R0100, BS_R0012
 from apps.biosample.rules.identifier import BS_R0005, BS_R0069, BS_R0099, BS_R0102, BS_R0122, BS_R0109, BS_R0091
 from apps.biosample.rules.geo import BS_R0008, BS_R0041, BS_R0094
-from apps.biosample.rules.taxonomy import BS_R0004, BS_R0096, BS_R0059, BS_R0115, BS_R0106, BS_R0141, BS_R0045, BS_R0105
+from apps.biosample.rules.taxonomy import BS_R0004, BS_R0096, BS_R0059, BS_R0115, BS_R0106, BS_R0141, BS_R0045, BS_R0105, BS_R0134, BS_R0140, BS_R0104
 from apps.biosample.rules.package_organism import PackageOrganismValidator
 from apps.biosample.rules.voucher import CultureCollectionValidator, SpecimenVoucherValidator, BioMaterialValidator
 from apps.biosample.rules.account import BS_R0006, BS_R0129, BS_R0070, BS_R0095, BS_R0128
@@ -41,6 +41,7 @@ class Validator:
             BS_R0093(),  # 整数属性
             BS_R0036(),  # either_one_mandatory 群欠落
             BS_R0137(),  # collection_date/geo_loc_name の reporting term
+            BS_R0001(),  # 必須属性の missing 値表記を正規化（autofix）
             BS_R0073(),  # 冗長 taxonomy 属性
             BS_R0135(),  # 不正 strain 値
             BS_R0132(),  # genome/clinical で種以下識別子が null（error）
@@ -71,6 +72,9 @@ class Validator:
             BS_R0115(),  # specimen_voucher for bacteria/unclassified
             BS_R0106(),  # metagenome_source
             BS_R0141(),  # uncultured × MIMAG
+            BS_R0134(),  # organism vs strain/isolate 識別子不一致（MIGS.ba）
+            BS_R0140(),  # genome informal name（Microbe/Pathogen で "genus sp."）
+            BS_R0104(),  # genome informal name（MIGS.ba/eu の "genus sp." + taxid）
             # --- 値形式・voucher（A/E 群） ---
             BS_R0101(),  # sample_name 形式
             CultureCollectionValidator(),  # BS_R0113/0114
