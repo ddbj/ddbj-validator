@@ -37,11 +37,11 @@ def build_cv_attr(attributes):
             if isinstance(info, dict) and info.get("allowed_values")}
 
 
-def load_value_corrections():
+def load_value_autofix():
     """autofix 用の値補正辞書（special_characters / null_not_recommended）をまとめて返す。
-    apps/biosample/resources/value_corrections.json。R0012（特殊文字）/ R0001（非推奨 null 値）用。"""
+    apps/biosample/resources/value_autofix.json。R0012（特殊文字）/ R0001（非推奨 null 値）用。"""
     try:
-        return json.loads((_RES / "value_corrections.json").read_text(encoding="utf-8"))
+        return json.loads((_RES / "value_autofix.json").read_text(encoding="utf-8"))
     except Exception:
         return {}
 
@@ -105,7 +105,7 @@ class ValidationContext:
         if not self.cv_attr:
             self.cv_attr = build_cv_attr(self.attributes)
         if not self.special_chars or not self.null_not_recommended:
-            vc = load_value_corrections()
+            vc = load_value_autofix()
             if not self.special_chars:
                 self.special_chars = vc.get("special_characters", {})
             if not self.null_not_recommended:

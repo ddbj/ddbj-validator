@@ -222,6 +222,39 @@ class BS_R0105(BsRule):
         return out
 
 
+class BS_R0015(BsRule):
+    rule_id = "BS_R0015"
+    level = "warning"
+    target = "host"
+    description = "Invalid host organism name."
+    requires_network = True  # host 名の taxonomy 解決に tax_data を参照
+
+    def validate(self, submission, context):
+        # host を学名へ補正（autofix）。"human" は "Homo sapiens" に特例補正。
+        # それ以外は tax_data で学名解決し、入力と異なれば補正提案。解決できなければ補正しない。
+        out = []
+        for rec in submission.records:
+            host = rec.attr("host")
+            if _empty(host) or _is_missing(host):
+                continue
+            if host.casefold() == "human":
+                out.append(self.result(
+                    sample=(rec.sample_name or rec.accession),
+                    message="Invalid host organism name. (host: 'human', Suggested: 'Homo sapiens')",
+                    autofix=True, attribute="host", old_value=host, new_value="Homo sapiens"))
+                continue
+            info = context.tax_data.get(host)
+            if not _resolved(info):
+                continue
+            sci = info.get("scientific_name")
+            if sci and sci != host:
+                out.append(self.result(
+                    sample=(rec.sample_name or rec.accession),
+                    message=f"Invalid host organism name. (host: '{host}', Suggested: '{sci}')",
+                    autofix=True, attribute="host", old_value=host, new_value=sci))
+        return out
+
+
 class BS_R0134(BsRule):
     rule_id = "BS_R0134"
     level = "warning"

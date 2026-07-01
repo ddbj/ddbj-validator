@@ -68,6 +68,7 @@ def run(args):
         names = {r.organism for r in submission.records if r.organism}
         for r in submission.records:
             names.update(v for v in r.attr_values("component_organism") if v)
+            names.update(v for v in r.attr_values("host") if v)  # R0015 用
         organisms = sorted(names)
         if organisms:
             _fetch_taxonomy(context, organisms)

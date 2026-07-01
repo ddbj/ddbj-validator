@@ -10,7 +10,7 @@ from apps.biosample.rules.consistency import BS_R0024, BS_R0036, BS_R0062, BS_R0
 from apps.biosample.rules.value_ascii import BS_R0058, BS_R0100, BS_R0012
 from apps.biosample.rules.identifier import BS_R0005, BS_R0069, BS_R0099, BS_R0102, BS_R0122, BS_R0109, BS_R0091
 from apps.biosample.rules.geo import BS_R0008, BS_R0041, BS_R0094
-from apps.biosample.rules.taxonomy import BS_R0004, BS_R0096, BS_R0059, BS_R0115, BS_R0106, BS_R0141, BS_R0045, BS_R0105, BS_R0134, BS_R0140, BS_R0104
+from apps.biosample.rules.taxonomy import BS_R0004, BS_R0096, BS_R0059, BS_R0115, BS_R0106, BS_R0141, BS_R0045, BS_R0105, BS_R0134, BS_R0140, BS_R0104, BS_R0015
 from apps.biosample.rules.package_organism import PackageOrganismValidator
 from apps.biosample.rules.voucher import CultureCollectionValidator, SpecimenVoucherValidator, BioMaterialValidator
 from apps.biosample.rules.account import BS_R0006, BS_R0129, BS_R0070, BS_R0095, BS_R0128
@@ -66,6 +66,7 @@ class Validator:
             BS_R0004(),  # organism ↔ taxonomy_id 不一致
             BS_R0045(),  # organism→学名＋taxonomy_id 補完（autofix）
             BS_R0105(),  # component_organism→学名（autofix）
+            BS_R0015(),  # host→学名（autofix。human→Homo sapiens 特例）
             BS_R0096(),  # species/infraspecific rank
             PackageOrganismValidator(),  # package_vs_organism（BS_R0048＋R0074-0130）
             BS_R0059(),  # sex for bacteria
