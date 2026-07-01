@@ -3,10 +3,8 @@
 - BS_R0058: 属性値に非 ASCII 文字が含まれる
 - BS_R0100: 任意属性に missing 値が入っている（任意は空でよい）
 """
-import re
 from apps.biosample.rules.base import BsRule
-
-_MISSING_RE = re.compile(r"^(not collected|not applicable|missing)(\s*:.*)?$", re.IGNORECASE)
+from apps.biosample.rules._util import is_missing_value
 
 
 def _non_ascii(v):
@@ -58,7 +56,7 @@ class BS_R0100(BsRule):
                 if use in ("mandatory", "either_one_mandatory"):
                     continue  # 任意属性のみ対象
                 for v in vals:
-                    if v and _MISSING_RE.match(v.strip()):
+                    if v and is_missing_value(v):
                         out.append(self.result(sample=(rec.sample_name or rec.accession), target=name,
                                                message=f"Missing value is unnecessary for optional attribute '{name}'."))
                         break

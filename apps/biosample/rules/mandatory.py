@@ -9,13 +9,7 @@
 「欠落」の判定は、値が無い／空文字を欠落とみなす（missing 等の reporting term は別ルールで扱う）。
 """
 from apps.biosample.rules.base import BsRule
-
-# missing 値の表記（R0027 ではこれらは「値あり」とみなす＝別ルールで形式を見る）
-_MISSING_TERMS = {"not collected", "not applicable", "missing"}
-
-
-def _is_empty(v):
-    return v is None or str(v).strip() == ""
+from apps.biosample.rules._util import is_empty as _is_empty
 
 
 class BS_R0018(BsRule):

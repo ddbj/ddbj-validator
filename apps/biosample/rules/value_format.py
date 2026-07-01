@@ -9,9 +9,7 @@ missing 値（not collected / not applicable / missing[: term]）は値検証の
 import datetime
 import re
 from apps.biosample.rules.base import BsRule
-
-# missing 値表記（これらは形式検証をスキップ）
-_MISSING_RE = re.compile(r"^(not collected|not applicable|missing)(\s*:.*)?$", re.IGNORECASE)
+from apps.biosample.rules._util import is_missing_value as _is_missing
 
 # ISO8601: YYYY-mm-dd / YYYY-mm / YYYY-mm-ddThh:mm:ssZ
 _DATE_FULL = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -25,10 +23,6 @@ _INTEGER_ATTRS = ("taxonomy_id", "host_spec_range", "host_taxid", "num_replicons
 
 # publication identifier: PubMed(数字) / DOI(10.xxxx/...) / URL
 _PUB_RE = re.compile(r"^(\d+|10\.\d+/\S+|https?://\S+)$", re.IGNORECASE)
-
-
-def _is_missing(v):
-    return bool(_MISSING_RE.match(v.strip())) if v else False
 
 
 def _parse_date(v):

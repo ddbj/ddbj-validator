@@ -4,10 +4,8 @@
 country CV は common/resources/definitions.json の cv_terms.countries / historical_countries を使用。
 lat_lon ↔ country 矛盾（R0041）は geopandas 依存のため別バッチ。
 """
-import re
 from apps.biosample.rules.base import BsRule
-
-_MISSING_RE = re.compile(r"^(not collected|not applicable|missing)(\s*:.*)?$", re.IGNORECASE)
+from apps.biosample.rules._util import is_missing_value
 
 
 class BS_R0008(BsRule):
@@ -25,7 +23,7 @@ class BS_R0008(BsRule):
         out = []
         for rec in submission.records:
             v = rec.attr("geo_loc_name")
-            if not v or _MISSING_RE.match(v.strip()):
+            if not v or is_missing_value(v):
                 continue
             country = v.split(":", 1)[0].strip()
             # 完全一致／大文字小文字差は許容（case 補正は autofix の領分）

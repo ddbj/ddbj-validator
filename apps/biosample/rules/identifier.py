@@ -8,15 +8,12 @@
 import re
 from collections import Counter
 from apps.biosample.rules.base import BsRule
+from apps.biosample.rules._util import is_empty as _empty
 
 # BioProject: PRJDB12345 / PRJNA123 / PRJEB456（PRJ＋2文字アーカイブコード＋数字）または PSUB＋数字
 _BP_RE = re.compile(r"^(PRJ[A-Z]{2}\d+|PSUB\d+)$")
 _PREFIX_RE = re.compile(r"^[A-Za-z][A-Za-z0-9]{2,11}$")
 _GISAID_RE = re.compile(r"^EPI_ISL_\d+$", re.IGNORECASE)
-
-
-def _empty(v):
-    return v is None or str(v).strip() == ""
 
 
 class BS_R0005(BsRule):

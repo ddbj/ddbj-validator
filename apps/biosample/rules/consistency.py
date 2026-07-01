@@ -5,20 +5,8 @@
 - BS_R0135: strain に不適切な値
 - BS_R0137: collection_date / geo_loc_name の reporting level term 欠落
 """
-import re
 from apps.biosample.rules.base import BsRule
-
-_MISSING_RE = re.compile(r"^(not collected|not applicable|missing)(\s*:.*)?$", re.IGNORECASE)
-# "missing: <reporting term>" の形（reporting level term あり）
-_MISSING_WITH_TERM = re.compile(r"^missing\s*:\s*\S+", re.IGNORECASE)
-
-
-def _empty(v):
-    return v is None or str(v).strip() == ""
-
-
-def _norm(v):
-    return re.sub(r"\s+", " ", str(v).strip().lower()) if v else ""
+from apps.biosample.rules._util import is_empty as _empty, norm as _norm, is_missing_without_term
 
 
 # strain に使ってはいけない値（case-insensitive）
@@ -173,7 +161,7 @@ class BS_R0137(BsRule):
                 if _empty(v):
                     out.append(self.result(sample=(rec.sample_name or rec.accession), target=name,
                                            message=f"Missing reporting level term for '{name}'."))
-                elif _MISSING_RE.match(v.strip()) and not _MISSING_WITH_TERM.match(v.strip()):
+                elif is_missing_without_term(v):
                     out.append(self.result(sample=(rec.sample_name or rec.accession), target=name,
                                            message=f"Missing reporting level term for '{name}'. (Found: '{v}')"))
         return out

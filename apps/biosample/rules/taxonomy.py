@@ -7,10 +7,7 @@ tax_data は DB(common/db_taxonomy) または NCBI API で取得。local（skip_
 - BS_R0096: taxonomy が species 以下（infraspecific）でない
 """
 from apps.biosample.rules.base import BsRule
-
-
-def _empty(v):
-    return v is None or str(v).strip() == ""
+from apps.biosample.rules._util import is_empty as _empty
 
 
 class BS_R0004(BsRule):
