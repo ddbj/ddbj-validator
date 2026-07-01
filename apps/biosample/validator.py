@@ -5,12 +5,12 @@
 """
 from apps.biosample.rules.mandatory import BS_R0018, BS_R0020, BS_R0025, BS_R0026, BS_R0027
 from apps.biosample.rules.structure import BS_R0003, BS_R0061, BS_R0126
-from apps.biosample.rules.value_format import BS_R0007, BS_R0009, BS_R0011, BS_R0040, BS_R0093, BS_R0101
+from apps.biosample.rules.value_format import BS_R0007, BS_R0009, BS_R0011, BS_R0040, BS_R0093, BS_R0101, BS_R0136, BS_R0139
 from apps.biosample.rules.consistency import BS_R0024, BS_R0036, BS_R0062, BS_R0073, BS_R0135, BS_R0137
 from apps.biosample.rules.value_ascii import BS_R0058, BS_R0100
 from apps.biosample.rules.identifier import BS_R0005, BS_R0069, BS_R0099, BS_R0102, BS_R0122
-from apps.biosample.rules.geo import BS_R0008, BS_R0041
-from apps.biosample.rules.taxonomy import BS_R0004, BS_R0096, BS_R0059, BS_R0115, BS_R0106, BS_R0141
+from apps.biosample.rules.geo import BS_R0008, BS_R0041, BS_R0094
+from apps.biosample.rules.taxonomy import BS_R0004, BS_R0096, BS_R0059, BS_R0115, BS_R0106, BS_R0141, BS_R0045, BS_R0105
 from apps.biosample.rules.package_organism import PackageOrganismValidator
 from apps.biosample.rules.voucher import CultureCollectionValidator, SpecimenVoucherValidator, BioMaterialValidator
 from apps.biosample.rules.account import BS_R0006, BS_R0129, BS_R0070, BS_R0095, BS_R0128
@@ -34,8 +34,10 @@ class Validator:
             BS_R0061(),  # 同名属性の複数値
             BS_R0003(),  # sample_title 重複
             BS_R0007(),  # collection_date 形式
+            BS_R0136(),  # collection_date 整形（autofix）
             BS_R0040(),  # collection_date 未来日
-            BS_R0009(),  # lat_lon 形式
+            BS_R0009(),  # lat_lon 形式（autofix）
+            BS_R0139(),  # lat_lon 不正（error・補正不能）
             BS_R0093(),  # 整数属性
             BS_R0036(),  # either_one_mandatory 群欠落
             BS_R0137(),  # collection_date/geo_loc_name の reporting term
@@ -50,11 +52,14 @@ class Validator:
             BS_R0122(),  # GISAID accession
             BS_R0024(),  # 同一属性（区別情報なし）
             BS_R0008(),  # 不正 country（geo_loc_name）
+            BS_R0094(),  # geo_loc_name 形式整形（autofix）
             BS_R0041(),  # lat_lon ↔ country 矛盾（geopandas。common/geo）
             BS_R0069(),  # BioProject 連番
             BS_R0062(),  # voucher 同一機関重複
             # --- フェーズ B: taxonomy（DB/NCBI 依存。local ではスキップ）---
             BS_R0004(),  # organism ↔ taxonomy_id 不一致
+            BS_R0045(),  # organism→学名＋taxonomy_id 補完（autofix）
+            BS_R0105(),  # component_organism→学名（autofix）
             BS_R0096(),  # species/infraspecific rank
             PackageOrganismValidator(),  # package_vs_organism（BS_R0048＋R0074-0130）
             BS_R0059(),  # sex for bacteria

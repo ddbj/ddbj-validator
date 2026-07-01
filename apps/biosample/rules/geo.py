@@ -35,6 +35,43 @@ class BS_R0008(BsRule):
         return out
 
 
+class BS_R0094(BsRule):
+    rule_id = "BS_R0094"
+    level = "warning"
+    target = "geo_loc_name"
+    description = "Format of geo_loc_name is invalid."
+
+    def validate(self, submission, context):
+        # 国名部分が CV に大文字小文字違いで一致、または "Country:Region" の整形差がある場合、
+        # 正表記へ autofix 提案（CV に全く無い場合は R0008=error が担当）。
+        countries = set(context.cv_terms.get("countries", []))
+        countries |= set(context.cv_terms.get("historical_countries", []))
+        if not countries:
+            return []
+        canon = {c.lower(): c for c in countries}
+        out = []
+        for rec in submission.records:
+            v = rec.attr("geo_loc_name")
+            if not v or is_missing_value(v):
+                continue
+            parts = v.split(":", 1)
+            country = parts[0].strip()
+            cl = country.lower()
+            if cl not in canon:
+                continue  # CV 外は R0008
+            new_country = canon[cl]
+            if len(parts) == 1:
+                new_val = new_country
+            else:
+                new_val = f"{new_country}:{parts[1].strip()}"
+            if new_val != v:
+                out.append(self.result(
+                    sample=(rec.sample_name or rec.accession),
+                    message=f"Format of geo_loc_name is invalid. (Found: '{v}', Suggested: '{new_val}')",
+                    autofix=True, attribute="geo_loc_name", old_value=v, new_value=new_val))
+        return out
+
+
 # geo データは重いのでルール間で 1 インスタンスを共有（プロセス内キャッシュ）
 _GEO = GeoChecker()
 

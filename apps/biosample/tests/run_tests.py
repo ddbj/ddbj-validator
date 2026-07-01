@@ -49,6 +49,10 @@ MOCK_TAX = {
     "Euglena gracilis": {"tax_id": "3039", "rank": "species", "scientific_name": "Euglena gracilis",
                          "is_species_or_below": True, "status": "valid", "pl_code": 11,
                          "lineage": "Eukaryota; Discoba; Euglenozoa"},  # 非 Viridiplantae だが plastid 保持
+    # R0045/R0105 用: 入力名と学名が異なる（シノニム）ケース
+    "Bacillus coli": {"tax_id": "562", "rank": "species", "scientific_name": "Escherichia coli",
+                      "is_species_or_below": True, "status": "valid", "pl_code": 0,
+                      "lineage": "Bacteria; Proteobacteria"},
 }
 
 

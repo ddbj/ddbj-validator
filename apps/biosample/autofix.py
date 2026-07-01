@@ -34,20 +34,25 @@ def _sample_identity(bs_elem):
 
 
 def collect_proposals(results):
-    """検証結果から autofix 提案（属性値置換）を抽出。
-    戻り値: {sample_id: [(attribute, old_value, new_value), ...]}。sample_id は name/accession いずれか。"""
+    """検証結果から autofix 提案を抽出。
+    戻り値: {sample_id: [proposal_dict, ...]}。proposal_dict は kind を含む結果 dict そのもの。
+    対応 kind:
+      - "attribute_value"（既定）: attribute/new_value（old_value 任意）で属性値を置換。
+      - "organism": new_value(学名)＋new_taxid で Description/Organism を補正。"""
     by_sample = {}
     for r in results:
         if not r.get("autofix"):
             continue
-        if r.get("kind", "attribute_value") != "attribute_value":
+        kind = r.get("kind", "attribute_value")
+        if kind == "attribute_value":
+            if r.get("attribute") is None or r.get("new_value") is None:
+                continue
+        elif kind == "organism":
+            if r.get("new_value") is None and r.get("new_taxid") is None:
+                continue
+        else:
             continue
-        attr = r.get("attribute")
-        new = r.get("new_value")
-        if attr is None or new is None:
-            continue
-        old = r.get("old_value")
-        by_sample.setdefault(r.get("sample"), []).append((attr, old, new))
+        by_sample.setdefault(r.get("sample"), []).append(r)
     return by_sample
 
 
@@ -84,17 +89,12 @@ def apply_autofix(xml_source, results, out_dir, out_name):
                 fixes.extend(proposals[key])
         if not fixes:
             continue
-        for attr_name, old_value, new_value in fixes:
-            for a in bs.findall("./Attributes/Attribute"):
-                if a.get("attribute_name") != attr_name:
-                    continue
-                cur = (a.text or "").strip()
-                # old_value 指定があれば一致する要素のみ、無ければ属性名一致で置換
-                if old_value is not None and cur != old_value:
-                    continue
-                a.text = new_value
-                applied += 1
-                break
+        for p in fixes:
+            kind = p.get("kind", "attribute_value")
+            if kind == "organism":
+                applied += _apply_organism(bs, p)
+            else:
+                applied += _apply_attribute_value(bs, p)
 
     if applied == 0:
         return 0
@@ -102,4 +102,49 @@ def apply_autofix(xml_source, results, out_dir, out_name):
     fixed = Path(out_dir) / "fixed"
     fixed.mkdir(parents=True, exist_ok=True)
     tree.write(str(fixed / out_name), encoding="UTF-8", xml_declaration=True)
+    return applied
+
+
+def _apply_attribute_value(bs, p):
+    """属性値置換（kind=attribute_value）。適用件数(0/1)を返す。"""
+    attr_name = p.get("attribute")
+    old_value = p.get("old_value")
+    new_value = p.get("new_value")
+    for a in bs.findall("./Attributes/Attribute"):
+        if a.get("attribute_name") != attr_name:
+            continue
+        cur = (a.text or "").strip()
+        # old_value 指定があれば一致する要素のみ、無ければ属性名一致で置換
+        if old_value is not None and cur != old_value:
+            continue
+        a.text = new_value
+        return 1
+    return 0
+
+
+def _apply_organism(bs, p):
+    """Description/Organism の OrganismName（学名）と taxonomy_id を補正（kind=organism）。
+    属性側にも organism/taxonomy_id があれば併せて更新する。適用件数を返す。"""
+    applied = 0
+    new_name = p.get("new_value")
+    new_taxid = p.get("new_taxid")
+    org = bs.find("./Description/Organism")
+    if org is not None:
+        if new_name:
+            on = org.find("./OrganismName")
+            if on is not None:
+                on.text = new_name
+            else:
+                org.text = new_name
+            applied += 1
+        if new_taxid:
+            org.set("taxonomy_id", str(new_taxid))
+            applied += 1
+    # 属性側 organism / taxonomy_id も存在すれば揃える
+    for a in bs.findall("./Attributes/Attribute"):
+        an = a.get("attribute_name")
+        if an == "organism" and new_name:
+            a.text = new_name
+        elif an == "taxonomy_id" and new_taxid:
+            a.text = str(new_taxid)
     return applied

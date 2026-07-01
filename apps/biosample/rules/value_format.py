@@ -10,6 +10,7 @@ import datetime
 import re
 from apps.biosample.rules.base import BsRule
 from apps.biosample.rules._util import is_missing_value as _is_missing
+from common.format import fix_insdc_date, fix_insdc_lat_lon
 
 # ISO8601: YYYY-mm-dd / YYYY-mm / YYYY-mm-ddThh:mm:ssZ
 _DATE_FULL = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -79,6 +80,30 @@ class BS_R0007(BsRule):
         return out
 
 
+class BS_R0136(BsRule):
+    rule_id = "BS_R0136"
+    level = "warning"
+    target = "collection_date"
+    description = "Invalid datetime format."
+
+    def validate(self, submission, context):
+        # collection_date が ISO8601 でないが共通補正で妥当な形式に直せる場合、autofix 提案（R0007 の autofix 版）
+        out = []
+        for rec in submission.records:
+            v = rec.attr("collection_date")
+            if not v or _is_missing(v):
+                continue
+            if _parse_date(v) is not None:
+                continue  # 既に妥当
+            fixed = fix_insdc_date(v)
+            if fixed and fixed != v and _parse_date(fixed) is not None:
+                out.append(self.result(
+                    sample=(rec.sample_name or rec.accession),
+                    message=f"Invalid datetime format. (Found: '{v}', Suggested: '{fixed}')",
+                    autofix=True, attribute="collection_date", old_value=v, new_value=fixed))
+        return out
+
+
 class BS_R0040(BsRule):
     rule_id = "BS_R0040"
     level = "error"
@@ -106,14 +131,43 @@ class BS_R0009(BsRule):
     description = 'Invalid lat_lon format. Specify as "d[d.dddd] N|S d[dd.dddd] W|E".'
 
     def validate(self, submission, context):
+        # 正準形式でないが共通補正（fix_insdc_lat_lon: 8桁切り捨て対応）で直せる場合、autofix 提案。
+        # 直せない場合は R0139（error）が担当する（R0002/R0138 と同型の warning/error 分担）。
         out = []
         for rec in submission.records:
             v = rec.attr("lat_lon")
             if not v or _is_missing(v):
                 continue
-            if not _LATLON_RE.match(v):
+            if _LATLON_RE.match(v):
+                continue  # 既に正準
+            fixed = fix_insdc_lat_lon(v)
+            if fixed and _LATLON_RE.match(fixed):
+                out.append(self.result(
+                    sample=(rec.sample_name or rec.accession),
+                    message=f"Invalid lat_lon format. (Found: '{v}', Suggested: '{fixed}')",
+                    autofix=True, attribute="lat_lon", old_value=v, new_value=fixed))
+        return out
+
+
+class BS_R0139(BsRule):
+    rule_id = "BS_R0139"
+    level = "error"
+    target = "lat_lon"
+    description = 'Invalid lat_lon. Specify as "d[d.dddddddd] N|S d[dd.dddddddd] W|E".'
+
+    def validate(self, submission, context):
+        # 正準形式でなく、共通補正でも直せない lat_lon はエラー（R0009 の error 版）
+        out = []
+        for rec in submission.records:
+            v = rec.attr("lat_lon")
+            if not v or _is_missing(v):
+                continue
+            if _LATLON_RE.match(v):
+                continue
+            fixed = fix_insdc_lat_lon(v)
+            if not (fixed and _LATLON_RE.match(fixed)):
                 out.append(self.result(sample=(rec.sample_name or rec.accession),
-                                       message=f"Invalid lat_lon format. (Found: '{v}')"))
+                                       message=f"Invalid lat_lon. (Found: '{v}')"))
         return out
 
 

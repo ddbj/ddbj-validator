@@ -63,8 +63,12 @@ def run(args):
         return 1 if counts.get("error") else 0
 
     # taxonomy 取得（local では skip。default=内部DB、-n=NCBI API）
+    # organism に加え、R0105 用に component_organism も解決対象に含める。
     if not context.skip_ncbi:
-        organisms = sorted({r.organism for r in submission.records if r.organism})
+        names = {r.organism for r in submission.records if r.organism}
+        for r in submission.records:
+            names.update(v for v in r.attr_values("component_organism") if v)
+        organisms = sorted(names)
         if organisms:
             _fetch_taxonomy(context, organisms)
 

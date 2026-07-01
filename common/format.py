@@ -87,7 +87,7 @@ def fix_insdc_lat_lon(val):
         
     elif m_dec_signed:
         d = m_dec_signed.groupdict()
-        lat_val, lng_val = d['lat_dec']
+        lat_val, lng_val = d['lat_dec'], d['lng_dec']
         lat_hemi = "S" if lat_val.startswith("-") else "N"
         lng_hemi = "W" if lng_val.startswith("-") else "E"
         lat_dec, lng_dec = lat_val.lstrip("-"), lng_val.lstrip("-")
