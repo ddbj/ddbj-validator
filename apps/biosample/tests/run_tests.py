@@ -52,11 +52,31 @@ MOCK_TAX = {
 }
 
 
+# 決定的テストのための mock account 状態（DB に依存しない。D 群 R0006/0129/0070/0095 用）。
+# fixture はこの mock を前提に pass/fail を設計する。
+MOCK_ACCOUNT = "test_account"
+MOCK_AUTH_PROJECTS = {"PRJDB00001", "PRJDB00099", "PSUB000001", "PSUB999999"}
+MOCK_AUTH_SAMDS = {"SAMD00000001"}
+MOCK_BP_META = {
+    "PRJDB00001": {"submission_id": "PSUB000001", "project_type": "primary", "status_id": 5500},
+    "PRJDB00099": {"submission_id": "PSUB000099", "project_type": "umbrella", "status_id": 5500},
+}
+MOCK_PSUB_TO_PRJD = {
+    "PSUB000001": {"accession": "PRJDB12345", "status_id": 5500},
+}
+
+
 def _fired_rules(fixture_path):
     """fixture を検証し、発火したルール ID 集合を返す。
     taxonomy ルールも有効化（skip_ncbi=False）し、mock taxonomy を注入して決定的に評価する。
+    account 依存ルール（D 群）も skip_auth=False ＋ mock account 状態で決定的に評価する。
     """
-    ctx = ValidationContext(skip_db=False, skip_ncbi=False, skip_auth=True, tax_data=dict(MOCK_TAX))
+    ctx = ValidationContext(
+        skip_db=False, skip_ncbi=False, skip_auth=False,
+        account=MOCK_ACCOUNT, tax_data=dict(MOCK_TAX),
+        authorized_projects=set(MOCK_AUTH_PROJECTS), authorized_samds=set(MOCK_AUTH_SAMDS),
+        bp_meta=dict(MOCK_BP_META), psub_to_prjd=dict(MOCK_PSUB_TO_PRJD),
+    )
     path = Path(fixture_path)
     if path.suffix.lower() in (".txt", ".tsv"):
         import tempfile

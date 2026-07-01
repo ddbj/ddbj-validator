@@ -28,6 +28,15 @@ def load_cv_terms():
         return {}
 
 
+def load_cv_attr():
+    """属性別の controlled vocabulary（attribute_name -> 許容値リスト）。
+    apps/biosample/resources/controlled_terms.json（登録システムの conf と同一）。R0002/R0138 用。"""
+    try:
+        return json.loads((_RES / "controlled_terms.json").read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
 _COLL_DUMP = Path(__file__).resolve().parents[2] / "common" / "resources" / "coll_dump.txt"
 
 
@@ -57,16 +66,27 @@ class ValidationContext:
     fixed_attributes: dict = field(default_factory=dict)
     packages: dict = field(default_factory=dict)
     cv_terms: dict = field(default_factory=dict)
+    # 属性別 controlled vocabulary {attr_name: [許容値]}（R0002/R0138）
+    cv_attr: dict = field(default_factory=dict)
     # organism 名 -> taxonomy 情報（common/db_taxonomy or NCBI で取得。local では空）
     tax_data: dict = field(default_factory=dict)
     # NCBI BioCollections 機関コード {code_lower: code}
     institution_codes: dict = field(default_factory=dict)
+    # account 所属アクセッション（--account 指定時に取得。R0006/R0129 用）
+    authorized_projects: set = field(default_factory=set)
+    authorized_samds: set = field(default_factory=set)
+    # BioProject メタ {PRJDBxxxx: {project_type, status_id}}（R0070 umbrella 判定）
+    bp_meta: dict = field(default_factory=dict)
+    # PSUB -> {accession(PRJDB), status_id}（R0095 置換提案）
+    psub_to_prjd: dict = field(default_factory=dict)
 
     def __post_init__(self):
         if not self.packages:
             self.fixed_attributes, self.packages = load_packages()
         if not self.cv_terms:
             self.cv_terms = load_cv_terms()
+        if not self.cv_attr:
+            self.cv_attr = load_cv_attr()
         if not self.institution_codes:
             self.institution_codes = load_institution_codes()
 

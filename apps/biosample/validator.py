@@ -9,10 +9,12 @@ from apps.biosample.rules.value_format import BS_R0007, BS_R0009, BS_R0011, BS_R
 from apps.biosample.rules.consistency import BS_R0024, BS_R0036, BS_R0062, BS_R0073, BS_R0135, BS_R0137
 from apps.biosample.rules.value_ascii import BS_R0058, BS_R0100
 from apps.biosample.rules.identifier import BS_R0005, BS_R0069, BS_R0099, BS_R0102, BS_R0122
-from apps.biosample.rules.geo import BS_R0008
+from apps.biosample.rules.geo import BS_R0008, BS_R0041
 from apps.biosample.rules.taxonomy import BS_R0004, BS_R0096, BS_R0059, BS_R0115, BS_R0106, BS_R0141
 from apps.biosample.rules.package_organism import PackageOrganismValidator
 from apps.biosample.rules.voucher import CultureCollectionValidator, SpecimenVoucherValidator, BioMaterialValidator
+from apps.biosample.rules.account import BS_R0006, BS_R0129, BS_R0070, BS_R0095, BS_R0128
+from apps.biosample.rules.controlled import BS_R0002, BS_R0138
 
 
 class Validator:
@@ -48,6 +50,7 @@ class Validator:
             BS_R0122(),  # GISAID accession
             BS_R0024(),  # 同一属性（区別情報なし）
             BS_R0008(),  # 不正 country（geo_loc_name）
+            BS_R0041(),  # lat_lon ↔ country 矛盾（geopandas。common/geo）
             BS_R0069(),  # BioProject 連番
             BS_R0062(),  # voucher 同一機関重複
             # --- フェーズ B: taxonomy（DB/NCBI 依存。local ではスキップ）---
@@ -63,7 +66,16 @@ class Validator:
             CultureCollectionValidator(),  # BS_R0113/0114
             SpecimenVoucherValidator(),    # BS_R0116/0117
             BioMaterialValidator(),        # BS_R0118/0119
-            # 以降 C（DB/account）/ autofix
+            # --- フェーズ D: BioProject/account（実装可能分。requires_auth）---
+            BS_R0006(),   # BioProject not in account
+            BS_R0129(),   # derived_from BioSample not in account
+            BS_R0070(),   # umbrella BioProject
+            BS_R0095(),   # PSUB -> PRJDB 置換提案
+            BS_R0128(),   # locus_tag_prefix に BioProject 必須（DB 非依存）
+            # --- フェーズ C: controlled vocabulary（DB 非依存）---
+            BS_R0002(),   # CV 大文字小文字違い → 正表記提案（autofix）
+            BS_R0138(),   # CV に存在しない値（error）
+            # 以降 D 残(R0028/0103/0108/0109) / G(JSON 入力) / autofix 適用層
         ]
 
         self.active_rules = []

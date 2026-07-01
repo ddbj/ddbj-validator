@@ -68,6 +68,10 @@ def run(args):
         if organisms:
             _fetch_taxonomy(context, organisms)
 
+    # account/BioProject 取得（内部DB。skip_auth／account 未指定では実行しない）
+    if not context.skip_auth and context.account:
+        _fetch_account(context, submission)
+
     results = pre_errors + Validator(context).run(submission)
     counts = write_reports(results, out_dir, in_path.name)
     return 1 if counts.get("error") else 0
@@ -86,6 +90,42 @@ def _fetch_taxonomy(context, organisms):
     except Exception as e:
         print(f"[WARN] taxonomy fetch failed: {e}", file=sys.stderr)
         context.tax_data = {}
+
+
+def _fetch_account(context, submission):
+    """account 所属アクセッション／BioProject メタを内部DBから取得（D 群 R0006/0129/0070/0095 用）。
+
+    共通 DB fetch は common.db_meta（ddbj 実装の re-export）を単一入口として利用する。
+    """
+    try:
+        from common.db_manager import DatabaseManager
+        from common.db_meta import (
+            fetch_authorized_accessions,
+            fetch_bp_psubs,
+            fetch_prjdb_by_psub,
+        )
+        dm = DatabaseManager()
+        bp_conn = dm.get_bp_conn()
+        bs_conn = dm.get_bs_conn()
+        dra_conn = dm.get_dra_conn()
+        # account 所属（BioProject/BioSample）
+        proj, samd, _dra = fetch_authorized_accessions(bp_conn, bs_conn, dra_conn, context.account)
+        context.authorized_projects = proj or set()
+        context.authorized_samds = samd or set()
+        # 提出中の bioproject_id を収集し、PRJDB=メタ / PSUB=置換候補を解決
+        bps = {
+            r.attr("bioproject_id").strip()
+            for r in submission.records
+            if r.attr("bioproject_id")
+        }
+        prjdb = [b for b in bps if b.upper().startswith("PRJDB")]
+        psub = [b for b in bps if b.upper().startswith("PSUB")]
+        if prjdb:
+            context.bp_meta = fetch_bp_psubs(bp_conn, prjdb) or {}
+        if psub:
+            context.psub_to_prjd = fetch_prjdb_by_psub(bp_conn, psub) or {}
+    except Exception as e:
+        print(f"[WARN] account/bioproject fetch failed: {e}", file=sys.stderr)
 
 
 def main():
