@@ -37,6 +37,15 @@ def load_cv_attr():
         return {}
 
 
+def load_special_chars():
+    """特殊文字→置換文字の対応（℃→degree Celsius 等）。R0012 用。
+    apps/biosample/resources/special_characters.json（登録システム conf と同一）。"""
+    try:
+        return json.loads((_RES / "special_characters.json").read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
 _COLL_DUMP = Path(__file__).resolve().parents[2] / "common" / "resources" / "coll_dump.txt"
 
 
@@ -68,6 +77,8 @@ class ValidationContext:
     cv_terms: dict = field(default_factory=dict)
     # 属性別 controlled vocabulary {attr_name: [許容値]}（R0002/R0138）
     cv_attr: dict = field(default_factory=dict)
+    # 特殊文字→置換 {"℃": "degree Celsius", ...}（R0012）
+    special_chars: dict = field(default_factory=dict)
     # organism 名 -> taxonomy 情報（common/db_taxonomy or NCBI で取得。local では空）
     tax_data: dict = field(default_factory=dict)
     # NCBI BioCollections 機関コード {code_lower: code}
@@ -87,6 +98,8 @@ class ValidationContext:
             self.cv_terms = load_cv_terms()
         if not self.cv_attr:
             self.cv_attr = load_cv_attr()
+        if not self.special_chars:
+            self.special_chars = load_special_chars()
         if not self.institution_codes:
             self.institution_codes = load_institution_codes()
 

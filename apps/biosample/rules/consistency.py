@@ -6,7 +6,12 @@
 - BS_R0137: collection_date / geo_loc_name の reporting level term 欠落
 """
 from apps.biosample.rules.base import BsRule
-from apps.biosample.rules._util import is_empty as _empty, norm as _norm, is_missing_without_term
+from apps.biosample.rules._util import (
+    is_empty as _empty,
+    norm as _norm,
+    is_missing_without_term,
+    is_missing_value as _is_missing,
+)
 
 
 # strain に使ってはいけない値（case-insensitive）
@@ -164,4 +169,65 @@ class BS_R0137(BsRule):
                 elif is_missing_without_term(v):
                     out.append(self.result(sample=(rec.sample_name or rec.accession), target=name,
                                            message=f"Missing reporting level term for '{name}'. (Found: '{v}')"))
+        return out
+
+
+def _no_meaningful_identifier(rec, attrs):
+    """attrs のいずれにも「意味のある値」（非空・非 missing）が無ければ True。"""
+    for a in attrs:
+        v = rec.attr(a)
+        if not _empty(v) and not _is_missing(v):
+            return False
+    return True
+
+
+class BS_R0132(BsRule):
+    rule_id = "BS_R0132"
+    level = "error"
+    target = "strain, isolate, cultivar and ecotype"
+    description = "Null value for infraspecific identifier."
+
+    # ゲノム/clinical 系パッケージ（前方一致）で、種以下識別子に意味のある値が必須
+    _PKG = {
+        "MIGS.ba": ["strain"],
+        "MIGS.eu": ["strain", "isolate", "cultivar", "ecotype"],
+        "MIGS.vi": ["strain", "isolate"],
+        "MIMAG": ["isolate"],
+        "MISAG": ["isolate"],
+        "MIUVIG": ["isolate"],
+        "SARS-CoV-2.cl": ["isolate"],
+        "Pathogen.cl": ["strain", "isolate"],
+    }
+
+    def validate(self, submission, context):
+        out = []
+        for rec in submission.records:
+            if not rec.package:
+                continue
+            for pfx, attrs in self._PKG.items():
+                if rec.package.startswith(pfx) and _no_meaningful_identifier(rec, attrs):
+                    out.append(self.result(
+                        sample=(rec.sample_name or rec.accession),
+                        message=f"Null value for infraspecific identifier. (package: {rec.package}, attributes: {'/'.join(attrs)})"))
+        return out
+
+
+class BS_R0133(BsRule):
+    rule_id = "BS_R0133"
+    level = "warning"
+    target = "strain, isolate"
+    description = "Null value for infraspecific identifier."
+
+    _PKG = {"Microbe": ["strain", "isolate"]}
+
+    def validate(self, submission, context):
+        out = []
+        for rec in submission.records:
+            if not rec.package:
+                continue
+            for pfx, attrs in self._PKG.items():
+                if rec.package.startswith(pfx) and _no_meaningful_identifier(rec, attrs):
+                    out.append(self.result(
+                        sample=(rec.sample_name or rec.accession),
+                        message=f"Null value for infraspecific identifier. (package: {rec.package}, attributes: {'/'.join(attrs)})"))
         return out

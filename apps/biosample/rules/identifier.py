@@ -115,3 +115,25 @@ class BS_R0122(BsRule):
                 out.append(self.result(sample=(rec.sample_name or rec.accession),
                                        message=f"Invalid GISAID accession number. (Found: '{v}')"))
         return out
+
+
+class BS_R0109(BsRule):
+    rule_id = "BS_R0109"
+    level = "warning"
+    target = "locus_tag_prefix"
+    description = "Locus tag prefix is required for annotated genome submission."
+
+    # 原核/真核ゲノム系パッケージ（MIGS.ba / MIGS.eu）で locus_tag_prefix 任意提示
+    _GENOME_PKG = ("MIGS.ba", "MIGS.eu")
+
+    def validate(self, submission, context):
+        out = []
+        for rec in submission.records:
+            if not rec.package or not rec.package.startswith(self._GENOME_PKG):
+                continue
+            if _empty(rec.attr("locus_tag_prefix")):
+                out.append(self.result(
+                    sample=(rec.sample_name or rec.accession),
+                    message="Locus tag prefix is required for annotated genome submission. "
+                            "If you are submitting genome with annotation, please take locus tag prefix."))
+        return out
