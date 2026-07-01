@@ -8,7 +8,7 @@ from apps.biosample.rules.structure import BS_R0003, BS_R0061, BS_R0126
 from apps.biosample.rules.value_format import BS_R0007, BS_R0009, BS_R0011, BS_R0040, BS_R0093, BS_R0101, BS_R0136, BS_R0139
 from apps.biosample.rules.consistency import BS_R0024, BS_R0036, BS_R0062, BS_R0073, BS_R0135, BS_R0137, BS_R0132, BS_R0133
 from apps.biosample.rules.value_ascii import BS_R0058, BS_R0100, BS_R0012
-from apps.biosample.rules.identifier import BS_R0005, BS_R0069, BS_R0099, BS_R0102, BS_R0122, BS_R0109
+from apps.biosample.rules.identifier import BS_R0005, BS_R0069, BS_R0099, BS_R0102, BS_R0122, BS_R0109, BS_R0091
 from apps.biosample.rules.geo import BS_R0008, BS_R0041, BS_R0094
 from apps.biosample.rules.taxonomy import BS_R0004, BS_R0096, BS_R0059, BS_R0115, BS_R0106, BS_R0141, BS_R0045, BS_R0105
 from apps.biosample.rules.package_organism import PackageOrganismValidator
@@ -51,6 +51,7 @@ class Validator:
             BS_R0005(),  # BioProject 形式
             BS_R0099(),  # locus_tag_prefix 形式
             BS_R0102(),  # locus_tag_prefix 重複(submission)
+            BS_R0091(),  # locus_tag_prefix 重複(biosample DB・要 RDB)
             BS_R0109(),  # MIGS.ba/eu で locus_tag_prefix 空（warning）
             BS_R0011(),  # publication identifier
             BS_R0122(),  # GISAID accession

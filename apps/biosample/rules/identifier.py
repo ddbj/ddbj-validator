@@ -117,6 +117,33 @@ class BS_R0122(BsRule):
         return out
 
 
+class BS_R0091(BsRule):
+    rule_id = "BS_R0091"
+    level = "error"
+    target = "locus_tag_prefix"
+    description = "Locus tag prefix is duplicated."
+    requires_rdb = True  # biosample DB の登録済み prefix を参照
+
+    def validate(self, submission, context):
+        # DB に登録済みで、かつ現サブミッション以外が使用している locus_tag_prefix はエラー。
+        # submission 内重複は R0102 が担当（役割分担。Ruby では OR で両方 R0091 だが本実装は分離）。
+        registered = context.registered_locus_tag_prefixes or {}
+        if not registered:
+            return []
+        cur_sub = submission.submission_id
+        out = []
+        for rec in submission.records:
+            v = rec.attr("locus_tag_prefix")
+            if _empty(v):
+                continue
+            subs = registered.get(v.strip())
+            if subs and any(s != cur_sub for s in subs):
+                out.append(self.result(
+                    sample=(rec.sample_name or rec.accession),
+                    message=f"Locus tag prefix is duplicated. (Found: '{v}')"))
+        return out
+
+
 class BS_R0109(BsRule):
     rule_id = "BS_R0109"
     level = "warning"

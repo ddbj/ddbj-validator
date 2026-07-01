@@ -68,6 +68,8 @@ MOCK_BP_META = {
 MOCK_PSUB_TO_PRJD = {
     "PSUB000001": {"accession": "PRJDB12345", "status_id": 5500},
 }
+# R0091 用: DB 登録済み locus_tag_prefix -> {submission_id}
+MOCK_REGISTERED_PREFIXES = {"TAKENPFX": {"SSUB999999"}}
 
 
 def _fired_rules(fixture_path):
@@ -80,6 +82,7 @@ def _fired_rules(fixture_path):
         account=MOCK_ACCOUNT, tax_data=dict(MOCK_TAX),
         authorized_projects=set(MOCK_AUTH_PROJECTS), authorized_samds=set(MOCK_AUTH_SAMDS),
         bp_meta=dict(MOCK_BP_META), psub_to_prjd=dict(MOCK_PSUB_TO_PRJD),
+        registered_locus_tag_prefixes=dict(MOCK_REGISTERED_PREFIXES),
     )
     submission, results, _xml_src = _validate(fixture_path, ctx)
     return {r["rule_id"] for r in results}
@@ -116,6 +119,7 @@ def _check_autofix(fixture_path, golden_path):
         account=MOCK_ACCOUNT, tax_data=dict(MOCK_TAX),
         authorized_projects=set(MOCK_AUTH_PROJECTS), authorized_samds=set(MOCK_AUTH_SAMDS),
         bp_meta=dict(MOCK_BP_META), psub_to_prjd=dict(MOCK_PSUB_TO_PRJD),
+        registered_locus_tag_prefixes=dict(MOCK_REGISTERED_PREFIXES),
     )
     submission, results, xml_src = _validate(fixture_path, ctx)
     if submission is None:

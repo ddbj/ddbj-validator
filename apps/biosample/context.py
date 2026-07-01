@@ -90,6 +90,8 @@ class ValidationContext:
     bp_meta: dict = field(default_factory=dict)
     # PSUB -> {accession(PRJDB), status_id}（R0095 置換提案）
     psub_to_prjd: dict = field(default_factory=dict)
+    # biosample DB 登録済み locus_tag_prefix -> {submission_id, ...}（R0091 DB 重複）
+    registered_locus_tag_prefixes: dict = field(default_factory=dict)
 
     def __post_init__(self):
         if not self.packages:
