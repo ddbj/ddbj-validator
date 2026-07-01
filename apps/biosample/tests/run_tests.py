@@ -33,6 +33,22 @@ MOCK_TAX = {
                      "is_species_or_below": True, "status": "valid", "lineage": "Eukaryota; Metazoa; Homo"},
     "Homo": {"tax_id": "9605", "rank": "genus", "scientific_name": "Homo",
              "is_species_or_below": False, "status": "invalid_rank", "lineage": "Eukaryota; Metazoa"},
+    # package_vs_organism 用
+    "Mus musculus": {"tax_id": "10090", "rank": "species", "scientific_name": "Mus musculus",
+                     "is_species_or_below": True, "status": "valid", "pl_code": 0,
+                     "lineage": "Eukaryota; Metazoa; Chordata; Mammalia; Mus"},
+    "Dengue virus": {"tax_id": "12637", "rank": "species", "scientific_name": "Dengue virus",
+                     "is_species_or_below": True, "status": "valid", "pl_code": 0,
+                     "lineage": "Viruses; Riboviria; Orthornavirae"},
+    "Saccharomyces cerevisiae": {"tax_id": "4932", "rank": "species", "scientific_name": "Saccharomyces cerevisiae",
+                                 "is_species_or_below": True, "status": "valid", "pl_code": 0,
+                                 "lineage": "Eukaryota; Fungi; Ascomycota"},
+    "soil metagenome": {"tax_id": "410658", "rank": "species", "scientific_name": "soil metagenome",
+                        "is_species_or_below": True, "status": "valid", "pl_code": 0,
+                        "lineage": "unclassified sequences; metagenomes; ecological metagenomes"},
+    "Euglena gracilis": {"tax_id": "3039", "rank": "species", "scientific_name": "Euglena gracilis",
+                         "is_species_or_below": True, "status": "valid", "pl_code": 11,
+                         "lineage": "Eukaryota; Discoba; Euglenozoa"},  # 非 Viridiplantae だが plastid 保持
 }
 
 

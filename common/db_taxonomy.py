@@ -39,6 +39,24 @@ def get_tax_group(org_name, lineage):
     return "other"
 
 
+# ==============================================================================
+# taxonomy 判定の共通ヘルパ（ddbj / biosample から共用）。
+# fetch_taxonomy_data / fetch_taxonomy_from_ncbi が返す info dict（lineage 文字列・pl_code 等）を入力に取る。
+# ==============================================================================
+def tax_has_lineage(info, names):
+    """info（tax_data の 1 件、または lineage 文字列）の lineage に names のいずれかを含めば True。"""
+    lineage = info.get("lineage", "") if isinstance(info, dict) else (info or "")
+    return any(n in lineage for n in names)
+
+
+def tax_has_plastids(info):
+    """plastid genetic code を持つ（pl_code != 0）か。"""
+    try:
+        return int((info or {}).get("pl_code") or 0) != 0
+    except (TypeError, ValueError):
+        return False
+
+
 TYPE_PRIORITY = {
     "scientific name": 1,
     "synonym": 2,

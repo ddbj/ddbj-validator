@@ -11,6 +11,7 @@ from apps.biosample.rules.value_ascii import BS_R0058, BS_R0100
 from apps.biosample.rules.identifier import BS_R0005, BS_R0069, BS_R0099, BS_R0102, BS_R0122
 from apps.biosample.rules.geo import BS_R0008
 from apps.biosample.rules.taxonomy import BS_R0004, BS_R0096
+from apps.biosample.rules.package_organism import PackageOrganismValidator
 
 
 class Validator:
@@ -51,7 +52,8 @@ class Validator:
             # --- フェーズ B: taxonomy（DB/NCBI 依存。local ではスキップ）---
             BS_R0004(),  # organism ↔ taxonomy_id 不一致
             BS_R0096(),  # species/infraspecific rank
-            # 以降 package_vs_organism（lineage）/ C（DB/account）/ autofix
+            PackageOrganismValidator(),  # package_vs_organism（BS_R0048＋R0074-0130）
+            # 以降 C（DB/account）/ autofix
         ]
 
         self.active_rules = []
