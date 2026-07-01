@@ -1,6 +1,6 @@
 """controlled vocabulary（属性別 CV）ルール（C 群）。
 
-CV ソースは context.cv_attr（apps/biosample/resources/controlled_terms.json。登録システム conf と同一）。
+CV ソースは context.cv_attr（attributes_packages.json の attributes[name].allowed_values から構築）。
 Ruby 実装（biosample_validator.rb rule:2 / rule:138）に準拠。
 
 - BS_R0002（warning, autofix）: CV 属性で、値が CV に大文字小文字違いで一致する場合に

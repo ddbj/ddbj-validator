@@ -15,9 +15,10 @@ _COMMON_DEF = Path(__file__).resolve().parents[2] / "common" / "resources" / "de
 
 
 def load_packages():
-    """attributes_packages.json を読み込み (fixed_attributes, packages) を返す。"""
+    """attributes_packages.json を読み込み (fixed_attributes, packages, attributes) を返す。
+    attributes は属性グローバル定義 {name: {allowed_values, format_pattern, synonyms, invalid_values, ...}}。"""
     data = json.loads((_RES / "attributes_packages.json").read_text(encoding="utf-8"))
-    return data.get("fixed_attributes", {}), data.get("packages", {})
+    return data.get("fixed_attributes", {}), data.get("packages", {}), data.get("attributes", {})
 
 
 def load_cv_terms():
@@ -28,30 +29,21 @@ def load_cv_terms():
         return {}
 
 
-def load_cv_attr():
-    """属性別の controlled vocabulary（attribute_name -> 許容値リスト）。
-    apps/biosample/resources/controlled_terms.json（登録システムの conf と同一）。R0002/R0138 用。"""
+def build_cv_attr(attributes):
+    """属性グローバル定義から controlled vocabulary {attr_name: [許容値]} を構築（R0002/R0138）。
+    CV は attributes_packages.json の attributes[name].allowed_values に集約済み
+    （旧 controlled_terms.json は廃止）。missing 系の値は R0002/R0138 側で別途スキップ。"""
+    return {n: info["allowed_values"] for n, info in attributes.items()
+            if isinstance(info, dict) and info.get("allowed_values")}
+
+
+def load_value_corrections():
+    """autofix 用の値補正辞書（special_characters / null_not_recommended）をまとめて返す。
+    apps/biosample/resources/value_corrections.json。R0012（特殊文字）/ R0001（非推奨 null 値）用。"""
     try:
-        return json.loads((_RES / "controlled_terms.json").read_text(encoding="utf-8"))
+        return json.loads((_RES / "value_corrections.json").read_text(encoding="utf-8"))
     except Exception:
         return {}
-
-
-def load_special_chars():
-    """特殊文字→置換文字の対応（℃→degree Celsius 等）。R0012 用。
-    apps/biosample/resources/special_characters.json（登録システム conf と同一）。"""
-    try:
-        return json.loads((_RES / "special_characters.json").read_text(encoding="utf-8"))
-    except Exception:
-        return {}
-
-
-def load_null_not_recommended():
-    """非推奨 null 値の正規表現リスト（"NA"/"N/A"/"Unknown"/"." 等）。R0001 用。"""
-    try:
-        return json.loads((_RES / "null_not_recommended.json").read_text(encoding="utf-8"))
-    except Exception:
-        return []
 
 
 _COLL_DUMP = Path(__file__).resolve().parents[2] / "common" / "resources" / "coll_dump.txt"
@@ -82,8 +74,10 @@ class ValidationContext:
     skip_auth: bool = False
     fixed_attributes: dict = field(default_factory=dict)
     packages: dict = field(default_factory=dict)
+    # 属性グローバル定義 {name: {allowed_values, format_pattern, synonyms, ...}}（attributes_packages.json）
+    attributes: dict = field(default_factory=dict)
     cv_terms: dict = field(default_factory=dict)
-    # 属性別 controlled vocabulary {attr_name: [許容値]}（R0002/R0138）
+    # 属性別 controlled vocabulary {attr_name: [許容値]}（R0002/R0138。attributes から構築）
     cv_attr: dict = field(default_factory=dict)
     # 特殊文字→置換 {"℃": "degree Celsius", ...}（R0012）
     special_chars: dict = field(default_factory=dict)
@@ -105,15 +99,17 @@ class ValidationContext:
 
     def __post_init__(self):
         if not self.packages:
-            self.fixed_attributes, self.packages = load_packages()
+            self.fixed_attributes, self.packages, self.attributes = load_packages()
         if not self.cv_terms:
             self.cv_terms = load_cv_terms()
         if not self.cv_attr:
-            self.cv_attr = load_cv_attr()
-        if not self.special_chars:
-            self.special_chars = load_special_chars()
-        if not self.null_not_recommended:
-            self.null_not_recommended = load_null_not_recommended()
+            self.cv_attr = build_cv_attr(self.attributes)
+        if not self.special_chars or not self.null_not_recommended:
+            vc = load_value_corrections()
+            if not self.special_chars:
+                self.special_chars = vc.get("special_characters", {})
+            if not self.null_not_recommended:
+                self.null_not_recommended = vc.get("null_not_recommended", [])
         if not self.institution_codes:
             self.institution_codes = load_institution_codes()
 
