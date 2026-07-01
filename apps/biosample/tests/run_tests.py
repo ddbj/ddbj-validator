@@ -77,6 +77,13 @@ def _fired_rules(fixture_path):
         authorized_projects=set(MOCK_AUTH_PROJECTS), authorized_samds=set(MOCK_AUTH_SAMDS),
         bp_meta=dict(MOCK_BP_META), psub_to_prjd=dict(MOCK_PSUB_TO_PRJD),
     )
+    submission, results, _xml_src = _validate(fixture_path, ctx)
+    return {r["rule_id"] for r in results}
+
+
+def _validate(fixture_path, ctx):
+    """fixture を検証し (submission, results, xml_source_path) を返す。
+    TSV は XML へ変換した一時ファイルのパスを xml_source として返す（autofix 適用に使う）。"""
     path = Path(fixture_path)
     if path.suffix.lower() in (".txt", ".tsv"):
         import tempfile
@@ -84,13 +91,41 @@ def _fired_rules(fixture_path):
         sub_id, _ = tsv_to_xml.parse_filename(str(path))
         tmp = tempfile.NamedTemporaryFile("w", suffix=".xml", delete=False, encoding="utf-8")
         tmp.write(xml_text or ""); tmp.close()
-        submission, pre = xml_reader.parse_xml(tmp.name, submission_id=sub_id)
+        xml_src = tmp.name
+        submission, pre = xml_reader.parse_xml(xml_src, submission_id=sub_id)
     else:
-        submission, pre = xml_reader.parse_xml(str(path))
-    fired = {r["rule_id"] for r in pre}
+        xml_src = str(path)
+        submission, pre = xml_reader.parse_xml(xml_src)
+    results = list(pre)
     if submission is not None:
-        fired |= {r["rule_id"] for r in Validator(ctx).run(submission)}
-    return fired
+        results += Validator(ctx).run(submission)
+    return submission, results, xml_src
+
+
+def _check_autofix(fixture_path, golden_path):
+    """fixture を検証→autofix 全自動適用し、生成 XML を golden とバイト突合。
+    戻り値: (ok, error_message)。"""
+    import tempfile
+    from apps.biosample import autofix
+    ctx = ValidationContext(
+        skip_db=False, skip_ncbi=False, skip_auth=False,
+        account=MOCK_ACCOUNT, tax_data=dict(MOCK_TAX),
+        authorized_projects=set(MOCK_AUTH_PROJECTS), authorized_samds=set(MOCK_AUTH_SAMDS),
+        bp_meta=dict(MOCK_BP_META), psub_to_prjd=dict(MOCK_PSUB_TO_PRJD),
+    )
+    submission, results, xml_src = _validate(fixture_path, ctx)
+    if submission is None:
+        return False, "parse failed"
+    with tempfile.TemporaryDirectory() as td:
+        name = "out.xml"
+        n = autofix.apply_autofix(xml_src, results, td, name)
+        if n == 0:
+            return False, "no autofix applied (expected fixed output)"
+        got = (Path(td) / "fixed" / name).read_bytes()
+    want = golden_path.read_bytes()
+    if got == want:
+        return True, ""
+    return False, f"fixed output differs from golden (got {len(got)}B, want {len(want)}B)"
 
 
 def main(target=None):
@@ -118,6 +153,22 @@ def main(target=None):
                 print(f"  [{RED}MISMATCH{END}] {fx.name}: expected {expected}, fired={sorted(fired)}")
                 mismatched += 1
                 errors.append(f"{d.name}/{fx.name}")
+
+        # autofix ゴールデン検証: <dir>/expected/<name> があれば、その入力に autofix を適用して突合。
+        exp_dir = d / "expected"
+        if exp_dir.is_dir():
+            for fx in sorted(list(d.glob("*.xml")) + list(d.glob("*.txt"))):
+                golden = exp_dir / (Path(fx.name).stem + ".xml" if fx.suffix != ".xml" else fx.name)
+                if not golden.exists():
+                    continue
+                ap, af_err = _check_autofix(fx, golden)
+                if ap:
+                    print(f"  [{GREEN}Autofix{END}] {fx.name} matches expected/{golden.name}")
+                    passed += 1
+                else:
+                    print(f"  [{RED}MISMATCH{END}] autofix {fx.name}: {af_err}")
+                    mismatched += 1
+                    errors.append(f"{d.name}/autofix:{fx.name}")
 
     print("\n" + "=" * 60)
     print(f"  Matched: {passed}   Mismatched: {RED if mismatched else GREEN}{mismatched}{END}")

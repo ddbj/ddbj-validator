@@ -10,7 +10,7 @@ import tempfile
 from pathlib import Path
 
 from apps.biosample.context import ValidationContext
-from apps.biosample import xml_reader, tsv_to_xml
+from apps.biosample import xml_reader, tsv_to_xml, autofix
 from apps.biosample.validator import Validator
 from apps.biosample.reporter import write_reports
 
@@ -74,6 +74,15 @@ def run(args):
 
     results = pre_errors + Validator(context).run(submission)
     counts = write_reports(results, out_dir, in_path.name)
+
+    # autofix 全自動適用（対話なし）。修正済み XML を fixed/ に出力。
+    # 入力が TSV でも出力は XML（検証パスと同一の XML を元に修正）。
+    autofix.clean_fixed_dir(out_dir)
+    fixed_name = in_path.name if not is_tsv else (in_path.stem + ".xml")
+    n_fixed = autofix.apply_autofix(xml_for_parse, results, out_dir, fixed_name)
+    if n_fixed:
+        print(f"[autofix] applied {n_fixed} fix(es) -> {Path(out_dir) / 'fixed' / fixed_name}")
+
     return 1 if counts.get("error") else 0
 
 
