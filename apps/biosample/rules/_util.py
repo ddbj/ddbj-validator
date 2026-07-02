@@ -31,3 +31,14 @@ def is_missing_without_term(v):
 def norm(v):
     """空白正規化＋小文字化（値の同一性比較用）。"""
     return re.sub(r"\s+", " ", str(v).strip().lower()) if v else ""
+
+
+# ゲノム系パッケージのプレフィクス（前方一致で判定）。原核=MIGS.ba / 真核=MIGS.eu。
+# R0104/R0109 等で共用（annotated genome / informal name 判定）。
+MIGS_BA_EU = ("MIGS.ba", "MIGS.eu")
+
+
+def pkg_startswith(pkg, *prefixes):
+    """package 名が prefixes のいずれかで前方一致するか（None 安全）。
+    `not rec.package or not rec.package.startswith(...)` の定型を1関数に集約。"""
+    return bool(pkg) and pkg.startswith(prefixes)

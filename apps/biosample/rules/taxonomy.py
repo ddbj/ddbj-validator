@@ -10,7 +10,7 @@ tax_data は DB(common/db_taxonomy) または NCBI API で取得。local（skip_
 """
 import re
 from apps.biosample.rules.base import BsRule
-from apps.biosample.rules._util import is_empty as _empty, is_missing_value as _is_missing
+from apps.biosample.rules._util import is_empty, is_missing_value, pkg_startswith, MIGS_BA_EU
 from common.db_taxonomy import tax_has_lineage
 
 # informal name（"Genus sp. strain"）判定用（R0104/R0134/R0140）
@@ -23,9 +23,14 @@ _SP_END = re.compile(r"\ssp\.\s*$", re.I)                    # 末尾が " sp."
 _SP_INEX = re.compile(r".+sp\.\s*\((in:|ex)\s.*\)$", re.I)   # "xxx sp. (in: yyy)" / "(ex yyy)"
 
 
+def _found(info):
+    """tax_data で organism が解決できた（status が not_found でない）か。R0004/R0096 用。"""
+    return bool(info) and info.get("status") != "not_found"
+
+
 def _resolved(info):
-    """tax_data の情報が「学名解決済み」とみなせるか（novel/未解決は autofix しない）。"""
-    return bool(info) and info.get("status") != "not_found" and bool(info.get("scientific_name"))
+    """学名解決済み（found かつ scientific_name あり）。autofix 系（R0045/R0105/R0015）用。"""
+    return _found(info) and bool(info.get("scientific_name"))
 
 
 class BS_R0004(BsRule):
@@ -38,15 +43,15 @@ class BS_R0004(BsRule):
     def validate(self, submission, context):
         out = []
         for rec in submission.records:
-            if _empty(rec.organism) or _empty(rec.taxonomy_id):
+            if is_empty(rec.organism) or is_empty(rec.taxonomy_id):
                 continue
             info = context.tax_data.get(rec.organism)
-            if not info or info.get("status") == "not_found":
+            if not _found(info):
                 continue  # 解決できない organism は別ルール（taxonomy 未登録等）
             db_taxid = info.get("tax_id")
             if db_taxid and str(rec.taxonomy_id).strip() != str(db_taxid).strip():
                 out.append(self.result(
-                    sample=(rec.sample_name or rec.accession),
+                    sample=rec.sample_id,
                     message=f"Organism and taxonomy id do not match. (organism: '{rec.organism}', taxonomy_id: '{rec.taxonomy_id}', expected: '{db_taxid}')"))
         return out
 
@@ -61,14 +66,14 @@ class BS_R0096(BsRule):
     def validate(self, submission, context):
         out = []
         for rec in submission.records:
-            if _empty(rec.taxonomy_id) or _empty(rec.organism):
+            if is_empty(rec.taxonomy_id) or is_empty(rec.organism):
                 continue
             info = context.tax_data.get(rec.organism)
-            if not info or info.get("status") == "not_found":
+            if not _found(info):
                 continue
             if info.get("is_species_or_below") is False:
                 out.append(self.result(
-                    sample=(rec.sample_name or rec.accession),
+                    sample=rec.sample_id,
                     message=f"Taxonomy should be species or infraspecific level. (organism: '{rec.organism}', rank: '{info.get('rank')}')"))
         return out
 
@@ -87,13 +92,13 @@ class BS_R0059(BsRule):
     def validate(self, submission, context):
         out = []
         for rec in submission.records:
-            if _empty(rec.attr("sex")) or _empty(rec.organism):
+            if is_empty(rec.attr("sex")) or is_empty(rec.organism):
                 continue
             info = context.tax_data.get(rec.organism)
             if not info:
                 continue
             if tax_has_lineage(info, ["Bacteria", "Archaea"]):
-                out.append(self.result(sample=(rec.sample_name or rec.accession),
+                out.append(self.result(sample=rec.sample_id,
                                        message="Attribute 'sex' is not appropriate for bacteria/archaea."))
         return out
 
@@ -108,7 +113,7 @@ class BS_R0115(BsRule):
     def validate(self, submission, context):
         out = []
         for rec in submission.records:
-            if _empty(rec.attr("specimen_voucher")) or _empty(rec.organism):
+            if is_empty(rec.attr("specimen_voucher")) or is_empty(rec.organism):
                 continue
             info = context.tax_data.get(rec.organism)
             if not info:
@@ -116,7 +121,7 @@ class BS_R0115(BsRule):
             # Bacteria(Cyanobacteria を除く) または unclassified sequences は不可
             is_bacteria = tax_has_lineage(info, ["Bacteria"]) and not tax_has_lineage(info, ["Cyanobacteria"])
             if is_bacteria or tax_has_lineage(info, ["unclassified sequences"]):
-                out.append(self.result(sample=(rec.sample_name or rec.accession),
+                out.append(self.result(sample=rec.sample_id,
                                        message="Attribute 'specimen_voucher' is not appropriate for bacteria/unclassified sequences."))
         return out
 
@@ -131,10 +136,10 @@ class BS_R0106(BsRule):
         out = []
         for rec in submission.records:
             v = rec.attr("metagenome_source")
-            if _empty(v):
+            if is_empty(v):
                 continue
             if not v.strip().lower().endswith("metagenome"):
-                out.append(self.result(sample=(rec.sample_name or rec.accession),
+                out.append(self.result(sample=rec.sample_id,
                                        message=f"Invalid metagenome source. (Found: '{v}')"))
         return out
 
@@ -148,10 +153,10 @@ class BS_R0141(BsRule):
     def validate(self, submission, context):
         out = []
         for rec in submission.records:
-            if not rec.package or not rec.package.startswith("MIMAG"):
+            if not pkg_startswith(rec.package, "MIMAG"):
                 continue
             if rec.organism and "uncultured" in rec.organism.lower():
-                out.append(self.result(sample=(rec.sample_name or rec.accession),
+                out.append(self.result(sample=rec.sample_id,
                                        message=f"Organism containing 'uncultured' cannot be used for MIMAG. (organism: '{rec.organism}')"))
         return out
 
@@ -168,7 +173,7 @@ class BS_R0045(BsRule):
         # 解決できない（novel）場合は補正しない。
         out = []
         for rec in submission.records:
-            if _empty(rec.organism):
+            if is_empty(rec.organism):
                 continue
             info = context.tax_data.get(rec.organism)
             if not _resolved(info):
@@ -177,7 +182,7 @@ class BS_R0045(BsRule):
             taxid = info.get("tax_id")
             need_name = bool(sci) and sci != rec.organism
             need_taxid = bool(taxid) and (
-                _empty(rec.taxonomy_id) or str(rec.taxonomy_id).strip() != str(taxid).strip())
+                is_empty(rec.taxonomy_id) or str(rec.taxonomy_id).strip() != str(taxid).strip())
             if not (need_name or need_taxid):
                 continue
             detail = f"organism: '{rec.organism}'"
@@ -187,9 +192,9 @@ class BS_R0045(BsRule):
                 detail += f", taxonomy_id: '{taxid}'"
             msg = ("Taxonomy error warning. organism will be corrected to the scientific name "
                    f"and/or taxonomy id filled. ({detail})")
-            out.append(self.result(
-                sample=(rec.sample_name or rec.accession), message=msg,
-                autofix=True, kind="organism",
+            out.append(self.autofix_result(
+                sample=rec.sample_id, message=msg,
+                kind="organism",
                 old_value=rec.organism,
                 new_value=(sci if need_name else None),
                 new_taxid=(str(taxid) if need_taxid else None)))
@@ -208,17 +213,17 @@ class BS_R0105(BsRule):
         out = []
         for rec in submission.records:
             for v in rec.attr_values("component_organism"):
-                if _empty(v):
+                if is_empty(v):
                     continue
                 info = context.tax_data.get(v)
                 if not _resolved(info):
                     continue
                 sci = info.get("scientific_name")
                 if sci and sci != v:
-                    out.append(self.result(
-                        sample=(rec.sample_name or rec.accession),
+                    out.append(self.autofix_result(
+                        sample=rec.sample_id,
                         message=f"Taxonomy warning. component_organism will be corrected to the scientific name. (Found: '{v}', Suggested: '{sci}')",
-                        autofix=True, attribute="component_organism", old_value=v, new_value=sci))
+                        attribute="component_organism", old_value=v, new_value=sci))
         return out
 
 
@@ -235,23 +240,23 @@ class BS_R0015(BsRule):
         out = []
         for rec in submission.records:
             host = rec.attr("host")
-            if _empty(host) or _is_missing(host):
+            if is_empty(host) or is_missing_value(host):
                 continue
             if host.casefold() == "human":
-                out.append(self.result(
-                    sample=(rec.sample_name or rec.accession),
+                out.append(self.autofix_result(
+                    sample=rec.sample_id,
                     message="Invalid host organism name. (host: 'human', Suggested: 'Homo sapiens')",
-                    autofix=True, attribute="host", old_value=host, new_value="Homo sapiens"))
+                    attribute="host", old_value=host, new_value="Homo sapiens"))
                 continue
             info = context.tax_data.get(host)
             if not _resolved(info):
                 continue
             sci = info.get("scientific_name")
             if sci and sci != host:
-                out.append(self.result(
-                    sample=(rec.sample_name or rec.accession),
+                out.append(self.autofix_result(
+                    sample=rec.sample_id,
                     message=f"Invalid host organism name. (host: '{host}', Suggested: '{sci}')",
-                    autofix=True, attribute="host", old_value=host, new_value=sci))
+                    attribute="host", old_value=host, new_value=sci))
         return out
 
 
@@ -265,10 +270,10 @@ class BS_R0134(BsRule):
         # MIGS.ba.* で organism の "sp./bacterium/archaeon" 以降の識別子が strain/isolate と一致しない場合に警告。
         out = []
         for rec in submission.records:
-            if not rec.package or not rec.package.startswith("MIGS.ba"):
+            if not pkg_startswith(rec.package, "MIGS.ba"):
                 continue
             org = rec.organism
-            if _empty(org):
+            if is_empty(org):
                 continue
             m = None
             for rx in _SP_KEYWORDS:
@@ -282,12 +287,12 @@ class BS_R0134(BsRule):
                 continue
             strain = rec.attr("strain")
             isolate = rec.attr("isolate")
-            if strain and not _is_missing(strain) and suffix == strain:
+            if strain and not is_missing_value(strain) and suffix == strain:
                 continue
-            if isolate and not _is_missing(isolate) and suffix == isolate:
+            if isolate and not is_missing_value(isolate) and suffix == isolate:
                 continue
             out.append(self.result(
-                sample=(rec.sample_name or rec.accession),
+                sample=rec.sample_id,
                 message=(f"Non-identical identifiers among organism/strain/isolate. "
                          f"(organism: '{org}', strain: '{strain or ''}', isolate: '{isolate or ''}')")))
         return out
@@ -308,11 +313,11 @@ class BS_R0140(BsRule):
             if rec.package not in self._PKG:
                 continue
             org = rec.organism
-            if _empty(org):
+            if is_empty(org):
                 continue
             if _SP_END.search(org):
                 out.append(self.result(
-                    sample=(rec.sample_name or rec.accession),
+                    sample=rec.sample_id,
                     message=f"Invalid taxonomy for genome sample. (organism: '{org}')"))
         return out
 
@@ -331,15 +336,15 @@ class BS_R0104(BsRule):
         #   taxonomy_id あり & 種より上位 → R0096 の領分としてスルー
         out = []
         for rec in submission.records:
-            if not rec.package or not (rec.package.startswith("MIGS.ba") or rec.package.startswith("MIGS.eu")):
+            if not pkg_startswith(rec.package, *MIGS_BA_EU):
                 continue
             org = rec.organism
-            if _empty(org):
+            if is_empty(org):
                 continue
             if not (org.lower().endswith("sp.") or _SP_INEX.search(org)):
                 continue
             taxid = rec.taxonomy_id
-            if _empty(taxid) or str(taxid).strip() == "1":
+            if is_empty(taxid) or str(taxid).strip() == "1":
                 fire = True
             else:
                 info = context.tax_data.get(org)
@@ -347,6 +352,6 @@ class BS_R0104(BsRule):
                 fire = bool(info) and bool(info.get("is_species_or_below"))
             if fire:
                 out.append(self.result(
-                    sample=(rec.sample_name or rec.accession),
+                    sample=rec.sample_id,
                     message=f"Invalid taxonomy for genome sample. (organism: '{org}')"))
         return out

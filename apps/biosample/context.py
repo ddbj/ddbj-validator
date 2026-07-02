@@ -117,6 +117,10 @@ class ValidationContext:
         """パッケージ定義（attributes/lineage 等）を返す。無ければ None。"""
         return self.packages.get(package_key)
 
+    def country_terms(self):
+        """許可される国名集合（cv_terms.countries ∪ historical_countries）。R0008/R0094 で共用。"""
+        return set(self.cv_terms.get("countries", [])) | set(self.cv_terms.get("historical_countries", []))
+
     def attribute_uses(self, package_key):
         """そのパッケージの属性名 -> use（fixed_attributes ＋ package.attributes）。"""
         uses = {n: info.get("use", "") for n, info in self.fixed_attributes.items()}

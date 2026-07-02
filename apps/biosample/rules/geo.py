@@ -17,8 +17,7 @@ class BS_R0008(BsRule):
     description = "Entered country is not in controlled terms."
 
     def validate(self, submission, context):
-        countries = set(context.cv_terms.get("countries", []))
-        countries |= set(context.cv_terms.get("historical_countries", []))
+        countries = context.country_terms()
         if not countries:
             return []  # CV が無ければ検証スキップ
         lower = {c.lower() for c in countries}
@@ -30,7 +29,7 @@ class BS_R0008(BsRule):
             country = v.split(":", 1)[0].strip()
             # 完全一致／大文字小文字差は許容（case 補正は autofix の領分）
             if country and country not in countries and country.lower() not in lower:
-                out.append(self.result(sample=(rec.sample_name or rec.accession),
+                out.append(self.result(sample=rec.sample_id,
                                        message=f"Entered country is not in controlled terms. (Found: '{country}')"))
         return out
 
@@ -44,8 +43,7 @@ class BS_R0094(BsRule):
     def validate(self, submission, context):
         # 国名部分が CV に大文字小文字違いで一致、または "Country:Region" の整形差がある場合、
         # 正表記へ autofix 提案（CV に全く無い場合は R0008=error が担当）。
-        countries = set(context.cv_terms.get("countries", []))
-        countries |= set(context.cv_terms.get("historical_countries", []))
+        countries = context.country_terms()
         if not countries:
             return []
         canon = {c.lower(): c for c in countries}
@@ -65,10 +63,10 @@ class BS_R0094(BsRule):
             else:
                 new_val = f"{new_country}:{parts[1].strip()}"
             if new_val != v:
-                out.append(self.result(
-                    sample=(rec.sample_name or rec.accession),
+                out.append(self.autofix_result(
+                    sample=rec.sample_id,
                     message=f"Format of geo_loc_name is invalid. (Found: '{v}', Suggested: '{new_val}')",
-                    autofix=True, attribute="geo_loc_name", old_value=v, new_value=new_val))
+                    attribute="geo_loc_name", old_value=v, new_value=new_val))
         return out
 
 
@@ -97,7 +95,7 @@ class BS_R0041(BsRule):
                 hits = sorted(set(verdict["hit_names"]))
                 actual = ", ".join(hits) if hits else "Ocean/Unmapped area"
                 out.append(self.result(
-                    sample=(rec.sample_name or rec.accession),
+                    sample=rec.sample_id,
                     message=(f"Values provided for 'lat_lon' ({lat_lon}) and 'geo_loc_name' "
                              f"({country}) contradict each other. Coordinates point to: {actual}")))
         return out

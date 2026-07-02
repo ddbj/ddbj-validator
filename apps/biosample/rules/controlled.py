@@ -45,11 +45,11 @@ class BS_R0002(BsRule):
                             replace = term  # 大文字小文字違いの一致 → 正表記を提案
                             break
                 if replace:
-                    out.append(self.result(
-                        sample=(rec.sample_name or rec.accession),
+                    out.append(self.autofix_result(
+                        sample=rec.sample_id,
                         message=(f"Attribute value is not in controlled terms. "
                                  f"({name}: '{val}', Suggested: '{replace}')"),
-                        autofix=True, attribute=name, old_value=val, new_value=replace))
+                        attribute=name, old_value=val, new_value=replace))
         return out
 
 
@@ -68,7 +68,7 @@ class BS_R0138(BsRule):
             for name, val in _cv_attributes(rec, cv_attr):
                 if val not in cv_attr[name]:  # 完全一致で CV に無い
                     out.append(self.result(
-                        sample=(rec.sample_name or rec.accession),
+                        sample=rec.sample_id,
                         message=(f"Attribute value is not in controlled terms. "
                                  f"({name}: '{val}')")))
         return out

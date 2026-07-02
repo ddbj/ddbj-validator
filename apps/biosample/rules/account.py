@@ -37,7 +37,7 @@ class BS_R0006(BsRule):
             if is_empty(v):
                 continue
             if v.strip().upper() not in {p.upper() for p in context.authorized_projects}:
-                out.append(self.result(sample=(rec.sample_name or rec.accession),
+                out.append(self.result(sample=rec.sample_id,
                                        message=f"BioProject accession not registered in your account. (Found: '{v}')"))
         return out
 
@@ -60,7 +60,7 @@ class BS_R0129(BsRule):
                 continue
             for samd in _SAMD_RE.findall(v):
                 if samd.upper() not in authorized:
-                    out.append(self.result(sample=(rec.sample_name or rec.accession),
+                    out.append(self.result(sample=rec.sample_id,
                                            message=f"derived_from BioSample not registered in your account. (Found: '{samd}')"))
         return out
 
@@ -80,7 +80,7 @@ class BS_R0070(BsRule):
                 continue
             meta = context.bp_meta.get(v.strip())
             if meta and str(meta.get("project_type", "")).lower() == "umbrella":
-                out.append(self.result(sample=(rec.sample_name or rec.accession),
+                out.append(self.result(sample=rec.sample_id,
                                        message=f"BioProject is an Umbrella project. (Found: '{v}')"))
         return out
 
@@ -100,7 +100,7 @@ class BS_R0095(BsRule):
                 continue
             info = context.psub_to_prjd.get(v.strip())
             if v.strip().upper().startswith("PSUB") and info and info.get("accession"):
-                out.append(self.result(sample=(rec.sample_name or rec.accession),
+                out.append(self.result(sample=rec.sample_id,
                                        message=f"PSUB is replaced to {info['accession']}. (Found: '{v}')"))
         return out
 
@@ -115,6 +115,6 @@ class BS_R0128(BsRule):
         out = []
         for rec in submission.records:
             if not is_empty(rec.attr("locus_tag_prefix")) and is_empty(rec.attr("bioproject_id")):
-                out.append(self.result(sample=(rec.sample_name or rec.accession),
+                out.append(self.result(sample=rec.sample_id,
                                        message="Provide a BioProject ID for a locus tag prefix."))
         return out

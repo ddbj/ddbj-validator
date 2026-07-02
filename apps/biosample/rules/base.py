@@ -30,3 +30,9 @@ class BsRule:
         }
         r.update(extra)
         return r
+
+    def autofix_result(self, sample=None, message=None, **fields):
+        """autofix 提案付きの結果 dict を返す（result に autofix=True を付与するショートカット）。
+        fields には属性値置換なら attribute/old_value/new_value、organism 補正なら
+        kind='organism'/old_value/new_value/new_taxid 等を渡す。level/target も指定可。"""
+        return self.result(sample=sample, message=message, autofix=True, **fields)

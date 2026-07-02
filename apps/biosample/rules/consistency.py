@@ -8,10 +8,10 @@
 import re
 from apps.biosample.rules.base import BsRule
 from apps.biosample.rules._util import (
-    is_empty as _empty,
-    norm as _norm,
+    is_empty,
+    norm,
     is_missing_without_term,
-    is_missing_value as _is_missing,
+    is_missing_value,
 )
 
 
@@ -58,14 +58,14 @@ class BS_R0036(BsRule):
     def validate(self, submission, context):
         out = []
         for rec in submission.records:
-            if _empty(rec.package) or context.package_def(rec.package) is None:
+            if is_empty(rec.package) or context.package_def(rec.package) is None:
                 continue
             either = context.either_one_attributes(rec.package)
             if not either:
                 continue
-            if not any(not _empty(rec.attr(n)) for n in either):
+            if not any(not is_empty(rec.attr(n)) for n in either):
                 out.append(self.result(
-                    sample=(rec.sample_name or rec.accession),
+                    sample=rec.sample_id,
                     message=f"At least one of the following attributes is required: {', '.join(sorted(either))}"))
         return out
 
@@ -80,9 +80,9 @@ class BS_R0073(BsRule):
         out = []
         for rec in submission.records:
             vals = {
-                "organism": _norm(rec.organism),
-                "host": _norm(rec.attr("host")),
-                "isolation_source": _norm(rec.attr("isolation_source")),
+                "organism": norm(rec.organism),
+                "host": norm(rec.attr("host")),
+                "isolation_source": norm(rec.attr("isolation_source")),
             }
             present = {k: v for k, v in vals.items() if v}
             seen = {}
@@ -92,7 +92,7 @@ class BS_R0073(BsRule):
                     redundant = True
                 seen[v] = k
             if redundant:
-                out.append(self.result(sample=(rec.sample_name or rec.accession),
+                out.append(self.result(sample=rec.sample_id,
                                        message="Redundant values detected among organism/host/isolation_source."))
         return out
 
@@ -107,14 +107,14 @@ class BS_R0135(BsRule):
         out = []
         for rec in submission.records:
             v = rec.attr("strain")
-            if _empty(v):
+            if is_empty(v):
                 continue
             low = v.strip().lower()
             bad = low in _INVALID_STRAIN or low.startswith("subsp.") or low.startswith("serovar")
             if not bad and rec.organism and low.startswith(rec.organism.strip().lower()):
                 bad = True  # 生物名で始まる strain は不可
             if bad:
-                out.append(self.result(sample=(rec.sample_name or rec.accession),
+                out.append(self.result(sample=rec.sample_id,
                                        message=f"Invalid strain value. (Found: '{v}')"))
         return out
 
@@ -136,7 +136,7 @@ class BS_R0024(BsRule):
                 if name in self._EXCLUDE:
                     continue
                 for v in vals:
-                    items.append((name, _norm(v)))
+                    items.append((name, norm(v)))
             return frozenset(items)
 
         from collections import Counter
@@ -145,7 +145,7 @@ class BS_R0024(BsRule):
         out = []
         for rec, k in zip(submission.records, keys):
             if k in dup:
-                out.append(self.result(sample=(rec.sample_name or rec.accession),
+                out.append(self.result(sample=rec.sample_id,
                                        message="BioSample has no differentiating information from another sample in this submission."))
         return out
 
@@ -165,14 +165,14 @@ class BS_R0062(BsRule):
             inst = {}
             for name in self._VOUCHERS:
                 v = rec.attr(name)
-                if _empty(v):
+                if is_empty(v):
                     continue
                 code = v.split(":", 1)[0].strip()
                 if code:
                     inst.setdefault(code, []).append(name)
             for code, names in inst.items():
                 if len(names) > 1:
-                    out.append(self.result(sample=(rec.sample_name or rec.accession),
+                    out.append(self.result(sample=rec.sample_id,
                                            message=f"Multiple voucher attributes with the same institution code '{code}': {', '.join(names)}"))
         return out
 
@@ -191,11 +191,11 @@ class BS_R0137(BsRule):
             for name in self._TARGETS:
                 v = rec.attr(name)
                 # 未入力、または missing 系だが reporting term を伴わない場合はエラー
-                if _empty(v):
-                    out.append(self.result(sample=(rec.sample_name or rec.accession), target=name,
+                if is_empty(v):
+                    out.append(self.result(sample=rec.sample_id, target=name,
                                            message=f"Missing reporting level term for '{name}'."))
                 elif is_missing_without_term(v):
-                    out.append(self.result(sample=(rec.sample_name or rec.accession), target=name,
+                    out.append(self.result(sample=rec.sample_id, target=name,
                                            message=f"Missing reporting level term for '{name}'. (Found: '{v}')"))
         return out
 
@@ -204,7 +204,7 @@ def _no_meaningful_identifier(rec, attrs):
     """attrs のいずれにも「意味のある値」（非空・非 missing）が無ければ True。"""
     for a in attrs:
         v = rec.attr(a)
-        if not _empty(v) and not _is_missing(v):
+        if not is_empty(v) and not is_missing_value(v):
             return False
     return True
 
@@ -231,14 +231,14 @@ class BS_R0001(BsRule):
             for name in sorted(mandatory):
                 date_or_geo = name in ("collection_date", "geo_loc_name")
                 for v in rec.attr_values(name):
-                    if _empty(v):
+                    if is_empty(v):
                         continue
                     fixed = _normalize_missing_value(v, na, nnr, date_or_geo)
                     if fixed:
-                        out.append(self.result(
-                            sample=(rec.sample_name or rec.accession), target=name,
+                        out.append(self.autofix_result(
+                            sample=rec.sample_id, target=name,
                             message=f"Invalid missing value. ({name}: '{v}', Suggested: '{fixed}')",
-                            autofix=True, attribute=name, old_value=v, new_value=fixed))
+                            attribute=name, old_value=v, new_value=fixed))
         return out
 
 
@@ -268,7 +268,7 @@ class BS_R0132(BsRule):
             for pfx, attrs in self._PKG.items():
                 if rec.package.startswith(pfx) and _no_meaningful_identifier(rec, attrs):
                     out.append(self.result(
-                        sample=(rec.sample_name or rec.accession),
+                        sample=rec.sample_id,
                         message=f"Null value for infraspecific identifier. (package: {rec.package}, attributes: {'/'.join(attrs)})"))
         return out
 
@@ -289,6 +289,6 @@ class BS_R0133(BsRule):
             for pfx, attrs in self._PKG.items():
                 if rec.package.startswith(pfx) and _no_meaningful_identifier(rec, attrs):
                     out.append(self.result(
-                        sample=(rec.sample_name or rec.accession),
+                        sample=rec.sample_id,
                         message=f"Null value for infraspecific identifier. (package: {rec.package}, attributes: {'/'.join(attrs)})"))
         return out

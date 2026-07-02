@@ -9,7 +9,7 @@ missing 値（not collected / not applicable / missing[: term]）は値検証の
 import datetime
 import re
 from apps.biosample.rules.base import BsRule
-from apps.biosample.rules._util import is_missing_value as _is_missing
+from apps.biosample.rules._util import is_missing_value
 from common.format import fix_insdc_date, fix_insdc_lat_lon
 
 # ISO8601: YYYY-mm-dd / YYYY-mm / YYYY-mm-ddThh:mm:ssZ
@@ -43,7 +43,7 @@ class BS_R0101(BsRule):
                 continue
             if not _SAMPLE_NAME_RE.match(v):
                 reason = "too long (>100)" if len(v) > 100 else "invalid characters"
-                out.append(self.result(sample=(rec.sample_name or rec.accession),
+                out.append(self.result(sample=rec.sample_id,
                                        message=f"Invalid Sample Name format ({reason})."))
         return out
 
@@ -72,10 +72,10 @@ class BS_R0007(BsRule):
         out = []
         for rec in submission.records:
             v = rec.attr("collection_date")
-            if not v or _is_missing(v):
+            if not v or is_missing_value(v):
                 continue
             if _parse_date(v) is None:
-                out.append(self.result(sample=(rec.sample_name or rec.accession),
+                out.append(self.result(sample=rec.sample_id,
                                        message=f"Invalid datetime. (Found: '{v}')"))
         return out
 
@@ -91,16 +91,16 @@ class BS_R0136(BsRule):
         out = []
         for rec in submission.records:
             v = rec.attr("collection_date")
-            if not v or _is_missing(v):
+            if not v or is_missing_value(v):
                 continue
             if _parse_date(v) is not None:
                 continue  # 既に妥当
             fixed = fix_insdc_date(v)
             if fixed and fixed != v and _parse_date(fixed) is not None:
-                out.append(self.result(
-                    sample=(rec.sample_name or rec.accession),
+                out.append(self.autofix_result(
+                    sample=rec.sample_id,
                     message=f"Invalid datetime format. (Found: '{v}', Suggested: '{fixed}')",
-                    autofix=True, attribute="collection_date", old_value=v, new_value=fixed))
+                    attribute="collection_date", old_value=v, new_value=fixed))
         return out
 
 
@@ -115,11 +115,11 @@ class BS_R0040(BsRule):
         today = datetime.date.today()
         for rec in submission.records:
             v = rec.attr("collection_date")
-            if not v or _is_missing(v):
+            if not v or is_missing_value(v):
                 continue
             d = _parse_date(v)
             if d is not None and d > today:
-                out.append(self.result(sample=(rec.sample_name or rec.accession),
+                out.append(self.result(sample=rec.sample_id,
                                        message=f"Sample collection date is a future date. (Found: '{v}')"))
         return out
 
@@ -136,16 +136,16 @@ class BS_R0009(BsRule):
         out = []
         for rec in submission.records:
             v = rec.attr("lat_lon")
-            if not v or _is_missing(v):
+            if not v or is_missing_value(v):
                 continue
             if _LATLON_RE.match(v):
                 continue  # 既に正準
             fixed = fix_insdc_lat_lon(v)
             if fixed and _LATLON_RE.match(fixed):
-                out.append(self.result(
-                    sample=(rec.sample_name or rec.accession),
+                out.append(self.autofix_result(
+                    sample=rec.sample_id,
                     message=f"Invalid lat_lon format. (Found: '{v}', Suggested: '{fixed}')",
-                    autofix=True, attribute="lat_lon", old_value=v, new_value=fixed))
+                    attribute="lat_lon", old_value=v, new_value=fixed))
         return out
 
 
@@ -160,13 +160,13 @@ class BS_R0139(BsRule):
         out = []
         for rec in submission.records:
             v = rec.attr("lat_lon")
-            if not v or _is_missing(v):
+            if not v or is_missing_value(v):
                 continue
             if _LATLON_RE.match(v):
                 continue
             fixed = fix_insdc_lat_lon(v)
             if not (fixed and _LATLON_RE.match(fixed)):
-                out.append(self.result(sample=(rec.sample_name or rec.accession),
+                out.append(self.result(sample=rec.sample_id,
                                        message=f"Invalid lat_lon. (Found: '{v}')"))
         return out
 
@@ -184,10 +184,10 @@ class BS_R0011(BsRule):
         for rec in submission.records:
             for name in self._TARGETS:
                 v = rec.attr(name)
-                if not v or _is_missing(v):
+                if not v or is_missing_value(v):
                     continue
                 if not _PUB_RE.match(v.strip()):
-                    out.append(self.result(sample=(rec.sample_name or rec.accession), target=name,
+                    out.append(self.result(sample=rec.sample_id, target=name,
                                            message=f"Invalid publication identifier. ({name}: '{v}')"))
         return out
 
@@ -204,9 +204,9 @@ class BS_R0093(BsRule):
             checks = {name: rec.attr(name) for name in _INTEGER_ATTRS}
             checks["taxonomy_id"] = checks.get("taxonomy_id") or rec.taxonomy_id
             for name, v in checks.items():
-                if not v or _is_missing(v):
+                if not v or is_missing_value(v):
                     continue
                 if not str(v).strip().isdigit():
-                    out.append(self.result(sample=(rec.sample_name or rec.accession), target=name,
+                    out.append(self.result(sample=rec.sample_id, target=name,
                                            message=f"Attribute value must be integer. ({name}: '{v}')"))
         return out

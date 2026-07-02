@@ -57,7 +57,7 @@ class _VoucherBase(BsRule):
 
     def _res(self, rec, rule_id, level, message):
         return {"rule_id": rule_id, "level": level, "target": self.attr_name,
-                "sample": (rec.sample_name or rec.accession), "message": message}
+                "sample": (rec.sample_id), "message": message}
 
 
 class CultureCollectionValidator(_VoucherBase):

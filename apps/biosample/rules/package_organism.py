@@ -149,7 +149,7 @@ class PackageOrganismValidator(BsRule):
             if not pred(info, rec):
                 out.append({
                     "rule_id": rule_id, "level": "error", "target": self.target,
-                    "sample": (rec.sample_name or rec.accession),
+                    "sample": (rec.sample_id),
                     "message": f"Organism is inappropriate for package '{rec.package}'. (organism: '{rec.organism}')",
                 })
         return out

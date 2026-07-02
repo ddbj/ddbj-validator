@@ -8,7 +8,7 @@
 import re
 from collections import Counter
 from apps.biosample.rules.base import BsRule
-from apps.biosample.rules._util import is_empty as _empty
+from apps.biosample.rules._util import is_empty, pkg_startswith, MIGS_BA_EU
 
 # BioProject: PRJDB12345 / PRJNA123 / PRJEB456（PRJ＋2文字アーカイブコード＋数字）または PSUB＋数字
 _BP_RE = re.compile(r"^(PRJ[A-Z]{2}\d+|PSUB\d+)$")
@@ -26,10 +26,10 @@ class BS_R0005(BsRule):
         out = []
         for rec in submission.records:
             v = rec.attr("bioproject_id")
-            if _empty(v):
+            if is_empty(v):
                 continue
             if not _BP_RE.match(v.strip()):
-                out.append(self.result(sample=(rec.sample_name or rec.accession),
+                out.append(self.result(sample=rec.sample_id,
                                        message=f"Invalid BioProject accession. (Found: '{v}')"))
         return out
 
@@ -44,10 +44,10 @@ class BS_R0099(BsRule):
         out = []
         for rec in submission.records:
             v = rec.attr("locus_tag_prefix")
-            if _empty(v):
+            if is_empty(v):
                 continue
             if not _PREFIX_RE.match(v.strip()):
-                out.append(self.result(sample=(rec.sample_name or rec.accession),
+                out.append(self.result(sample=rec.sample_id,
                                        message=f"Invalid locus tag prefix format. (Found: '{v}')"))
         return out
 
@@ -60,13 +60,13 @@ class BS_R0102(BsRule):
 
     def validate(self, submission, context):
         prefixes = [rec.attr("locus_tag_prefix").strip()
-                    for rec in submission.records if not _empty(rec.attr("locus_tag_prefix"))]
+                    for rec in submission.records if not is_empty(rec.attr("locus_tag_prefix"))]
         dup = {p for p, c in Counter(prefixes).items() if c > 1}
         out = []
         for rec in submission.records:
             v = rec.attr("locus_tag_prefix")
-            if not _empty(v) and v.strip() in dup:
-                out.append(self.result(sample=(rec.sample_name or rec.accession),
+            if not is_empty(v) and v.strip() in dup:
+                out.append(self.result(sample=rec.sample_id,
                                        message=f"Locus tag prefix is duplicated in the submission. (prefix: '{v}')"))
         return out
 
@@ -84,7 +84,7 @@ class BS_R0069(BsRule):
         by_prefix = {}
         for rec in submission.records:
             v = rec.attr("bioproject_id")
-            if _empty(v):
+            if is_empty(v):
                 continue
             m = self._NUM_RE.match(v.strip())
             if m:
@@ -109,10 +109,10 @@ class BS_R0122(BsRule):
         out = []
         for rec in submission.records:
             v = rec.attr("gisaid_accession")
-            if _empty(v):
+            if is_empty(v):
                 continue
             if not _GISAID_RE.match(v.strip()):
-                out.append(self.result(sample=(rec.sample_name or rec.accession),
+                out.append(self.result(sample=rec.sample_id,
                                        message=f"Invalid GISAID accession number. (Found: '{v}')"))
         return out
 
@@ -134,12 +134,12 @@ class BS_R0091(BsRule):
         out = []
         for rec in submission.records:
             v = rec.attr("locus_tag_prefix")
-            if _empty(v):
+            if is_empty(v):
                 continue
             subs = registered.get(v.strip())
             if subs and any(s != cur_sub for s in subs):
                 out.append(self.result(
-                    sample=(rec.sample_name or rec.accession),
+                    sample=rec.sample_id,
                     message=f"Locus tag prefix is duplicated. (Found: '{v}')"))
         return out
 
@@ -150,17 +150,15 @@ class BS_R0109(BsRule):
     target = "locus_tag_prefix"
     description = "Locus tag prefix is required for annotated genome submission."
 
-    # 原核/真核ゲノム系パッケージ（MIGS.ba / MIGS.eu）で locus_tag_prefix 任意提示
-    _GENOME_PKG = ("MIGS.ba", "MIGS.eu")
-
     def validate(self, submission, context):
+        # 原核/真核ゲノム系パッケージ（MIGS.ba / MIGS.eu）で locus_tag_prefix 任意提示
         out = []
         for rec in submission.records:
-            if not rec.package or not rec.package.startswith(self._GENOME_PKG):
+            if not pkg_startswith(rec.package, *MIGS_BA_EU):
                 continue
-            if _empty(rec.attr("locus_tag_prefix")):
+            if is_empty(rec.attr("locus_tag_prefix")):
                 out.append(self.result(
-                    sample=(rec.sample_name or rec.accession),
+                    sample=rec.sample_id,
                     message="Locus tag prefix is required for annotated genome submission. "
                             "If you are submitting genome with annotation, please take locus tag prefix."))
         return out

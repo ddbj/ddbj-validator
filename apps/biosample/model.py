@@ -21,6 +21,11 @@ class BioSampleRecord:
     access: Optional[str] = None             # BioSample@access
     raw: Any = None                          # 元 XML 要素（必要時の参照用）
 
+    @property
+    def sample_id(self):
+        """レポート用のサンプル識別子（sample_name 優先、無ければ accession）。"""
+        return self.sample_name or self.accession
+
     def attr(self, name):
         """属性の代表値（先頭値）を返す。無ければ None。"""
         vals = self.attributes.get(name)
