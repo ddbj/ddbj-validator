@@ -12,7 +12,7 @@ from pathlib import Path
 from apps.biosample.context import ValidationContext
 from apps.biosample import xml_reader, tsv_to_xml, autofix
 from apps.biosample.validator import Validator
-from apps.biosample.reporter import write_reports
+from apps.biosample.reporter import write_reports, write_json_report
 
 
 def _build_parser():
@@ -22,7 +22,24 @@ def _build_parser():
     p.add_argument("-o", "--out-dir", default=None, help="Output directory (default: input's parent)")
     p.add_argument("-l", "--local", action="store_true", help="Local mode (skip DB and NCBI API)")
     p.add_argument("-n", "--ncbi-api", action="store_true", help="Use NCBI API, skip internal DB")
+    p.add_argument("-j", "--json", action="store_true",
+                   help="Also emit reports/validation_report.json (flat result.json format)")
     return p
+
+
+def _tool_version():
+    """pyproject.toml から本ツールのバージョンを取得（取得失敗時は 'unknown'）。"""
+    try:
+        import tomllib
+        with open(Path(__file__).resolve().parents[2] / "pyproject.toml", "rb") as f:
+            return tomllib.load(f).get("project", {}).get("version", "unknown")
+    except Exception:
+        try:
+            import toml
+            data = toml.load(Path(__file__).resolve().parents[2] / "pyproject.toml")
+            return data.get("project", {}).get("version", "unknown")
+        except Exception:
+            return "unknown"
 
 
 def _resolve_modes(args):
@@ -60,6 +77,8 @@ def run(args):
     if submission is None:
         # 整形不正（R0097 等）でパース不可
         counts = write_reports(pre_errors, out_dir, in_path.name)
+        if args.json:
+            write_json_report(pre_errors, out_dir, in_path.name, _tool_version())
         return 1 if counts.get("error") else 0
 
     # taxonomy 取得（local では skip。default=内部DB、-n=NCBI API）
@@ -83,6 +102,8 @@ def run(args):
 
     results = pre_errors + Validator(context).run(submission)
     counts = write_reports(results, out_dir, in_path.name)
+    if args.json:
+        write_json_report(results, out_dir, in_path.name, _tool_version())
 
     # autofix 全自動適用（対話なし）。修正済み XML を fixed/ に出力。
     # 入力が TSV でも出力は XML（検証パスと同一の XML を元に修正）。
