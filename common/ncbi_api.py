@@ -6,8 +6,8 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-# NCBI E-utilities 推奨のアプリ名（tool）。既定は固定、NCBI_API_TOOL で上書き可。
-_NCBI_TOOL_DEFAULT = "ddbj-validator"
+# NCBI E-utilities 推奨のアプリ名（tool）。本ツールで固定。
+_NCBI_TOOL = "ddbj-validator"
 # key/email なし利用の警告は 1 回だけ出す
 _ncbi_no_id_warned = False
 
@@ -18,11 +18,11 @@ def ncbi_identity_params():
     NCBI ガイドライン準拠:
     - NCBI_API_KEY があれば付与（レート緩和 10 req/s・アカウント紐付け）。最優先。
     - NCBI_API_EMAIL があれば付与（key 無し時の連絡先。過剰アクセス時に NCBI から事前連絡を受けられる）。
-    - tool は NCBI_API_TOOL（既定 'ddbj-validator'）。
+    - tool は "ddbj-validator" 固定。
     key も email も無い場合は .env への設定を 1 回だけ警告する（メールはハードコードしない方針）。
     """
     global _ncbi_no_id_warned
-    params = {"tool": os.environ.get("NCBI_API_TOOL", _NCBI_TOOL_DEFAULT)}
+    params = {"tool": _NCBI_TOOL}
     api_key = os.environ.get("NCBI_API_KEY")
     email = os.environ.get("NCBI_API_EMAIL")
     if api_key:
@@ -31,8 +31,9 @@ def ncbi_identity_params():
         params["email"] = email
     if not api_key and not email and not _ncbi_no_id_warned:
         logger.warning(
-            "NCBI API を key/email なしで利用しています。.env に NCBI_API_EMAIL の設定を推奨します"
-            "（頻繁に利用する場合は NCBI_API_KEY の取得を推奨）。")
+            "Using NCBI API without a key or email."
+            "Please set NCBI_API_EMAIL in your .env file."
+            "Obtaining an NCBI_API_KEY is recommended for frequent use.")
         _ncbi_no_id_warned = True
     return params
 

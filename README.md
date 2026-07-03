@@ -166,9 +166,6 @@ NCBI_API_KEY=あなたの_NCBI_API_KEY文字列
 # API キーが無い場合は、連絡先メールアドレスの設定を推奨
 #（過剰アクセス時に NCBI から事前連絡を受けられ、予告なしのブロックを避けやすい）
 NCBI_API_EMAIL=あなたのメールアドレス
-
-# 任意: アプリ名（NCBI 推奨パラメータ。未設定なら "ddbj-validator" 固定）
-# NCBI_API_TOOL=ddbj-validator
 ```
 
 - **API キーも メールアドレスも未設定**でも動作しますが、レート制限は 3 req/s（IP 単位）で、
@@ -369,9 +366,6 @@ NCBI_API_KEY=your_ncbi_api_key_string_here
 # If you do not have an API key, setting a contact email is recommended
 # (lets NCBI contact you before blocking on excessive use, avoiding sudden blocks).
 NCBI_API_EMAIL=your_email_address
-
-# Optional: application name (NCBI-recommended parameter; defaults to "ddbj-validator" if unset)
-# NCBI_API_TOOL=ddbj-validator
 ```
 
 - It works even with **neither the API key nor the email set**, but the rate limit is 3 req/s (per IP)
