@@ -31,9 +31,9 @@ def ncbi_identity_params():
         params["email"] = email
     if not api_key and not email and not _ncbi_no_id_warned:
         logger.warning(
-            "Using NCBI API without a key or email."
-            "Please set NCBI_API_EMAIL in your .env file."
-            "Obtaining an NCBI_API_KEY is recommended for frequent use.")
+            "Using NCBI API without a key or email. "
+            "Setting NCBI_API_EMAIL in your .env file is recommended, "
+            "as well as NCBI_API_KEY for frequent use.")
         _ncbi_no_id_warned = True
     return params
 
