@@ -6,6 +6,37 @@ import requests
 
 logger = logging.getLogger(__name__)
 
+# NCBI E-utilities 推奨のアプリ名（tool）。既定は固定、NCBI_API_TOOL で上書き可。
+_NCBI_TOOL_DEFAULT = "ddbj-validator"
+# key/email なし利用の警告は 1 回だけ出す
+_ncbi_no_id_warned = False
+
+
+def ncbi_identity_params():
+    """NCBI E-utilities 共通の識別パラメータ {tool, email?, api_key?} を環境変数から構築する。
+
+    NCBI ガイドライン準拠:
+    - NCBI_API_KEY があれば付与（レート緩和 10 req/s・アカウント紐付け）。最優先。
+    - NCBI_API_EMAIL があれば付与（key 無し時の連絡先。過剰アクセス時に NCBI から事前連絡を受けられる）。
+    - tool は NCBI_API_TOOL（既定 'ddbj-validator'）。
+    key も email も無い場合は .env への設定を 1 回だけ警告する（メールはハードコードしない方針）。
+    """
+    global _ncbi_no_id_warned
+    params = {"tool": os.environ.get("NCBI_API_TOOL", _NCBI_TOOL_DEFAULT)}
+    api_key = os.environ.get("NCBI_API_KEY")
+    email = os.environ.get("NCBI_API_EMAIL")
+    if api_key:
+        params["api_key"] = api_key
+    if email:
+        params["email"] = email
+    if not api_key and not email and not _ncbi_no_id_warned:
+        logger.warning(
+            "NCBI API を key/email なしで利用しています。.env に NCBI_API_EMAIL の設定を推奨します"
+            "（頻繁に利用する場合は NCBI_API_KEY の取得を推奨）。")
+        _ncbi_no_id_warned = True
+    return params
+
+
 # 対象とするNCBI/EBIのプレフィックス定義
 _TARGET_PATTERNS = {
     "bioproject": re.compile(r"^PRJ(NA|EA|EB)\d+"),   
@@ -44,8 +75,9 @@ def check_ncbi_public_status(db_name, accessions, chunk_size=100):
     base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
     field_tag = _DB_FIELD_TAGS.get(db_name, "[Accession]")
 
-    # 実行時に最新の環境変数を取得
-    current_api_key = os.environ.get("NCBI_API_KEY")
+    # 実行時に最新の環境変数から識別パラメータ（tool/email/api_key）を構築
+    identity = ncbi_identity_params()
+    current_api_key = identity.get("api_key")
 
     def check_chunk(chunk):
         # SRAのあいまい検索を防ぐため、正確なフィールドタグを付与
@@ -55,11 +87,8 @@ def check_ncbi_public_status(db_name, accessions, chunk_size=100):
             "term": term,
             "retmode": "json",
             "retmax": 0,
-            "tool": "ddbj-validator",
-            "email": "ddbj@ddbj.nig.ac.jp"
+            **identity,  # tool（＋あれば email / api_key）
         }
-        if current_api_key:
-            payload["api_key"] = current_api_key
 
         response = requests.post(base_url, data=payload, timeout=15)
         response.raise_for_status()

@@ -152,15 +152,28 @@ ddbj-validator -n -o output_directory -j 4 target_directory
 
 ```
 
-### NCBI API キーの設定（推奨）
+### NCBI API の設定（推奨）
 
-`-n` オプションで NCBI API を利用する場合、NCBI のアカウントから [API キー](https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen#chapter2.API_Keys)を取得して設定することを推奨します。  
-実行するディレクトリに `.env` という名前のファイルを作成し、以下のように記述しておくと、ツールが自動的にキーを読み込みます。
+`-n` オプションで NCBI API（E-utilities）を利用する場合、NCBI の利用ガイドラインに沿って
+実行ディレクトリに `.env` を作成し、以下のいずれかを設定することを推奨します（ツールが自動で読み込みます）。
+
+NCBI からの推奨は「**API キーが望ましい。無ければ最低限メールアドレス**」です。
 
 ```ini
+# 推奨: API キー（NCBI アカウントで取得。レート制限が 3→10 req/s に緩和され、利用がアカウントに紐づく）
 NCBI_API_KEY=あなたの_NCBI_API_KEY文字列
 
+# API キーが無い場合は、連絡先メールアドレスの設定を推奨
+#（過剰アクセス時に NCBI から事前連絡を受けられ、予告なしのブロックを避けやすい）
+NCBI_API_EMAIL=あなたのメールアドレス
+
+# 任意: アプリ名（NCBI 推奨パラメータ。未設定なら "ddbj-validator" 固定）
+# NCBI_API_TOOL=ddbj-validator
 ```
+
+- **API キーも メールアドレスも未設定**でも動作しますが、レート制限は 3 req/s（IP 単位）で、
+  超過時に一時ブロックされる可能性があります。頻繁に利用する場合は `NCBI_API_KEY` の取得を推奨します。
+- API キーは [こちら](https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen#chapter2.API_Keys)から取得できます。
 
 ## メモリ使用量
 
@@ -342,15 +355,28 @@ ddbj-validator -n -o output_directory -j 4 target_directory
 
 ```
 
-### Setting the NCBI API Key (Recommended)
+### Setting up the NCBI API (Recommended)
 
-When using the NCBI API (`-n` option), it is recommended to obtain an [API key](https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen#chapter2.API_Keys) from your NCBI account and configuring it.  
-Create a file named `.env` in your current working directory and add the following line. The tool will load it automatically.
+When using the NCBI API (E-utilities) via the `-n` option, following NCBI's usage guidelines,
+create a `.env` file in your working directory and set one of the following (the tool loads it automatically).
+
+NCBI recommends: **an API key is preferred; otherwise, at least an email address.**
 
 ```ini
+# Recommended: API key (obtained from your NCBI account; relaxes the rate limit 3 -> 10 req/s and ties usage to your account)
 NCBI_API_KEY=your_ncbi_api_key_string_here
 
+# If you do not have an API key, setting a contact email is recommended
+# (lets NCBI contact you before blocking on excessive use, avoiding sudden blocks).
+NCBI_API_EMAIL=your_email_address
+
+# Optional: application name (NCBI-recommended parameter; defaults to "ddbj-validator" if unset)
+# NCBI_API_TOOL=ddbj-validator
 ```
+
+- It works even with **neither the API key nor the email set**, but the rate limit is 3 req/s (per IP)
+  and you may be temporarily blocked when exceeding it. For frequent use, obtaining an `NCBI_API_KEY` is recommended.
+- Get an API key [here](https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen#chapter2.API_Keys).
 
 ## Memory Usage
 

@@ -9,6 +9,7 @@ import requests
 from apps.ddbj.db_metadata import get_expected_transl_table, get_organisms_from_records
 from apps.ddbj.utils.features import get_features
 from common.db_manager import execute_in_query
+from common.ncbi_api import ncbi_identity_params
 
 logger = logging.getLogger(__name__)
 
@@ -314,14 +315,14 @@ def fetch_taxonomy_from_ncbi(organism_list):
         return tax_data
 
     unique_orgs = list(set(organism_list))
-    api_key = os.environ.get("NCBI_API_KEY")
+    # NCBI 識別パラメータ（tool/email/api_key）を env から構築（共通ヘルパ）
+    identity = ncbi_identity_params()
+    api_key = identity.get("api_key")
 
     for org in unique_orgs:
         # 1. Esearch で Taxonomy ID を取得
         search_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
-        search_params = {"db": "taxonomy", "term": org, "retmode": "json", "retmax": 1}
-        if api_key:
-            search_params["api_key"] = api_key
+        search_params = {"db": "taxonomy", "term": org, "retmode": "json", "retmax": 1, **identity}
 
         try:
             res = requests.get(search_url, params=search_params, timeout=10)
@@ -338,9 +339,7 @@ def fetch_taxonomy_from_ncbi(organism_list):
 
             # 2. Efetch で XML フォーマットの詳細情報を取得
             fetch_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
-            fetch_params = {"db": "taxonomy", "id": tax_id, "retmode": "xml"}
-            if api_key:
-                fetch_params["api_key"] = api_key
+            fetch_params = {"db": "taxonomy", "id": tax_id, "retmode": "xml", **identity}
 
             f_res = requests.get(fetch_url, params=fetch_params, timeout=10)
             f_res.raise_for_status()
