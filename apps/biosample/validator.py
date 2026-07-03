@@ -3,6 +3,7 @@
 ルールはここに明示列挙して順序を制御する（ddbj 同様、手作業で並べる）。
 モード別スキップは能力フラグ（requires_rdb/network/auth）で行う。
 """
+from apps.biosample.rules.base import is_internal_ignore
 from apps.biosample.rules.mandatory import BS_R0018, BS_R0020, BS_R0025, BS_R0026, BS_R0027
 from apps.biosample.rules.structure import BS_R0003, BS_R0061, BS_R0126
 from apps.biosample.rules.value_format import BS_R0007, BS_R0009, BS_R0011, BS_R0040, BS_R0093, BS_R0101, BS_R0136, BS_R0139
@@ -104,8 +105,11 @@ class Validator:
             self.active_rules.append(rule)
 
     def run(self, submission):
-        """submission を全 active_rules で検証し、結果 dict のリストを返す。"""
+        """submission を全 active_rules で検証し、結果 dict のリストを返す。
+        各結果に internal_ignore（=external）を rule_id 単位で付与する（docs rules.txt 準拠）。"""
         results = []
         for rule in self.active_rules:
             results.extend(rule.validate(submission, self.context))
+        for r in results:
+            r["external"] = is_internal_ignore(r["rule_id"])
         return results
