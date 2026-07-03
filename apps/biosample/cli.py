@@ -81,6 +81,10 @@ def run(args):
             write_json_report(pre_errors, out_dir, in_path.name, _tool_version())
         return 1 if counts.get("error") else 0
 
+    # account が --account 未指定でも XML ルートの submitter_id から解決できていれば採用（互換）
+    if not context.account and submission.account:
+        context.account = submission.account
+
     # taxonomy 取得（local では skip。default=内部DB、-n=NCBI API）
     # organism に加え、R0105 用に component_organism も解決対象に含める。
     if not context.skip_ncbi:

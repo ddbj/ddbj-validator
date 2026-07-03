@@ -64,6 +64,13 @@ def parse_xml(xml_path, submission_id=None, account=None):
         return None, errors
 
     root = tree.getroot()
+    # 現行システム互換: 引数指定が無ければルート要素の属性から補完する。
+    #   submission_id 属性 → submission id（R0091 の self 除外等に使用）
+    #   submitter_id 属性  → account（未指定時のフォールバック）
+    if not submission_id:
+        submission_id = root.get("submission_id")
+    if not account:
+        account = root.get("submitter_id")
     sub = BioSampleSubmission(submission_id=submission_id, account=account)
 
     for bs in root.findall(".//BioSample"):

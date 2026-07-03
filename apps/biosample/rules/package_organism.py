@@ -1,4 +1,4 @@
-"""package_vs_organism 検証（BS_R0048 ＋ R0074-0130）。
+"""package_vs_organism 検証（出力 rule_id は汎用 BS_R0048。現行 validator に準拠）。
 
 rules.txt にチェック内容が明記されているため JSON では定義せず、**ハードコード**で実装する。
 ただしルール変更時に直しやすいよう、**共通定義（lineage ノード名・特定 taxid・判定ヘルパ）を集約**し、
@@ -125,11 +125,11 @@ def _find_rule(package):
 class PackageOrganismValidator(BsRule):
     """パッケージと organism(taxonomy) の適合を検証する単一のデータ駆動ルール。
 
-    package 毎に対応する rule_id（BS_R0074-0130）で error を返す。
-    organism が taxonomy で未解決（tax_data に無い / not_found）の場合は判定不能としてスキップ
-    （taxonomy 未登録は別ルールの領分）。
+    判定は package 別の述語（PACKAGE_RULES）で行うが、**出力 rule_id は汎用 BS_R0048 で統一**する
+    （現行 validator に合わせる）。organism が taxonomy 未解決（tax_data に無い / not_found）の場合は
+    判定不能としてスキップ（taxonomy 未登録は別ルールの領分）。
     """
-    rule_id = "BS_R0048"  # 代表 ID（実際の出力は package 毎の rule_id）
+    rule_id = "BS_R0048"
     level = "error"
     target = "package, organism"
     requires_network = True  # taxonomy ソース（DB/NCBI）が要る。local ではスキップ
@@ -145,11 +145,11 @@ class PackageOrganismValidator(BsRule):
             info = context.tax_data.get(rec.organism)
             if not info or info.get("status") == "not_found":
                 continue  # taxonomy 未解決 → 判定不能
-            rule_id, pred = found
+            _rule_id, pred = found  # 判定は package 別述語、出力 rule_id は汎用 BS_R0048（現行 validator 準拠）
             if not pred(info, rec):
                 out.append({
-                    "rule_id": rule_id, "level": "error", "target": self.target,
-                    "sample": (rec.sample_id),
+                    "rule_id": self.rule_id, "level": "error", "target": self.target,
+                    "sample": rec.sample_id,
                     "message": f"Organism is inappropriate for package '{rec.package}'. (organism: '{rec.organism}')",
                 })
         return out

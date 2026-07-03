@@ -8,7 +8,13 @@
 import re
 from collections import Counter
 from apps.biosample.rules.base import BsRule
-from apps.biosample.rules._util import is_empty, pkg_startswith, MIGS_BA_EU
+from apps.biosample.rules._util import is_empty, is_missing_value, pkg_startswith, MIGS_BA_EU
+
+
+def _skip_ltp(v):
+    """locus_tag_prefix として無視すべき値（空 or missing 系）か。
+    missing/not applicable/missing: xxx 等の null 相当値は prefix ではないため R0091/R0102/R0099 の対象外。"""
+    return is_empty(v) or is_missing_value(v)
 
 # BioProject: PRJDB12345 / PRJNA123 / PRJEB456（PRJ＋2文字アーカイブコード＋数字）または PSUB＋数字
 _BP_RE = re.compile(r"^(PRJ[A-Z]{2}\d+|PSUB\d+)$")
@@ -44,7 +50,7 @@ class BS_R0099(BsRule):
         out = []
         for rec in submission.records:
             v = rec.attr("locus_tag_prefix")
-            if is_empty(v):
+            if _skip_ltp(v):
                 continue
             if not _PREFIX_RE.match(v.strip()):
                 out.append(self.result(sample=rec.sample_id,
@@ -60,12 +66,12 @@ class BS_R0102(BsRule):
 
     def validate(self, submission, context):
         prefixes = [rec.attr("locus_tag_prefix").strip()
-                    for rec in submission.records if not is_empty(rec.attr("locus_tag_prefix"))]
+                    for rec in submission.records if not _skip_ltp(rec.attr("locus_tag_prefix"))]
         dup = {p for p, c in Counter(prefixes).items() if c > 1}
         out = []
         for rec in submission.records:
             v = rec.attr("locus_tag_prefix")
-            if not is_empty(v) and v.strip() in dup:
+            if not _skip_ltp(v) and v.strip() in dup:
                 out.append(self.result(sample=rec.sample_id,
                                        message=f"Locus tag prefix is duplicated in the submission. (prefix: '{v}')"))
         return out
@@ -134,7 +140,7 @@ class BS_R0091(BsRule):
         out = []
         for rec in submission.records:
             v = rec.attr("locus_tag_prefix")
-            if is_empty(v):
+            if _skip_ltp(v):
                 continue
             subs = registered.get(v.strip())
             if subs and any(s != cur_sub for s in subs):

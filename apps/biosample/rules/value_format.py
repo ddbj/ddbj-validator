@@ -69,14 +69,20 @@ class BS_R0007(BsRule):
     description = 'Invalid datetime. Follow ISO 8601 "YYYY-mm-dd", "YYYY-mm" or "YYYY-mm-ddThh:mm:ssZ".'
 
     def validate(self, submission, context):
+        # 自動補正可能な日付は R0136（autofix）が担当するため R0007（error）は抑制する
+        # （現行 validator に合わせ fixable 値の二重報告を避ける。R0009/R0139 と同型）。
         out = []
         for rec in submission.records:
             v = rec.attr("collection_date")
             if not v or is_missing_value(v):
                 continue
-            if _parse_date(v) is None:
-                out.append(self.result(sample=rec.sample_id,
-                                       message=f"Invalid datetime. (Found: '{v}')"))
+            if _parse_date(v) is not None:
+                continue  # 既に妥当
+            fixed = fix_insdc_date(v)
+            if fixed and _parse_date(fixed) is not None:
+                continue  # 補正可能 → R0136 が扱う
+            out.append(self.result(sample=rec.sample_id,
+                                   message=f"Invalid datetime. (Found: '{v}')"))
         return out
 
 
