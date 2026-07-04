@@ -93,15 +93,24 @@ class BS_R0095(BsRule):
     requires_auth = True
 
     def validate(self, submission, context):
+        # bioproject_id が PSUB のとき、対応 PRJDB へ autofix する。
+        # ただし **account 認可済み（R0006 が通る）PSUB のみ** 補正（未認可なら R0006 に委ね autofix しない）。
         out = []
+        authorized = {p.upper() for p in context.authorized_projects}
         for rec in submission.records:
             v = rec.attr("bioproject_id")
-            if is_empty(v):
+            if is_empty(v) or not v.strip().upper().startswith("PSUB"):
                 continue
             info = context.psub_to_prjd.get(v.strip())
-            if v.strip().upper().startswith("PSUB") and info and info.get("accession"):
-                out.append(self.result(sample=rec.sample_id,
-                                       message=f"PSUB is replaced to {info['accession']}. (Found: '{v}')"))
+            prjdb = info.get("accession") if info else None
+            if not prjdb:
+                continue
+            # PSUB もしくは対応 PRJDB が account 認可済みのときのみ autofix
+            if v.strip().upper() in authorized or prjdb.upper() in authorized:
+                out.append(self.autofix_result(
+                    sample=rec.sample_id,
+                    message=f"PSUB is replaced to {prjdb}. (Found: '{v}')",
+                    attribute="bioproject_id", old_value=v, new_value=prjdb))
         return out
 
 

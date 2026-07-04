@@ -31,6 +31,9 @@ MOCK_TAX = {
                           "is_species_or_below": True, "status": "valid", "lineage": "Bacteria; Proteobacteria"},
     "Homo sapiens": {"tax_id": "9606", "rank": "species", "scientific_name": "Homo sapiens",
                      "is_species_or_below": True, "status": "valid", "lineage": "Eukaryota; Metazoa; Homo"},
+    # common name（fetch_taxonomy_data が学名へ解決する。R0015 の human→Homo sapiens autofix 検証用）
+    "human": {"tax_id": "9606", "rank": "species", "scientific_name": "Homo sapiens",
+              "is_species_or_below": True, "status": "fixable", "lineage": "Eukaryota; Metazoa; Homo"},
     "Homo": {"tax_id": "9605", "rank": "genus", "scientific_name": "Homo",
              "is_species_or_below": False, "status": "invalid_rank", "lineage": "Eukaryota; Metazoa"},
     # package_vs_organism 用

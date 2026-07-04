@@ -33,6 +33,25 @@ def _resolved(info):
     return _found(info) and bool(info.get("scientific_name"))
 
 
+class BS_R0142(BsRule):
+    rule_id = "BS_R0142"
+    level = "error"
+    target = "organism"
+    description = "Invalid organism. Organism must not be numbers."
+
+    def validate(self, submission, context):
+        # organism を taxid（数字のみ）で記載するのは誤り。サルベージせず error で気づかせる（DB 非依存）。
+        out = []
+        for rec in submission.records:
+            org = rec.organism
+            if is_empty(org):
+                continue
+            if org.strip().isdigit():
+                out.append(self.result(sample=rec.sample_id,
+                                       message=f"Invalid organism. Organism must not be numbers. (Found: '{org}')"))
+        return out
+
+
 class BS_R0004(BsRule):
     rule_id = "BS_R0004"
     level = "error"
@@ -235,20 +254,14 @@ class BS_R0015(BsRule):
     requires_network = True  # host 名の taxonomy 解決に tax_data を参照
 
     def validate(self, submission, context):
-        # biosample の /host は **学名のみ許容**（ddbj /host より厳格）。
-        # - "human" は "Homo sapiens" に特例 autofix。
-        # - taxonomy で学名解決でき、入力が学名と異なる → 学名へ autofix。
-        # - taxonomy に無い（＝生物名でない）host → warning（autofix なし）。
+        # biosample の /host は **学名のみ許容**（ddbj /host より厳格）。判定は taxonomy 解決に委ねる:
+        #   common name/synonym（例 "human", "dog"）は fetch_taxonomy_data が学名へ解決するため、
+        #   入力が学名と異なれば学名へ autofix（human→Homo sapiens も特例ハードコード無しで対応）。
+        #   taxonomy に無い（＝生物名でない）host → warning（autofix なし）。
         out = []
         for rec in submission.records:
             host = rec.attr("host")
             if is_empty(host) or is_missing_value(host):
-                continue
-            if host.casefold() == "human":
-                out.append(self.autofix_result(
-                    sample=rec.sample_id,
-                    message="Invalid host organism name. (host: 'human', Suggested: 'Homo sapiens')",
-                    attribute="host", old_value=host, new_value="Homo sapiens"))
                 continue
             info = context.tax_data.get(host)
             if not _resolved(info):
