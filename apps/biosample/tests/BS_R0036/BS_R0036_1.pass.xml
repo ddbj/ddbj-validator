@@ -15,6 +15,7 @@
         <Attribute attribute_name="geo_loc_name">Japan:Tsukuba</Attribute>
         <Attribute attribute_name="tissue">Leaf</Attribute>
         <Attribute attribute_name="cultivar">Cv</Attribute>
+        <Attribute attribute_name="dev_stage">adult</Attribute>
     </Attributes>
   </BioSample>
 </BioSampleSet>

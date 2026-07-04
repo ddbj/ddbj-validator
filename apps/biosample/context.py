@@ -134,5 +134,18 @@ class ValidationContext:
         return {n for n, u in self.attribute_uses(package_key).items() if u == "mandatory"}
 
     def either_one_attributes(self, package_key):
-        """use=='either_one_mandatory' の属性名集合（「いずれか1つ必須」群）。"""
+        """use=='either_one_mandatory' の属性名集合（「いずれか1つ必須」群・グループ非考慮）。"""
         return {n for n, u in self.attribute_uses(package_key).items() if u == "either_one_mandatory"}
+
+    def either_one_groups(self, package_key):
+        """either_one_mandatory 属性を `group` 単位でまとめた {group名: [属性名,...]}。
+        R0036 は各グループごとに「1 つ以上必須」を判定する（登録システムと同じ粒度）。
+        group 未指定の属性は属性名自体をグループ名にする（単独で 1 グループ扱い）。"""
+        defs = dict(self.fixed_attributes)
+        defs.update((self.packages.get(package_key) or {}).get("attributes", {}))
+        groups = {}
+        for name, info in defs.items():
+            if info.get("use") == "either_one_mandatory":
+                gname = info.get("group") or name
+                groups.setdefault(gname, []).append(name)
+        return groups

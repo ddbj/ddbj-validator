@@ -235,8 +235,10 @@ class BS_R0015(BsRule):
     requires_network = True  # host 名の taxonomy 解決に tax_data を参照
 
     def validate(self, submission, context):
-        # host を学名へ補正（autofix）。"human" は "Homo sapiens" に特例補正。
-        # それ以外は tax_data で学名解決し、入力と異なれば補正提案。解決できなければ補正しない。
+        # biosample の /host は **学名のみ許容**（ddbj /host より厳格）。
+        # - "human" は "Homo sapiens" に特例 autofix。
+        # - taxonomy で学名解決でき、入力が学名と異なる → 学名へ autofix。
+        # - taxonomy に無い（＝生物名でない）host → warning（autofix なし）。
         out = []
         for rec in submission.records:
             host = rec.attr("host")
@@ -250,6 +252,9 @@ class BS_R0015(BsRule):
                 continue
             info = context.tax_data.get(host)
             if not _resolved(info):
+                # taxonomy 未解決＝学名でない → warning（autofix しない）
+                out.append(self.result(sample=rec.sample_id,
+                                       message=f"Invalid host organism name. Use a scientific name. (host: '{host}')"))
                 continue
             sci = info.get("scientific_name")
             if sci and sci != host:

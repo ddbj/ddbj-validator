@@ -10,7 +10,6 @@ from apps.biosample.rules.base import BsRule
 from apps.biosample.rules._util import (
     is_empty,
     norm,
-    is_missing_without_term,
     is_missing_value,
 )
 
@@ -56,17 +55,21 @@ class BS_R0036(BsRule):
     description = "Sample has missing attribute(s), at least one of the following attributes is required."
 
     def validate(self, submission, context):
+        # either_one_mandatory は `group` 単位で「各グループ 1 つ以上必須」（登録システム準拠）。
+        # 例 Model.organism.animal: organism 群{strain,isolate,breed,cultivar,ecotype} と
+        # age/stage 群{age,dev_stage} を別々に判定する（全 either_one を一括りにしない）。
         out = []
         for rec in submission.records:
             if is_empty(rec.package) or context.package_def(rec.package) is None:
                 continue
-            either = context.either_one_attributes(rec.package)
-            if not either:
+            groups = context.either_one_groups(rec.package)
+            if not groups:
                 continue
-            if not any(not is_empty(rec.attr(n)) for n in either):
-                out.append(self.result(
-                    sample=rec.sample_id,
-                    message=f"At least one of the following attributes is required: {', '.join(sorted(either))}"))
+            for _gname, members in sorted(groups.items()):
+                if not any(not is_empty(rec.attr(n)) for n in members):
+                    out.append(self.result(
+                        sample=rec.sample_id,
+                        message=f"At least one of the following attributes is required: {', '.join(sorted(members))}"))
         return out
 
 
@@ -186,15 +189,18 @@ class BS_R0137(BsRule):
     _TARGETS = ("collection_date", "geo_loc_name")
 
     def validate(self, submission, context):
+        # collection_date / geo_loc_name は「実値」または「有効な reporting-level term
+        # （cv_terms.missing_reporting_terms＝'missing: xxx'）」のみ許容（ddbj 準拠）。
+        # 未入力、missing 系だが有効 reporting term でない（'missing' 単独 / 'missing: 無効語' 等）→ error。
+        valid_terms = {t.lower() for t in context.cv_terms.get("missing_reporting_terms", [])}
         out = []
         for rec in submission.records:
             for name in self._TARGETS:
                 v = rec.attr(name)
-                # 未入力、または missing 系だが reporting term を伴わない場合はエラー
                 if is_empty(v):
                     out.append(self.result(sample=rec.sample_id, target=name,
                                            message=f"Missing reporting level term for '{name}'."))
-                elif is_missing_without_term(v):
+                elif is_missing_value(v) and v.strip().lower() not in valid_terms:
                     out.append(self.result(sample=rec.sample_id, target=name,
                                            message=f"Missing reporting level term for '{name}'. (Found: '{v}')"))
         return out
