@@ -5,6 +5,9 @@ from dateutil import parser, tz
 logger = logging.getLogger(__name__)
 
 _INSDC_DATE_PATTERN = re.compile(r"^(?:\d{4}(?:-\d{2}(?:-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?)?)?)?|(?:\d{2}-)?[A-Za-z]{3}-\d{4})(?:/(?:\d{4}(?:-\d{2}(?:-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?)?)?)?|(?:\d{2}-)?[A-Za-z]{3}-\d{4}))?$")
+# INSDC collection_date 形式パターン（ddbj definitions.json の format_pattern と同一）。
+# ddbj/biosample 共有の公開定数（biosample R0007/R0136 が ddbj と同じ判定を使うため）。
+INSDC_DATE_PATTERN = _INSDC_DATE_PATTERN
 _LATLON_DMS_PATTERN = re.compile(r"^(?P<lat_deg>\d{1,2})\D+(?P<lat_min>\d{1,2})\D+(?P<lat_sec>\d{1,2}(?:\.\d+)?)\D+(?P<lat_hemi>[NS])[ ,_;]+(?P<lng_deg>\d{1,3})\D+(?P<lng_min>\d{1,2})\D+(?P<lng_sec>\d{1,2}(?:\.\d+)?)\D+(?P<lng_hemi>[EW])$")
 _LATLON_DEC_INSDC_PATTERN = re.compile(r"^(?P<lat_dec>\d{1,2}(?:\.\d+)?)\s*(?P<lat_dec_hemi>[NS])[ ,_;]+(?P<lng_dec>\d{1,3}(?:\.\d+)?)\s*(?P<lng_dec_hemi>[EW])$")
 _LATLON_DEC_REVERSED_PATTERN = re.compile(r"^(?P<lat_dec_hemi>[NS])\s*(?P<lat_dec>\d{1,2}(?:\.\d+)?)[ ,_;]+(?P<lng_dec_hemi>[EW])\s*(?P<lng_dec>\d{1,3}(?:\.\d+)?)$")

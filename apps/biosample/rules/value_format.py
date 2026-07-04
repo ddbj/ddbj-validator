@@ -8,22 +8,12 @@ missing 値（not collected / not applicable / missing[: term]）は値検証の
 """
 import datetime
 import re
+from dateutil import parser as _dateutil_parser
 from apps.biosample.rules.base import BsRule
 from apps.biosample.rules._util import is_missing_value
-from common.format import fix_insdc_date, fix_insdc_lat_lon
-
-# collection_date の許容書式（DDBJ /collection_date 仕様準拠）:
-#   YYYY / YYYY-MM / YYYY-MM-DD / YYYY-MM-DDThhZ / YYYY-MM-DDThh:mmZ / YYYY-MM-DDThh:mm:ssZ
-#   ＋ 上記2つを "/" で区切った範囲（YYYY/YYYY, YYYY-MM-DD/YYYY-MM-DD 等）。
-# 各トークンは (正規表現, strptime 書式) で判定。月日時分秒の範囲は strptime が検証する。
-_DATE_TOKEN_FORMATS = [
-    (re.compile(r"^\d{4}$"), "%Y"),
-    (re.compile(r"^\d{4}-\d{2}$"), "%Y-%m"),
-    (re.compile(r"^\d{4}-\d{2}-\d{2}$"), "%Y-%m-%d"),
-    (re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}Z$"), "%Y-%m-%dT%HZ"),
-    (re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z$"), "%Y-%m-%dT%H:%MZ"),
-    (re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$"), "%Y-%m-%dT%H:%M:%SZ"),
-]
+# collection_date の形式判定・autofix は ddbj と共通（共有属性は ddbj v に倣う）。
+# INSDC_DATE_PATTERN は ddbj definitions.json の format_pattern と同一の共有定数。
+from common.format import fix_insdc_date, fix_insdc_lat_lon, INSDC_DATE_PATTERN
 
 # lat_lon: "d[d.ddd] N|S d[dd.ddd] W|E"
 _LATLON_RE = re.compile(r"^\d{1,3}(\.\d+)?\s+[NS]\s+\d{1,3}(\.\d+)?\s+[EW]$")
@@ -56,51 +46,36 @@ class BS_R0101(BsRule):
         return out
 
 
-def _parse_date_token(v):
-    """単一の collection_date トークンを date へ。仕様外・不正な月日時分秒なら None。
-    年のみ/年月は日を 1 に補完した date を返す（未来日判定 R0040 等の比較用）。"""
-    for rx, fmt in _DATE_TOKEN_FORMATS:
-        if rx.match(v):
-            try:
-                return datetime.datetime.strptime(v, fmt).date()
-            except ValueError:
-                return None
+def _date_valid(v):
+    """collection_date が INSDC 形式（ddbj と共有の正規表現）に一致するか。
+    ddbj v は形式チェックを正規表現マッチのみで行う（意味的な月日範囲は検証しない）。"""
+    return bool(INSDC_DATE_PATTERN.match(v.strip()))
+
+
+def _date_fixable(v):
+    """autofix で INSDC 形式へ直せるなら補正値を返す（不可なら None）。fix_insdc_date は ddbj と共通。"""
+    fixed = fix_insdc_date(v)
+    if fixed and fixed != v and _date_valid(fixed):
+        return fixed
     return None
-
-
-def _parse_date(v):
-    """collection_date を date へ。解釈不能なら None。
-    範囲 "start/end" は両トークンが妥当なら開始側の date を返す（未来日判定は開始日で行う）。"""
-    v = v.strip()
-    if "/" in v:
-        parts = [p.strip() for p in v.split("/")]
-        if len(parts) != 2:
-            return None
-        d0, d1 = _parse_date_token(parts[0]), _parse_date_token(parts[1])
-        if d0 is None or d1 is None:
-            return None
-        return d0
-    return _parse_date_token(v)
 
 
 class BS_R0007(BsRule):
     rule_id = "BS_R0007"
     level = "error"
     target = "collection_date"
-    description = 'Invalid datetime. Follow ISO 8601 "YYYY-mm-dd", "YYYY-mm" or "YYYY-mm-ddThh:mm:ssZ".'
+    description = 'Invalid datetime. Follow ISO 8601 "YYYY", "YYYY-MM", "YYYY-MM-DD" or "YYYY-MM-DDThh:mm:ssZ".'
 
     def validate(self, submission, context):
-        # 自動補正可能な日付は R0136（autofix）が担当するため R0007（error）は抑制する
-        # （現行 validator に合わせ fixable 値の二重報告を避ける。R0009/R0139 と同型）。
+        # 形式判定は ddbj と共通の INSDC_DATE_PATTERN。自動補正可能な値は R0136 に委ね R0007 は抑制。
         out = []
         for rec in submission.records:
             v = rec.attr("collection_date")
             if not v or is_missing_value(v):
                 continue
-            if _parse_date(v) is not None:
-                continue  # 既に妥当
-            fixed = fix_insdc_date(v)
-            if fixed and _parse_date(fixed) is not None:
+            if _date_valid(v):
+                continue
+            if _date_fixable(v):
                 continue  # 補正可能 → R0136 が扱う
             out.append(self.result(sample=rec.sample_id,
                                    message=f"Invalid datetime. (Found: '{v}')"))
@@ -114,16 +89,14 @@ class BS_R0136(BsRule):
     description = "Invalid datetime format."
 
     def validate(self, submission, context):
-        # collection_date が ISO8601 でないが共通補正で妥当な形式に直せる場合、autofix 提案（R0007 の autofix 版）
+        # 形式不一致だが共通補正で INSDC 形式へ直せる場合の autofix 提案（R0007 の autofix 版）。
         out = []
         for rec in submission.records:
             v = rec.attr("collection_date")
-            if not v or is_missing_value(v):
+            if not v or is_missing_value(v) or _date_valid(v):
                 continue
-            if _parse_date(v) is not None:
-                continue  # 既に妥当
-            fixed = fix_insdc_date(v)
-            if fixed and fixed != v and _parse_date(fixed) is not None:
+            fixed = _date_fixable(v)
+            if fixed:
                 out.append(self.autofix_result(
                     sample=rec.sample_id,
                     message=f"Invalid datetime format. (Found: '{v}', Suggested: '{fixed}')",
@@ -138,14 +111,30 @@ class BS_R0040(BsRule):
     description = "Sample collection date is a future date, please specify a date from the past."
 
     def validate(self, submission, context):
+        # 未来日判定は ddbj ANN1240 に倣う。範囲(/)・missing は対象外。粒度（年/年月/年月日）ごとに比較。
         out = []
         today = datetime.date.today()
         for rec in submission.records:
             v = rec.attr("collection_date")
             if not v or is_missing_value(v):
                 continue
-            d = _parse_date(v)
-            if d is not None and d > today:
+            s = v.strip()
+            if s.startswith("missing:") or "/" in s:
+                continue
+            try:
+                dt = _dateutil_parser.parse(re.sub(r"[\s.,]+", "-", s))
+            except Exception:
+                continue
+            has_time = "T" in s.upper() or ":" in s
+            has_month_word = bool(re.search(r"[A-Za-z]{3,}", s))
+            comp = 3 if has_time else len(re.findall(r"\d+", s)) + (1 if has_month_word else 0)
+            if comp == 1:
+                future = dt.year > today.year
+            elif comp == 2:
+                future = (dt.year, dt.month) > (today.year, today.month)
+            else:
+                future = (dt.year, dt.month, dt.day) > (today.year, today.month, today.day)
+            if future:
                 out.append(self.result(sample=rec.sample_id,
                                        message=f"Sample collection date is a future date. (Found: '{v}')"))
         return out
