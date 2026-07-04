@@ -26,3 +26,33 @@ def fetch_registered_locus_tag_prefixes(bs_conn):
             if prefix:
                 result.setdefault(prefix.strip(), set()).add(submission_id)
     return result
+
+
+def fetch_authorized_bp_submissions(bp_conn, dra_conn, account_id):
+    """account が参照できる BioProject **submission id（PSUBxxxxxx）** の集合を返す（R0006 用）。
+
+    bioproject_id 属性は PRJDB だけでなく PSUB（登録前の submission id）で書かれることがあるため、
+    PRJDB（fetch_authorized_accessions）に加えて次の PSUB も「参照可」として扱う:
+      - account 自身が登録した BioProject submission（mass.submission.submitter_id 一致）
+      - DRA ext_permit で外部参照許可された PSUB（drmdb。ANN0422 と同じ許可元）
+    """
+    psubs = set()
+    if not account_id:
+        return psubs
+    if bp_conn:
+        with bp_conn.cursor() as cur:
+            cur.execute(
+                "SELECT submission_id FROM mass.submission JOIN mass.project USING(submission_id) "
+                "WHERE submitter_id = %s", (account_id,))
+            for (sid,) in cur.fetchall():
+                if sid:
+                    psubs.add(str(sid).strip().upper())
+    if dra_conn:
+        with dra_conn.cursor() as cur:
+            cur.execute(
+                "SELECT ref_name FROM mass.ext_permit JOIN mass.ext_entity USING(ext_id) "
+                "WHERE submitter_id = %s AND acc_type = 'PSUB'", (account_id,))
+            for (ref,) in cur.fetchall():
+                if ref:
+                    psubs.add(str(ref).strip().upper())
+    return psubs

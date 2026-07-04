@@ -12,10 +12,18 @@ from apps.biosample.rules.base import BsRule
 from apps.biosample.rules._util import is_missing_value
 from common.format import fix_insdc_date, fix_insdc_lat_lon
 
-# ISO8601: YYYY-mm-dd / YYYY-mm / YYYY-mm-ddThh:mm:ssZ
-_DATE_FULL = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-_DATE_YM = re.compile(r"^\d{4}-\d{2}$")
-_DATE_DT = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+# collection_date の許容書式（DDBJ /collection_date 仕様準拠）:
+#   YYYY / YYYY-MM / YYYY-MM-DD / YYYY-MM-DDThhZ / YYYY-MM-DDThh:mmZ / YYYY-MM-DDThh:mm:ssZ
+#   ＋ 上記2つを "/" で区切った範囲（YYYY/YYYY, YYYY-MM-DD/YYYY-MM-DD 等）。
+# 各トークンは (正規表現, strptime 書式) で判定。月日時分秒の範囲は strptime が検証する。
+_DATE_TOKEN_FORMATS = [
+    (re.compile(r"^\d{4}$"), "%Y"),
+    (re.compile(r"^\d{4}-\d{2}$"), "%Y-%m"),
+    (re.compile(r"^\d{4}-\d{2}-\d{2}$"), "%Y-%m-%d"),
+    (re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}Z$"), "%Y-%m-%dT%HZ"),
+    (re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z$"), "%Y-%m-%dT%H:%MZ"),
+    (re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$"), "%Y-%m-%dT%H:%M:%SZ"),
+]
 
 # lat_lon: "d[d.ddd] N|S d[dd.ddd] W|E"
 _LATLON_RE = re.compile(r"^\d{1,3}(\.\d+)?\s+[NS]\s+\d{1,3}(\.\d+)?\s+[EW]$")
@@ -48,18 +56,31 @@ class BS_R0101(BsRule):
         return out
 
 
-def _parse_date(v):
-    """collection_date を date へ。解釈不能なら None。"""
-    try:
-        if _DATE_FULL.match(v):
-            return datetime.datetime.strptime(v, "%Y-%m-%d").date()
-        if _DATE_YM.match(v):
-            return datetime.datetime.strptime(v + "-01", "%Y-%m-%d").date()
-        if _DATE_DT.match(v):
-            return datetime.datetime.strptime(v, "%Y-%m-%dT%H:%M:%SZ").date()
-    except ValueError:
-        return None
+def _parse_date_token(v):
+    """単一の collection_date トークンを date へ。仕様外・不正な月日時分秒なら None。
+    年のみ/年月は日を 1 に補完した date を返す（未来日判定 R0040 等の比較用）。"""
+    for rx, fmt in _DATE_TOKEN_FORMATS:
+        if rx.match(v):
+            try:
+                return datetime.datetime.strptime(v, fmt).date()
+            except ValueError:
+                return None
     return None
+
+
+def _parse_date(v):
+    """collection_date を date へ。解釈不能なら None。
+    範囲 "start/end" は両トークンが妥当なら開始側の date を返す（未来日判定は開始日で行う）。"""
+    v = v.strip()
+    if "/" in v:
+        parts = [p.strip() for p in v.split("/")]
+        if len(parts) != 2:
+            return None
+        d0, d1 = _parse_date_token(parts[0]), _parse_date_token(parts[1])
+        if d0 is None or d1 is None:
+            return None
+        return d0
+    return _parse_date_token(v)
 
 
 class BS_R0007(BsRule):

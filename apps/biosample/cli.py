@@ -147,6 +147,7 @@ def _fetch_account(context, submission):
             fetch_bp_psubs,
             fetch_prjdb_by_psub,
         )
+        from apps.biosample.db_meta import fetch_authorized_bp_submissions
         dm = DatabaseManager()
         bp_conn = dm.get_bp_conn()
         bs_conn = dm.get_bs_conn()
@@ -155,6 +156,8 @@ def _fetch_account(context, submission):
         proj, samd, _dra = fetch_authorized_accessions(bp_conn, bs_conn, dra_conn, context.account)
         context.authorized_projects = proj or set()
         context.authorized_samds = samd or set()
+        # bioproject_id は PSUB（submission id）でも書かれ得るため、参照可 PSUB も許可集合に合流（R0006）
+        context.authorized_projects |= fetch_authorized_bp_submissions(bp_conn, dra_conn, context.account)
         # 提出中の bioproject_id を収集し、PRJDB=メタ / PSUB=置換候補を解決
         bps = {
             r.attr("bioproject_id").strip()
