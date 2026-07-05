@@ -46,18 +46,12 @@ def _build_parser():
 
 
 def _tool_version():
-    """pyproject.toml から本ツールのバージョンを取得（取得失敗時は 'unknown'）。"""
+    """biosample アプリのバージョン（apps/biosample/__init__.py の __version__）。ddbj と独立管理。"""
     try:
-        import tomllib
-        with open(Path(__file__).resolve().parents[2] / "pyproject.toml", "rb") as f:
-            return tomllib.load(f).get("project", {}).get("version", "unknown")
+        from apps.biosample import __version__
+        return __version__
     except Exception:
-        try:
-            import toml
-            data = toml.load(Path(__file__).resolve().parents[2] / "pyproject.toml")
-            return data.get("project", {}).get("version", "unknown")
-        except Exception:
-            return "unknown"
+        return "unknown"
 
 
 def _env_internal_db():
