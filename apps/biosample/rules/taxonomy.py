@@ -149,17 +149,24 @@ class BS_R0106(BsRule):
     rule_id = "BS_R0106"
     level = "error"
     target = "metagenome_source"
-    description = "A metagenomic organism name in the taxonomy database should be used (e.g., 'soil metagenome')."
+    description = 'The metagenome_source value must be a valid scientific name ending with "metagenome" in the Taxonomy database.'
+    requires_network = True  # taxonomy 参照（ddbj ANN1060 と同一ロジック）
 
     def validate(self, submission, context):
+        # ddbj ANN1060 準拠: 値が taxonomy の scientific name（valid、または case correction で fixable）であり、
+        # かつ scientific_name が "metagenome" で終わること。文字列末尾だけでなく学名であることも検証する。
         out = []
         for rec in submission.records:
-            v = rec.attr("metagenome_source")
-            if is_empty(v):
-                continue
-            if not v.strip().lower().endswith("metagenome"):
-                out.append(self.result(sample=rec.sample_id,
-                                       message=f"Invalid metagenome source. (Found: '{v}')"))
+            for v in rec.attr_values("metagenome_source"):
+                if is_empty(v):
+                    continue
+                t = context.tax_data.get(v.strip()) or {}
+                is_sci = t.get("status") == "valid" or (
+                    t.get("status") == "fixable" and t.get("type") == "case correction")
+                is_meta = (t.get("scientific_name") or "").lower().endswith("metagenome")
+                if not (is_sci and is_meta):
+                    out.append(self.result(sample=rec.sample_id,
+                                           message=f"Invalid metagenome source. (Found: '{v}')"))
         return out
 
 

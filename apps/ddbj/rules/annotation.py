@@ -8,6 +8,7 @@ from apps.ddbj.autofix.format import _VALID_METHOD_PATTERN, _FIX_METHOD_PATTERN
 from collections import defaultdict
 from apps.ddbj.utils.location import get_introns_from_join
 from common.db_taxonomy import get_expected_transl_table
+from common.geo import GeoChecker
 from datetime import date
 from dateutil import parser
 from Bio.Seq import Seq
@@ -1533,160 +1534,28 @@ class ANN1275(BaseRule):
     is_file_level = False
 
     def __init__(self):
-        self._geo_cache = {}
-        self.valid_land_names = None
-        self.lat_lon_pattern = None 
-        self.geo_df = None
-        self.geo_mapping = None
-        self.Point = None  # shapely.geometry.Point 用
+        # lat_lon↔country（国名部）の判定は common.geo.GeoChecker に集約（biosample R0041 と共通ロジック）。
+        # geopandas/shapely・geo parquet の遅延ロードやバッファ判定・距離計算は GeoChecker が担う。
+        self._geo = GeoChecker()
 
-    def _lazy_load_geo(self):
-        """遅延ロード: 対象のフィーチャーが見つかった時だけ重いモジュールとデータを読み込む"""
-        try:
-            import geopandas as gpd
-            from shapely.geometry import Point
-            self.Point = Point
-        except ImportError:
-            logger.warning("geopandas or shapely is not installed. Geo-location validation will be skipped.")
-            return False
-
-        from importlib.resources import files, as_file
-
-        try:
-            # パッケージリソースとしてのパス解決
-            geo_resources = files("common.resources.geo")
-            parquet_path = geo_resources / "countries_50m.parquet"
-            mapping_path = geo_resources / "insdc_geo_mapping.json"
-
-            # mapping.json の読み込み
-            self.geo_mapping = {}
-            if mapping_path.is_file():
-                with mapping_path.open("r", encoding="utf-8") as f:
-                    self.geo_mapping = json.load(f)
-
-            # parquet の読み込み (Cライブラリが読めるように as_file で物理パスを保証する)
-            if not parquet_path.is_file():
-                logger.warning("GeoParquet file not found in resources.")
-                return False
-                
-            with as_file(parquet_path) as p_path:
-                self.geo_df = gpd.read_parquet(p_path)
-                _ = self.geo_df.sindex  # インデックスの強制構築
-
-        except Exception as e:
-            logger.warning(f"Failed to load geo_data: {e}")
-            return False
-
-        # valid_land_names の初期化
-        names = set()
-        for ne_name in self.geo_df['name'].values:
-            if ne_name in self.geo_mapping:
-                for mapped_name in self.geo_mapping[ne_name]:
-                    names.add(mapped_name.lower())
-            else:
-                names.add(ne_name.lower())
-        self.valid_land_names = names
-
-        return True
-        
     def validate(self, record, context):
         results = []
         if record.id == "COMMON":
             return results
-
-        # 1. まず検証対象となる「lat_lon と geo_loc_name が両方存在するフィーチャー」を抽出する
-        target_features = []
+        # source feature の (lat_lon, geo_loc_name) ペアごとに GeoChecker で矛盾判定
         for feat in self.get_features(record, "source"):
             lat_lon_list = feat.qualifiers.get("lat_lon", [])
             geo_loc_list = feat.qualifiers.get("geo_loc_name", [])
-            if lat_lon_list and geo_loc_list:
-                target_features.append((feat, lat_lon_list, geo_loc_list))
-
-        # 対象が一つも無ければ、即座に return (geo の重い処理を回避)
-        if not target_features:
-            return results
-
-        # 2. 対象が存在する場合のみ、初回1回だけ遅延ロードを実行する
-        if self.geo_df is None:
-            if not self._lazy_load_geo():
-                return results
-
-        if self.lat_lon_pattern is None:
-            pattern_str = context.ddbj_dict.get("qualifiers", {}).get("lat_lon", {}).get("format_pattern")
-            if pattern_str:
-                self.lat_lon_pattern = re.compile(pattern_str)
-            else:
-                self.lat_lon_pattern = re.compile(r'^\d+(?:\.\d+)?\s+[NS]\s+\d+(?:\.\d+)?\s+[EW]$')
-
-        # 3. 検証ロジックの実行
-        for feat, lat_lon_list, geo_loc_list in target_features:
+            if not (lat_lon_list and geo_loc_list):
+                continue
             for lat_lon_str, geo_loc_str in zip(lat_lon_list, geo_loc_list):
                 country_name = geo_loc_str.split(":")[0].strip()
-                country_lower = country_name.lower()
-
-                if country_lower not in self.valid_land_names:
-                    continue
-
-                cache_key = (lat_lon_str, country_lower)
-                if cache_key in self._geo_cache:
-                    is_valid, hit_names, dist_km = self._geo_cache[cache_key]
-                    self._report_result(record, feat, lat_lon_str, country_name, is_valid, hit_names, dist_km, results)
-                    continue
-
-                parsed_coords = self._parse_lat_lon(lat_lon_str)
-                if not parsed_coords:
-                    continue
-
-                lat, lon = parsed_coords
-                pt = self.Point(lon, lat)  # 遅延ロードした Point を使用
-
-                # バッファ(約111km)で交差するポリゴンを検索
-                matches_df = self.geo_df[self.geo_df.intersects(pt.buffer(1.0))]
-                
-                # 距離を含めた詳細チェック
-                is_valid, hit_names, dist_km = self._check_matches(country_lower, matches_df, pt)
-
-                self._geo_cache[cache_key] = (is_valid, hit_names, dist_km)
-                self._report_result(record, feat, lat_lon_str, country_name, is_valid, hit_names, dist_km, results)
-
+                verdict = self._geo.check(lat_lon_str, country_name)
+                if verdict is None:
+                    continue  # geo 未導入 / lat_lon 形式不正 / 未知の国名 → スキップ
+                self._report_result(record, feat, lat_lon_str, country_name,
+                                    verdict["is_valid"], verdict["hit_names"], verdict["dist_km"], results)
         return results
-
-    def _parse_lat_lon(self, lat_lon_str):
-        clean_str = lat_lon_str
-        if not self.lat_lon_pattern.match(clean_str): return None
-        parts = clean_str.split()
-        if len(parts) != 4: return None
-        lat = float(parts[0]) * (-1 if parts[1] == 'S' else 1)
-        lon = float(parts[2]) * (-1 if parts[3] == 'W' else 1)
-        return lat, lon
-
-    def _check_matches(self, country_lower, matches_df, pt):
-        hit_names = []
-        matched_geometries = []
-
-        for idx, row in matches_df.iterrows():
-            ne_name = row['name']
-            geom = row['geometry']
-            
-            if ne_name in self.geo_mapping:
-                allowed = [m.lower() for m in self.geo_mapping[ne_name]]
-                hit_names.extend(self.geo_mapping[ne_name])
-            else:
-                allowed = [ne_name.lower()]
-                hit_names.append(ne_name)
-                
-            if country_lower in allowed:
-                matched_geometries.append(geom)
-                
-        is_valid = len(matched_geometries) > 0
-        dist_km = 0.0
-
-        if is_valid:
-            min_dist_deg = min([geom.distance(pt) for geom in matched_geometries])
-            if min_dist_deg > 0:
-                dist_km = round(min_dist_deg * DEGREES_TO_KM, 1)
-
-        return is_valid, hit_names, dist_km
 
     def _report_result(self, record, feat, lat_lon_str, country_name, is_valid, hit_names, dist_km, results):
         if not is_valid:
