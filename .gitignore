@@ -120,6 +120,3 @@ apps/biosample/tests/tools/
 
 
 
-# repo 直下に紛れ込んだ検証結果の UUID シャードディレクトリ（例 f0/ 〜 ff/）。
-# provenance 不明・大容量・非公開データの可能性があるため追跡しない（削除はしない）。
-/[0-9a-f][0-9a-f]/
