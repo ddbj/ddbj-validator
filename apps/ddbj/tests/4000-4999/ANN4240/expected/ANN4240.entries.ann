@@ -17,7 +17,7 @@ COMMON	SUBMITTER		ab_name	Mishima,H.
 seq1	source	1..120	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
-			geo_loc_name	Japan:Shizuoka, Mishima
+			geo_loc_name	Japan: Shizuoka, Mishima
 	CDS	<2..100	transl_table	1
 			note	ANN4240 pass
 seq2	source	1..120	organism	Escherichia coli
