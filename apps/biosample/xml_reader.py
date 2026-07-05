@@ -89,6 +89,15 @@ def parse_xml(xml_path, submission_id=None, account=None):
             if name is None:
                 continue
             rec.attributes.setdefault(name, []).append((attr.text or "").strip())
+        # Ruby xml_convertor 準拠: Description 由来の値も属性として取り込む（Attribute 側があればそちらを優先）。
+        # これにより sample_title/description も R0013(autocleanup) 等の属性処理対象になる。
+        #   sample_title ← Description/Title / description ← Description/Comment/Paragraph
+        _title = _text(bs, "./Description/Title")
+        if _title and "sample_title" not in rec.attributes:
+            rec.attributes["sample_title"] = [_title]
+        _desc = _text(bs, "./Description/Comment/Paragraph")
+        if _desc and "description" not in rec.attributes:
+            rec.attributes["description"] = [_desc]
         # sample_name は属性側にもあるため、Description 側が無ければ属性から補完
         if not rec.sample_name:
             rec.sample_name = rec.attr("sample_name")

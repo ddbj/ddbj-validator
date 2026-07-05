@@ -105,11 +105,27 @@ def apply_autofix(xml_source, results, out_dir, out_name):
     return applied
 
 
+# Description 要素由来の属性 → 書き戻し先 XPath（Ruby xml_convertor.xpath_from_attrname 準拠）
+_DESC_XPATH = {
+    "sample_title": "./Description/Title",
+    "description": "./Description/Comment/Paragraph",
+}
+
+
 def _apply_attribute_value(bs, p):
     """属性値置換（kind=attribute_value）。適用件数(0/1)を返す。"""
     attr_name = p.get("attribute")
     old_value = p.get("old_value")
     new_value = p.get("new_value")
+    # sample_title/description は Attribute でなく Description 要素へ書き戻す
+    if attr_name in _DESC_XPATH:
+        el = bs.find(_DESC_XPATH[attr_name])
+        if el is not None:
+            cur = (el.text or "").strip()
+            if old_value is None or cur == old_value:
+                el.text = new_value
+                return 1
+        # 要素が無ければ属性側にフォールバック
     for a in bs.findall("./Attributes/Attribute"):
         if a.get("attribute_name") != attr_name:
             continue
