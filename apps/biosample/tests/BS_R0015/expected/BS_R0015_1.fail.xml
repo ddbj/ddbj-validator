@@ -13,7 +13,7 @@
         <Attribute attribute_name="sample_name">S1</Attribute>
         <Attribute attribute_name="strain">K-12</Attribute>
         <Attribute attribute_name="collection_date">2020-06-30</Attribute>
-        <Attribute attribute_name="geo_loc_name">Japan:Tsukuba</Attribute>
+        <Attribute attribute_name="geo_loc_name">Japan: Tsukuba</Attribute>
         <Attribute attribute_name="isolation_source">soil</Attribute>
         <Attribute attribute_name="host">Homo sapiens</Attribute>
     </Attributes>

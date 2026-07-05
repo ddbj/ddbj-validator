@@ -15,7 +15,14 @@ _LATLON_DEC_SIGNED_PATTERN = re.compile(r"^(?P<lat_dec>-*\d{1,2}(?:\.\d+))[^\d-]
 _LATLON_DEC_DETAIL_PATTERN = re.compile(r"^(?P<lat_dec>\d{1,2}\.)(?P<lat_dec_point>\d+)\s*(?P<lat_dec_hemi>[NS])[ ,_;]+(?P<lng_dec>\d{1,3}\.)(?P<lng_dec_point>\d+)\s*(?P<lng_dec_hemi>[EW])$")
 
 def _parse_and_format_date(val):
-    """日付を解釈し、入力の粒度(年、年月、年月日)に合わせてINSDC推奨のフォーマットに直す"""
+    """日付を解釈し、入力の粒度(年、年月、年月日)に合わせてINSDC推奨のフォーマットに直す。
+
+    保守方針: 入力に 4 桁の年が無い（例 "Dec-16" のような 2 桁年）場合は年を推測できず、
+    誤った autofix（"Dec-16" を当年の 12/16 とする等）を生むため **補正しない**（ddbj/biosample 共通）。
+    公的 DB では誤補正を避けるのが正しい。→ 呼び出し側では invalid（未補正）として扱われる。
+    """
+    if not re.search(r'\d{4}', val):
+        return None, None
     try:
         val_clean = re.sub(r'[\s/.,]+', '-', val.strip())
         dt = parser.parse(val_clean)

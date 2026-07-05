@@ -121,6 +121,8 @@ class BS_R0040(BsRule):
             s = v.strip()
             if s.startswith("missing:") or "/" in s:
                 continue
+            if not re.search(r"\d{4}", s):
+                continue  # 4桁年が無い（例 "Dec-16"）は年を推測できず未来日判定しない（R0007 の領分）
             try:
                 dt = _dateutil_parser.parse(re.sub(r"[\s.,]+", "-", s))
             except Exception:

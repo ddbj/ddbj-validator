@@ -41,8 +41,9 @@ class BS_R0094(BsRule):
     description = "Format of geo_loc_name is invalid."
 
     def validate(self, submission, context):
-        # 国名部分が CV に大文字小文字違いで一致、または "Country:Region" の整形差がある場合、
-        # 正表記へ autofix 提案（CV に全く無い場合は R0008=error が担当）。
+        # 国名部分の大文字小文字補正 ＋ INSDC 正形「Country: Region」（コロン後 半角空白1つ）への正規化。
+        # 例 "japan:Tokyo" / "Japan:Tokyo" → "Japan: Tokyo"（CV に全く無い国名は R0008=error が担当）。
+        # コロン後空白の付与は決定的・安全な補正のみ（地域名の中身は変更しない）。
         countries = context.country_terms()
         if not countries:
             return []
@@ -61,7 +62,8 @@ class BS_R0094(BsRule):
             if len(parts) == 1:
                 new_val = new_country
             else:
-                new_val = f"{new_country}:{parts[1].strip()}"
+                # コロンの後は半角空白 1 つ（INSDC 正形）。地域名前後の余分な空白のみ整える。
+                new_val = f"{new_country}: {parts[1].strip()}"
             if new_val != v:
                 out.append(self.autofix_result(
                     sample=rec.sample_id,
