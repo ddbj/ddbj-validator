@@ -4,8 +4,12 @@
 """
 import re
 
-# missing 値表記: "not collected" / "not applicable" / "missing" / "missing: <reporting term>"
-MISSING_RE = re.compile(r"^(not collected|not applicable|missing)(\s*:.*)?$", re.IGNORECASE)
+# missing 値表記。INSDC の missing_terms（common/resources/definitions.json cv_terms.missing_terms＝
+# "missing" / "not applicable" / "not collected" / "not provided" / "restricted access"）と
+# "missing: <reporting term>" を共通で判定する（重複チェック等で欠損値を一律除外するため全 CV を網羅）。
+MISSING_RE = re.compile(
+    r"^(not collected|not applicable|not provided|restricted access|missing)(\s*:.*)?$",
+    re.IGNORECASE)
 # "missing: <reporting term>"（reporting level term を伴う形）
 MISSING_WITH_TERM_RE = re.compile(r"^missing\s*:\s*\S+", re.IGNORECASE)
 

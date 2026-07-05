@@ -82,12 +82,12 @@ class BS_R0073(BsRule):
     def validate(self, submission, context):
         out = []
         for rec in submission.records:
-            vals = {
-                "organism": norm(rec.organism),
-                "host": norm(rec.attr("host")),
-                "isolation_source": norm(rec.attr("isolation_source")),
-            }
-            present = {k: v for k, v in vals.items() if v}
+            # 冗長判定の前に missing 系の値（not applicable / missing[: term] 等）は除外する。
+            # 欠損値プレースホルダ同士（host=isolation_source="not applicable" 等）は「重複」ではない。
+            raw = {"organism": rec.organism, "host": rec.attr("host"),
+                   "isolation_source": rec.attr("isolation_source")}
+            present = {k: norm(v) for k, v in raw.items()
+                       if not is_empty(v) and not is_missing_value(v)}
             seen = {}
             redundant = False
             for k, v in present.items():
@@ -168,7 +168,8 @@ class BS_R0062(BsRule):
             inst = {}
             for name in self._VOUCHERS:
                 v = rec.attr(name)
-                if is_empty(v):
+                # missing 系の値（not applicable / not collected / missing 等）は機関コード比較から除外。
+                if is_empty(v) or is_missing_value(v):
                     continue
                 code = v.split(":", 1)[0].strip()
                 if code:

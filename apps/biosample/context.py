@@ -85,6 +85,8 @@ class ValidationContext:
     null_not_recommended: list = field(default_factory=list)
     # organism 名 -> taxonomy 情報（common/db_taxonomy or NCBI で取得。local では空）
     tax_data: dict = field(default_factory=dict)
+    # taxonomy_id -> scientific name（BS_R0004 の taxid→学名照合用。内部DBモードのみ。空なら旧ロジックへフォールバック）
+    taxid_names: dict = field(default_factory=dict)
     # NCBI BioCollections 機関コード {code_lower: code}
     institution_codes: dict = field(default_factory=dict)
     # account 所属アクセッション（--account 指定時に取得。R0006/R0129 用）

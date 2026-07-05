@@ -204,6 +204,9 @@ class BS_R0011(BsRule):
                 v = rec.attr(name)
                 if not v or is_missing_value(v):
                     continue
+                # "unpublished"（大文字小文字無視）は本ルール特異的に許容（pub id 未発表の慣用表記）
+                if v.strip().lower() == "unpublished":
+                    continue
                 if not _PUB_RE.match(v.strip()):
                     out.append(self.result(sample=rec.sample_id, target=name,
                                            message=f"Invalid publication identifier. ({name}: '{v}')"))

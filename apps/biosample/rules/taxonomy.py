@@ -11,7 +11,7 @@ tax_data は DB(common/db_taxonomy) または NCBI API で取得。local（skip_
 import re
 from apps.biosample.rules.base import BsRule
 from apps.biosample.rules._util import is_empty, is_missing_value, pkg_startswith, MIGS_BA_EU
-from common.db_taxonomy import tax_has_lineage
+from common.db_taxonomy import tax_has_lineage, tax_rank_invalid
 
 # informal name（"Genus sp. strain"）判定用（R0104/R0134/R0140）
 _SP_KEYWORDS = [
@@ -60,15 +60,30 @@ class BS_R0004(BsRule):
     requires_network = True  # taxonomy ソース（DB or NCBI）が要る。local ではスキップ
 
     def validate(self, submission, context):
+        # Ruby v 準拠: 記載 taxonomy_id から学名を引き（context.taxid_names）、organism と完全一致比較。
+        # 一致しなければ error（tax_id=新規でもエラー）。taxid_names に無い場合（NCBI/local）は
+        # 従来の organism→tax_id 照合へフォールバックする。
         out = []
         for rec in submission.records:
             if is_empty(rec.organism) or is_empty(rec.taxonomy_id):
                 continue
+            if is_missing_value(rec.organism) or is_missing_value(rec.taxonomy_id):
+                continue
+            taxid = str(rec.taxonomy_id).strip()
+            name_of_taxid = context.taxid_names.get(taxid)
+            if name_of_taxid:
+                if name_of_taxid != rec.organism.strip():
+                    out.append(self.result(
+                        sample=rec.sample_id,
+                        message=(f"Organism and taxonomy id do not match. (organism: '{rec.organism}', "
+                                 f"taxonomy_id: '{taxid}', Organism name of this taxonomy_id: '{name_of_taxid}')")))
+                continue
+            # フォールバック: organism を解決して tax_id を比較（taxid→学名が引けない場合）
             info = context.tax_data.get(rec.organism)
             if not _found(info):
-                continue  # 解決できない organism は別ルール（taxonomy 未登録等）
+                continue
             db_taxid = info.get("tax_id")
-            if db_taxid and str(rec.taxonomy_id).strip() != str(db_taxid).strip():
+            if db_taxid and taxid != str(db_taxid).strip():
                 out.append(self.result(
                     sample=rec.sample_id,
                     message=f"Organism and taxonomy id do not match. (organism: '{rec.organism}', taxonomy_id: '{rec.taxonomy_id}', expected: '{db_taxid}')"))
@@ -83,14 +98,13 @@ class BS_R0096(BsRule):
     requires_network = True
 
     def validate(self, submission, context):
+        # rank 判定は ddbj ANN1040 と共通（common.db_taxonomy.tax_rank_invalid＝status=="invalid_rank"）。
         out = []
         for rec in submission.records:
             if is_empty(rec.taxonomy_id) or is_empty(rec.organism):
                 continue
             info = context.tax_data.get(rec.organism)
-            if not _found(info):
-                continue
-            if info.get("is_species_or_below") is False:
+            if tax_rank_invalid(info):
                 out.append(self.result(
                     sample=rec.sample_id,
                     message=f"Taxonomy should be species or infraspecific level. (organism: '{rec.organism}', rank: '{info.get('rank')}')"))
@@ -196,13 +210,22 @@ class BS_R0045(BsRule):
 
     def validate(self, submission, context):
         # organism が taxonomy で学名解決できる場合、学名へ補正＋taxonomy_id を補完（autofix）。
-        # 解決できない（novel）場合は補正しない。
+        # 解決できない（tax に無い）場合は「新規名 or 誤り」の可能性で warning（autofix なし）。
+        #   新規なら警告を無視して submit → キュレータが NCBI Taxonomy へ新規名を申請する運用。
         out = []
         for rec in submission.records:
             if is_empty(rec.organism):
                 continue
+            # 数値のみの organism は BS_R0142(error)、missing 系は対象外
+            if rec.organism.strip().isdigit() or is_missing_value(rec.organism):
+                continue
             info = context.tax_data.get(rec.organism)
             if not _resolved(info):
+                out.append(self.result(
+                    sample=rec.sample_id,
+                    message=("Taxonomy error warning. Organism is not found in the Taxonomy database. "
+                             "If novel, enter the proposed name and leave taxonomy_id empty; "
+                             f"otherwise correct the name. (organism: '{rec.organism}')")))
                 continue
             sci = info.get("scientific_name")
             taxid = info.get("tax_id")

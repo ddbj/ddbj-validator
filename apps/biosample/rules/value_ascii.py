@@ -4,8 +4,21 @@
 - BS_R0100: 任意属性に missing 値が入っている（任意は空でよい）
 - BS_R0012: 特殊文字（℃/°C/μm/μ 等）を推奨表記へ置換（autofix）
 """
+import re
 from apps.biosample.rules.base import BsRule
-from apps.biosample.rules._util import is_missing_value
+from apps.biosample.rules._util import is_missing_value, is_empty
+
+
+_WS_RE = re.compile(r"\s+")
+
+
+def normalize_data_format(v):
+    """連続空白の畳み込み（前後 strip＋タブ/改行/連続空白→半角空白1つ）＋前後を囲む対クオートの除去。
+    Ruby v invalid_data_format(String#squish 相当) に準拠。補正不要なら元の値と同じ文字列を返す。"""
+    s = _WS_RE.sub(" ", v.strip())
+    if len(s) >= 2 and s[0] == s[-1] and s[0] in ('"', "'"):
+        s = _WS_RE.sub(" ", s[1:-1].strip())
+    return s
 
 
 def apply_special_chars(value, special_chars):
@@ -23,6 +36,36 @@ def _non_ascii(v):
         return False
     except (UnicodeEncodeError, AttributeError):
         return True
+
+
+class BS_R0013(BsRule):
+    rule_id = "BS_R0013"
+    level = "warning"
+    target = "#attributes"
+    description = "Invalid data format."
+
+    # 専用の書式 autofix を持つ属性は二重提案を避けるため除外
+    # （collection_date=R0136 / geo_loc_name=R0094 / lat_lon=R0009 / organism=R0045 / host=R0015 / component_organism=R0105）。
+    _EXCLUDE = {"collection_date", "geo_loc_name", "lat_lon",
+                "organism", "host", "component_organism"}
+
+    def validate(self, submission, context):
+        # 全属性値の連続空白畳み込み・前後クオート除去（missing 値は対象外）。Ruby v invalid_data_format 準拠。
+        out = []
+        for rec in submission.records:
+            for name, vals in rec.attributes.items():
+                if name in self._EXCLUDE:
+                    continue
+                for v in vals:
+                    if is_empty(v) or is_missing_value(v):
+                        continue
+                    fixed = normalize_data_format(v)
+                    if fixed and fixed != v:
+                        out.append(self.autofix_result(
+                            sample=rec.sample_id, target=name,
+                            message=f"Invalid data format. ({name}: '{v}', Suggested: '{fixed}')",
+                            attribute=name, old_value=v, new_value=fixed))
+        return out
 
 
 class BS_R0058(BsRule):

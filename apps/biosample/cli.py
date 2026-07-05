@@ -94,8 +94,11 @@ def run(args):
             names.update(v for v in r.attr_values("host") if v)  # R0015 用
             names.update(v for v in r.attr_values("metagenome_source") if v)  # R0106 用
         organisms = sorted(names)
+        # BS_R0004 用: 記載された taxonomy_id 群（内部DBモードで taxid→学名解決）
+        taxids = {str(r.taxonomy_id).strip() for r in submission.records
+                  if getattr(r, "taxonomy_id", None) and str(r.taxonomy_id).strip().isdigit()}
         if organisms:
-            _fetch_taxonomy(context, organisms)
+            _fetch_taxonomy(context, organisms, taxids)
 
     # account/BioProject 取得（内部DB。skip_auth／account 未指定では実行しない）
     if not context.skip_auth and context.account:
@@ -121,13 +124,17 @@ def run(args):
     return 1 if counts.get("error") else 0
 
 
-def _fetch_taxonomy(context, organisms):
-    """organism 群の taxonomy 情報を context.tax_data へ。default=内部DB / -n=NCBI。失敗時は空。"""
+def _fetch_taxonomy(context, organisms, taxids=None):
+    """organism 群の taxonomy 情報を context.tax_data へ。default=内部DB / -n=NCBI。失敗時は空。
+    内部DBモードでは taxids（記載 taxonomy_id）→ scientific name も取得し context.taxid_names へ（BS_R0004 用）。"""
     try:
         if not context.skip_db:
             from common.db_manager import DatabaseManager
-            from common.db_taxonomy import fetch_taxonomy_data
-            context.tax_data = fetch_taxonomy_data(DatabaseManager().get_tax_conn(), organisms)
+            from common.db_taxonomy import fetch_taxonomy_data, fetch_scientific_names_by_taxid
+            conn = DatabaseManager().get_tax_conn()
+            context.tax_data = fetch_taxonomy_data(conn, organisms)
+            if taxids:
+                context.taxid_names = fetch_scientific_names_by_taxid(conn, taxids)
         else:
             from common.db_taxonomy import fetch_taxonomy_from_ncbi
             context.tax_data = fetch_taxonomy_from_ncbi(organisms)

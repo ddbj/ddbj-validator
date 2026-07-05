@@ -50,6 +50,13 @@ def tax_has_lineage(info, names):
     return any(n in lineage for n in names)
 
 
+def tax_rank_invalid(info):
+    """taxonomy が species 以下（種・種内）でない（rank が不正）か。
+    fetch_taxonomy_data が status="invalid_rank" を最終判定として設定する。
+    ddbj ANN1040 と biosample BS_R0096 で共通利用（rank 判定ロジックの一本化）。"""
+    return bool(info) and info.get("status") == "invalid_rank"
+
+
 def tax_has_plastids(info):
     """plastid genetic code を持つ（pl_code != 0）か。"""
     try:
@@ -304,6 +311,27 @@ def fetch_taxonomy_data(db_conn, organism_list):
             logger.warning(f"Failed to check recursive taxonomy ranks: {e}")
 
     return tax_data
+
+
+def fetch_scientific_names_by_taxid(db_conn, taxid_list):
+    """taxonomy_id（ut_id）→ scientific name の辞書を返す。
+    BS_R0004（organism と taxonomy_id の学名照合）用。Ruby v は taxonomy_id から学名を引いて
+    organism と完全一致比較するため、name 引きの tax_data とは別に taxid 起点の学名解決が要る。"""
+    out = {}
+    ids = sorted({int(t) for t in taxid_list if str(t).strip().isdigit()})
+    if not ids:
+        return out
+    query = """
+        SELECT sci.ut_id, trim(sci.ut_name)
+        FROM public.utax_names sci
+        WHERE sci.ut_id IN ({placeholders}) AND trim(sci.ut_type) = 'scientific name'
+    """
+    try:
+        for row in execute_in_query(db_conn, query, ids):
+            out[str(row[0])] = row[1]
+    except Exception as e:
+        logger.warning(f"Failed to fetch scientific names by taxid: {e}")
+    return out
 
 
 # ==============================================================================

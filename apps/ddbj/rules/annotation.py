@@ -7,7 +7,7 @@ from apps.ddbj.rules.division_datatype import get_active_divisions
 from apps.ddbj.autofix.format import _VALID_METHOD_PATTERN, _FIX_METHOD_PATTERN
 from collections import defaultdict
 from apps.ddbj.utils.location import get_introns_from_join
-from common.db_taxonomy import get_expected_transl_table
+from common.db_taxonomy import get_expected_transl_table, tax_rank_invalid
 from common.geo import GeoChecker
 from datetime import date
 from dateutil import parser
@@ -1138,7 +1138,7 @@ class ANN1040(BaseRule):
         for record, feature, org_clean in self.iter_unique_qualifier_values(records, "source", "organism", strip=True):
             t_data = context.tax_data.get(org_clean, {})
 
-            if t_data.get("status") == "invalid_rank":
+            if tax_rank_invalid(t_data):
                 msg = f"{self.description} (Found: '{org_clean}', Rank: '{t_data.get('rank', 'unknown')}')"
                 results.append(self.feature_result(record, feature, msg, level="error", qualifier="organism"))
         return results
