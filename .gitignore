@@ -118,5 +118,13 @@ nsub/
 # =========================
 apps/biosample/tests/tools/
 
+# =========================
+# テスト実行時に fixture ディレクトリ内へ生成される成果物（expected/ はゴールデンなので追跡する）
+# =========================
+apps/ddbj/tests/**/fixed/
+apps/ddbj/tests/**/reports/
+apps/ddbj/tests/**/aa/
+apps/biosample/tests/**/fixed/
+apps/biosample/tests/**/reports/
 
 
