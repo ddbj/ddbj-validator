@@ -196,9 +196,11 @@ def run(args):
             names.update(v for v in r.attr_values("host") if v)  # R0015 用
             names.update(v for v in r.attr_values("metagenome_source") if v)  # R0106 用
         organisms = sorted(names)
-        # BS_R0004 用: 記載された taxonomy_id 群（内部DBモードで taxid→学名解決）
+        # BS_R0004/R0096/R0142 用: 記載 taxonomy_id ＋ 数値 organism（taxid 記載）を taxid→学名解決対象に
         taxids = {str(r.taxonomy_id).strip() for r in submission.records
                   if getattr(r, "taxonomy_id", None) and str(r.taxonomy_id).strip().isdigit()}
+        taxids |= {r.organism.strip() for r in submission.records
+                   if r.organism and r.organism.strip().isdigit()}
         if organisms:
             _fetch_taxonomy(context, organisms, taxids)
 

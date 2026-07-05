@@ -173,9 +173,8 @@ class BS_R0137(BsRule):
             for name in self._TARGETS:
                 v = rec.attr(name)
                 if is_empty(v):
-                    out.append(self.result(sample=rec.sample_id, target=name,
-                                           message=f"Missing reporting level term for '{name}'."))
-                elif is_missing_value(v) and not is_valid_reporting_term(v):
+                    continue  # 未入力（欠落）は R0027（必須属性欠落）が担当
+                if is_missing_value(v) and not is_valid_reporting_term(v):
                     out.append(self.result(sample=rec.sample_id, target=name,
                                            message=f"Missing reporting level term for '{name}'. (Found: '{v}')"))
         return out

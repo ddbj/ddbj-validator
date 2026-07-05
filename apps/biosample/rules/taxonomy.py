@@ -40,15 +40,26 @@ class BS_R0142(BsRule):
     description = "Invalid organism. Organism must not be numbers."
 
     def validate(self, submission, context):
-        # organism を taxid（数字のみ）で記載するのは誤り。サルベージせず error で気づかせる（DB 非依存）。
+        # organism が数字のみ＝taxid 記載とみなす（production 準拠）。taxid→学名が引ければ
+        # organism を学名へ、その数値を taxonomy_id へ移す autofix（warning）。引けなければ error。
         out = []
         for rec in submission.records:
             org = rec.organism
-            if is_empty(org):
+            if is_empty(org) or not org.strip().isdigit():
                 continue
-            if org.strip().isdigit():
-                out.append(self.result(sample=rec.sample_id,
-                                       message=f"Invalid organism. Organism must not be numbers. (Found: '{org}')"))
+            taxid = org.strip()
+            info = context.taxid_info.get(taxid)
+            sci = info.get("scientific_name") if info else None
+            if sci:
+                out.append(self.autofix_result(
+                    sample=rec.sample_id, level="warning", kind="organism",
+                    message=("Organism is a taxonomy id; it will be moved to taxonomy_id and organism "
+                             f"corrected to the scientific name. (organism: '{org}', Suggested: '{sci}', taxonomy_id: '{taxid}')"),
+                    old_value=org, new_value=sci, new_taxid=taxid))
+            else:
+                out.append(self.result(
+                    sample=rec.sample_id,
+                    message=f"Invalid organism. Organism must not be numbers. (Found: '{org}')"))
         return out
 
 

@@ -98,6 +98,21 @@ class BS_R0100(BsRule):
     description = "Missing values are not necessary for optional attributes. Leave values empty when there is no information."
 
     def validate(self, submission, context):
+        # missing 系（INSDC CV）に加え、非推奨 null（NA / unknown / . / - 等 null_not_recommended）も
+        # missing 相当として拾う（production 準拠。R0001 が NA→missing 補正するのと同じ null 集合）。
+        nnr = context.null_not_recommended or []
+
+        def _is_null(v):
+            if is_missing_value(v):
+                return True
+            for pat in nnr:
+                try:
+                    if re.fullmatch(pat, v.strip(), re.I):
+                        return True
+                except re.error:
+                    continue
+            return False
+
         out = []
         for rec in submission.records:
             if not rec.package or context.package_def(rec.package) is None:
@@ -108,7 +123,7 @@ class BS_R0100(BsRule):
                 if use in ("mandatory", "either_one_mandatory"):
                     continue  # 任意属性のみ対象
                 for v in vals:
-                    if v and is_missing_value(v):
+                    if v and _is_null(v):
                         out.append(self.result(sample=rec.sample_id, target=name,
                                                message=f"Missing value is unnecessary for optional attribute '{name}'."))
                         break

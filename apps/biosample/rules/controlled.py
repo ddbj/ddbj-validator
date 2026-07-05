@@ -23,6 +23,16 @@ def _cv_attributes(rec, cv_attr):
             yield name, v
 
 
+def _cv_correction(name, val, terms):
+    """CV に対する正表記（大文字小文字違いの一致、または sex の M/F 特例）を返す。無ければ None。"""
+    if name == "sex" and val.casefold() in ("m", "f"):
+        return "male" if val.casefold() == "m" else "female"
+    for term in terms:
+        if term.casefold() == val.casefold() and term != val:
+            return term  # 大文字小文字違いの一致 → 正表記
+    return None
+
+
 class BS_R0002(BsRule):
     rule_id = "BS_R0002"
     level = "warning"
@@ -36,14 +46,7 @@ class BS_R0002(BsRule):
         out = []
         for rec in submission.records:
             for name, val in _cv_attributes(rec, cv_attr):
-                replace = ""
-                if name == "sex" and val.casefold() in ("m", "f"):
-                    replace = "male" if val.casefold() == "m" else "female"
-                else:
-                    for term in cv_attr[name]:
-                        if term.casefold() == val.casefold() and term != val:
-                            replace = term  # 大文字小文字違いの一致 → 正表記を提案
-                            break
+                replace = _cv_correction(name, val, cv_attr[name])
                 if replace:
                     out.append(self.autofix_result(
                         sample=rec.sample_id,
@@ -66,7 +69,9 @@ class BS_R0138(BsRule):
         out = []
         for rec in submission.records:
             for name, val in _cv_attributes(rec, cv_attr):
-                if val not in cv_attr[name]:  # 完全一致で CV に無い
+                # 完全一致で無く、かつ大文字小文字違い/M・F 特例でも直せない（＝真に CV 外）場合のみ error。
+                # 大文字小文字違いは R0002（autofix）の担当なので R0138 は発火させない。
+                if val not in cv_attr[name] and _cv_correction(name, val, cv_attr[name]) is None:
                     out.append(self.result(
                         sample=rec.sample_id,
                         message=(f"Attribute value is not in controlled terms. "

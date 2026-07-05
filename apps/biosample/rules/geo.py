@@ -9,6 +9,10 @@ from apps.biosample.rules.base import BsRule
 from apps.biosample.rules._util import is_missing_value, is_empty
 from common.geo import GeoChecker
 
+# 頻出の非正規国名 → INSDC 正表記のハードコード補正（大文字小文字無視）。
+# "Vietnam" は多いため特例で "Viet Nam" へ autofix する。
+_COUNTRY_HARDCODE = {"vietnam": "Viet Nam"}
+
 
 class BS_R0008(BsRule):
     rule_id = "BS_R0008"
@@ -27,8 +31,9 @@ class BS_R0008(BsRule):
             if not v or is_missing_value(v):
                 continue
             country = v.split(":", 1)[0].strip()
-            # 完全一致／大文字小文字差は許容（case 補正は autofix の領分）
-            if country and country not in countries and country.lower() not in lower:
+            # 完全一致／大文字小文字差／ハードコード補正対象（Vietnam 等）は許容（R0094 が autofix）
+            if (country and country not in countries and country.lower() not in lower
+                    and country.lower() not in _COUNTRY_HARDCODE):
                 out.append(self.result(sample=rec.sample_id,
                                        message=f"Entered country is not in controlled terms. (Found: '{country}')"))
         return out
@@ -56,9 +61,10 @@ class BS_R0094(BsRule):
             parts = v.split(":", 1)
             country = parts[0].strip()
             cl = country.lower()
-            if cl not in canon:
-                continue  # CV 外は R0008
-            new_country = canon[cl]
+            new_country = _COUNTRY_HARDCODE.get(cl) or canon.get(cl)
+            if not new_country:
+                continue  # CV 外かつハードコード対象外は R0008
+
             if len(parts) == 1:
                 new_val = new_country
             else:

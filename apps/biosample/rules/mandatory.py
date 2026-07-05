@@ -77,8 +77,9 @@ class BS_R0027(BsRule):
     target = "#mandatory_attributes"
     description = "Sample has missing mandatory attribute(s)."
 
-    # collection_date / geo_loc_name は別ルール（R0137 等）で扱うため除外
-    _EXCLUDE = {"collection_date", "geo_loc_name"}
+    # 未入力（欠落）は collection_date / geo_loc_name も含めて R0027 で検出する
+    # （present だが無効な missing 記載は R0137 が担当し、二重には出さない）。
+    _EXCLUDE = set()
 
     def validate(self, submission, context):
         out = []

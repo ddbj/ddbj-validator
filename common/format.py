@@ -23,6 +23,11 @@ def _parse_and_format_date(val):
     """
     if not re.search(r'\d{4}', val):
         return None, None
+    # 保守方針: 区切りの無い純数値で桁数が年(4)・YYYYMMDD(8) 以外（例 "210424"=6桁）は
+    # 2021-04-24 か 2024-04-21 か判別できず誤補正を生むため **補正しない**（ddbj/biosample 共通）。
+    stripped = val.strip()
+    if stripped.isdigit() and len(stripped) not in (4, 8):
+        return None, None
     try:
         val_clean = re.sub(r'[\s/.,]+', '-', val.strip())
         dt = parser.parse(val_clean)
