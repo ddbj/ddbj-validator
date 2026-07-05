@@ -1,0 +1,2 @@
+[ Auto-Fix ]
+1 sample: 'Japan:Tsukuba' -> 'Japan: Tsukuba' [Rule: BS_R0094]

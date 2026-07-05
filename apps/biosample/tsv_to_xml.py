@@ -27,10 +27,13 @@ _SPECIAL = {"biosample_accession", "sample_title", "organism", "taxonomy_id"}
 
 
 def parse_filename(tsv_path):
-    """`SSUBxxxxxx_<Package>.txt` から (submission_id, package) を返す。最初の '_' で分割。"""
-    stem = Path(tsv_path).stem  # 拡張子除去
-    if "_" in stem:
-        sub_id, package = stem.split("_", 1)
+    """`<SSUBid>.<Package>.txt` から (submission_id, package) を返す。最初の '.' で分割。
+    submission_id は SSUB\\d+ でドットを含まないため、package 名がドットを含む場合（MIGS.ba /
+    Pathogen.cl / SARS-CoV-2.cl 等）も正しく分離できる。例: SSUB000001.MIGS.ba.txt → (SSUB000001, MIGS.ba)。
+    パターンに合わなければ (stem, None)。"""
+    stem = Path(tsv_path).stem  # 末尾拡張子（.txt/.tsv）を除去
+    if "." in stem:
+        sub_id, package = stem.split(".", 1)
         return sub_id, package
     return stem, None
 

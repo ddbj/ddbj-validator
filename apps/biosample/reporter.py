@@ -1,50 +1,130 @@
-"""BioSample 検証結果のレポート出力（ddbj reporter と同様の体裁、独立実装）。
+"""BioSample 検証結果のレポート出力（ddbj reporter と同様の体裁、独立実装）。検証は SSUB 単位。
 
-- テキスト: reports/validation_report.txt（常時）。
-- JSON: reports/validation_report.json（`-j` 指定時）。現行 web validator の result.json 互換の
-  「素の（flat な）」構造（validity / stats / messages[]）。付帯情報（grouped_messages）は含めない
-  — グルーピングは表示側（ブラウザ JS）が行う。
-biosample はエントリ数が多くても 1000〜2000 程度のため、ddbj のような details/summary 分割はしない。
+出力（CLI の -j で切替）:
+- 既定（テキスト）: reports/validation_report_summary.txt（info ヘッダ＋レベル別集計）
+  ＋ validation_report_details.txt（サンプル別）。summary は標準出力にも表示する。
+- JSON（`-j`）: reports/validation_report.json（web validator の result.json 互換 flat 構造）。
+- autofix があれば reports/autofix_confirmation_summary.txt を -j の有無に関わらず出力する。
+サンプル数は "(N sample(s))" 表記。summary/details とも先頭に info ヘッダ（Validation Date/Process Time/Data/Version）。
 """
 import json
-from collections import defaultdict
+from collections import OrderedDict
 from pathlib import Path
 
 _LEVEL_ORDER = {"error": 0, "warning": 1, "info": 2}
+_LEVEL_SECTIONS = ["info", "warning", "error"]  # 表示順（info→warning→error）
 # ルール解説ページ（現行 validator の reference と同じアンカー規約）
 _DOC_BASE = "https://www.ddbj.nig.ac.jp/biosample/validation-e.html#"
-
-
-def _fmt(r):
-    sample = r.get("sample") or "-"
-    return f"{r['rule_id']}:{r['level'].upper()}:{r.get('target','')}:{sample}: {r['message']}"
 
 
 def _sorted(results):
     return sorted(results, key=lambda x: (_LEVEL_ORDER.get(x["level"], 9), x["rule_id"]))
 
 
-def write_reports(results, out_dir, input_name):
-    """結果を標準出力＋ <out_dir>/reports/validation_report.txt に出力。戻り値: レベル別件数 dict。"""
-    counts = defaultdict(int)
-    for r in results:
-        counts[r["level"]] += 1
+def _sample_count_str(n):
+    return f"{n} sample" if n == 1 else f"{n} samples"
 
-    lines = [f"# BioSample validation report: {input_name}", ""]
+
+def _info_header(kind, sample_count, input_name, package, version, when, elapsed):
+    return [
+        f"=== Validation {kind} ({_sample_count_str(sample_count)}) ===",
+        f"Validation Date: {when}",
+        f"Process Time: {elapsed} seconds",
+        "Data: biosample",
+        f"Version: {version}",
+        "",
+        f"File: {input_name}",
+        f"Package: {package or '-'}",
+        "",
+    ]
+
+
+def _by_level(results):
+    by = {lv: [] for lv in _LEVEL_SECTIONS}
     for r in _sorted(results):
-        lines.append(_fmt(r))
-    if not results:
-        lines.append("No findings.")
-    body = "\n".join(lines) + "\n"
+        by.setdefault(r["level"], []).append(r)
+    return by
 
-    print(body)
 
-    if out_dir:
-        reports = Path(out_dir) / "reports"
-        reports.mkdir(parents=True, exist_ok=True)
-        (reports / "validation_report.txt").write_text(body, encoding="utf-8")
+def build_summary(results, sample_count, input_name, package, version, when, elapsed):
+    """summary 本文（info ヘッダ＋レベル別のルール:メッセージ、同一行は重複排除）。標準出力/ファイル共通。"""
+    lines = _info_header("Summary", sample_count, input_name, package, version, when, elapsed)
+    by = _by_level(results)
+    for lv in _LEVEL_SECTIONS:
+        rs = by.get(lv) or []
+        if not rs:
+            continue
+        lines.append(f"[ {lv.upper()} ]")
+        seen = set()
+        for r in rs:
+            line = f"{r['rule_id']}:{r['message']}"
+            if line in seen:
+                continue
+            seen.add(line)
+            lines.append(line)
+        lines.append("")
+    return "\n".join(lines).rstrip("\n") + "\n"
 
-    return dict(counts)
+
+def build_details(results, records, sample_count, input_name, package, version, when, elapsed):
+    """details 本文（サンプル別）。行: rule_id:(SAMD があれば):sample_name:message。"""
+    idmap = {}
+    for rec in records or []:
+        idmap[rec.sample_id] = (rec.accession, rec.sample_name)
+    lines = _info_header("Details", sample_count, input_name, package, version, when, elapsed)
+    by = _by_level(results)
+    for lv in _LEVEL_SECTIONS:
+        rs = by.get(lv) or []
+        if not rs:
+            continue
+        lines.append(f"[ {lv.upper()} ]")
+        for r in rs:
+            sid = r.get("sample")
+            acc, name = idmap.get(sid, (None, sid))
+            parts = [r["rule_id"]]
+            if acc:
+                parts.append(acc)          # あれば SAMD アクセッション
+            parts.append(name or sid or "-")  # sample name
+            parts.append(r["message"].replace("\n", " "))
+            lines.append(":".join(parts))
+        lines.append("")
+    return "\n".join(lines).rstrip("\n") + "\n"
+
+
+def build_autofix_lines(results):
+    """autofix 提案を (rule_id, old, new) で集約し 'N sample(s): 'old' -> 'new' [Rule: X]' の行リストを返す。"""
+    agg = OrderedDict()
+    for r in results:
+        if not r.get("autofix"):
+            continue
+        old = r.get("old_value") or ""
+        new = r.get("new_value")
+        if new is None and r.get("new_taxid"):
+            new = f"taxonomy_id={r.get('new_taxid')}"
+        key = (r["rule_id"], old, new)
+        agg.setdefault(key, set()).add(r.get("sample"))
+    return [f"{_sample_count_str(len(s))}: '{old}' -> '{new}' [Rule: {rid}]"
+            for (rid, old, new), s in agg.items()]
+
+
+def write_text_reports(summary_text, details_text, out_dir):
+    """summary/details テキストをファイルへ書き出す。"""
+    if not out_dir:
+        return
+    reports = Path(out_dir) / "reports"
+    reports.mkdir(parents=True, exist_ok=True)
+    (reports / "validation_report_summary.txt").write_text(summary_text, encoding="utf-8")
+    (reports / "validation_report_details.txt").write_text(details_text, encoding="utf-8")
+
+
+def write_autofix_confirmation(autofix_lines, out_dir):
+    """autofix の内容を reports/autofix_confirmation_summary.txt に出力（-j の有無に関わらず）。"""
+    if not out_dir or not autofix_lines:
+        return
+    reports = Path(out_dir) / "reports"
+    reports.mkdir(parents=True, exist_ok=True)
+    body = "[ Auto-Fix ]\n" + "\n".join(autofix_lines) + "\n"
+    (reports / "autofix_confirmation_summary.txt").write_text(body, encoding="utf-8")
 
 
 def _annotation(r):

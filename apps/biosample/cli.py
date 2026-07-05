@@ -1,10 +1,13 @@
 """BioSample validator の CLI（サブコマンド biosample）。
 
-入力は XML（正準）。TSV (.txt/.tsv) は XML へ変換してから検証する。
-  ddbj-validator biosample <input.xml|SSUBxxxx_Package.txt> [--account ID] [-o OUT] [-l|-n]
-パッケージ補完: TSV はファイル名 `SSUBxxxxxx_<Package>.txt` から。account は --account で渡す。
+入力は XML（-x）または TSV（-t）。TSV は XML へ変換してから検証する（検証パスは XML 一本）。
+  ddbj-validator biosample (-x <xml> | -t <tsv>) [-s SSUBxxxx] [-p <package>] [--account ID] [-o OUT] [-l|-n] [-j]
+出力: 既定は ddbj v 風の TSV（summary＋details、summary は標準出力）。-j 指定で result.json 互換 JSON。
+TSV 入力の submission_id / package は -s / -p で指定。省略時はファイル名 `SSUBxxxx.<Package>.txt` から補完
+（-s/-p が優先。ファイル名から必要値が得られない場合はエラー終了）。
 """
 import argparse
+import datetime
 import sys
 import tempfile
 from pathlib import Path
@@ -12,18 +15,29 @@ from pathlib import Path
 from apps.biosample.context import ValidationContext
 from apps.biosample import xml_reader, tsv_to_xml, autofix
 from apps.biosample.validator import Validator
-from apps.biosample.reporter import write_reports, write_json_report
+from apps.biosample.reporter import (
+    build_summary, build_details, build_autofix_lines,
+    write_text_reports, write_autofix_confirmation, write_json_report,
+)
+
+_JST = datetime.timezone(datetime.timedelta(hours=9))
 
 
 def _build_parser():
     p = argparse.ArgumentParser(prog="ddbj-validator biosample", description="BioSample Validator")
-    p.add_argument("input", help="BioSample XML, or SSUBxxxxxx_<Package>.txt (TSV)")
+    g = p.add_mutually_exclusive_group(required=True)
+    g.add_argument("-x", "--xml", dest="xml", default=None, help="BioSample XML 入力ファイル")
+    g.add_argument("-t", "--tsv", dest="tsv", default=None, help="BioSample TSV 入力ファイル (.txt/.tsv)")
+    p.add_argument("-s", "--submission-id", dest="submission_id", default=None,
+                   help="TSV 入力の submission id（例 SSUB000001）。省略時はファイル名から補完")
+    p.add_argument("-p", "--package", dest="package", default=None,
+                   help="TSV 入力の package full name（例 Human / MIGS.ba）。省略時はファイル名から補完")
     p.add_argument("--account", default=None, help="Submitter id (account) for auth-dependent rules")
     p.add_argument("-o", "--out-dir", default=None, help="Output directory (default: input's parent)")
     p.add_argument("-l", "--local", action="store_true", help="Local mode (skip DB and NCBI API)")
     p.add_argument("-n", "--ncbi-api", action="store_true", help="Use NCBI API, skip internal DB")
     p.add_argument("-j", "--json", action="store_true",
-                   help="Also emit reports/validation_report.json (flat result.json format)")
+                   help="出力を result.json 互換 JSON にする（既定は TSV summary＋details）")
     return p
 
 
@@ -49,8 +63,59 @@ def _resolve_modes(args):
     return skip_db, skip_ncbi, skip_auth
 
 
+def _resolve_tsv_meta(tsv_path, arg_sub, arg_pkg):
+    """TSV 入力の (submission_id, package) を解決。-s/-p 優先、無ければファイル名から補完。
+    必要値が特定できなければ (None, エラーメッセージ) を返す。"""
+    fn_sub, fn_pkg = tsv_to_xml.parse_filename(tsv_path)
+    submission_id = arg_sub or fn_sub
+    package = arg_pkg or fn_pkg
+    if not submission_id:
+        return None, "submission_id を特定できません。-s で指定するか、ファイル名を SSUBxxxx.<Package>.txt にしてください。"
+    if not package:
+        return None, "package を特定できません。-p で指定するか、ファイル名を SSUBxxxx.<Package>.txt にしてください。"
+    return (submission_id, package), None
+
+
+def _finalize(args, results, records, in_path, out_dir, package, started, fixed_path):
+    """レポート出力（ファイル）＋標準出力を仕様どおりに行う。戻り値: レベル別 error 件数を含む counts。"""
+    now = datetime.datetime.now(_JST)
+    when = started.strftime("%Y-%m-%d %H:%M:%S JST")
+    elapsed = str(datetime.timedelta(seconds=int((now - started).total_seconds())))
+    version = _tool_version()
+    sample_count = len(records)
+    autofix_lines = build_autofix_lines(results)
+    reports_dir = Path(out_dir) / "reports"
+
+    summary_text = build_summary(results, sample_count, in_path.name, package, version, when, elapsed)
+    if args.json:
+        write_json_report(results, out_dir, in_path.name, version)
+        report_files = ["validation_report.json"]
+    else:
+        details_text = build_details(results, records, sample_count, in_path.name, package, version, when, elapsed)
+        write_text_reports(summary_text, details_text, out_dir)
+        report_files = ["validation_report_summary.txt", "validation_report_details.txt"]
+    # autofix 内容は -j の有無に関わらずファイル出力
+    write_autofix_confirmation(autofix_lines, out_dir)
+
+    # 標準出力（-j 以外は summary 本文を先頭に。以降 [Auto-Fix] → saved → reports は共通で stdout のみ）
+    parts = []
+    if not args.json:
+        parts.append(summary_text.rstrip("\n"))
+    if autofix_lines:
+        parts.append("[ Auto-Fix ]\n" + "\n".join(autofix_lines))
+        if fixed_path:
+            parts.append(f"=> Auto-fixed XML saved to: {fixed_path}")
+    parts.append(f"[ All reports successfully generated to {reports_dir} ]\n"
+                 + "\n".join(f"  {f}" for f in report_files))
+    print("\n\n".join(parts))
+
+    return {"error": sum(1 for r in results if r.get("level") == "error")}
+
+
 def run(args):
-    in_path = Path(args.input)
+    started = datetime.datetime.now(_JST)
+    is_tsv = bool(args.tsv)
+    in_path = Path(args.tsv if is_tsv else args.xml)
     if not in_path.exists():
         print(f"[ERROR] Input not found: {in_path}", file=sys.stderr)
         return 2
@@ -59,11 +124,14 @@ def run(args):
     context = ValidationContext(account=args.account, skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
 
     # TSV は XML へ変換してから検証（検証パスは XML 一本）
-    is_tsv = in_path.suffix.lower() in (".txt", ".tsv")
     submission_id = None
     if is_tsv:
-        xml_text = tsv_to_xml.tsv_to_xml(str(in_path))
-        submission_id, _pkg = tsv_to_xml.parse_filename(str(in_path))
+        meta, err = _resolve_tsv_meta(str(in_path), args.submission_id, args.package)
+        if err:
+            print(f"[ERROR] {err}", file=sys.stderr)
+            return 2
+        submission_id, package = meta
+        xml_text = tsv_to_xml.tsv_to_xml(str(in_path), package=package, submission_id=submission_id)
         tmp = tempfile.NamedTemporaryFile("w", suffix=".xml", delete=False, encoding="utf-8")
         tmp.write(xml_text or "")
         tmp.close()
@@ -75,10 +143,8 @@ def run(args):
 
     out_dir = args.out_dir or str(in_path.parent)
     if submission is None:
-        # 整形不正（R0097 等）でパース不可
-        counts = write_reports(pre_errors, out_dir, in_path.name)
-        if args.json:
-            write_json_report(pre_errors, out_dir, in_path.name, _tool_version())
+        # 整形不正（R0097 等）でパース不可（サンプル 0）
+        counts = _finalize(args, pre_errors, [], in_path, out_dir, None, started, None)
         return 1 if counts.get("error") else 0
 
     # account が --account 未指定でも XML ルートの submitter_id から解決できていれば採用（互換）
@@ -109,18 +175,16 @@ def run(args):
         _fetch_registered_prefixes(context)
 
     results = pre_errors + Validator(context).run(submission)
-    counts = write_reports(results, out_dir, in_path.name)
-    if args.json:
-        write_json_report(results, out_dir, in_path.name, _tool_version())
 
-    # autofix 全自動適用（対話なし）。修正済み XML を fixed/ に出力。
+    # autofix 全自動適用（対話なし）→ 修正済み XML を fixed/ に出力（先に適用して保存先を確定）。
     # 入力が TSV でも出力は XML（検証パスと同一の XML を元に修正）。
     autofix.clean_fixed_dir(out_dir)
     fixed_name = in_path.name if not is_tsv else (in_path.stem + ".xml")
     n_fixed = autofix.apply_autofix(xml_for_parse, results, out_dir, fixed_name)
-    if n_fixed:
-        print(f"[autofix] applied {n_fixed} fix(es) -> {Path(out_dir) / 'fixed' / fixed_name}")
+    fixed_path = (Path(out_dir) / "fixed" / fixed_name) if n_fixed else None
 
+    package = submission.package or (submission.records[0].package if submission.records else None)
+    counts = _finalize(args, results, submission.records, in_path, out_dir, package, started, fixed_path)
     return 1 if counts.get("error") else 0
 
 

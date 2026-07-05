@@ -1,0 +1,83 @@
+{
+  "version": "0.1.5-beta",
+  "validity": false,
+  "stats": {
+    "error_count": 2,
+    "warning_count": 1,
+    "error_type_count": {
+      "common_error": 0,
+      "common_warning": 1,
+      "external_error": 2,
+      "external_warning": 0
+    },
+    "autocorrect": {
+      "biosample": true
+    }
+  },
+  "messages": [
+    {
+      "id": "BS_R0027",
+      "message": "Sample has missing mandatory attribute(s): derived_from, env_broad_scale, env_local_scale, env_medium, isolate, isolation_source, lat_lon",
+      "reference": "https://www.ddbj.nig.ac.jp/biosample/validation-e.html#BS_R0027",
+      "level": "error",
+      "external": true,
+      "method": "biosample",
+      "object": "BioSample",
+      "source": "BS_R0141_1.pass.xml",
+      "annotation": [
+        {
+          "key": "Sample name",
+          "value": "S1"
+        }
+      ]
+    },
+    {
+      "id": "BS_R0132",
+      "message": "Null value for infraspecific identifier. (package: MIMAG, attributes: isolate)",
+      "reference": "https://www.ddbj.nig.ac.jp/biosample/validation-e.html#BS_R0132",
+      "level": "error",
+      "external": true,
+      "method": "biosample",
+      "object": "BioSample",
+      "source": "BS_R0141_1.pass.xml",
+      "annotation": [
+        {
+          "key": "Sample name",
+          "value": "S1"
+        }
+      ]
+    },
+    {
+      "id": "BS_R0094",
+      "message": "Format of geo_loc_name is invalid. (Found: 'Japan:Tsukuba', Suggested: 'Japan: Tsukuba')",
+      "reference": "https://www.ddbj.nig.ac.jp/biosample/validation-e.html#BS_R0094",
+      "level": "warning",
+      "external": false,
+      "method": "biosample",
+      "object": "BioSample",
+      "source": "BS_R0141_1.pass.xml",
+      "annotation": [
+        {
+          "key": "Sample name",
+          "value": "S1"
+        },
+        {
+          "key": "Attribute",
+          "value": "geo_loc_name"
+        },
+        {
+          "key": "Attribute value",
+          "value": "Japan:Tsukuba"
+        },
+        {
+          "key": "Suggested value",
+          "suggested_value": [
+            "Japan: Tsukuba"
+          ],
+          "target_key": "Attribute value",
+          "is_auto_annotation": true
+        }
+      ]
+    }
+  ]
+}
