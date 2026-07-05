@@ -25,16 +25,18 @@ def _sample_count_str(n):
     return f"{n} sample" if n == 1 else f"{n} samples"
 
 
-def _info_header(kind, sample_count, input_name, package, version, when, elapsed):
+def _info_header(kind, sample_count, input_name, submission_id, package, version, when, elapsed):
     return [
-        f"=== Validation {kind} ({_sample_count_str(sample_count)}) ===",
+        f"=== Validation {kind} ===",
         f"Validation Date: {when}",
         f"Process Time: {elapsed} seconds",
         "Data: biosample",
         f"Version: {version}",
         "",
         f"File: {input_name}",
+        f"Submission ID: {submission_id or '-'}",
         f"Package: {package or '-'}",
+        f"Samples: {sample_count}",
         "",
     ]
 
@@ -46,9 +48,9 @@ def _by_level(results):
     return by
 
 
-def build_summary(results, sample_count, input_name, package, version, when, elapsed):
+def build_summary(results, sample_count, input_name, submission_id, package, version, when, elapsed):
     """summary 本文（info ヘッダ＋レベル別のルール:メッセージ、同一行は重複排除）。標準出力/ファイル共通。"""
-    lines = _info_header("Summary", sample_count, input_name, package, version, when, elapsed)
+    lines = _info_header("Summary", sample_count, input_name, submission_id, package, version, when, elapsed)
     by = _by_level(results)
     for lv in _LEVEL_SECTIONS:
         rs = by.get(lv) or []
@@ -66,12 +68,13 @@ def build_summary(results, sample_count, input_name, package, version, when, ela
     return "\n".join(lines).rstrip("\n") + "\n"
 
 
-def build_details(results, records, sample_count, input_name, package, version, when, elapsed):
-    """details 本文（サンプル別）。行: rule_id:(SAMD があれば):sample_name:message。"""
+def build_details(results, records, sample_count, input_name, submission_id, package, version, when, elapsed):
+    """details 本文（サンプル別）。行: rule_id:<識別子>:message。
+    識別子は SAMD アクセッションがあれば SAMD のみ、無ければ sample_name（一文を短く保つ）。"""
     idmap = {}
     for rec in records or []:
         idmap[rec.sample_id] = (rec.accession, rec.sample_name)
-    lines = _info_header("Details", sample_count, input_name, package, version, when, elapsed)
+    lines = _info_header("Details", sample_count, input_name, submission_id, package, version, when, elapsed)
     by = _by_level(results)
     for lv in _LEVEL_SECTIONS:
         rs = by.get(lv) or []
@@ -81,12 +84,8 @@ def build_details(results, records, sample_count, input_name, package, version, 
         for r in rs:
             sid = r.get("sample")
             acc, name = idmap.get(sid, (None, sid))
-            parts = [r["rule_id"]]
-            if acc:
-                parts.append(acc)          # あれば SAMD アクセッション
-            parts.append(name or sid or "-")  # sample name
-            parts.append(r["message"].replace("\n", " "))
-            lines.append(":".join(parts))
+            ident = acc or name or sid or "-"  # SAMD 優先（両方あれば SAMD のみ）
+            lines.append(f"{r['rule_id']}:{ident}:{r['message'].replace(chr(10), ' ')}")
         lines.append("")
     return "\n".join(lines).rstrip("\n") + "\n"
 

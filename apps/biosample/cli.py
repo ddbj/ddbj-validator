@@ -76,7 +76,7 @@ def _resolve_tsv_meta(tsv_path, arg_sub, arg_pkg):
     return (submission_id, package), None
 
 
-def _finalize(args, results, records, in_path, out_dir, package, started, fixed_path):
+def _finalize(args, results, records, in_path, out_dir, submission_id, package, started, fixed_path):
     """レポート出力（ファイル）＋標準出力を仕様どおりに行う。戻り値: レベル別 error 件数を含む counts。"""
     now = datetime.datetime.now(_JST)
     when = started.strftime("%Y-%m-%d %H:%M:%S JST")
@@ -86,12 +86,12 @@ def _finalize(args, results, records, in_path, out_dir, package, started, fixed_
     autofix_lines = build_autofix_lines(results)
     reports_dir = Path(out_dir) / "reports"
 
-    summary_text = build_summary(results, sample_count, in_path.name, package, version, when, elapsed)
+    summary_text = build_summary(results, sample_count, in_path.name, submission_id, package, version, when, elapsed)
     if args.json:
         write_json_report(results, out_dir, in_path.name, version)
         report_files = ["validation_report.json"]
     else:
-        details_text = build_details(results, records, sample_count, in_path.name, package, version, when, elapsed)
+        details_text = build_details(results, records, sample_count, in_path.name, submission_id, package, version, when, elapsed)
         write_text_reports(summary_text, details_text, out_dir)
         report_files = ["validation_report_summary.txt", "validation_report_details.txt"]
     # autofix 内容は -j の有無に関わらずファイル出力
@@ -110,6 +110,13 @@ def _finalize(args, results, records, in_path, out_dir, package, started, fixed_
     print("\n\n".join(parts))
 
     return {"error": sum(1 for r in results if r.get("level") == "error")}
+
+
+def _ssub_from_name(path):
+    """ファイル名の stem が SSUB で始まれば submission_id を補完（root 属性・-s が無い場合のフォールバック）。"""
+    import re
+    m = re.match(r"(SSUB\d+)", Path(path).stem)
+    return m.group(1) if m else None
 
 
 def run(args):
@@ -144,7 +151,8 @@ def run(args):
     out_dir = args.out_dir or str(in_path.parent)
     if submission is None:
         # 整形不正（R0097 等）でパース不可（サンプル 0）
-        counts = _finalize(args, pre_errors, [], in_path, out_dir, None, started, None)
+        counts = _finalize(args, pre_errors, [], in_path, out_dir,
+                           submission_id or _ssub_from_name(in_path), None, started, None)
         return 1 if counts.get("error") else 0
 
     # account が --account 未指定でも XML ルートの submitter_id から解決できていれば採用（互換）
@@ -184,7 +192,8 @@ def run(args):
     fixed_path = (Path(out_dir) / "fixed" / fixed_name) if n_fixed else None
 
     package = submission.package or (submission.records[0].package if submission.records else None)
-    counts = _finalize(args, results, submission.records, in_path, out_dir, package, started, fixed_path)
+    sub_id = submission.submission_id or submission_id or _ssub_from_name(in_path)
+    counts = _finalize(args, results, submission.records, in_path, out_dir, sub_id, package, started, fixed_path)
     return 1 if counts.get("error") else 0
 
 
