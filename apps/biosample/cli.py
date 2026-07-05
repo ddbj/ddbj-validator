@@ -1,7 +1,9 @@
 """BioSample validator の CLI（サブコマンド biosample）。
 
 入力は XML（-x）または TSV（-t）。TSV は XML へ変換してから検証する（検証パスは XML 一本）。
-  ddbj-validator biosample (-x <xml> | -t <tsv>) [-s SSUBxxxx] [-p <package>] [--account ID] [-o OUT] [-l|-n] [-j]
+  ddbj-validator biosample (-x <xml> | -t <tsv>) [-s SSUBxxxx] [-p <package>] [--account ID] [-o OUT] [-l|-n|-d] [-j]
+実行モード: 既定は一般ユーザ向け NCBI API モード（内部DB/auth スキップ、taxonomy は NCBI。ddbj v と同じ公開モード）。
+  curator は環境変数 DDBJ_VALIDATOR_INTERNAL_DB=1（.bashrc 等に1回）で既定を内部DBモードにできる。明示フラグ -l/-n/-d は常に優先。
 出力: 既定は ddbj v 風の TSV（summary＋details、summary は標準出力）。-j 指定で result.json 互換 JSON。
 TSV 入力の submission_id / package は -s / -p で指定。省略時はファイル名 `SSUBxxxx.<Package>.txt` から補完
 （-s/-p が優先。ファイル名から必要値が得られない場合はエラー終了）。
@@ -35,7 +37,9 @@ def _build_parser():
     p.add_argument("--account", default=None, help="Submitter id (account) for auth-dependent rules")
     p.add_argument("-o", "--out-dir", default=None, help="Output directory (default: input's parent)")
     p.add_argument("-l", "--local", action="store_true", help="Local mode (skip DB and NCBI API)")
-    p.add_argument("-n", "--ncbi-api", action="store_true", help="Use NCBI API, skip internal DB")
+    p.add_argument("-n", "--ncbi-api", action="store_true", help="Use NCBI API, skip internal DB (一般ユーザ既定)")
+    p.add_argument("-d", "--internal-db", action="store_true",
+                   help="内部 DDBJ DB を使う curator モード（env DDBJ_VALIDATOR_INTERNAL_DB でも既定化可）")
     p.add_argument("-j", "--json", action="store_true",
                    help="出力を result.json 互換 JSON にする（既定は TSV summary＋details）")
     return p
@@ -56,9 +60,27 @@ def _tool_version():
             return "unknown"
 
 
+def _env_internal_db():
+    """環境変数 DDBJ_VALIDATOR_INTERNAL_DB が truthy かどうか（curator 用の既定モード切替）。"""
+    import os
+    return os.environ.get("DDBJ_VALIDATOR_INTERNAL_DB", "").strip().lower() not in ("", "0", "false", "no")
+
+
 def _resolve_modes(args):
-    skip_db = bool(args.local or args.ncbi_api)
-    skip_ncbi = bool(args.local)
+    """実行モードを解決。
+    明示フラグ（-l/-n/-d）が最優先。無ければ環境変数 DDBJ_VALIDATOR_INTERNAL_DB（curator 用）で内部DB、
+    それも無ければ一般ユーザ既定 = NCBI API モード（DB/auth スキップ、taxonomy は NCBI。ddbj v と同じ公開モード）。
+    """
+    if args.local:                       # -l: 完全ローカル（DB/NCBI 無し）
+        skip_db, skip_ncbi = True, True
+    elif args.ncbi_api:                  # -n: NCBI API（DB スキップ）
+        skip_db, skip_ncbi = True, False
+    elif args.internal_db:               # -d: 内部DB（明示）
+        skip_db, skip_ncbi = False, False
+    elif _env_internal_db():             # env: curator 既定 = 内部DB
+        skip_db, skip_ncbi = False, False
+    else:                                # 一般ユーザ既定 = NCBI API
+        skip_db, skip_ncbi = True, False
     skip_auth = skip_db  # DB が無ければ認証検証不可（ddbj と同じ強制）
     return skip_db, skip_ncbi, skip_auth
 
