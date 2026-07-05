@@ -44,23 +44,22 @@ class BS_R0013(BsRule):
     target = "#attributes"
     description = "Invalid data format."
 
-    # 専用の書式 autofix を持つ属性は二重提案を避けるため除外
-    # （collection_date=R0136 / geo_loc_name=R0094 / lat_lon=R0009 / organism=R0045 / host=R0015 / component_organism=R0105）。
-    _EXCLUDE = {"collection_date", "geo_loc_name", "lat_lon",
-                "organism", "host", "component_organism"}
-
     def validate(self, submission, context):
-        # 全属性値の連続空白畳み込み・前後クオート除去（missing 値は対象外）。Ruby v invalid_data_format 準拠。
+        # autocleanup（ddbj の cleanup 相当）: 全属性値を正規化（連続空白畳み込み＋前後クオート除去）し
+        # **in-place で置換**する。validator.run の最初に実行され、cleanup 後の値で後続ルールが評価される。
+        # → 専用 autofix（geo/date 等）との二重提案は起きない（後続は正規化済みの値を見るため）。
+        # missing 値は対象外。sample_name は autofix のサンプル同定キーのため除外。Ruby v invalid_data_format 準拠。
         out = []
         for rec in submission.records:
             for name, vals in rec.attributes.items():
-                if name in self._EXCLUDE:
+                if name == "sample_name":
                     continue
-                for v in vals:
+                for i, v in enumerate(vals):
                     if is_empty(v) or is_missing_value(v):
                         continue
                     fixed = normalize_data_format(v)
                     if fixed and fixed != v:
+                        vals[i] = fixed  # in-place cleanup（後続ルールが cleaned 値を読む）
                         out.append(self.autofix_result(
                             sample=rec.sample_id, target=name,
                             message=f"Invalid data format. ({name}: '{v}', Suggested: '{fixed}')",

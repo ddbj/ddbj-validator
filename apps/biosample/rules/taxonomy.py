@@ -60,8 +60,8 @@ class BS_R0004(BsRule):
     requires_network = True  # taxonomy ソース（DB or NCBI）が要る。local ではスキップ
 
     def validate(self, submission, context):
-        # Ruby v 準拠: 記載 taxonomy_id から学名を引き（context.taxid_names）、organism と完全一致比較。
-        # 一致しなければ error（tax_id=新規でもエラー）。taxid_names に無い場合（NCBI/local）は
+        # Ruby v 準拠: 記載 taxonomy_id から学名を引き（context.taxid_info）、organism と完全一致比較。
+        # 一致しなければ error（tax_id=新規でもエラー）。taxid_info に無い場合（NCBI/local）は
         # 従来の organism→tax_id 照合へフォールバックする。
         out = []
         for rec in submission.records:
@@ -70,7 +70,7 @@ class BS_R0004(BsRule):
             if is_missing_value(rec.organism) or is_missing_value(rec.taxonomy_id):
                 continue
             taxid = str(rec.taxonomy_id).strip()
-            name_of_taxid = context.taxid_names.get(taxid)
+            name_of_taxid = (context.taxid_info.get(taxid) or {}).get("scientific_name")
             if name_of_taxid:
                 if name_of_taxid != rec.organism.strip():
                     out.append(self.result(
@@ -98,10 +98,21 @@ class BS_R0096(BsRule):
     requires_network = True
 
     def validate(self, submission, context):
-        # rank 判定は ddbj ANN1040 と共通（common.db_taxonomy.tax_rank_invalid＝status=="invalid_rank"）。
+        # taxonomy_id が明示されていれば taxid 起点で rank を直接判定（Ruby is_infraspecific_rank 相当）。
+        # taxonomy_id が無い/utax 未解決なら organism 名解決の rank で判定（Ruby は R0045 で taxid を
+        # 補完してから R0096 が判定するため、名前解決の rank でも同等に検出する）。名前ベースは ddbj
+        # ANN1040 と共通の tax_rank_invalid。
         out = []
         for rec in submission.records:
-            if is_empty(rec.taxonomy_id) or is_empty(rec.organism):
+            if is_empty(rec.organism):
+                continue
+            taxid = str(rec.taxonomy_id).strip() if not is_empty(rec.taxonomy_id) else None
+            tinfo = context.taxid_info.get(taxid) if taxid else None
+            if tinfo is not None:
+                if tinfo.get("is_species_or_below") is False:
+                    out.append(self.result(
+                        sample=rec.sample_id,
+                        message=f"Taxonomy should be species or infraspecific level. (taxonomy_id: '{taxid}', rank: '{tinfo.get('rank')}')"))
                 continue
             info = context.tax_data.get(rec.organism)
             if tax_rank_invalid(info):

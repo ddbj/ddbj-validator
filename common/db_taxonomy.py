@@ -313,24 +313,53 @@ def fetch_taxonomy_data(db_conn, organism_list):
     return tax_data
 
 
-def fetch_scientific_names_by_taxid(db_conn, taxid_list):
-    """taxonomy_id（ut_id）→ scientific name の辞書を返す。
-    BS_R0004（organism と taxonomy_id の学名照合）用。Ruby v は taxonomy_id から学名を引いて
-    organism と完全一致比較するため、name 引きの tax_data とは別に taxid 起点の学名解決が要る。"""
+def fetch_taxid_info(db_conn, taxid_list):
+    """taxonomy_id（ut_id）→ {"scientific_name","rank","is_species_or_below"} の辞書を返す。
+    - BS_R0004: scientific_name を organism と完全一致比較（taxid 起点で学名解決）。
+    - BS_R0096: is_species_or_below（taxid の rank を直接判定。Ruby is_infraspecific_rank 相当）。
+      ddbj ANN1040 は organism 名からしか rank を引けないが、biosample は taxonomy_id があるため
+      taxid 起点で rank を直接判定する（name 解決の取りこぼしを回避）。"""
     out = {}
     ids = sorted({int(t) for t in taxid_list if str(t).strip().isdigit()})
     if not ids:
         return out
     query = """
-        SELECT sci.ut_id, trim(sci.ut_name)
-        FROM public.utax_names sci
-        WHERE sci.ut_id IN ({placeholders}) AND trim(sci.ut_type) = 'scientific name'
+        SELECT nd.ut_id, trim(nd.ut_rank), trim(sci.ut_name)
+        FROM public.utax_nodes nd
+        LEFT JOIN public.utax_names sci ON nd.ut_id = sci.ut_id AND trim(sci.ut_type) = 'scientific name'
+        WHERE nd.ut_id IN ({placeholders})
     """
+    pending = []  # no rank 等 → 親を再帰チェック
     try:
         for row in execute_in_query(db_conn, query, ids):
-            out[str(row[0])] = row[1]
+            tid = str(row[0])
+            rank = (row[1] or "").lower()
+            out[tid] = {"scientific_name": row[2], "rank": rank,
+                        "is_species_or_below": rank in ALLOWED_RANKS}
+            if rank not in ALLOWED_RANKS and rank not in DEFINITELY_NOT_SPECIES_RANKS:
+                pending.append(int(row[0]))
+        # no rank 等は species 以下の子孫かを親再帰で判定（fetch_taxonomy_data と同一方針）
+        if pending:
+            recursive_query = """
+                WITH RECURSIVE tax_path AS (
+                    SELECT ut_id AS original_ut_id, ut_id, p_ut_id, ut_rank, 0 AS steps
+                    FROM public.utax_nodes WHERE ut_id IN %s
+                    UNION ALL
+                    SELECT c.original_ut_id, p.ut_id, p.p_ut_id, p.ut_rank, c.steps + 1
+                    FROM public.utax_nodes p INNER JOIN tax_path c ON p.ut_id = c.p_ut_id
+                    WHERE c.steps < 10
+                )
+                SELECT DISTINCT original_ut_id FROM tax_path
+                WHERE ut_rank IN ('species', 'forma', 'subspecies', 'varietas')
+            """
+            with db_conn.cursor() as cursor:
+                cursor.execute(recursive_query, (tuple(set(pending)),))
+                valid = {row[0] for row in cursor.fetchall()}
+            for tid_int in pending:
+                if tid_int in valid:
+                    out[str(tid_int)]["is_species_or_below"] = True
     except Exception as e:
-        logger.warning(f"Failed to fetch scientific names by taxid: {e}")
+        logger.warning(f"Failed to fetch taxid info: {e}")
     return out
 
 

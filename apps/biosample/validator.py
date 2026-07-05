@@ -42,7 +42,6 @@ class Validator:
             BS_R0093(),  # 整数属性
             BS_R0036(),  # either_one_mandatory 群欠落
             BS_R0137(),  # collection_date/geo_loc_name の reporting term
-            BS_R0013(),  # 全属性値の連続空白畳み込み・前後クオート除去（autofix・ruby は最初に実行）
             BS_R0001(),  # 必須属性の missing 値表記を正規化（autofix）
             BS_R0073(),  # 冗長 taxonomy 属性
             BS_R0135(),  # 不正 strain 値
@@ -96,6 +95,10 @@ class Validator:
             # 以降 D 残(R0028/0103/0108/0109) / G(JSON 入力) / autofix 適用層
         ]
 
+        # BS_R0013 は autocleanup（前処理）として最初に実行し、全属性値を正規化（in-place）する。
+        # cleanup 済みの値で後続ルールを評価するため、通常のルール列には含めない。
+        self.cleanup_rule = BS_R0013()
+
         self.active_rules = []
         for rule in available_rules:
             if ctx.skip_db and getattr(rule, "requires_rdb", False):
@@ -110,6 +113,8 @@ class Validator:
         """submission を全 active_rules で検証し、結果 dict のリストを返す。
         各結果に internal_ignore（=external）を rule_id 単位で付与する（docs rules.txt 準拠）。"""
         results = []
+        # autocleanup（BS_R0013）: 全属性値を正規化し in-place 置換 → 後続ルールは cleaned 値を読む。
+        results.extend(self.cleanup_rule.validate(submission, self.context))
         for rule in self.active_rules:
             results.extend(rule.validate(submission, self.context))
         for r in results:

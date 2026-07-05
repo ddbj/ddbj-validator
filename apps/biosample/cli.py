@@ -126,15 +126,15 @@ def run(args):
 
 def _fetch_taxonomy(context, organisms, taxids=None):
     """organism 群の taxonomy 情報を context.tax_data へ。default=内部DB / -n=NCBI。失敗時は空。
-    内部DBモードでは taxids（記載 taxonomy_id）→ scientific name も取得し context.taxid_names へ（BS_R0004 用）。"""
+    内部DBモードでは taxids（記載 taxonomy_id）→ {学名, rank, is_species_or_below} も取得し context.taxid_info へ（BS_R0004/R0096 用）。"""
     try:
         if not context.skip_db:
             from common.db_manager import DatabaseManager
-            from common.db_taxonomy import fetch_taxonomy_data, fetch_scientific_names_by_taxid
+            from common.db_taxonomy import fetch_taxonomy_data, fetch_taxid_info
             conn = DatabaseManager().get_tax_conn()
             context.tax_data = fetch_taxonomy_data(conn, organisms)
             if taxids:
-                context.taxid_names = fetch_scientific_names_by_taxid(conn, taxids)
+                context.taxid_info = fetch_taxid_info(conn, taxids)
         else:
             from common.db_taxonomy import fetch_taxonomy_from_ncbi
             context.tax_data = fetch_taxonomy_from_ncbi(organisms)
