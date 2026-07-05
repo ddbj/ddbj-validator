@@ -150,6 +150,12 @@ def run(args):
         return 2
 
     skip_db, skip_ncbi, skip_auth = _resolve_modes(args)
+    # --account は curator（内部DB）モードでのみ有効。他モードでは auth 検証ができないため abort（英語メッセージ）。
+    if args.account and skip_db:
+        print("[ERROR] --account is only valid in curator mode (internal DB). "
+              "Use -d/--internal-db or set DDBJ_VALIDATOR_INTERNAL_DB=1; do not combine --account with -n/-l.",
+              file=sys.stderr)
+        return 2
     context = ValidationContext(account=args.account, skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
 
     # TSV は XML へ変換してから検証（検証パスは XML 一本）

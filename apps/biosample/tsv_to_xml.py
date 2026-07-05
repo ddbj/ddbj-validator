@@ -22,8 +22,9 @@ DEFAULT_FIXED = {
     ],
 }
 
-# Description/Ids へ振り分ける特別列（残りは Attributes へ）
-_SPECIAL = {"biosample_accession", "sample_title", "organism", "taxonomy_id"}
+# Description/Ids へ振り分ける特別列（残りは Attributes へ）。
+# sample_title/description/organism/taxonomy_id は Description 要素へ（登録システム xml_convertor 準拠）。
+_SPECIAL = {"biosample_accession", "sample_title", "description", "organism", "taxonomy_id"}
 
 
 def parse_filename(tsv_path):
@@ -82,6 +83,11 @@ def tsv_to_xml(tsv_path, fixed=None, package=None, submission_id=None):
             org_attrs["taxonomy_id"] = tax
         org = ET.SubElement(desc, "Organism", org_attrs)
         on = ET.SubElement(org, "OrganismName"); on.text = cells.get("organism", "").strip()
+        # description → Description/Comment/Paragraph（登録システム準拠。Attribute にはしない）
+        desc_text = cells.get("description", "").strip()
+        if desc_text:
+            comment = ET.SubElement(desc, "Comment")
+            ET.SubElement(comment, "Paragraph").text = desc_text
         # Owner（固定値）
         owner = ET.SubElement(bs, "Owner")
         oname = ET.SubElement(owner, "Name"); oname.text = fixed["organization"]

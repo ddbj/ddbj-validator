@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<BioSampleSet>
+    <BioSample last_update="2026-07-02T13:14:51.239+09:00" access="public">
+        <Ids>
+            <Id namespace="BioSample" is_primary="1">SAMD00133774</Id>
+        </Ids>
+        <Description>
+            <SampleName>Arabidopsis control 1for heat stress_rep 1</SampleName>
+            <Title>Arabidopsis control for heat stress_rep 1</Title>
+            <Organism taxonomy_id="3702">
+                <OrganismName>Arabidopsis thaliana</OrganismName>
+            </Organism>
+            <Comment>
+                <Paragraph>Arabidopsis control for heat stress, biological replicate 1</Paragraph>
+            </Comment>
+        </Description>
+        <Owner>
+            <Name>DRA Developers, CIB-DDBJ, National Institute of Genetics</Name>
+            <Contacts>
+                <Contact email="mishima@ddbj.nig.ac.jp">
+                    <Name>
+                        <First>Hanako</First>
+                        <Last>Mishima</Last>
+                    </Name>
+                </Contact>
+            </Contacts>
+        </Owner>
+        <Models>
+            <Model>Omics</Model>
+        </Models>
+        <Attributes>
+            <Attribute attribute_name="sample_name">Arabidopsis control 1for heat stress_rep 1</Attribute>
+            <Attribute attribute_name="age">9 days</Attribute>
+            <Attribute attribute_name="biological_replicate">1</Attribute>
+            <Attribute attribute_name="collection_date">2020-01-01</Attribute>
+            <Attribute attribute_name="ecotype">Col-0</Attribute>
+            <Attribute attribute_name="geo_loc_name">Japan:Shizuoka, Mishima</Attribute>
+            <Attribute attribute_name="growth_protocol">Plants were sown on GM medium (MS salts + 1% sucrose) and grown for 9 days under continuous white light at 22 degrees celsius.</Attribute>
+            <Attribute attribute_name="temp">22</Attribute>
+            <Attribute attribute_name="tissue">leaf</Attribute>
+        </Attributes>
+    </BioSample>
+    <BioSample last_update="2026-04-08T13:43:23.666+09:00" access="public">
+        <Ids>
+            <Id namespace="BioSample" is_primary="1">SAMD00133775</Id>
+        </Ids>
+        <Description>
+            <SampleName>Arabidopsis control for heat stress_rep 2</SampleName>
+            <Title>Arabidopsis control for heat stress_rep 2</Title>
+            <Organism taxonomy_id="3702">
+                <OrganismName>Arabidopsis thaliana</OrganismName>
+            </Organism>
+            <Comment>
+                <Paragraph>Arabidopsis control for heat stress, biological replicate 2</Paragraph>
+            </Comment>
+        </Description>
+        <Owner>
+            <Name>DRA Developers, CIB-DDBJ, National Institute of Genetics</Name>
+            <Contacts>
+                <Contact email="mishima@ddbj.nig.ac.jp">
+                    <Name>
+                        <First>Hanako</First>
+                        <Last>Mishima</Last>
+                    </Name>
+                </Contact>
+            </Contacts>
+        </Owner>
+        <Models>
+            <Model>Omics</Model>
+        </Models>
+        <Attributes>
+            <Attribute attribute_name="sample_name">Arabidopsis control for heat stress_rep 2</Attribute>
+            <Attribute attribute_name="age">9 days</Attribute>
+            <Attribute attribute_name="biological_replicate">2</Attribute>
+            <Attribute attribute_name="collection_date">2020-01-01</Attribute>
+            <Attribute attribute_name="ecotype">Col-0</Attribute>
+            <Attribute attribute_name="geo_loc_name">Japan:Shizuoka, Mishima</Attribute>
+            <Attribute attribute_name="growth_protocol">Plants were sown on GM medium (MS salts + 1% sucrose) and grown for 9 days under continuous white light at 22 degrees celsius.</Attribute>
+            <Attribute attribute_name="temp">22</Attribute>
+            <Attribute attribute_name="tissue">leaf</Attribute>
+        </Attributes>
+    </BioSample>
+    <BioSample last_update="2026-04-08T13:43:23.666+09:00" access="public">
+        <Ids>
+            <Id namespace="BioSample" is_primary="1">SAMD00133776</Id>
+        </Ids>
+        <Description>
+            <SampleName>Arabidopsis heat stress_rep 1</SampleName>
+            <Title>Arabidopsis heat stress_rep 1</Title>
+            <Organism taxonomy_id="3702">
+                <OrganismName>Arabidopsis thaliana</OrganismName>
+            </Organism>
+            <Comment>
+                <Paragraph>Arabidopsis heat stress, biological replicate 1</Paragraph>
+            </Comment>
+        </Description>
+        <Owner>
+            <Name>DRA Developers, CIB-DDBJ, National Institute of Genetics</Name>
+            <Contacts>
+                <Contact email="mishima@ddbj.nig.ac.jp">
+                    <Name>
+                        <First>Hanako</First>
+                        <Last>Mishima</Last>
+                    </Name>
+                </Contact>
+            </Contacts>
+        </Owner>
+        <Models>
+            <Model>Omics</Model>
+        </Models>
+        <Attributes>
+            <Attribute attribute_name="sample_name">Arabidopsis heat stress_rep 1</Attribute>
+            <Attribute attribute_name="age">9 days</Attribute>
+            <Attribute attribute_name="biological_replicate">1</Attribute>
+            <Attribute attribute_name="collection_date">2020-01-01</Attribute>
+            <Attribute attribute_name="ecotype">Col-0</Attribute>
+            <Attribute attribute_name="geo_loc_name">Japan:Shizuoka, Mishima</Attribute>
+            <Attribute attribute_name="growth_protocol">Plants were sown on GM medium (MS salts + 1% sucrose) and grown for 9 days under continuous white light at 22 degrees celsius. Heat stress (10 minutes at 37 degrees celsius) was applied and leaves were harvested.</Attribute>
+            <Attribute attribute_name="temp">37</Attribute>
+            <Attribute attribute_name="time">10</Attribute>
+            <Attribute attribute_name="tissue">leaf</Attribute>
+        </Attributes>
+    </BioSample>
+    <BioSample last_update="2026-04-08T13:43:23.666+09:00" access="public">
+        <Ids>
+            <Id namespace="BioSample" is_primary="1">SAMD00133777</Id>
+        </Ids>
+        <Description>
+            <SampleName>Arabidopsis heat stress_rep 2</SampleName>
+            <Title>Arabidopsis heat stress_rep 2</Title>
+            <Organism taxonomy_id="3702">
+                <OrganismName>Arabidopsis thaliana</OrganismName>
+            </Organism>
+            <Comment>
+                <Paragraph>Arabidopsis heat stress, biological replicate 2</Paragraph>
+            </Comment>
+        </Description>
+        <Owner>
+            <Name>DRA Developers, CIB-DDBJ, National Institute of Genetics</Name>
+            <Contacts>
+                <Contact email="mishima@ddbj.nig.ac.jp">
+                    <Name>
+                        <First>Hanako</First>
+                        <Last>Mishima</Last>
+                    </Name>
+                </Contact>
+            </Contacts>
+        </Owner>
+        <Models>
+            <Model>Omics</Model>
+        </Models>
+        <Attributes>
+            <Attribute attribute_name="sample_name">Arabidopsis heat stress_rep 2</Attribute>
+            <Attribute attribute_name="age">9 days</Attribute>
+            <Attribute attribute_name="biological_replicate">2</Attribute>
+            <Attribute attribute_name="collection_date">2020-01-01</Attribute>
+            <Attribute attribute_name="ecotype">Col-0</Attribute>
+            <Attribute attribute_name="geo_loc_name">Japan:Shizuoka, Mishima</Attribute>
+            <Attribute attribute_name="growth_protocol">Plants were sown on GM medium (MS salts + 1% sucrose) and grown for 9 days under continuous white light at 22 degrees celsius. Heat stress (10 minutes at 37 degrees celsius) was applied and leaves were harvested.</Attribute>
+            <Attribute attribute_name="temp">37</Attribute>
+            <Attribute attribute_name="time">10</Attribute>
+            <Attribute attribute_name="tissue">leaf</Attribute>
+        </Attributes>
+    </BioSample>
+</BioSampleSet>

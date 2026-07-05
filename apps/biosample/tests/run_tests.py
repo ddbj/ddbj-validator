@@ -186,11 +186,24 @@ def main(target=None):
     for e in errors:
         print(f"    - {e}")
     print("=" * 60)
-    if mismatched:
-        print(f"{RED}[ABORT] BioSample tests failed.{END}")
-        return 1
-    print(f"{GREEN}[SUCCESS] All BioSample tests passed.{END}")
-    return 0
+    rule_ok = mismatched == 0
+    if rule_ok:
+        print(f"{GREEN}[SUCCESS] All BioSample rule tests passed.{END}")
+    else:
+        print(f"{RED}[ABORT] BioSample rule tests failed.{END}")
+
+    # TSV→XML 変換テストも同時に実行（"tsv2xml 含めて test"）。全 fixture 実行時のみ。
+    tsv_ok = True
+    if arg is None:
+        print("\n--- tsv_to_xml conversion test ---")
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "run_tsv2xml_test", Path(__file__).resolve().parent / "run_tsv2xml_test.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        tsv_ok = (mod.main() == 0)
+
+    return 0 if (rule_ok and tsv_ok) else 1
 
 
 if __name__ == "__main__":
