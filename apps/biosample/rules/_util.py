@@ -3,33 +3,19 @@
 複数ルールで重複していた定義をここへ集約（Tier 1 リファクタ）。挙動は従来どおり。
 """
 import re
-
-# missing 値表記。INSDC の missing_terms（common/resources/definitions.json cv_terms.missing_terms＝
-# "missing" / "not applicable" / "not collected" / "not provided" / "restricted access"）と
-# "missing: <reporting term>" を共通で判定する（重複チェック等で欠損値を一律除外するため全 CV を網羅）。
-MISSING_RE = re.compile(
-    r"^(not collected|not applicable|not provided|restricted access|missing)(\s*:.*)?$",
-    re.IGNORECASE)
-# "missing: <reporting term>"（reporting level term を伴う形）
-MISSING_WITH_TERM_RE = re.compile(r"^missing\s*:\s*\S+", re.IGNORECASE)
+# INSDC の missing/null 判定は common に一本化（CV は common/resources/definitions.json 単一ソース）。
+# 既存 import 互換のため再エクスポートする。
+from common.insdc_missing import (
+    is_missing_value,
+    is_missing_without_term,
+    MISSING_RE,
+    MISSING_WITH_TERM_RE,
+)
 
 
 def is_empty(v):
     """None または空白のみなら True。"""
     return v is None or str(v).strip() == ""
-
-
-def is_missing_value(v):
-    """値が missing 系表記（not collected/not applicable/missing[: term]）なら True。"""
-    return bool(MISSING_RE.match(v.strip())) if v else False
-
-
-def is_missing_without_term(v):
-    """missing 系だが reporting level term（"missing: xxx"）を伴わない場合 True。"""
-    if not v:
-        return False
-    s = v.strip()
-    return bool(MISSING_RE.match(s)) and not MISSING_WITH_TERM_RE.match(s)
 
 
 def norm(v):

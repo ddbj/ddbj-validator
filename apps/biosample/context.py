@@ -10,10 +10,6 @@ from dataclasses import dataclass, field
 from typing import Any
 
 _RES = Path(__file__).resolve().parent / "resources"
-# 共通 CV（国名リスト等）は common/resources/definitions.json を再利用
-_COMMON_DEF = Path(__file__).resolve().parents[2] / "common" / "resources" / "definitions.json"
-
-
 def load_packages():
     """attributes_packages.json を読み込み (fixed_attributes, packages, attributes) を返す。
     attributes は属性グローバル定義 {name: {allowed_values, format_pattern, synonyms, invalid_values, ...}}。"""
@@ -22,11 +18,9 @@ def load_packages():
 
 
 def load_cv_terms():
-    """common/resources/definitions.json の cv_terms（countries 等）を返す。"""
-    try:
-        return json.loads(_COMMON_DEF.read_text(encoding="utf-8")).get("cv_terms", {})
-    except Exception:
-        return {}
+    """common/resources/definitions.json の cv_terms（countries 等）を返す。共通ローダに委譲。"""
+    from common.definitions import load_common_cv_terms
+    return load_common_cv_terms()
 
 
 def build_cv_attr(attributes):

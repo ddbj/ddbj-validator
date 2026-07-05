@@ -5,40 +5,14 @@
 - BS_R0135: strain に不適切な値
 - BS_R0137: collection_date / geo_loc_name の reporting level term 欠落
 """
-import re
 from apps.biosample.rules.base import BsRule
 from apps.biosample.rules._util import (
     is_empty,
     norm,
     is_missing_value,
 )
-
-
-def _normalize_missing_value(val, null_accepted, null_not_recommended, date_or_geo):
-    """missing 値の表記揺れ/非推奨値を正規表記へ補正した値を返す（不要なら None）。Ruby rule:1 準拠。"""
-    result = None
-    low = val.lower()
-    low_ns = low.replace(" ", "")
-    # 推奨 null 値（"missing: control sample" 等）の表記を揃える
-    for accepted in null_accepted:
-        prefix = accepted.split(":")[0].lower()
-        suffix = "".join(accepted.split(":")[1:]).replace(" ", "").lower()
-        if low.startswith(prefix) and low_ns.endswith(suffix):
-            if date_or_geo and not accepted.startswith("missing:"):
-                continue  # date/geo は "missing" 等の無用な置換をしない
-            result = accepted
-    # 非推奨 null 値（"N.A." 等）を "missing" へ（date/geo は対象外）
-    if not date_or_geo:
-        for pat in null_not_recommended:
-            try:
-                if re.fullmatch(pat, val, re.I):
-                    result = "missing"
-                    break
-            except re.error:
-                continue
-    if result is None or result == val:
-        return None
-    return result
+# missing/null 判定・正規化は common に一本化
+from common.insdc_missing import normalize_null as _normalize_missing_value, is_valid_reporting_term
 
 
 # strain に使ってはいけない値（case-insensitive）
@@ -193,7 +167,7 @@ class BS_R0137(BsRule):
         # collection_date / geo_loc_name は「実値」または「有効な reporting-level term
         # （cv_terms.missing_reporting_terms＝'missing: xxx'）」のみ許容（ddbj 準拠）。
         # 未入力、missing 系だが有効 reporting term でない（'missing' 単独 / 'missing: 無効語' 等）→ error。
-        valid_terms = {t.lower() for t in context.cv_terms.get("missing_reporting_terms", [])}
+        # 有効 term 判定は common.insdc_missing.is_valid_reporting_term に一本化。
         out = []
         for rec in submission.records:
             for name in self._TARGETS:
@@ -201,7 +175,7 @@ class BS_R0137(BsRule):
                 if is_empty(v):
                     out.append(self.result(sample=rec.sample_id, target=name,
                                            message=f"Missing reporting level term for '{name}'."))
-                elif is_missing_value(v) and v.strip().lower() not in valid_terms:
+                elif is_missing_value(v) and not is_valid_reporting_term(v):
                     out.append(self.result(sample=rec.sample_id, target=name,
                                            message=f"Missing reporting level term for '{name}'. (Found: '{v}')"))
         return out
