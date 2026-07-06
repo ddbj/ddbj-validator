@@ -21,8 +21,11 @@ dependencies = [
 ]
 
 [project.scripts]
-# apps ディレクトリ配下を指定
-ddbj-validator = "apps.ddbj.cli:main"
+# main.py の multiplexer を指す（ddbj / biosample サブコマンドを振り分ける）。
+# 第1引数が既知サブコマンドでなければ暗黙的に ddbj を補完するため後方互換
+# （`ddbj-validator <dir>` は従来どおり ddbj 検証）。biosample は
+# `ddbj-validator biosample ...` で実行できる（docker ENTRYPOINT も同じ）。
+ddbj-validator = "main:main"
 
 [tool.setuptools]
 # ルートにある main.py を単独モジュールとして認識させる
