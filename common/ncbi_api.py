@@ -38,6 +38,46 @@ def ncbi_identity_params():
     return params
 
 
+def ncbi_request(method, url, *, retries=4, backoff_base=1.0, **kwargs):
+    """NCBI E-utilities への HTTP リクエスト（レート制限対応のリトライ付き）。
+
+    429(Too Many Requests) / 5xx / タイムアウト・接続エラーは指数バックオフで
+    最大 `retries` 回リトライする（429 に Retry-After があればそれを優先）。
+    それでも失敗した場合は例外を送出（呼び出し側の except で従来どおり処理される）。
+    成功時は raise_for_status 済みの Response を返す。
+    """
+    kwargs.setdefault("timeout", 15)
+    last_exc = None
+    for attempt in range(retries + 1):
+        try:
+            resp = requests.request(method, url, **kwargs)
+            # 429 / 5xx はリトライ対象として明示的に例外化
+            if resp.status_code == 429 or 500 <= resp.status_code < 600:
+                raise requests.HTTPError(f"HTTP {resp.status_code}", response=resp)
+            resp.raise_for_status()
+            return resp
+        except requests.RequestException as e:
+            last_exc = e
+            resp = getattr(e, "response", None)
+            status = getattr(resp, "status_code", None)
+            # リトライ対象: 429 / 5xx / ネットワーク系(status 不明)。4xx(429以外)は即送出。
+            retryable = status is None or status == 429 or 500 <= status < 600
+            if attempt >= retries or not retryable:
+                raise
+            wait = backoff_base * (2 ** attempt)
+            # 429 の Retry-After ヘッダがあれば尊重
+            if resp is not None:
+                ra = resp.headers.get("Retry-After")
+                if ra:
+                    try:
+                        wait = max(wait, float(ra))
+                    except (TypeError, ValueError):
+                        pass
+            logger.warning(f"NCBI request failed ({e}); retry {attempt + 1}/{retries} after {wait:.1f}s")
+            time.sleep(wait)
+    raise last_exc
+
+
 # 対象とするNCBI/EBIのプレフィックス定義
 _TARGET_PATTERNS = {
     "bioproject": re.compile(r"^PRJ(NA|EA|EB)\d+"),   
@@ -91,8 +131,7 @@ def check_ncbi_public_status(db_name, accessions, chunk_size=100):
             **identity,  # tool（＋あれば email / api_key）
         }
 
-        response = requests.post(base_url, data=payload, timeout=15)
-        response.raise_for_status()
+        response = ncbi_request("POST", base_url, data=payload, timeout=15)
         data = response.json()
         esearchresult = data.get("esearchresult", {})
         

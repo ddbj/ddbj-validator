@@ -9,7 +9,7 @@ import requests
 from apps.ddbj.db_metadata import get_expected_transl_table, get_organisms_from_records
 from apps.ddbj.utils.features import get_features
 from common.db_manager import execute_in_query
-from common.ncbi_api import ncbi_identity_params
+from common.ncbi_api import ncbi_identity_params, ncbi_request
 
 logger = logging.getLogger(__name__)
 
@@ -382,8 +382,7 @@ def fetch_taxonomy_from_ncbi(organism_list):
         search_params = {"db": "taxonomy", "term": org, "retmode": "json", "retmax": 1, **identity}
 
         try:
-            res = requests.get(search_url, params=search_params, timeout=10)
-            res.raise_for_status()
+            res = ncbi_request("GET", search_url, params=search_params, timeout=10)
             data = res.json()
             idlist = data.get("esearchresult", {}).get("idlist", [])
 
@@ -398,8 +397,7 @@ def fetch_taxonomy_from_ncbi(organism_list):
             fetch_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
             fetch_params = {"db": "taxonomy", "id": tax_id, "retmode": "xml", **identity}
 
-            f_res = requests.get(fetch_url, params=fetch_params, timeout=10)
-            f_res.raise_for_status()
+            f_res = ncbi_request("GET", fetch_url, params=fetch_params, timeout=10)
 
             root = ET.fromstring(f_res.content)
             taxon = root.find(".//Taxon")
