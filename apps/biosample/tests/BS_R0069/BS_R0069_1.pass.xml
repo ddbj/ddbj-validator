@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BioSampleSet>
+  <BioSample access="public">
+    <Ids><Id namespace="BioSample" is_primary="1">SAMD00000001</Id></Ids>
+    <Description><SampleName>A</SampleName><Title>A</Title><Organism taxonomy_id="3702"><OrganismName>Arabidopsis thaliana</OrganismName></Organism></Description>
+    <Owner><Name>BSI</Name><Contacts><Contact email="test1@ddbj.nig.ac.jp"><Name><First>Hanako</First><Last>Mishima</Last></Name></Contact></Contacts></Owner>
+    <Models><Model>Plant</Model></Models>
+    <Attributes>
+        <Attribute attribute_name="sample_name">A</Attribute>
+        <Attribute attribute_name="collection_date">2020-06-30</Attribute>
+        <Attribute attribute_name="geo_loc_name">Japan:Tsukuba</Attribute>
+        <Attribute attribute_name="tissue">Leaf</Attribute>
+        <Attribute attribute_name="cultivar">C1</Attribute>
+        <Attribute attribute_name="bioproject_id">PRJDB100</Attribute>
+    </Attributes>
+  </BioSample>
+  <BioSample access="public">
+    <Ids><Id namespace="BioSample" is_primary="1">SAMD00000001</Id></Ids>
+    <Description><SampleName>B</SampleName><Title>B</Title><Organism taxonomy_id="3702"><OrganismName>Arabidopsis thaliana</OrganismName></Organism></Description>
+    <Owner><Name>BSI</Name><Contacts><Contact email="test1@ddbj.nig.ac.jp"><Name><First>Hanako</First><Last>Mishima</Last></Name></Contact></Contacts></Owner>
+    <Models><Model>Plant</Model></Models>
+    <Attributes>
+        <Attribute attribute_name="sample_name">B</Attribute>
+        <Attribute attribute_name="collection_date">2020-06-30</Attribute>
+        <Attribute attribute_name="geo_loc_name">Japan:Tsukuba</Attribute>
+        <Attribute attribute_name="tissue">Leaf</Attribute>
+        <Attribute attribute_name="cultivar">C2</Attribute>
+        <Attribute attribute_name="bioproject_id">PRJDB200</Attribute>
+    </Attributes>
+  </BioSample>
+</BioSampleSet>

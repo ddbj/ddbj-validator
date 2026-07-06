@@ -277,10 +277,9 @@ def _run(args, pairs, report_out_dir, target_dirs_for_report, skip_db, skip_ncbi
     import time
     start_time = time.time()
     
-    import toml
+    # バージョンは biosample と独立管理（apps/ddbj/__init__.py の __version__）
     try:
-        pyproject_data = toml.load(Path(__file__).parent.parent.parent / "pyproject.toml")
-        tool_version = pyproject_data.get("project", {}).get("version", "unknown")
+        from apps.ddbj import __version__ as tool_version
     except Exception:
         tool_version = "unknown"
     

@@ -1,0 +1,427 @@
+"""Taxonomy 依存ルール（フェーズ B）。
+
+context.tax_data（organism 名 -> {tax_id, rank, scientific_name, is_species_or_below, status, lineage}）を参照。
+tax_data は DB(common/db_taxonomy) または NCBI API で取得。local（skip_ncbi）では空＝本ルール群はスキップ。
+
+- BS_R0004: organism と taxonomy_id が一致しない
+- BS_R0096: taxonomy が species 以下（infraspecific）でない
+- BS_R0045: organism を学名へ補正し taxonomy_id を補完（autofix）
+- BS_R0105: component_organism を学名へ補正（autofix）
+"""
+import re
+from apps.biosample.rules.base import BsRule
+from apps.biosample.rules._util import is_empty, is_missing_value, pkg_startswith, MIGS_BA_EU
+from common.db_taxonomy import tax_has_lineage, tax_rank_invalid
+
+# informal name（"Genus sp. strain"）判定用（R0104/R0134/R0140）
+_SP_KEYWORDS = [
+    re.compile(r"\ssp\.", re.I),      # "sp." は前が空白
+    re.compile(r"\bbacterium\b", re.I),
+    re.compile(r"\barchaeon\b", re.I),
+]
+_SP_END = re.compile(r"\ssp\.\s*$", re.I)                    # 末尾が " sp."
+_SP_INEX = re.compile(r".+sp\.\s*\((in:|ex)\s.*\)$", re.I)   # "xxx sp. (in: yyy)" / "(ex yyy)"
+
+
+def _found(info):
+    """tax_data で organism が解決できた（status が not_found でない）か。R0004/R0096 用。"""
+    return bool(info) and info.get("status") != "not_found"
+
+
+def _resolved(info):
+    """学名解決済み（found かつ scientific_name あり）。autofix 系（R0045/R0105/R0015）用。"""
+    return _found(info) and bool(info.get("scientific_name"))
+
+
+class BS_R0142(BsRule):
+    rule_id = "BS_R0142"
+    level = "error"
+    target = "organism"
+    description = "Invalid organism. Organism must not be numbers."
+
+    def validate(self, submission, context):
+        # organism が数字のみ＝taxid 記載とみなす（production 準拠）。taxid→学名が引ければ
+        # organism を学名へ、その数値を taxonomy_id へ移す autofix（warning）。引けなければ error。
+        out = []
+        for rec in submission.records:
+            org = rec.organism
+            if is_empty(org) or not org.strip().isdigit():
+                continue
+            taxid = org.strip()
+            info = context.taxid_info.get(taxid)
+            sci = info.get("scientific_name") if info else None
+            if sci:
+                out.append(self.autofix_result(
+                    sample=rec.sample_id, level="warning", kind="organism",
+                    message=("Organism is a taxonomy id; it will be moved to taxonomy_id and organism "
+                             f"corrected to the scientific name. (organism: '{org}', Suggested: '{sci}', taxonomy_id: '{taxid}')"),
+                    old_value=org, new_value=sci, new_taxid=taxid))
+            else:
+                out.append(self.result(
+                    sample=rec.sample_id,
+                    message=f"Invalid organism. Organism must not be numbers. (Found: '{org}')"))
+        return out
+
+
+class BS_R0004(BsRule):
+    rule_id = "BS_R0004"
+    level = "error"
+    target = "organism AND taxonomy_id"
+    description = "Organism and taxonomy id do not match."
+    requires_network = True  # taxonomy ソース（DB or NCBI）が要る。local ではスキップ
+
+    def validate(self, submission, context):
+        # Ruby v 準拠: 記載 taxonomy_id から学名を引き（context.taxid_info）、organism と完全一致比較。
+        # 一致しなければ error（tax_id=新規でもエラー）。taxid_info に無い場合（NCBI/local）は
+        # 従来の organism→tax_id 照合へフォールバックする。
+        out = []
+        for rec in submission.records:
+            if is_empty(rec.organism) or is_empty(rec.taxonomy_id):
+                continue
+            if is_missing_value(rec.organism) or is_missing_value(rec.taxonomy_id):
+                continue
+            taxid = str(rec.taxonomy_id).strip()
+            name_of_taxid = (context.taxid_info.get(taxid) or {}).get("scientific_name")
+            if name_of_taxid:
+                if name_of_taxid != rec.organism.strip():
+                    out.append(self.result(
+                        sample=rec.sample_id,
+                        message=(f"Organism and taxonomy id do not match. (organism: '{rec.organism}', "
+                                 f"taxonomy_id: '{taxid}', Organism name of this taxonomy_id: '{name_of_taxid}')")))
+                continue
+            # フォールバック: organism を解決して tax_id を比較（taxid→学名が引けない場合）
+            info = context.tax_data.get(rec.organism)
+            if not _found(info):
+                continue
+            db_taxid = info.get("tax_id")
+            if db_taxid and taxid != str(db_taxid).strip():
+                out.append(self.result(
+                    sample=rec.sample_id,
+                    message=f"Organism and taxonomy id do not match. (organism: '{rec.organism}', taxonomy_id: '{rec.taxonomy_id}', expected: '{db_taxid}')"))
+        return out
+
+
+class BS_R0096(BsRule):
+    rule_id = "BS_R0096"
+    level = "error"
+    target = "taxonomy_id"
+    description = "Taxonomy should be species or infraspecific level."
+    requires_network = True
+
+    def validate(self, submission, context):
+        # taxonomy_id が明示されていれば taxid 起点で rank を直接判定（Ruby is_infraspecific_rank 相当）。
+        # taxonomy_id が無い/utax 未解決なら organism 名解決の rank で判定（Ruby は R0045 で taxid を
+        # 補完してから R0096 が判定するため、名前解決の rank でも同等に検出する）。名前ベースは ddbj
+        # ANN1040 と共通の tax_rank_invalid。
+        out = []
+        for rec in submission.records:
+            if is_empty(rec.organism):
+                continue
+            taxid = str(rec.taxonomy_id).strip() if not is_empty(rec.taxonomy_id) else None
+            tinfo = context.taxid_info.get(taxid) if taxid else None
+            if tinfo is not None:
+                if tinfo.get("is_species_or_below") is False:
+                    out.append(self.result(
+                        sample=rec.sample_id,
+                        message=f"Taxonomy should be species or infraspecific level. (taxonomy_id: '{taxid}', rank: '{tinfo.get('rank')}')"))
+                continue
+            info = context.tax_data.get(rec.organism)
+            if tax_rank_invalid(info):
+                out.append(self.result(
+                    sample=rec.sample_id,
+                    message=f"Taxonomy should be species or infraspecific level. (organism: '{rec.organism}', rank: '{info.get('rank')}')"))
+        return out
+
+
+def _sci_or_org(info, rec):
+    return (info.get("scientific_name") if info else None) or rec.organism or ""
+
+
+class BS_R0059(BsRule):
+    rule_id = "BS_R0059"
+    level = "warning"
+    target = "organism, sex"
+    description = "Attribute 'sex' is not appropriate."
+    requires_network = True
+
+    def validate(self, submission, context):
+        out = []
+        for rec in submission.records:
+            if is_empty(rec.attr("sex")) or is_empty(rec.organism):
+                continue
+            info = context.tax_data.get(rec.organism)
+            if not info:
+                continue
+            if tax_has_lineage(info, ["Bacteria", "Archaea"]):
+                out.append(self.result(sample=rec.sample_id,
+                                       message="Attribute 'sex' is not appropriate for bacteria/archaea."))
+        return out
+
+
+class BS_R0115(BsRule):
+    rule_id = "BS_R0115"
+    level = "error"
+    target = "specimen_voucher, organism"
+    description = "Attribute 'specimen_voucher' is not appropriate for bacteria and unclassified sequences."
+    requires_network = True
+
+    def validate(self, submission, context):
+        out = []
+        for rec in submission.records:
+            if is_empty(rec.attr("specimen_voucher")) or is_empty(rec.organism):
+                continue
+            info = context.tax_data.get(rec.organism)
+            if not info:
+                continue
+            # Bacteria(Cyanobacteria を除く) または unclassified sequences は不可
+            is_bacteria = tax_has_lineage(info, ["Bacteria"]) and not tax_has_lineage(info, ["Cyanobacteria"])
+            if is_bacteria or tax_has_lineage(info, ["unclassified sequences"]):
+                out.append(self.result(sample=rec.sample_id,
+                                       message="Attribute 'specimen_voucher' is not appropriate for bacteria/unclassified sequences."))
+        return out
+
+
+class BS_R0106(BsRule):
+    rule_id = "BS_R0106"
+    level = "error"
+    target = "metagenome_source"
+    description = 'The metagenome_source value must be a valid scientific name ending with "metagenome" in the Taxonomy database.'
+    requires_network = True  # taxonomy 参照（ddbj ANN1060 と同一ロジック）
+
+    def validate(self, submission, context):
+        # ddbj ANN1060 準拠: 値が taxonomy の scientific name（valid、または case correction で fixable）であり、
+        # かつ scientific_name が "metagenome" で終わること。文字列末尾だけでなく学名であることも検証する。
+        out = []
+        for rec in submission.records:
+            for v in rec.attr_values("metagenome_source"):
+                if is_empty(v):
+                    continue
+                t = context.tax_data.get(v.strip()) or {}
+                is_sci = t.get("status") == "valid" or (
+                    t.get("status") == "fixable" and t.get("type") == "case correction")
+                is_meta = (t.get("scientific_name") or "").lower().endswith("metagenome")
+                if not (is_sci and is_meta):
+                    out.append(self.result(sample=rec.sample_id,
+                                           message=f"Invalid metagenome source. (Found: '{v}')"))
+        return out
+
+
+class BS_R0141(BsRule):
+    rule_id = "BS_R0141"
+    level = "error"
+    target = "organism"
+    description = "Organism names containing 'uncultured' cannot be used for MIMAG package."
+
+    def validate(self, submission, context):
+        out = []
+        for rec in submission.records:
+            if not pkg_startswith(rec.package, "MIMAG"):
+                continue
+            if rec.organism and "uncultured" in rec.organism.lower():
+                out.append(self.result(sample=rec.sample_id,
+                                       message=f"Organism containing 'uncultured' cannot be used for MIMAG. (organism: '{rec.organism}')"))
+        return out
+
+
+class BS_R0045(BsRule):
+    rule_id = "BS_R0045"
+    level = "warning"
+    target = "organism, taxonomy_id"
+    description = "Taxonomy error warning."
+    requires_network = True
+
+    def validate(self, submission, context):
+        # organism が taxonomy で学名解決できる場合、学名へ補正＋taxonomy_id を補完（autofix）。
+        # 解決できない（tax に無い）場合は「新規名 or 誤り」の可能性で warning（autofix なし）。
+        #   新規なら警告を無視して submit → キュレータが NCBI Taxonomy へ新規名を申請する運用。
+        out = []
+        for rec in submission.records:
+            if is_empty(rec.organism):
+                continue
+            # 数値のみの organism は BS_R0142(error)、missing 系は対象外
+            if rec.organism.strip().isdigit() or is_missing_value(rec.organism):
+                continue
+            info = context.tax_data.get(rec.organism)
+            if not _resolved(info):
+                out.append(self.result(
+                    sample=rec.sample_id,
+                    message=("Taxonomy error warning. Organism is not found in the Taxonomy database. "
+                             "If novel, enter the proposed name and leave taxonomy_id empty; "
+                             f"otherwise correct the name. (organism: '{rec.organism}')")))
+                continue
+            sci = info.get("scientific_name")
+            taxid = info.get("tax_id")
+            need_name = bool(sci) and sci != rec.organism
+            need_taxid = bool(taxid) and (
+                is_empty(rec.taxonomy_id) or str(rec.taxonomy_id).strip() != str(taxid).strip())
+            if not (need_name or need_taxid):
+                continue
+            detail = f"organism: '{rec.organism}'"
+            if need_name:
+                detail += f", Suggested: '{sci}'"
+            if need_taxid:
+                detail += f", taxonomy_id: '{taxid}'"
+            msg = ("Taxonomy error warning. organism will be corrected to the scientific name "
+                   f"and/or taxonomy id filled. ({detail})")
+            out.append(self.autofix_result(
+                sample=rec.sample_id, message=msg,
+                kind="organism",
+                old_value=rec.organism,
+                new_value=(sci if need_name else None),
+                new_taxid=(str(taxid) if need_taxid else None)))
+        return out
+
+
+class BS_R0105(BsRule):
+    rule_id = "BS_R0105"
+    level = "warning"
+    target = "component_organism"
+    description = "Taxonomy warning."
+    requires_network = True
+
+    def validate(self, submission, context):
+        # component_organism を学名へ補正（autofix）。属性値置換（kind=attribute_value）。
+        out = []
+        for rec in submission.records:
+            for v in rec.attr_values("component_organism"):
+                if is_empty(v):
+                    continue
+                info = context.tax_data.get(v)
+                if not _resolved(info):
+                    continue
+                sci = info.get("scientific_name")
+                if sci and sci != v:
+                    out.append(self.autofix_result(
+                        sample=rec.sample_id,
+                        message=f"Taxonomy warning. component_organism will be corrected to the scientific name. (Found: '{v}', Suggested: '{sci}')",
+                        attribute="component_organism", old_value=v, new_value=sci))
+        return out
+
+
+class BS_R0015(BsRule):
+    rule_id = "BS_R0015"
+    level = "warning"
+    target = "host"
+    description = "Invalid host organism name."
+    requires_network = True  # host 名の taxonomy 解決に tax_data を参照
+
+    def validate(self, submission, context):
+        # biosample の /host は **学名のみ許容**（ddbj /host より厳格）。判定は taxonomy 解決に委ねる:
+        #   common name/synonym（例 "human", "dog"）は fetch_taxonomy_data が学名へ解決するため、
+        #   入力が学名と異なれば学名へ autofix（human→Homo sapiens も特例ハードコード無しで対応）。
+        #   taxonomy に無い（＝生物名でない）host → warning（autofix なし）。
+        out = []
+        for rec in submission.records:
+            host = rec.attr("host")
+            if is_empty(host) or is_missing_value(host):
+                continue
+            info = context.tax_data.get(host)
+            if not _resolved(info):
+                # taxonomy 未解決＝学名でない → warning（autofix しない）
+                out.append(self.result(sample=rec.sample_id,
+                                       message=f"Invalid host organism name. Use a scientific name. (host: '{host}')"))
+                continue
+            sci = info.get("scientific_name")
+            if sci and sci != host:
+                out.append(self.autofix_result(
+                    sample=rec.sample_id,
+                    message=f"Invalid host organism name. (host: '{host}', Suggested: '{sci}')",
+                    attribute="host", old_value=host, new_value=sci))
+        return out
+
+
+class BS_R0134(BsRule):
+    rule_id = "BS_R0134"
+    level = "warning"
+    target = "organism, strain, isolate"
+    description = "Non-identical identifiers among organism/strain/isolate."
+
+    def validate(self, submission, context):
+        # MIGS.ba.* で organism の "sp./bacterium/archaeon" 以降の識別子が strain/isolate と一致しない場合に警告。
+        out = []
+        for rec in submission.records:
+            if not pkg_startswith(rec.package, "MIGS.ba"):
+                continue
+            org = rec.organism
+            if is_empty(org):
+                continue
+            m = None
+            for rx in _SP_KEYWORDS:
+                m = rx.search(org)
+                if m:
+                    break
+            if not m:
+                continue
+            suffix = org[m.end():].strip()
+            if not suffix:
+                continue
+            strain = rec.attr("strain")
+            isolate = rec.attr("isolate")
+            if strain and not is_missing_value(strain) and suffix == strain:
+                continue
+            if isolate and not is_missing_value(isolate) and suffix == isolate:
+                continue
+            out.append(self.result(
+                sample=rec.sample_id,
+                message=(f"Non-identical identifiers among organism/strain/isolate. "
+                         f"(organism: '{org}', strain: '{strain or ''}', isolate: '{isolate or ''}')")))
+        return out
+
+
+class BS_R0140(BsRule):
+    rule_id = "BS_R0140"
+    level = "warning"
+    target = "organism"
+    description = "Invalid taxonomy for genome sample."
+
+    _PKG = ("Microbe", "Pathogen.cl", "Pathogen.env")
+
+    def validate(self, submission, context):
+        # Microbe / Pathogen.cl / Pathogen.env（完全一致）で organism が " sp." 終わりなら警告。
+        out = []
+        for rec in submission.records:
+            if rec.package not in self._PKG:
+                continue
+            org = rec.organism
+            if is_empty(org):
+                continue
+            if _SP_END.search(org):
+                out.append(self.result(
+                    sample=rec.sample_id,
+                    message=f"Invalid taxonomy for genome sample. (organism: '{org}')"))
+        return out
+
+
+class BS_R0104(BsRule):
+    rule_id = "BS_R0104"
+    level = "error"
+    target = "organism"
+    description = "Invalid taxonomy for genome sample."
+    requires_network = True  # taxonomy_id の rank 判定に tax_data を参照
+
+    def validate(self, submission, context):
+        # MIGS.ba/eu で organism が "genus sp." 形式のとき:
+        #   taxonomy_id 未指定/無効 → 新規種の可能性でエラー（strain 名を促す）
+        #   taxonomy_id あり & infraspecific（種以下）→ エラー
+        #   taxonomy_id あり & 種より上位 → R0096 の領分としてスルー
+        out = []
+        for rec in submission.records:
+            if not pkg_startswith(rec.package, *MIGS_BA_EU):
+                continue
+            org = rec.organism
+            if is_empty(org):
+                continue
+            if not (org.lower().endswith("sp.") or _SP_INEX.search(org)):
+                continue
+            taxid = rec.taxonomy_id
+            if is_empty(taxid) or str(taxid).strip() == "1":
+                fire = True
+            else:
+                info = context.tax_data.get(org)
+                # 種以下（infraspecific）なら error、上位/未解決ならスルー
+                fire = bool(info) and bool(info.get("is_species_or_below"))
+            if fire:
+                out.append(self.result(
+                    sample=rec.sample_id,
+                    message=f"Invalid taxonomy for genome sample. (organism: '{org}')"))
+        return out

@@ -203,7 +203,8 @@ def _validate_single_file_set(task):
         file_skipped_autofixes.extend(skips)
         file_results.extend(bs_warnings)
 
-    missing_reporting_terms_set = {m.lower() for m in context.cv_terms.get("missing_reporting_terms", [])}
+    from common.insdc_missing import reporting_terms
+    missing_reporting_terms_set = reporting_terms()  # 有効 "missing: term" 集合（common 単一ソース）
     date_fixes = propose_date_fixes(records, ann_path, allowed_missing_reporting_terms=missing_reporting_terms_set, existing_proposals=file_proposals)
     file_proposals.extend(date_fixes)
 
@@ -1044,7 +1045,7 @@ class ValidatorPipeline:
             print(f"  annotation value applied to BioSample for {samd}: {detail}")
         for samd, items in added_summary.items():
             detail = ", ".join(f"{a}: {v}" for a, v in sorted(items.items()))
-            print(f"  annotation-only values added for {samd}: {detail}")
+            print(f"  annotation-only values added to {samd}: {detail}")
         for samd in sorted(taxid_cleared):
             print(f"  {samd} taxonomy_id deleted to avoid organism autofix by taxonomy_id")
 

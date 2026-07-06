@@ -112,4 +112,19 @@ docs/
 # =========================
 nsub/
 
+# =========================
+# BioSample テストデータ自動生成ツール（DB＋PII を扱う内部ユーティリティ。配布物に含めない）
+# 生成済みの（PII マスク済み）fixture は別途コミットする
+# =========================
+apps/biosample/tests/tools/
+
+# =========================
+# テスト実行時に fixture ディレクトリ内へ生成される成果物（expected/ はゴールデンなので追跡する）
+# =========================
+apps/ddbj/tests/**/fixed/
+apps/ddbj/tests/**/reports/
+apps/ddbj/tests/**/aa/
+apps/biosample/tests/**/fixed/
+apps/biosample/tests/**/reports/
+
 

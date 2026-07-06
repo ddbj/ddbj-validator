@@ -132,7 +132,6 @@ class Validator:
             ANN2610(), # [WARNING] Unexpected tRNA length
             ANN2620(), # [WARNING] Unexpected tmRNA length
             ANN2625(), # [WARNING] Unexpected lncRNA length
-            ANN2630(), # [ERROR] Entry must contain at least one feature in addition to the source
             ANN2660(), # [ERROR] Feature cannot be used
             ANN2661(), # [ERROR] Feature is not defined.
             ANN2670(), # [ERROR] Usage of the feature is not recommended

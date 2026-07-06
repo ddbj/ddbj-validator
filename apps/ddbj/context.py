@@ -76,8 +76,7 @@ class ValidationContext:
         common_resources = importlib.resources.files("common.resources")
         
         # 1. DDBJ definition json の読み込み
-        dict_path = ddbj_resources / "definitions.json"        
-        common_dict_path = common_resources / "definitions.json"
+        dict_path = ddbj_resources / "definitions.json"
 
         if not self.ddbj_dict:
             if dict_path.is_file():
@@ -101,12 +100,9 @@ class ValidationContext:
                     if "length_rule" in q_def: q_def["length_rule"].setdefault("internal_ignore", True)
                     
                 self.cv_terms = self.ddbj_dict.get("cv_terms", {})
-                # common definitions から cv_terms を読み込んでマージする
-                if common_dict_path.is_file():
-                    with common_dict_path.open("r", encoding="utf-8") as f:
-                        common_dict = json.load(f)
-                        if "cv_terms" in common_dict:
-                            self.cv_terms.update(common_dict["cv_terms"])
+                # common definitions の cv_terms をマージ（共通ローダに委譲。biosample と同一入口）
+                from common.definitions import load_common_cv_terms
+                self.cv_terms.update(load_common_cv_terms())
             else:
                 print(f"Warning: Dictionary file not found at {dict_path}")
                 self.ddbj_dict = {"features": {}, "qualifiers": {}}  

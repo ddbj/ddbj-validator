@@ -6,6 +6,78 @@ import requests
 
 logger = logging.getLogger(__name__)
 
+# NCBI E-utilities 推奨のアプリ名（tool）。本ツールで固定。
+_NCBI_TOOL = "ddbj-validator"
+# key/email なし利用の警告は 1 回だけ出す
+_ncbi_no_id_warned = False
+
+
+def ncbi_identity_params():
+    """NCBI E-utilities 共通の識別パラメータ {tool, email?, api_key?} を環境変数から構築する。
+
+    NCBI ガイドライン準拠:
+    - NCBI_API_KEY があれば付与（レート緩和 10 req/s・アカウント紐付け）。最優先。
+    - NCBI_API_EMAIL があれば付与（key 無し時の連絡先。過剰アクセス時に NCBI から事前連絡を受けられる）。
+    - tool は "ddbj-validator" 固定。
+    key も email も無い場合は .env への設定を 1 回だけ警告する（メールはハードコードしない方針）。
+    """
+    global _ncbi_no_id_warned
+    params = {"tool": _NCBI_TOOL}
+    api_key = os.environ.get("NCBI_API_KEY")
+    email = os.environ.get("NCBI_API_EMAIL")
+    if api_key:
+        params["api_key"] = api_key
+    if email:
+        params["email"] = email
+    if not api_key and not email and not _ncbi_no_id_warned:
+        logger.warning(
+            "Using NCBI API without a key or email. "
+            "Setting NCBI_API_EMAIL in your .env file is recommended, "
+            "as well as NCBI_API_KEY for frequent use.")
+        _ncbi_no_id_warned = True
+    return params
+
+
+def ncbi_request(method, url, *, retries=4, backoff_base=1.0, **kwargs):
+    """NCBI E-utilities への HTTP リクエスト（レート制限対応のリトライ付き）。
+
+    429(Too Many Requests) / 5xx / タイムアウト・接続エラーは指数バックオフで
+    最大 `retries` 回リトライする（429 に Retry-After があればそれを優先）。
+    それでも失敗した場合は例外を送出（呼び出し側の except で従来どおり処理される）。
+    成功時は raise_for_status 済みの Response を返す。
+    """
+    kwargs.setdefault("timeout", 15)
+    last_exc = None
+    for attempt in range(retries + 1):
+        try:
+            resp = requests.request(method, url, **kwargs)
+            # 429 / 5xx はリトライ対象として明示的に例外化
+            if resp.status_code == 429 or 500 <= resp.status_code < 600:
+                raise requests.HTTPError(f"HTTP {resp.status_code}", response=resp)
+            resp.raise_for_status()
+            return resp
+        except requests.RequestException as e:
+            last_exc = e
+            resp = getattr(e, "response", None)
+            status = getattr(resp, "status_code", None)
+            # リトライ対象: 429 / 5xx / ネットワーク系(status 不明)。4xx(429以外)は即送出。
+            retryable = status is None or status == 429 or 500 <= status < 600
+            if attempt >= retries or not retryable:
+                raise
+            wait = backoff_base * (2 ** attempt)
+            # 429 の Retry-After ヘッダがあれば尊重
+            if resp is not None:
+                ra = resp.headers.get("Retry-After")
+                if ra:
+                    try:
+                        wait = max(wait, float(ra))
+                    except (TypeError, ValueError):
+                        pass
+            logger.warning(f"NCBI request failed ({e}); retry {attempt + 1}/{retries} after {wait:.1f}s")
+            time.sleep(wait)
+    raise last_exc
+
+
 # 対象とするNCBI/EBIのプレフィックス定義
 _TARGET_PATTERNS = {
     "bioproject": re.compile(r"^PRJ(NA|EA|EB)\d+"),   
@@ -44,8 +116,9 @@ def check_ncbi_public_status(db_name, accessions, chunk_size=100):
     base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
     field_tag = _DB_FIELD_TAGS.get(db_name, "[Accession]")
 
-    # 実行時に最新の環境変数を取得
-    current_api_key = os.environ.get("NCBI_API_KEY")
+    # 実行時に最新の環境変数から識別パラメータ（tool/email/api_key）を構築
+    identity = ncbi_identity_params()
+    current_api_key = identity.get("api_key")
 
     def check_chunk(chunk):
         # SRAのあいまい検索を防ぐため、正確なフィールドタグを付与
@@ -55,14 +128,10 @@ def check_ncbi_public_status(db_name, accessions, chunk_size=100):
             "term": term,
             "retmode": "json",
             "retmax": 0,
-            "tool": "ddbj-validator",
-            "email": "ddbj@ddbj.nig.ac.jp"
+            **identity,  # tool（＋あれば email / api_key）
         }
-        if current_api_key:
-            payload["api_key"] = current_api_key
 
-        response = requests.post(base_url, data=payload, timeout=15)
-        response.raise_for_status()
+        response = ncbi_request("POST", base_url, data=payload, timeout=15)
         data = response.json()
         esearchresult = data.get("esearchresult", {})
         

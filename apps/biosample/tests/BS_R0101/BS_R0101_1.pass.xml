@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BioSampleSet>
+  <BioSample access="public">
+    <Ids><Id namespace="BioSample" is_primary="1">SAMD00000001</Id></Ids>
+    <Description><SampleName>Valid_Sample-1</SampleName><Title>Valid_Sample-1</Title><Organism taxonomy_id="3702"><OrganismName>Arabidopsis thaliana</OrganismName></Organism></Description>
+    <Owner><Name>BSI</Name><Contacts><Contact email="test1@ddbj.nig.ac.jp"><Name><First>Hanako</First><Last>Mishima</Last></Name></Contact></Contacts></Owner>
+    <Models><Model>Plant</Model></Models>
+    <Attributes>
+        <Attribute attribute_name="sample_name">Valid_Sample-1</Attribute>
+        <Attribute attribute_name="collection_date">2020-06-30</Attribute>
+        <Attribute attribute_name="geo_loc_name">Japan:Tsukuba</Attribute>
+    </Attributes>
+  </BioSample>
+</BioSampleSet>

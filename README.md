@@ -152,15 +152,53 @@ ddbj-validator -n -o output_directory -j 4 target_directory
 
 ```
 
-### NCBI API キーの設定（推奨）
+### NCBI API の設定（推奨）
 
-`-n` オプションで NCBI API を利用する場合、NCBI のアカウントから [API キー](https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen#chapter2.API_Keys)を取得して設定することを推奨します。  
-実行するディレクトリに `.env` という名前のファイルを作成し、以下のように記述しておくと、ツールが自動的にキーを読み込みます。
+`-n` オプションで NCBI API（E-utilities）を利用する場合、NCBI の利用ガイドラインに沿って
+実行ディレクトリに `.env` を作成し、以下のいずれかを設定することを推奨します（ツールが自動で読み込みます）。
+
+NCBI からの推奨は「**API キーが望ましい。無ければ最低限メールアドレス**」です。
 
 ```ini
+# 推奨: API キー（NCBI アカウントで取得。レート制限が 3→10 req/s に緩和され、利用がアカウントに紐づく）
 NCBI_API_KEY=あなたの_NCBI_API_KEY文字列
 
+# API キーが無い場合は、連絡先メールアドレスの設定を推奨
+#（過剰アクセス時に NCBI から事前連絡を受けられ、予告なしのブロックを避けやすい）
+NCBI_API_EMAIL=あなたのメールアドレス
 ```
+
+- **API キーも メールアドレスも未設定**でも動作しますが、レート制限は 3 req/s（IP 単位）で、
+  超過時に一時ブロックされる可能性があります。頻繁に利用する場合は `NCBI_API_KEY` の取得を推奨します。
+- API キーは [こちら](https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen#chapter2.API_Keys)から取得できます。
+
+## BioSample の検証（`biosample` サブコマンド）
+
+BioSample 登録データ（XML または TSV）を検証します。
+
+```bash
+# XML 入力
+ddbj-validator biosample -x <input.xml> [オプション]
+
+# TSV 入力（submission id / package はファイル名 SSUBxxxx.<Package>.txt から補完。-s/-p で明示指定可）
+ddbj-validator biosample -t <SSUBxxxx.Package.txt> [-s SSUBxxxx] [-p <package>] [オプション]
+```
+
+### 入力・出力
+
+* `-x`, `--xml` / `-t`, `--tsv` 入力ファイル（どちらか必須）。
+* `-s`, `--submission-id` / `-p`, `--package` TSV の submission id / package。省略時はファイル名（`SSUBxxxx.<Package>.txt`）から補完します。
+* `-o`, `--out-dir` レポート（summary / details）・自動修正済み XML の出力先。
+* `-j`, `--json` 出力を result.json 互換 JSON にします（既定は summary / details のテキスト出力。summary は標準出力にも表示）。
+
+### 実行モード
+
+* **既定（フラグ無し）: NCBI API モード** — 内部 DB / 権限検証をスキップし、Taxonomy は NCBI API で検証します（一般ユーザ向け・推奨）。
+* `-l`, `--local` 完全ローカル（DB / API アクセスなし）。
+* `-n`, `--ncbi-api` NCBI API モード（明示。既定と同じ）。
+* `-d`, `--internal-db` 内部 DDBJ DB を利用する **curator モード**（権限検証あり）。
+* 環境変数 **`DDBJ_VALIDATOR_INTERNAL_DB=1`** を設定すると、フラグ無しでも既定が curator（内部 DB）モードになります（`.env` に記載可）。`-l` / `-n` / `-d` は常に優先されます。
+* `--account <submitter_id>` は **curator（内部 DB）モードでのみ有効**です（`-n` / `-l` など他モードで指定するとエラー終了します）。
 
 ## メモリ使用量
 
@@ -342,15 +380,53 @@ ddbj-validator -n -o output_directory -j 4 target_directory
 
 ```
 
-### Setting the NCBI API Key (Recommended)
+### Setting up the NCBI API (Recommended)
 
-When using the NCBI API (`-n` option), it is recommended to obtain an [API key](https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen#chapter2.API_Keys) from your NCBI account and configuring it.  
-Create a file named `.env` in your current working directory and add the following line. The tool will load it automatically.
+When using the NCBI API (E-utilities) via the `-n` option, following NCBI's usage guidelines,
+create a `.env` file in your working directory and set one of the following (the tool loads it automatically).
+
+NCBI recommends: **an API key is preferred; otherwise, at least an email address.**
 
 ```ini
+# Recommended: API key (obtained from your NCBI account; relaxes the rate limit 3 -> 10 req/s and ties usage to your account)
 NCBI_API_KEY=your_ncbi_api_key_string_here
 
+# If you do not have an API key, setting a contact email is recommended
+# (lets NCBI contact you before blocking on excessive use, avoiding sudden blocks).
+NCBI_API_EMAIL=your_email_address
 ```
+
+- It works even with **neither the API key nor the email set**, but the rate limit is 3 req/s (per IP)
+  and you may be temporarily blocked when exceeding it. For frequent use, obtaining an `NCBI_API_KEY` is recommended.
+- Get an API key [here](https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen#chapter2.API_Keys).
+
+## Validating BioSample (`biosample` subcommand)
+
+Validates BioSample submission data (XML or TSV).
+
+```bash
+# XML input
+ddbj-validator biosample -x <input.xml> [options]
+
+# TSV input (submission id / package are inferred from the filename SSUBxxxx.<Package>.txt; override with -s/-p)
+ddbj-validator biosample -t <SSUBxxxx.Package.txt> [-s SSUBxxxx] [-p <package>] [options]
+```
+
+### Input / Output
+
+* `-x`, `--xml` / `-t`, `--tsv`: Input file (one is required).
+* `-s`, `--submission-id` / `-p`, `--package`: submission id / package for TSV. Inferred from the filename (`SSUBxxxx.<Package>.txt`) when omitted.
+* `-o`, `--out-dir`: Output directory for reports (summary / details) and auto-fixed XML.
+* `-j`, `--json`: Emit a result.json-compatible JSON instead of the default text reports (summary is also printed to stdout).
+
+### Execution modes
+
+* **Default (no flag): NCBI API mode** — skips the internal DB / authorization checks and validates Taxonomy via the NCBI API (recommended for general users).
+* `-l`, `--local`: Fully local (no DB / API access).
+* `-n`, `--ncbi-api`: NCBI API mode (explicit; same as the default).
+* `-d`, `--internal-db`: **Curator mode** using the internal DDBJ DB (includes authorization checks).
+* Setting the environment variable **`DDBJ_VALIDATOR_INTERNAL_DB=1`** makes curator (internal DB) mode the default without a flag (can be placed in `.env`). Explicit `-l` / `-n` / `-d` always take precedence.
+* `--account <submitter_id>` is **valid only in curator (internal DB) mode** (specifying it with `-n` / `-l` aborts with an error).
 
 ## Memory Usage
 

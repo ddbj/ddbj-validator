@@ -5,6 +5,9 @@ from dateutil import parser, tz
 logger = logging.getLogger(__name__)
 
 _INSDC_DATE_PATTERN = re.compile(r"^(?:\d{4}(?:-\d{2}(?:-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?)?)?)?|(?:\d{2}-)?[A-Za-z]{3}-\d{4})(?:/(?:\d{4}(?:-\d{2}(?:-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?)?)?)?|(?:\d{2}-)?[A-Za-z]{3}-\d{4}))?$")
+# INSDC collection_date 形式パターン（ddbj definitions.json の format_pattern と同一）。
+# ddbj/biosample 共有の公開定数（biosample R0007/R0136 が ddbj と同じ判定を使うため）。
+INSDC_DATE_PATTERN = _INSDC_DATE_PATTERN
 _LATLON_DMS_PATTERN = re.compile(r"^(?P<lat_deg>\d{1,2})\D+(?P<lat_min>\d{1,2})\D+(?P<lat_sec>\d{1,2}(?:\.\d+)?)\D+(?P<lat_hemi>[NS])[ ,_;]+(?P<lng_deg>\d{1,3})\D+(?P<lng_min>\d{1,2})\D+(?P<lng_sec>\d{1,2}(?:\.\d+)?)\D+(?P<lng_hemi>[EW])$")
 _LATLON_DEC_INSDC_PATTERN = re.compile(r"^(?P<lat_dec>\d{1,2}(?:\.\d+)?)\s*(?P<lat_dec_hemi>[NS])[ ,_;]+(?P<lng_dec>\d{1,3}(?:\.\d+)?)\s*(?P<lng_dec_hemi>[EW])$")
 _LATLON_DEC_REVERSED_PATTERN = re.compile(r"^(?P<lat_dec_hemi>[NS])\s*(?P<lat_dec>\d{1,2}(?:\.\d+)?)[ ,_;]+(?P<lng_dec_hemi>[EW])\s*(?P<lng_dec>\d{1,3}(?:\.\d+)?)$")
@@ -12,7 +15,19 @@ _LATLON_DEC_SIGNED_PATTERN = re.compile(r"^(?P<lat_dec>-*\d{1,2}(?:\.\d+))[^\d-]
 _LATLON_DEC_DETAIL_PATTERN = re.compile(r"^(?P<lat_dec>\d{1,2}\.)(?P<lat_dec_point>\d+)\s*(?P<lat_dec_hemi>[NS])[ ,_;]+(?P<lng_dec>\d{1,3}\.)(?P<lng_dec_point>\d+)\s*(?P<lng_dec_hemi>[EW])$")
 
 def _parse_and_format_date(val):
-    """日付を解釈し、入力の粒度(年、年月、年月日)に合わせてINSDC推奨のフォーマットに直す"""
+    """日付を解釈し、入力の粒度(年、年月、年月日)に合わせてINSDC推奨のフォーマットに直す。
+
+    保守方針: 入力に 4 桁の年が無い（例 "Dec-16" のような 2 桁年）場合は年を推測できず、
+    誤った autofix（"Dec-16" を当年の 12/16 とする等）を生むため **補正しない**（ddbj/biosample 共通）。
+    公的 DB では誤補正を避けるのが正しい。→ 呼び出し側では invalid（未補正）として扱われる。
+    """
+    if not re.search(r'\d{4}', val):
+        return None, None
+    # 保守方針: 区切りの無い純数値で桁数が年(4)・YYYYMMDD(8) 以外（例 "210424"=6桁）は
+    # 2021-04-24 か 2024-04-21 か判別できず誤補正を生むため **補正しない**（ddbj/biosample 共通）。
+    stripped = val.strip()
+    if stripped.isdigit() and len(stripped) not in (4, 8):
+        return None, None
     try:
         val_clean = re.sub(r'[\s/.,]+', '-', val.strip())
         dt = parser.parse(val_clean)
@@ -87,7 +102,7 @@ def fix_insdc_lat_lon(val):
         
     elif m_dec_signed:
         d = m_dec_signed.groupdict()
-        lat_val, lng_val = d['lat_dec']
+        lat_val, lng_val = d['lat_dec'], d['lng_dec']
         lat_hemi = "S" if lat_val.startswith("-") else "N"
         lng_hemi = "W" if lng_val.startswith("-") else "E"
         lat_dec, lng_dec = lat_val.lstrip("-"), lng_val.lstrip("-")
