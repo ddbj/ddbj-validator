@@ -256,6 +256,18 @@ def _skipped_in_mode(reqs, mode):
     return False
 
 
+# NCBI API モードで skip する fixture（mock / 内部DB でのみ成立するもの）。
+# 実 NCBI taxonomy が該当情報を返さないため、ncbi(-n) モードでは判定不能で正しく評価できない。
+# {fixture 名: 理由}。local モードでは該当ルールが元々スキップされるので影響しない。
+NCBI_SKIP_FIXTURES = {
+    # Euglena gracilis は非 Viridiplantae。Plant パッケージ適合(BS_R0048/_plant)は
+    # plastid genetic code (pl_code) に依存するが、NCBI taxonomy は Euglena に
+    # PlastidGeneticCode を返さない（pl_code=0 になり BS_R0048 が誤発火）。
+    # mock(pl_code=11)/内部DB 前提の pass ケースのため network モードでは検証不能。
+    "BS_R0048_12.pass.xml": "Euglena gracilis: NCBI に plastid genetic code が無く Plant 判定不可 (mock/内部DB 限定)",
+}
+
+
 def _build_bs_cmd(mode, fixture, out_dir, use_pip, docker_image, project_root, python_bin, main_py):
     inflag = "-t" if fixture.suffix.lower() in (".txt", ".tsv") else "-x"
     modeflag = "-l" if mode == "local" else "-n"
@@ -323,6 +335,11 @@ def run_cli_mode(mode, skip_only, target, use_pip, docker_image):
                 # 環境依存: XSD(R0098) は lxml 必須。無ければ検証不能なので skip。
                 if rid == "BS_R0098" and not lxml_ok:
                     print(f"  [SKIP]     {fx.name} (BS_R0098=XSD は lxml 未導入のため検証不可)")
+                    skipped += 1
+                    continue
+                # mock/内部DB 限定 fixture は network(ncbi) モードでは検証不能なので skip。
+                if mode == "ncbi" and fx.name in NCBI_SKIP_FIXTURES:
+                    print(f"  [SKIP]     {fx.name} ({NCBI_SKIP_FIXTURES[fx.name]})")
                     skipped += 1
                     continue
                 idx += 1
