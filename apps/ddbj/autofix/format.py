@@ -52,13 +52,9 @@ def _propose_mapping_fixes(records, ann_path, target_qualifier, allowed_map, exi
                             prefix_lower = prefix.strip().lower()
                             if prefix_lower in allowed_map:
                                 fixed_prefix = allowed_map[prefix_lower]
-                                if target_qualifier == "geo_loc_name":
-                                    # INSDC 正形「Country: Region」= 国名正表記＋コロン後 半角空白1つ。
-                                    # 地域名の中身は変更しない（前後空白のみ整える）。culture_collection 等は対象外。
-                                    candidate = f"{fixed_prefix}: {suffix.strip()}"
-                                    if candidate != val_str:
-                                        fixed_val = candidate
-                                elif prefix != fixed_prefix:
+                                # 国名（prefix）の大文字小文字のみ補正。INSDC 正仕様は "Country:Region"
+                                # （コロン後に空白を入れない）ため、コロン後の空白付与はしない。
+                                if prefix != fixed_prefix:
                                     fixed_val = val_str.replace(prefix, fixed_prefix, 1)
                         else:
                             if val_lower in allowed_map and allowed_map[val_lower] != val_str:

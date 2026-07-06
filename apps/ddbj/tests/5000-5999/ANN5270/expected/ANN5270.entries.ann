@@ -17,7 +17,7 @@ COMMON	SUBMITTER		ab_name	Mishima,H.
 seq1	source	1..120	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
-			geo_loc_name	Japan: Shizuoka, Mishima
+			geo_loc_name	Japan:Shizuoka, Mishima
 	assembly_gap	51..70	estimated_length	known
 			gap_type	within scaffold
 	CDS	41..>50	transl_table	1
@@ -26,14 +26,14 @@ seq1	source	1..120	organism	Mus musculus
 seq2	source	1..120	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
-			geo_loc_name	Japan: Shizuoka, Mishima
+			geo_loc_name	Japan:Shizuoka, Mishima
 	gap	51..70	estimated_length	20
 	mRNA	<71..80	product	hypothetical protein
 			note	ANN5270 fail (gap partially overlaps with mRNA)
 seq3	source	1..120	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
-			geo_loc_name	Japan: Shizuoka, Mishima
+			geo_loc_name	Japan:Shizuoka, Mishima
 	assembly_gap	51..70	estimated_length	known
 			gap_type	within scaffold
 	CDS	31..90	transl_table	1
@@ -42,7 +42,7 @@ seq3	source	1..120	organism	Mus musculus
 seq4	source	1..120	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
-			geo_loc_name	Japan: Shizuoka, Mishima
+			geo_loc_name	Japan:Shizuoka, Mishima
 	assembly_gap	51..70	estimated_length	known
 			gap_type	within scaffold
 	CDS	join(31..50,71..90)	transl_table	1
@@ -51,7 +51,7 @@ seq4	source	1..120	organism	Mus musculus
 seq5	source	1..120	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
-			geo_loc_name	Japan: Shizuoka, Mishima
+			geo_loc_name	Japan:Shizuoka, Mishima
 	assembly_gap	51..70	estimated_length	known
 			gap_type	within scaffold
 	stem_loop	31..90	transl_table	1
@@ -60,7 +60,7 @@ seq5	source	1..120	organism	Mus musculus
 seq6	source	1..120	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
-			geo_loc_name	Japan: Shizuoka, Mishima
+			geo_loc_name	Japan:Shizuoka, Mishima
 	assembly_gap	51..70	estimated_length	known
 			gap_type	within scaffold
 	gap	31..90	transl_table	1
@@ -69,7 +69,7 @@ seq6	source	1..120	organism	Mus musculus
 seq7	source	1..120	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
-			geo_loc_name	Japan: Shizuoka, Mishima
+			geo_loc_name	Japan:Shizuoka, Mishima
 	assembly_gap	51..70	estimated_length	known
 			gap_type	within scaffold
 	3'UTR	31..90	transl_table	1
