@@ -223,6 +223,16 @@ def get_empty_result():
 # ==============================================================================
 # メインテストランナー
 # ==============================================================================
+def _ncbi_env_args():
+    """docker コンテナへ渡す NCBI 資格情報の -e 引数（.env は image に含まれないため明示注入）。
+    値は付けず環境から引き継ぐ形にしてキーが argv/ps に出ないようにする。設定済みの変数のみ渡す。"""
+    args = []
+    for var in ("NCBI_API_KEY", "NCBI_API_EMAIL"):
+        if os.environ.get(var):
+            args += ["-e", var]
+    return args
+
+
 def _build_cli_cmd(mode, target_dir, docker_image, use_pip, account_val, python_bin, main_py, project_root):
     """モード／実行方式（docker/pip/直接）に応じた CLI コマンド配列を組み立てる。"""
     if mode == "biosample":
@@ -237,6 +247,7 @@ def _build_cli_cmd(mode, target_dir, docker_image, use_pip, account_val, python_
             "docker", "run", "--rm",
             "-u", f"{os.getuid()}:{os.getgid()}",
             "-v", f"{str(project_root)}:/work",
+            *_ncbi_env_args(),
             docker_image,
         ]
         if mode == "local":

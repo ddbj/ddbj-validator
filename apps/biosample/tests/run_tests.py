@@ -226,6 +226,24 @@ import shutil
 import subprocess
 import tempfile
 
+# docker コンテナへ NCBI 資格情報を渡すため、ハーネス側で .env を読み込んでおく
+# （.env は image に含まれない＝コンテナはキー無しでレート制限に当たるため）。
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except Exception:
+    pass
+
+
+def _ncbi_env_args():
+    """docker コンテナへ渡す NCBI 資格情報の -e 引数。値は付けず環境から引き継ぐ形にして
+    キーが argv/ps に出ないようにする。設定済みの変数のみ渡す。"""
+    args = []
+    for var in ("NCBI_API_KEY", "NCBI_API_EMAIL"):
+        if os.environ.get(var):
+            args += ["-e", var]
+    return args
+
 
 def _requirement_map():
     """rule_id -> (requires_rdb, requires_network, requires_auth)。全ルール有効の Validator から構築。"""
@@ -275,7 +293,7 @@ def _build_bs_cmd(mode, fixture, out_dir, use_pip, docker_image, project_root, p
         rel_fx = fixture.relative_to(project_root)
         rel_out = out_dir.relative_to(project_root)
         return ["docker", "run", "--rm", "-u", f"{os.getuid()}:{os.getgid()}",
-                "-v", f"{project_root}:/work", docker_image,
+                "-v", f"{project_root}:/work", *_ncbi_env_args(), docker_image,
                 "biosample", modeflag, "-j", inflag, f"/work/{rel_fx}", "-o", f"/work/{rel_out}"]
     if use_pip:
         cli = project_root / ".venv" / "bin" / "ddbj-validator"
