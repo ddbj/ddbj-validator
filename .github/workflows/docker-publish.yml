@@ -1,0 +1,54 @@
+name: Publish Docker image to GHCR
+
+# 新しいタグ（v*）が push されたときにコンテナイメージをビルドし、
+# ghcr.io/ddbj/ddbj-validator へ「バージョンタグ」と「latest」の両方を push する。
+# 例: タグ v0.1.8-beta を push → 0.1.8-beta と latest の 2 タグを公開。
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # GITHUB_TOKEN に ghcr への push 権限を付与する
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract tags and labels
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/ddbj/ddbj-validator
+          # {{version}} は git タグから先頭の "v" を除いた形（v0.1.8-beta -> 0.1.8-beta）。
+          # 既存の公開イメージ（例 0.1.4-beta）の命名に合わせている。
+          # リテラルなタグ名（v0.1.8-beta）にしたい場合は次行を
+          #   type=ref,event=tag
+          # に置き換える。
+          # 全リリースが -beta（prerelease）なので、latest は明示的に付与する
+          # （metadata-action は既定では prerelease を latest 扱いしないため）。
+          tags: |
+            type=semver,pattern={{version}}
+            type=raw,value=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
