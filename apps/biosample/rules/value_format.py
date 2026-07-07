@@ -13,9 +13,9 @@ from apps.biosample.rules.base import BsRule
 from apps.biosample.rules._util import is_missing_value
 # collection_date の形式判定・autofix は ddbj と共通（共有属性は ddbj v に倣う）。
 # INSDC_DATE_PATTERN は ddbj definitions.json の format_pattern と同一の共有定数。
-from common.format import fix_insdc_date, fix_insdc_lat_lon, INSDC_DATE_PATTERN
+from common.format import fix_insdc_date, fix_insdc_lat_lon, INSDC_DATE_PATTERN, latlon_in_range
 
-# lat_lon: "d[d.ddd] N|S d[dd.ddd] W|E"
+# lat_lon: "d[d.ddd] N|S d[dd.ddd] W|E"（範囲外 90/180 超は latlon_in_range で別途弾く）
 _LATLON_RE = re.compile(r"^\d{1,3}(\.\d+)?\s+[NS]\s+\d{1,3}(\.\d+)?\s+[EW]$")
 
 _INTEGER_ATTRS = ("taxonomy_id", "host_spec_range", "host_taxid", "num_replicons")
@@ -156,10 +156,10 @@ class BS_R0009(BsRule):
             v = rec.attr("lat_lon")
             if not v or is_missing_value(v):
                 continue
-            if _LATLON_RE.match(v):
-                continue  # 既に正準
+            if latlon_in_range(v):
+                continue  # 既に正準かつ範囲内
             fixed = fix_insdc_lat_lon(v)
-            if fixed and _LATLON_RE.match(fixed):
+            if fixed and latlon_in_range(fixed):
                 out.append(self.autofix_result(
                     sample=rec.sample_id,
                     message=f"Invalid lat_lon format. (Found: '{v}', Suggested: '{fixed}')",
@@ -180,10 +180,11 @@ class BS_R0139(BsRule):
             v = rec.attr("lat_lon")
             if not v or is_missing_value(v):
                 continue
-            if _LATLON_RE.match(v):
-                continue
+            if latlon_in_range(v):
+                continue  # 正準かつ範囲内 → OK
             fixed = fix_insdc_lat_lon(v)
-            if not (fixed and _LATLON_RE.match(fixed)):
+            if not (fixed and latlon_in_range(fixed)):
+                # 形式不正、または範囲外（緯度>90/経度>180 の "200 N 400 E" 等）で補正不能 → error
                 out.append(self.result(sample=rec.sample_id,
                                        message=f"Invalid lat_lon. (Found: '{v}')"))
         return out

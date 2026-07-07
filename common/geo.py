@@ -19,6 +19,18 @@ DEGREES_TO_KM = 111.0
 # INSDC lat_lon 形式（例: "35.6 N 139.7 E"）
 _LATLON_RE = re.compile(r"^\d+(?:\.\d+)?\s+[NS]\s+\d+(?:\.\d+)?\s+[EW]$")
 
+# 頻出の非正規国名 → INSDC 正表記（大文字小文字無視）。ddbj/biosample 共通の単一定義。
+# geo ポリゴン/CV で使う正規名に寄せてから判定・autofix するために参照する
+# （例 "Vietnam" → "Viet Nam"。GeoChecker.check の国名正規化、biosample R0008/R0094/R0041 で共用）。
+COUNTRY_HARDCODE = {"vietnam": "Viet Nam"}
+
+
+def canonical_country(name):
+    """国名を INSDC 正表記へ寄せる（ハードコード対象のみ補正。対象外はそのまま返す）。"""
+    if not name:
+        return name
+    return COUNTRY_HARDCODE.get(name.strip().lower(), name)
+
 
 class GeoChecker:
     """遅延ロード式の geo チェッカー。ロード失敗時は常に None を返す。"""
@@ -95,7 +107,8 @@ class GeoChecker:
         """
         if not self._load():
             return None
-        country_lower = (country_name or "").strip().lower()
+        # 非正規国名（例 "Vietnam"）は正表記（"Viet Nam"）へ寄せてからポリゴン名と突合する。
+        country_lower = canonical_country(country_name or "").strip().lower()
         if country_lower not in self.valid_land_names:
             return None
         coords = self.parse_lat_lon(lat_lon_str)

@@ -137,18 +137,21 @@ class BS_R0012(BsRule):
     description = "Special character is included."
 
     def validate(self, submission, context):
-        # 属性値に特殊文字（℃/°C/μm/μ 等）が含まれる場合、推奨表記へ置換する autofix 提案。
+        # 属性値の特殊文字（℃/°C/μm/μ 等）を推奨表記へ置換する autofix。
+        # autocleanup（BS_R0013 の直後）として **in-place で置換** し、後続ルールは置換済みの値を読む。
+        # → ℃ 等は R0058(非ASCII) より先に ASCII 表記へ直るため R0058 の二重検知を避けられる（production 準拠）。
         special = context.special_chars or {}
         if not special:
             return []
         out = []
         for rec in submission.records:
             for name, vals in rec.attributes.items():
-                for v in vals:
+                for i, v in enumerate(vals):
                     if not v or is_missing_value(v):
                         continue
                     fixed = apply_special_chars(v, special)
                     if fixed != v:
+                        vals[i] = fixed  # in-place（後続ルールが置換済み値を読む）
                         out.append(self.autofix_result(
                             sample=rec.sample_id, target=name,
                             message=f"Special character is included. ({name}: '{v}', Suggested: '{fixed}')",

@@ -145,6 +145,14 @@ class PackageOrganismValidator(BsRule):
             info = context.tax_data.get(rec.organism)
             if not info or info.get("status") == "not_found":
                 continue  # taxonomy 未解決 → 判定不能
+            # taxonomy_id が明示され解決できる場合は **taxid 由来の情報のみ**で判定する（production 準拠）。
+            # organism 名由来の lineage/pl_code と混ぜない（誤情報の取り込み防止）。
+            # 例: organism=E.coli/taxid=9606(ヒト) や organism=Arabidopsis/taxid=9606 → taxid=ヒトで package 不適合。
+            tid = str(rec.taxonomy_id).strip() if rec.taxonomy_id else ""
+            tinfo = context.taxid_info.get(tid) if tid else None
+            if tinfo and tinfo.get("lineage"):
+                info = {"lineage": tinfo["lineage"], "pl_code": tinfo.get("pl_code", 0),
+                        "tax_id": tid, "scientific_name": tinfo.get("scientific_name") or ""}
             _rule_id, pred = found  # 判定は package 別述語、出力 rule_id は汎用 BS_R0048（現行 validator 準拠）
             if not pred(info, rec):
                 out.append({
