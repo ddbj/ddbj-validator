@@ -241,40 +241,58 @@ def _fetch_taxonomy(context, organisms, taxids=None):
 
 
 def _fetch_account(context, submission):
-    """account 所属アクセッション／BioProject メタを内部DBから取得（D 群 R0006/0129/0070/0095 用）。
+    """account 認証に必要な情報を内部DBから取得（D 群 R0006/0129/0070/0095 用）。
 
-    共通 DB fetch は common.db_meta（ddbj 実装の re-export）を単一入口として利用する。
+    最適化: アカウント保有の全アクセッションを取得せず、**submission が参照する
+    bioproject_id / derived_from(SAMD) のみ** を対象に所属判定する（大規模アカウントの固定コスト回避）。
+    参照が 1 つも無ければ認証系ルールは何も判定しないため、DB 問い合わせ自体を行わない。
     """
     try:
+        import re
         from common.db_manager import DatabaseManager
-        from common.db_meta import (
-            fetch_authorized_accessions,
-            fetch_bp_psubs,
-            fetch_prjdb_by_psub,
-        )
-        from apps.biosample.db_meta import fetch_authorized_bp_submissions
+        from common.db_meta import fetch_bp_psubs, fetch_prjdb_by_psub
+        from apps.biosample.db_meta import fetch_authorized_refs, fetch_authorized_bp_submissions
+
+        samd_re = re.compile(r"SAMD\d+", re.IGNORECASE)
+        # submission が参照する bioproject_id（PRJDB/PSUB）と derived_from(SAMD)
+        ref_bps = {r.attr("bioproject_id").strip().upper()
+                   for r in submission.records if r.attr("bioproject_id")}
+        ref_prjdb = {b for b in ref_bps if b.startswith("PRJDB")}
+        ref_psub = {b for b in ref_bps if b.startswith("PSUB")}
+        ref_samds = set()
+        for r in submission.records:
+            v = r.attr("derived_from")
+            if v:
+                ref_samds.update(m.upper() for m in samd_re.findall(v))
+
+        # 参照が無ければ R0006/R0129/R0095 は何も出さない → DB アクセス不要
+        if not ref_bps and not ref_samds:
+            return
+
         dm = DatabaseManager()
         bp_conn = dm.get_bp_conn()
         bs_conn = dm.get_bs_conn()
         dra_conn = dm.get_dra_conn()
-        # account 所属（BioProject/BioSample）
-        proj, samd, _dra = fetch_authorized_accessions(bp_conn, bs_conn, dra_conn, context.account)
-        context.authorized_projects = proj or set()
-        context.authorized_samds = samd or set()
-        # bioproject_id は PSUB（submission id）でも書かれ得るため、参照可 PSUB も許可集合に合流（R0006）
-        context.authorized_projects |= fetch_authorized_bp_submissions(bp_conn, dra_conn, context.account)
-        # 提出中の bioproject_id を収集し、PRJDB=メタ / PSUB=置換候補を解決
-        bps = {
-            r.attr("bioproject_id").strip()
-            for r in submission.records
-            if r.attr("bioproject_id")
-        }
-        prjdb = [b for b in bps if b.upper().startswith("PRJDB")]
-        psub = [b for b in bps if b.upper().startswith("PSUB")]
-        if prjdb:
-            context.bp_meta = fetch_bp_psubs(bp_conn, prjdb) or {}
-        if psub:
-            context.psub_to_prjd = fetch_prjdb_by_psub(bp_conn, psub) or {}
+
+        # PSUB -> PRJDB 置換候補（R0095）。解決される PRJDB も所属判定対象に含める。
+        if ref_psub:
+            context.psub_to_prjd = fetch_prjdb_by_psub(bp_conn, sorted(ref_psub)) or {}
+            ref_prjdb |= {info["accession"].upper() for info in context.psub_to_prjd.values()
+                          if info.get("accession")}
+
+        # 直接参照された PRJDB の BioProject メタ（R0070 umbrella 判定）
+        direct_prjdb = sorted(b for b in ref_bps if b.startswith("PRJDB"))
+        if direct_prjdb:
+            context.bp_meta = fetch_bp_psubs(bp_conn, direct_prjdb) or {}
+
+        # 参照分のみの所属判定（アカウント保有数に非依存）
+        proj, samd = fetch_authorized_refs(bp_conn, bs_conn, dra_conn, context.account,
+                                           ref_prjdb, ref_samds)
+        context.authorized_projects = proj
+        context.authorized_samds = samd
+        # bioproject_id は PSUB でも書かれ得るため、参照 PSUB の所属も合流（R0006）
+        context.authorized_projects |= fetch_authorized_bp_submissions(
+            bp_conn, dra_conn, context.account, referenced=ref_psub)
     except Exception as e:
         print(f"[WARN] account/bioproject fetch failed: {e}", file=sys.stderr)
 

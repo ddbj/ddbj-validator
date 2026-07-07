@@ -262,12 +262,12 @@ class AXS6810(BaseRule):
     rule_id = "AXS6810"
     alternate_id = "SVP0510, AXS0002"
     target = "CDS, intron"
-    description = "Non-canonical splice sites: GT-AG rule violation."
+    description = "Non-canonical splice sites: GT-AG/GC-AG rule violation."
     requires_rdb = False
 
     def validate(self, record, context):
         results = []
-        
+
         for feature in self.get_features(record, "intron"):
             if not feature.location:
                 continue
@@ -275,7 +275,8 @@ class AXS6810(BaseRule):
             seq = feature.location.extract(record.seq).upper()
             seq_str = str(seq)
             if len(seq_str) >= 4:
-                if not (seq_str.startswith("GT") and seq_str.endswith("AG")):
+                # canonical は GT-AG に加え、2 番目に多い GC-AG も許容（warning 多発防止）
+                if not (seq_str.startswith(("GT", "GC")) and seq_str.endswith("AG")):
                     loc_str = getattr(feature, 'original_location', str(feature.location))
                     msg = f"{self.description} (Found: {seq_str[:2]}-{seq_str[-2:]} at {loc_str})"
                     results.append(self.feature_result(record, feature, msg, level="warning"))
@@ -294,7 +295,8 @@ class AXS6810(BaseRule):
                 
                 intron_str = str(intron_seq).upper()
                 if len(intron_str) >= 4:
-                    if not (intron_str.startswith("GT") and intron_str.endswith("AG")):
+                    # canonical は GT-AG に加え GC-AG も許容（warning 多発防止）
+                    if not (intron_str.startswith(("GT", "GC")) and intron_str.endswith("AG")):
                         msg = f"{self.description} (Found: {intron_str[:2]}-{intron_str[-2:]} in CDS at {loc_str})"
                         results.append(self.feature_result(record, feature, msg, level="warning"))
                         
