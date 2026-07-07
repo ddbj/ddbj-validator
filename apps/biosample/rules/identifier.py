@@ -17,7 +17,8 @@ def _skip_ltp(v):
     return is_empty(v) or is_missing_value(v)
 
 # BioProject: PRJDB12345 / PRJNA123 / PRJEB456（PRJ＋2文字アーカイブコード＋数字）または PSUB＋数字
-_BP_RE = re.compile(r"^(PRJ[A-Z]{2}\d+|PSUB\d+)$")
+# BioProject accession 形式: PRJ[DEN][A-Z]+数字（桁数は縛らない）／ PSUB＋6-7桁。
+_BP_RE = re.compile(r"^(PRJ[A-Z]{2}\d{1,}|PSUB\d{6,7})$")
 _PREFIX_RE = re.compile(r"^[A-Za-z][A-Za-z0-9]{2,11}$")
 _GISAID_RE = re.compile(r"^EPI_ISL_\d+$", re.IGNORECASE)
 
