@@ -120,3 +120,20 @@ def fix_insdc_lat_lon(val):
         insdc_latlon = f"{d['lat_dec']}{lat_point} {d['lat_dec_hemi']} {d['lng_dec']}{lng_point} {d['lng_dec_hemi']}"
 
     return insdc_latlon
+
+
+# INSDC 正準 lat_lon（"d[d.ddd] N|S d[dd.ddd] W|E"）かつ緯度<=90/経度<=180 か判定する共有ヘルパ。
+# 正規表現だけでは "200 N 400 E" のような範囲外を弾けないため、値域も検証する
+# （biosample R0139=範囲外 error / R0009=autofix / R0041=矛盾チェックのスキップ判定で共用）。
+_LATLON_CANON_RE = re.compile(r"^(\d{1,3}(?:\.\d+)?)\s+([NS])\s+(\d{1,3}(?:\.\d+)?)\s+([EW])$")
+
+
+def latlon_in_range(val):
+    """lat_lon が INSDC 正準形式 かつ 緯度<=90・経度<=180 なら True。"""
+    m = _LATLON_CANON_RE.match((val or "").strip())
+    if not m:
+        return False
+    try:
+        return float(m.group(1)) <= 90.0 and float(m.group(3)) <= 180.0
+    except ValueError:
+        return False

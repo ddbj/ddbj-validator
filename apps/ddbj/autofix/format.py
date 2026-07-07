@@ -8,6 +8,8 @@ from common.format import (
     fix_insdc_date,
     fix_insdc_lat_lon
 )
+# 非正規国名→正表記のハードコード（ddbj/biosample 共通の単一定義）。geo_loc_name の国名 autofix に使う。
+from common.geo import COUNTRY_HARDCODE
 
 # --- 定数と正規表現 ---
 _VALID_METHOD_PATTERN = re.compile(r"^.+?\s+v\.\s+\S.*$", re.IGNORECASE)
@@ -75,6 +77,8 @@ def _propose_mapping_fixes(records, ann_path, target_qualifier, allowed_map, exi
 
 def propose_geo_loc_name_fixes(records, ann_path, allowed_values, allowed_missing_reporting_terms=None, existing_proposals=None):
     allowed_map = {v.lower(): v for v in allowed_values}
+    # 非正規国名（例 "Vietnam"）→正表記（"Viet Nam"）も autofix 対象に加える（common 定数を参照）。
+    allowed_map.update(COUNTRY_HARDCODE)
     missing_terms_map = {m.lower().replace(" ", ""): m.lower() for m in (allowed_missing_reporting_terms or [])}
     return _propose_mapping_fixes(records, ann_path, "geo_loc_name", allowed_map, existing_proposals, match_prefix=True, missing_terms_map=missing_terms_map, rule_id="ANN1250")
 

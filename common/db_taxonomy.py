@@ -324,7 +324,7 @@ def fetch_taxid_info(db_conn, taxid_list):
     if not ids:
         return out
     query = """
-        SELECT nd.ut_id, trim(nd.ut_rank), trim(sci.ut_name)
+        SELECT nd.ut_id, trim(nd.ut_rank), trim(sci.ut_name), trim(nd.lineage1), nd.plastid_gen_code_id
         FROM public.utax_nodes nd
         LEFT JOIN public.utax_names sci ON nd.ut_id = sci.ut_id AND trim(sci.ut_type) = 'scientific name'
         WHERE nd.ut_id IN ({placeholders})
@@ -334,8 +334,12 @@ def fetch_taxid_info(db_conn, taxid_list):
         for row in execute_in_query(db_conn, query, ids):
             tid = str(row[0])
             rank = (row[1] or "").lower()
+            # lineage / pl_code は BS_R0048 が taxonomy_id 起点で package 適合を判定するために保持する
+            # （taxid のみで判定し organism 由来情報と混ぜないため、plastid も taxid 側の値を使う）
             out[tid] = {"scientific_name": row[2], "rank": rank,
-                        "is_species_or_below": rank in ALLOWED_RANKS}
+                        "is_species_or_below": rank in ALLOWED_RANKS,
+                        "lineage": row[3] or "",
+                        "pl_code": row[4] if row[4] is not None else 0}
             if rank not in ALLOWED_RANKS and rank not in DEFINITELY_NOT_SPECIES_RANKS:
                 pending.append(int(row[0]))
         # no rank 等は species 以下の子孫かを親再帰で判定（fetch_taxonomy_data と同一方針）

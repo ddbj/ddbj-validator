@@ -33,36 +33,6 @@ def _resolved(info):
     return _found(info) and bool(info.get("scientific_name"))
 
 
-class BS_R0142(BsRule):
-    rule_id = "BS_R0142"
-    level = "error"
-    target = "organism"
-    description = "Invalid organism. Organism must not be numbers."
-
-    def validate(self, submission, context):
-        # organism が数字のみ＝taxid 記載とみなす（production 準拠）。taxid→学名が引ければ
-        # organism を学名へ、その数値を taxonomy_id へ移す autofix（warning）。引けなければ error。
-        out = []
-        for rec in submission.records:
-            org = rec.organism
-            if is_empty(org) or not org.strip().isdigit():
-                continue
-            taxid = org.strip()
-            info = context.taxid_info.get(taxid)
-            sci = info.get("scientific_name") if info else None
-            if sci:
-                out.append(self.autofix_result(
-                    sample=rec.sample_id, level="warning", kind="organism",
-                    message=("Organism is a taxonomy id; it will be moved to taxonomy_id and organism "
-                             f"corrected to the scientific name. (organism: '{org}', Suggested: '{sci}', taxonomy_id: '{taxid}')"),
-                    old_value=org, new_value=sci, new_taxid=taxid))
-            else:
-                out.append(self.result(
-                    sample=rec.sample_id,
-                    message=f"Invalid organism. Organism must not be numbers. (Found: '{org}')"))
-        return out
-
-
 class BS_R0004(BsRule):
     rule_id = "BS_R0004"
     level = "error"
@@ -236,10 +206,25 @@ class BS_R0045(BsRule):
         #   新規なら警告を無視して submit → キュレータが NCBI Taxonomy へ新規名を申請する運用。
         out = []
         for rec in submission.records:
-            if is_empty(rec.organism):
+            if is_empty(rec.organism) or is_missing_value(rec.organism):
                 continue
-            # 数値のみの organism は BS_R0142(error)、missing 系は対象外
-            if rec.organism.strip().isdigit() or is_missing_value(rec.organism):
+            # 数値のみの organism＝taxid 記載とみなす（旧 BS_R0142 を内包。production は R0045 に含める）。
+            # taxid→学名が引ければ organism を学名へ、その数値を taxonomy_id へ移す autofix。引けなければ warning。
+            if rec.organism.strip().isdigit():
+                taxid = rec.organism.strip()
+                sci = (context.taxid_info.get(taxid) or {}).get("scientific_name")
+                if sci:
+                    out.append(self.autofix_result(
+                        sample=rec.sample_id, kind="organism",
+                        message=("Taxonomy error warning. Organism is a taxonomy id; the taxonomy id will be "
+                                 "automatically filled and the organism corrected to the scientific name. "
+                                 f"(organism: '{rec.organism}', Suggested: '{sci}', taxonomy_id: '{taxid}')"),
+                        old_value=rec.organism, new_value=sci, new_taxid=taxid))
+                else:
+                    out.append(self.result(
+                        sample=rec.sample_id,
+                        message=("Taxonomy error warning. Organism is not found in the Taxonomy database. "
+                                 f"(organism: '{rec.organism}')")))
                 continue
             info = context.tax_data.get(rec.organism)
             if not _resolved(info):

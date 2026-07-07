@@ -11,7 +11,7 @@ from apps.biosample.rules.consistency import BS_R0024, BS_R0036, BS_R0062, BS_R0
 from apps.biosample.rules.value_ascii import BS_R0058, BS_R0100, BS_R0012, BS_R0013
 from apps.biosample.rules.identifier import BS_R0005, BS_R0069, BS_R0099, BS_R0102, BS_R0122, BS_R0109, BS_R0091
 from apps.biosample.rules.geo import BS_R0008, BS_R0041, BS_R0094
-from apps.biosample.rules.taxonomy import BS_R0004, BS_R0096, BS_R0059, BS_R0115, BS_R0106, BS_R0141, BS_R0045, BS_R0105, BS_R0134, BS_R0140, BS_R0104, BS_R0015, BS_R0142
+from apps.biosample.rules.taxonomy import BS_R0004, BS_R0096, BS_R0059, BS_R0115, BS_R0106, BS_R0141, BS_R0045, BS_R0105, BS_R0134, BS_R0140, BS_R0104, BS_R0015
 from apps.biosample.rules.package_organism import PackageOrganismValidator
 from apps.biosample.rules.voucher import CultureCollectionValidator, SpecimenVoucherValidator, BioMaterialValidator
 from apps.biosample.rules.account import BS_R0006, BS_R0129, BS_R0070, BS_R0095, BS_R0128
@@ -47,8 +47,7 @@ class Validator:
             BS_R0135(),  # 不正 strain 値
             BS_R0132(),  # genome/clinical で種以下識別子が null（error）
             BS_R0133(),  # Microbe で strain/isolate が null（warning）
-            BS_R0058(),  # 非 ASCII 値
-            BS_R0012(),  # 特殊文字（℃/μm 等）→推奨表記（autofix）
+            BS_R0058(),  # 非 ASCII 値（BS_R0012 の autocleanup 後に評価するため ℃ 等は既に置換済み）
             BS_R0100(),  # 任意属性の missing 値
             BS_R0005(),  # BioProject 形式
             BS_R0099(),  # locus_tag_prefix 形式
@@ -64,7 +63,6 @@ class Validator:
             BS_R0069(),  # BioProject 連番
             BS_R0062(),  # voucher 同一機関重複
             # --- フェーズ B: taxonomy（DB/NCBI 依存。local ではスキップ）---
-            BS_R0142(),  # organism が数字のみ（taxid 誤記）→ error
             BS_R0004(),  # organism ↔ taxonomy_id 不一致
             BS_R0045(),  # organism→学名＋taxonomy_id 補完（autofix）
             BS_R0105(),  # component_organism→学名（autofix）
@@ -95,9 +93,11 @@ class Validator:
             # 以降 D 残(R0028/0103/0108/0109) / G(JSON 入力) / autofix 適用層
         ]
 
-        # BS_R0013 は autocleanup（前処理）として最初に実行し、全属性値を正規化（in-place）する。
-        # cleanup 済みの値で後続ルールを評価するため、通常のルール列には含めない。
+        # BS_R0013(空白正規化) と BS_R0012(特殊文字→推奨表記) は autocleanup（前処理）として
+        # 最初に in-place 実行し、以降のルールは置換済みの値を評価する（通常のルール列には含めない）。
+        # 順序: R0013(空白) → R0012(特殊文字)。これにより ℃ 等は R0058 より先に ASCII 化される。
         self.cleanup_rule = BS_R0013()
+        self.special_char_rule = BS_R0012()
 
         self.active_rules = []
         for rule in available_rules:
@@ -113,8 +113,10 @@ class Validator:
         """submission を全 active_rules で検証し、結果 dict のリストを返す。
         各結果に internal_ignore（=external）を rule_id 単位で付与する（docs rules.txt 準拠）。"""
         results = []
-        # autocleanup（BS_R0013）: 全属性値を正規化し in-place 置換 → 後続ルールは cleaned 値を読む。
+        # autocleanup: BS_R0013(空白正規化) → BS_R0012(特殊文字) の順に in-place 置換。
+        # 後続ルールは cleaned 値を読む（℃ 等は R0058 より先に ASCII 化される）。
         results.extend(self.cleanup_rule.validate(submission, self.context))
+        results.extend(self.special_char_rule.validate(submission, self.context))
         for rule in self.active_rules:
             results.extend(rule.validate(submission, self.context))
         for r in results:

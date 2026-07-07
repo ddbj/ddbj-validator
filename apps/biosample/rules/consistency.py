@@ -98,7 +98,7 @@ class BS_R0135(BsRule):
 
 class BS_R0024(BsRule):
     rule_id = "BS_R0024"
-    level = "error"
+    level = "warning"  # 本番準拠（区別情報なしは warning。error ではない）
     target = "#attributes"
     description = "Each BioSample must have differentiating information (excluding sample name, title, bioproject accession and description)."
 

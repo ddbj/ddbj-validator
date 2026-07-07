@@ -7,11 +7,11 @@
 """
 from apps.biosample.rules.base import BsRule
 from apps.biosample.rules._util import is_missing_value, is_empty
-from common.geo import GeoChecker
+from common.geo import GeoChecker, COUNTRY_HARDCODE, canonical_country
+from common.format import latlon_in_range
 
-# 頻出の非正規国名 → INSDC 正表記のハードコード補正（大文字小文字無視）。
-# "Vietnam" は多いため特例で "Viet Nam" へ autofix する。
-_COUNTRY_HARDCODE = {"vietnam": "Viet Nam"}
+# 非正規国名→正表記のハードコードは common/geo に集約（ddbj/biosample 共通の単一定義）。
+_COUNTRY_HARDCODE = COUNTRY_HARDCODE
 
 
 class BS_R0008(BsRule):
@@ -46,9 +46,10 @@ class BS_R0094(BsRule):
     description = "Format of geo_loc_name is invalid."
 
     def validate(self, submission, context):
-        # 国名部分の大文字小文字補正 ＋ ハードコード補正（Vietnam→Viet Nam）。
-        # INSDC 正仕様は "Country:Region"（コロンの後に空白を入れない）。地域名の中身・区切りは変更しない。
-        # 例 "japan:Tokyo" → "Japan:Tokyo"、"Vietnam:Hanoi" → "Viet Nam:Hanoi"（CV 外は R0008=error が担当）。
+        # 国名部分の大文字小文字補正 ＋ ハードコード補正（Vietnam→Viet Nam）＋ コロン後の空白除去。
+        # INSDC 正仕様は "Country:Region"（コロンの後に空白を入れない）。
+        # 例 "japan:Tokyo"→"Japan:Tokyo"、"Vietnam:Hanoi"→"Viet Nam:Hanoi"、"Japan: Kyoto"→"Japan:Kyoto"。
+        # （CV 外は R0008=error が担当）。地域名内部（"Kanagawa, Hakone" 等）の区切りは変更しない。
         countries = context.country_terms()
         if not countries:
             return []
@@ -65,8 +66,12 @@ class BS_R0094(BsRule):
             if not new_country:
                 continue  # CV 外かつハードコード対象外は R0008
 
-            # コロンの後に空白は入れない。区切り以降（parts[1]）はそのまま保持する。
-            new_val = new_country if len(parts) == 1 else f"{new_country}:{parts[1]}"
+            if len(parts) == 1:
+                new_val = new_country
+            else:
+                # コロン直後の空白は除去する（"Country: Region" → "Country:Region"）。
+                # 地域名内部の空白・区切りは保持したいので先頭空白のみ lstrip。
+                new_val = f"{new_country}:{parts[1].lstrip()}"
             if new_val != v:
                 out.append(self.autofix_result(
                     sample=rec.sample_id,
@@ -92,7 +97,11 @@ class BS_R0041(BsRule):
             geo = rec.attr("geo_loc_name")
             if is_empty(lat_lon) or is_empty(geo) or is_missing_value(geo):
                 continue
-            country = geo.split(":", 1)[0].strip()
+            # lat_lon が正準かつ範囲内でなければ矛盾判定しない（R0009/R0139 の領分。範囲外座標での誤検知を防ぐ）。
+            if not latlon_in_range(lat_lon):
+                continue
+            # 非正規国名（Vietnam 等）は正表記へ寄せてからポリゴン判定（GeoChecker 内でも正規化するが明示）。
+            country = canonical_country(geo.split(":", 1)[0].strip())
             verdict = _GEO.check(lat_lon, country)
             if verdict is None:
                 continue  # 判定不能（geo 未導入 / 形式不正 / 未知国名）→ スキップ
