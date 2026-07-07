@@ -28,7 +28,7 @@ DDBJ の既存チェックツールである [jParser](https://www.ddbj.nig.ac.j
 以下のコマンドで最新のイメージを取得します。
 
 ```bash
-docker pull ghcr.io/ddbj/ddbj-validator:0.1.4-beta
+docker pull ghcr.io/ddbj/ddbj-validator:latest
 
 ```
 
@@ -64,10 +64,10 @@ ddbj-validator-seq.bat [オプション] [検証対象ディレクトリ]
 
 ```bash
 # macOS/Linux
-docker run -it --rm -v $(pwd):/data -w /data ghcr.io/ddbj/ddbj-validator:0.1.4-beta [オプション] target_directory
+docker run -it --rm -v $(pwd):/data -w /data ghcr.io/ddbj/ddbj-validator:latest [オプション] target_directory
 
 # Windows (PowerShell)
-docker run -it --rm -v "${PWD}:/data" -w /data ghcr.io/ddbj/ddbj-validator:0.1.4-beta [オプション] target_directory
+docker run -it --rm -v "${PWD}:/data" -w /data ghcr.io/ddbj/ddbj-validator:latest [オプション] target_directory
 
 ```
 
@@ -256,7 +256,7 @@ Docker must be installed to run this tool.
 Download the latest image using the following command:
 
 ```bash
-docker pull ghcr.io/ddbj/ddbj-validator:0.1.4-beta
+docker pull ghcr.io/ddbj/ddbj-validator:latest
 
 ```
 
@@ -292,10 +292,10 @@ The basic structure for executing the tool directly via `docker run` is as follo
 
 ```bash
 # macOS/Linux
-docker run -it --rm -v $(pwd):/data -w /data ghcr.io/ddbj/ddbj-validator:0.1.4-beta [Options] target_directory
+docker run -it --rm -v $(pwd):/data -w /data ghcr.io/ddbj/ddbj-validator:latest [Options] target_directory
 
 # Windows (PowerShell)
-docker run -it --rm -v "${PWD}:/data" -w /data ghcr.io/ddbj/ddbj-validator:0.1.4-beta [Options] target_directory
+docker run -it --rm -v "${PWD}:/data" -w /data ghcr.io/ddbj/ddbj-validator:latest [Options] target_directory
 
 ```
 
