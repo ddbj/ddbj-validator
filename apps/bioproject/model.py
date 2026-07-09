@@ -30,7 +30,13 @@ class BioProjectRecord:
     material: Optional[str] = None           # Target@material
     capture: Optional[str] = None            # Target@capture
     method_type: Optional[str] = None        # Method@method_type
+    method_text: Optional[str] = None        # Method 本文（method_type=eOther のとき説明を入れる）
     data_types: list = field(default_factory=list)     # Objectives/Data@data_type ＋ ProjectDataTypeSet/DataType
+    data_entries: list = field(default_factory=list)   # [{"type":..., "text":...}]（Data 要素ごと。eOther 説明判定用）
+    target_description: Optional[str] = None # Target/Description（sample_scope/material/capture=eOther 時の説明）
+    subtype_other_descr: Optional[str] = None  # ProjectTypeTopAdmin/DescriptionSubtypeOther（subtype=eOther 時の説明）
+    relevance_present: bool = False          # Relevance 要素の有無
+    relevance_other: Optional[str] = None    # Relevance/Other の text（None=要素なし or 空）
     organism_name: Optional[str] = None      # Organism/OrganismName
     tax_id: Optional[str] = None             # Organism@taxID
     locus_tags: list = field(default_factory=list)     # [{"prefix":..., "biosample_id":...}]

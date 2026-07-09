@@ -30,11 +30,18 @@ def _build_record(proj):
                 id=(pub.get("id") or "").strip() or None,
                 db_type=_text(pub.find("./DbType")),
                 reference=_text(pub.find("./Reference"))))
+    # Relevance（ProjectDescr 配下）: Other 要素の有無・text
+    rel = descr.find("./Relevance") if descr is not None else None
+    if rel is not None:
+        rec.relevance_present = True
+        rec.relevance_other = _text(rel.find("./Other"))
     ptype = proj.find("./ProjectType")
     if ptype is not None:
-        if ptype.find("./ProjectTypeTopAdmin") is not None:
+        admin = ptype.find("./ProjectTypeTopAdmin")
+        if admin is not None:
             rec.project_kind = "umbrella"
-            rec.top_admin_subtype = ptype.find("./ProjectTypeTopAdmin").get("subtype")
+            rec.top_admin_subtype = admin.get("subtype")
+            rec.subtype_other_descr = _text(admin.find("./DescriptionSubtypeOther"))
         elif ptype.find("./ProjectTypeSubmission") is not None:
             rec.project_kind = "submission"
             tgt = ptype.find(".//Target")
@@ -42,10 +49,13 @@ def _build_record(proj):
                 rec.sample_scope = tgt.get("sample_scope")
                 rec.material = tgt.get("material")
                 rec.capture = tgt.get("capture")
+                rec.target_description = _text(tgt.find("./Description"))
             m = ptype.find(".//Method")
             if m is not None:
                 rec.method_type = m.get("method_type")
+                rec.method_text = _text(m)          # Method 本文（eOther 説明）
             for d in ptype.findall(".//Objectives/Data"):
+                rec.data_entries.append({"type": d.get("data_type"), "text": _text(d)})
                 if d.get("data_type"):
                     rec.data_types.append(d.get("data_type"))
             for dt in ptype.findall(".//ProjectDataTypeSet/DataType"):
