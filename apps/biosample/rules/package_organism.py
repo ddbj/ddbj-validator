@@ -127,6 +127,26 @@ def _find_rule(package):
 _TAXID_FIXED = {"BS_R0080", "BS_R0120", "BS_R0121"}
 
 
+def resolve_effective_taxinfo(rec, context):
+    """package/lineage 判定に使う **実効 taxonomy info** を返す（organism＋taxonomy_id の一元解決）。
+
+    - organism を tax_data で解決。taxonomy_id が明示され taxid_info で lineage が引ければ、
+      **taxid 由来（lineage/pl_code/tax_id/scientific_name）を正**とし organism 由来と混ぜない
+      （誤情報取り込み防止。R0048 の pl_code 取りこぼしバグの再発防止）。
+    - organism が Taxonomy 未解決なら None（呼び出し側で扱う）。
+    注: R0004/R0096/R0045 は「記載 taxid の学名／is_species_or_below／数値 organism」を個別に使うため本ヘルパの対象外。
+    """
+    info = context.tax_data.get(rec.organism)
+    if not info or info.get("status") == "not_found":
+        return None
+    tid = str(rec.taxonomy_id).strip() if getattr(rec, "taxonomy_id", None) else ""
+    tinfo = context.taxid_info.get(tid) if tid else None
+    if tinfo and tinfo.get("lineage"):
+        return {"lineage": tinfo["lineage"], "pl_code": tinfo.get("pl_code", 0),
+                "tax_id": tid, "scientific_name": tinfo.get("scientific_name") or ""}
+    return info
+
+
 class PackageOrganismValidator(BsRule):
     """パッケージと organism(taxonomy) の適合を検証する単一のデータ駆動ルール。
 
@@ -148,30 +168,16 @@ class PackageOrganismValidator(BsRule):
             if not found:
                 continue  # package_vs_organism 対象外パッケージ
             _rule_id, pred = found  # 判定は package 別述語、出力 rule_id は汎用 BS_R0048（現行 validator 準拠）
-            info = context.tax_data.get(rec.organism)
-            resolved = bool(info) and info.get("status") != "not_found"
-            tid = str(rec.taxonomy_id).strip() if rec.taxonomy_id else ""
-            tinfo = context.taxid_info.get(tid) if tid else None
-            if resolved:
-                # taxonomy_id が明示され解決できる場合は **taxid 由来の情報のみ**で判定する（production 準拠）。
-                # organism 名由来の lineage/pl_code と混ぜない（誤情報の取り込み防止）。
-                # 例: organism=E.coli/taxid=9606 や organism=Arabidopsis/taxid=9606 → taxid=ヒトで package 不適合。
-                if tinfo and tinfo.get("lineage"):
-                    info = {"lineage": tinfo["lineage"], "pl_code": tinfo.get("pl_code", 0),
-                            "tax_id": tid, "scientific_name": tinfo.get("scientific_name") or ""}
-            elif _rule_id in _TAXID_FIXED:
-                # organism 未解決でも taxid 固定 package は taxid だけで判定できる。
-                # 実効 taxid = 記載 taxonomy_id、無ければ数値 organism（taxid 記載）。要求 taxid と不一致なら不適合。
+            info = resolve_effective_taxinfo(rec, context)  # organism＋taxid の一元解決（taxid 優先）
+            if info is None:
+                # organism 未解決。taxid 固定 package は taxid だけで判定できる（要求 taxid と不一致なら不適合）。
+                if _rule_id not in _TAXID_FIXED:
+                    continue  # lineage 判定が要る package → 判定不能
+                tid = str(rec.taxonomy_id).strip() if rec.taxonomy_id else ""
                 eff = tid or (rec.organism.strip() if rec.organism.strip().isdigit() else "")
-                info = {"tax_id": eff, "lineage": (tinfo or {}).get("lineage", ""),
-                        "pl_code": (tinfo or {}).get("pl_code", 0),
-                        "scientific_name": (tinfo or {}).get("scientific_name") or ""}
-            else:
-                continue  # lineage 判定が要る package で organism 未解決 → 判定不能
+                info = {"tax_id": eff, "lineage": "", "pl_code": 0, "scientific_name": ""}
             if not pred(info, rec):
-                out.append({
-                    "rule_id": self.rule_id, "level": "error", "target": self.target,
-                    "sample": rec.sample_id,
-                    "message": f"Organism is inappropriate for package '{rec.package}'. (organism: '{rec.organism}')",
-                })
+                out.append(self.result(
+                    sample=rec.sample_id,
+                    message=f"Organism is inappropriate for package '{rec.package}'. (organism: '{rec.organism}')"))
         return out
