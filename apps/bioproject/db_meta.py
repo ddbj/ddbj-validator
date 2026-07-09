@@ -66,15 +66,16 @@ def fetch_biosample_locus_prefix(bs_conn, samds):
 
 
 def fetch_account_project_names(bp_conn, submitter_id):
-    """account の登録済み（accession 付き）BioProject の [(title, description), ...] を返す（BP_R0004）。
+    """account の登録済み（accession 付き）BioProject の [(title, description, accession, submission_id), ...] を返す（BP_R0004）。
 
     submission 毎の最新版 XML を取得し、project_id_counter not null（＝登録済み）に絞り、
-    XML から Title / Description を抽出する。登録途中（accession 無し）は含めない。
+    XML から Title / Description / ArchiveID@accession を抽出する。登録途中（accession 無し）は含めない。
+    accession / submission_id は R0004 の自己除外（検証対象自身との一致を重複としない）に使う。
     """
     out = []
     if not bp_conn or not submitter_id:
         return out
-    q = ("SELECT x.content FROM mass.xml x "
+    q = ("SELECT x.submission_id, x.content FROM mass.xml x "
          "JOIN mass.submission s USING(submission_id) "
          "JOIN mass.project p USING(submission_id) "
          "WHERE s.submitter_id = %s AND p.project_id_counter IS NOT NULL "
@@ -84,7 +85,7 @@ def fetch_account_project_names(bp_conn, submitter_id):
     with bp_conn.cursor() as cur:
         cur.execute(q, (submitter_id,))
         rows = cur.fetchall()
-    for (content,) in rows:
+    for sub_id, content in rows:
         if not content:
             continue
         text = content if isinstance(content, str) else content.decode("latin-1", "replace")
@@ -99,5 +100,7 @@ def fetch_account_project_names(bp_conn, submitter_id):
                 continue
             t = (descr.findtext("./Title") or "").strip()
             d = (descr.findtext("./Description") or "").strip()
-            out.append((t, d))
+            arch = proj.find("./ProjectID/ArchiveID")
+            acc = (arch.get("accession") if arch is not None else "") or ""
+            out.append((t, d, acc.strip(), (str(sub_id).strip() if sub_id else "")))
     return out

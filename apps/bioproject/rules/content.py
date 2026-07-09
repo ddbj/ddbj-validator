@@ -46,11 +46,23 @@ class BP_R0004(BpRule):
         names = getattr(context, "project_names", None)
         if not names:
             return out
-        existing = {((t or "").strip(), (d or "").strip()) for (t, d) in names}
+        self_sid = (getattr(context, "self_submission_id", None) or "")
         for rec in submission.records:
-            key = ((rec.title or "").strip(), (rec.description or "").strip())
-            if key[0] and key[1] and key in existing:
+            title = (rec.title or "").strip()
+            desc = (rec.description or "").strip()
+            if not title or not desc:
+                continue
+            self_acc = (rec.accession or "").strip()
+            for (t, d, acc, sid) in names:
+                if (t or "").strip() != title or (d or "").strip() != desc:
+                    continue
+                # 自己除外: 検証対象自身の accession / PSUB と一致する既存 project は重複としない
+                if self_acc and acc and acc == self_acc:
+                    continue
+                if self_sid and sid and sid == self_sid:
+                    continue
                 out.append(self.result(sample=rec.label, message=self.description))
+                break
         return out
 
 

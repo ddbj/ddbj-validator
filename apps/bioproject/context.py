@@ -18,4 +18,5 @@ class ValidationContext:
     # --- DB 依存ルール用（None=未取得＝スキップ。default/-l モードでは None のまま）---
     umbrella_ok: Any = None       # BP_R0016: 妥当な umbrella accession の集合
     bs_locus_prefix: Any = None   # BP_R0021: SAMD -> {locus_tag_prefix,...}
-    project_names: Any = None     # BP_R0004: account 登録済み project の [(title, description), ...]
+    project_names: Any = None     # BP_R0004: account 登録済み project の [(title, description, accession, submission_id), ...]
+    self_submission_id: Any = None  # BP_R0004: 検証対象自身の PSUB（重複比較から自己除外。CLI では None）

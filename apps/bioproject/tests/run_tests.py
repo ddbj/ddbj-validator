@@ -41,9 +41,10 @@ MOCK_TAXID = {
 # DB 依存ルール（BP_R0016/0021/0004）用の決定的 mock。
 MOCK_UMBRELLA_OK = {"PRJDB9490"}                          # 妥当な umbrella accession（PSUB012111 相当）
 MOCK_BS_LOCUS = {"SAMD01930202": {"OTMK33"}}              # SAMD -> 登録済み locus_tag_prefix
-MOCK_PROJECT_NAMES = [                                    # account 登録済み project（title, description）
+MOCK_PROJECT_NAMES = [                                    # account 登録済み project（title, description, accession, submission_id）
     ("Duplicated project title for the regression test",
-     "Duplicated project description that is intentionally over twenty characters long for the test."),
+     "Duplicated project description that is intentionally over twenty characters long for the test.",
+     "PRJDB0001", "PSUB000001"),
 ]
 
 
