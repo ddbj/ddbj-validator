@@ -52,3 +52,21 @@ class BS_R0003(BsRule):
                 out.append(self.result(sample=rec.sample_id,
                                        message=f"Sample title is duplicated in the submission. (title: '{rec.title}')"))
         return out
+
+
+class BS_R0143(BsRule):
+    rule_id = "BS_R0143"
+    level = "error"
+    target = "sample_name"
+    description = "Sample name is duplicated in the submission."
+
+    def validate(self, submission, context):
+        # DDBJ は submission 単位で sample_name 一意（INSDC 合意）。将来の XML API submission に備えて実装。
+        names = [r.sample_name for r in submission.records if r.sample_name]
+        dup = {n for n, c in Counter(names).items() if c > 1}
+        out = []
+        for rec in submission.records:
+            if rec.sample_name in dup:
+                out.append(self.result(sample=rec.sample_id,
+                                       message=f"Sample name is duplicated in the submission. (sample_name: '{rec.sample_name}')"))
+        return out
