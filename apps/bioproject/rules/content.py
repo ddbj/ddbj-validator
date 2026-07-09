@@ -1,7 +1,8 @@
-"""BioProject 内容ルール（Step3。DB 非依存）。
+"""BioProject 内容ルール（Step3）。
 
-- BP_R0005: title と description が同一 → error。
-- BP_R0006: description が 100 文字未満 → error（present のときのみ）。
+- BP_R0004: 提出済み project と title＋description が両方重複 → warning（要 DB/account）。
+- BP_R0006: description が 20-4000 文字（inclusive）でない → error（INSDC min spec）。
+- BP_R0070: title が 20-250 文字（inclusive）でない → error（INSDC min spec）。
 - BP_R0007: Relevance の 'Other' に説明が無い → error。
 - BP_R0008: ProjectTypeTopAdmin subtype=eOther で DescriptionSubtypeOther が無い → error。
 - BP_R0009/0010/0011: Target の sample_scope/material/capture=eOther で Target/Description が無い → error。
@@ -22,16 +23,33 @@ def _empty(v):
     return v is None or not str(v).strip()
 
 
-class BP_R0005(BpRule):
-    rule_id = "BP_R0005"
-    level = "error"
+# INSDC min spec の title/description 文字数（inclusive, 空白含む）
+_DESC_MIN, _DESC_MAX = 20, 4000
+_TITLE_MIN, _TITLE_MAX = 20, 250
+
+
+class BP_R0004(BpRule):
+    """提出済み project と title＋description が両方一致 → warning。
+
+    account の登録済み（accession 付き）project 一覧を context.project_names（DB 取得）から得て、
+    title と description の両方が一致するものがあれば重複とみなす。登録途中（accession 無し）は対象外。
+    """
+    rule_id = "BP_R0004"
+    level = "warning"
+    requires_rdb = True
+    requires_auth = True
     target = "Title, Description"
-    description = "Project title and description are identical. Please provide more detailed description."
+    description = "Both project title and description are duplicated with the submitted projects. Duplicated project should not be submitted."
 
     def validate(self, submission, context):
         out = []
+        names = getattr(context, "project_names", None)
+        if not names:
+            return out
+        existing = {((t or "").strip(), (d or "").strip()) for (t, d) in names}
         for rec in submission.records:
-            if rec.title and rec.description and rec.title.strip() == rec.description.strip():
+            key = ((rec.title or "").strip(), (rec.description or "").strip())
+            if key[0] and key[1] and key in existing:
                 out.append(self.result(sample=rec.label, message=self.description))
         return out
 
@@ -40,13 +58,33 @@ class BP_R0006(BpRule):
     rule_id = "BP_R0006"
     level = "error"
     target = "Description"
-    description = "Project description is too short. Description text must be more than 100 characters."
+    description = ("Project description must be between 20 and 4000 characters in length, "
+                   "inclusive (including spaces).")
 
     def validate(self, submission, context):
         out = []
         for rec in submission.records:
-            if rec.description is not None and len(rec.description.strip()) < 100:
-                out.append(self.result(sample=rec.label, message=self.description))
+            n = len((rec.description or "").strip())
+            if not (_DESC_MIN <= n <= _DESC_MAX):
+                out.append(self.result(sample=rec.label,
+                                       message=f"{self.description} (Found: {n})"))
+        return out
+
+
+class BP_R0070(BpRule):
+    rule_id = "BP_R0070"
+    level = "error"
+    target = "Title"
+    description = ("Project title must be between 20 and 250 characters in length, "
+                   "inclusive (including spaces).")
+
+    def validate(self, submission, context):
+        out = []
+        for rec in submission.records:
+            n = len((rec.title or "").strip())
+            if not (_TITLE_MIN <= n <= _TITLE_MAX):
+                out.append(self.result(sample=rec.label,
+                                       message=f"{self.description} (Found: {n})"))
         return out
 
 

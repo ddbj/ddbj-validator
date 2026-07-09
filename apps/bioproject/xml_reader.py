@@ -70,7 +70,8 @@ def _build_record(proj):
     if org is not None:
         rec.tax_id = org.get("taxID")
         rec.organism_name = _text(org.find("./OrganismName"))
-    for ltp in proj.findall("./LocusTagPrefix"):
+    # LocusTagPrefix は ProjectDescr 配下にあることが多いため下位も探索する
+    for ltp in proj.findall(".//LocusTagPrefix"):
         rec.locus_tags.append({"prefix": _text(ltp), "biosample_id": ltp.get("biosample_id")})
     return rec
 
@@ -85,9 +86,18 @@ def parse_xml(xml_path, account=None):
     projects = root.findall("./Package/Project/Project")
     if not projects:  # 構造が想定外（Project 無し）
         projects = root.findall(".//Project/Project")
+    # umbrella 参照（Package 直下の ProjectLinks/Link/Hierarchical[@type='TopAdmin']/MemberID@accession）
+    umbrella_members = []
+    for mid in root.findall(".//ProjectLinks/Link/Hierarchical[@type='TopAdmin']/MemberID"):
+        acc = (mid.get("accession") or "").strip()
+        if acc:
+            umbrella_members.append(acc)
     pre_errors = []
     if len(projects) > 1:
         pre_errors.append({"rule_id": "BP_R0037", "level": "error", "target": "#file_format",
                            "sample": None, "message": "Only one project is allowed in BioProject XML."})
-    sub = BioProjectSubmission(records=[_build_record(p) for p in projects], account=account)
+    records = [_build_record(p) for p in projects]
+    for rec in records:  # 通常 1 project。umbrella 参照は project に紐づける
+        rec.umbrella_member_ids = list(umbrella_members)
+    sub = BioProjectSubmission(records=records, account=account)
     return sub, pre_errors

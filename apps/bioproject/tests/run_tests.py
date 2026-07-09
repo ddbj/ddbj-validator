@@ -38,11 +38,21 @@ MOCK_TAXID = {
     "562": {"scientific_name": "Escherichia coli", "rank": "species", "is_species_or_below": True,
             "lineage": "Bacteria; Proteobacteria", "pl_code": 0},
 }
+# DB 依存ルール（BP_R0016/0021/0004）用の決定的 mock。
+MOCK_UMBRELLA_OK = {"PRJDB9490"}                          # 妥当な umbrella accession（PSUB012111 相当）
+MOCK_BS_LOCUS = {"SAMD01930202": {"OTMK33"}}              # SAMD -> 登録済み locus_tag_prefix
+MOCK_PROJECT_NAMES = [                                    # account 登録済み project（title, description）
+    ("Duplicated project title for the regression test",
+     "Duplicated project description that is intentionally over twenty characters long for the test."),
+]
 
 
 def _fired(fixture):
     ctx = ValidationContext(skip_db=False, skip_ncbi=False, skip_auth=False,
-                            tax_data=dict(MOCK_TAX), taxid_info=dict(MOCK_TAXID))
+                            tax_data=dict(MOCK_TAX), taxid_info=dict(MOCK_TAXID),
+                            umbrella_ok=set(MOCK_UMBRELLA_OK),
+                            bs_locus_prefix={k: set(v) for k, v in MOCK_BS_LOCUS.items()},
+                            project_names=list(MOCK_PROJECT_NAMES))
     sub, pre = xml_reader.parse_xml(str(fixture))
     results = list(pre)
     if sub is not None:

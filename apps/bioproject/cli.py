@@ -76,6 +76,25 @@ def _fetch_taxonomy(context, organisms, taxids):
         context.tax_data = {}
 
 
+def _fetch_db_meta(context, submission, account):
+    """内部 DB 依存ルール用メタを context へ（BP_R0016 umbrella / R0021 prefix↔SAMD / R0004 重複）。"""
+    try:
+        from common.db_manager import DatabaseManager
+        from apps.bioproject import db_meta
+        dm = DatabaseManager()
+        umbrella_refs = {a for r in submission.records for a in r.umbrella_member_ids if a}
+        samds = {(lt.get("biosample_id") or "").strip()
+                 for r in submission.records for lt in r.locus_tags if lt.get("biosample_id")}
+        context.umbrella_ok = (db_meta.fetch_umbrella_accessions(dm.get_bp_conn(), umbrella_refs)
+                               if umbrella_refs else set())
+        context.bs_locus_prefix = (db_meta.fetch_biosample_locus_prefix(dm.get_bs_conn(), samds)
+                                   if samds else {})
+        if account:
+            context.project_names = db_meta.fetch_account_project_names(dm.get_bp_conn(), account)
+    except Exception as e:
+        print(f"[WARN] bioproject DB meta fetch failed: {e}", file=sys.stderr)
+
+
 def run(args):
     started = datetime.datetime.now(_JST)
     in_path = Path(args.xml)
@@ -97,6 +116,8 @@ def run(args):
                       if r.tax_id and str(r.tax_id).strip().isdigit()}
             if organisms:
                 _fetch_taxonomy(context, organisms, taxids)
+        if not context.skip_db:   # 内部 DB モードのみ: umbrella/locus_tag/重複 用メタ
+            _fetch_db_meta(context, submission, args.account)
         results = pre_errors + Validator(context).run(submission)
 
     n_proj = len(submission.records) if submission else 0

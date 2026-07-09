@@ -40,6 +40,7 @@ class BioProjectRecord:
     organism_name: Optional[str] = None      # Organism/OrganismName
     tax_id: Optional[str] = None             # Organism@taxID
     locus_tags: list = field(default_factory=list)     # [{"prefix":..., "biosample_id":...}]
+    umbrella_member_ids: list = field(default_factory=list)  # ProjectLinks/Link/Hierarchical[@type='TopAdmin']/MemberID@accession（BP_R0016）
     raw: Any = None                          # 元 XML 要素（必要時参照）
 
     @property

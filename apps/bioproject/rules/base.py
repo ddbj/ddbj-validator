@@ -2,7 +2,7 @@
 
 # internal_ignore（外部由来で無視可）の rule_id 集合。rule_config_bioproject.json の internal_ignore に準拠。
 INTERNAL_IGNORE_RULE_IDS = frozenset({
-    "BP_R0005", "BP_R0018", "BP_R0020",
+    "BP_R0018", "BP_R0020",
 })
 
 

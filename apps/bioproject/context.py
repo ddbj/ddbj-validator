@@ -15,3 +15,7 @@ class ValidationContext:
     taxid_info: dict = field(default_factory=dict)
     # BioProject メタ {PRJDBxxxx: {project_type, status_id}}（BP_R0016 umbrella 判定・要 DB）
     bp_meta: dict = field(default_factory=dict)
+    # --- DB 依存ルール用（None=未取得＝スキップ。default/-l モードでは None のまま）---
+    umbrella_ok: Any = None       # BP_R0016: 妥当な umbrella accession の集合
+    bs_locus_prefix: Any = None   # BP_R0021: SAMD -> {locus_tag_prefix,...}
+    project_names: Any = None     # BP_R0004: account 登録済み project の [(title, description), ...]
