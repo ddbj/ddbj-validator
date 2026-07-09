@@ -15,6 +15,7 @@
 """
 import re
 from apps.bioproject.rules.base import BpRule
+from apps.bioproject.defs import formats, compiled
 
 _EMPTY = (None, "")
 
@@ -23,9 +24,11 @@ def _empty(v):
     return v is None or not str(v).strip()
 
 
-# INSDC min spec の title/description 文字数（inclusive, 空白含む）
-_DESC_MIN, _DESC_MAX = 20, 4000
-_TITLE_MIN, _TITLE_MAX = 20, 250
+def _len_range(context, key, default_min, default_max):
+    """definitions.formats から (min, max) を取得（無ければ default）。"""
+    f = ((context.definitions or {}).get("formats", {}) if context else {}) or formats()
+    spec = f.get(key) or {}
+    return spec.get("min", default_min), spec.get("max", default_max)
 
 
 class BP_R0004(BpRule):
@@ -75,9 +78,10 @@ class BP_R0006(BpRule):
 
     def validate(self, submission, context):
         out = []
+        lo, hi = _len_range(context, "description_length", 20, 4000)
         for rec in submission.records:
             n = len((rec.description or "").strip())
-            if not (_DESC_MIN <= n <= _DESC_MAX):
+            if not (lo <= n <= hi):
                 out.append(self.result(sample=rec.label,
                                        message=f"{self.description} (Found: {n})"))
         return out
@@ -92,9 +96,10 @@ class BP_R0070(BpRule):
 
     def validate(self, submission, context):
         out = []
+        lo, hi = _len_range(context, "title_length", 20, 250)
         for rec in submission.records:
             n = len((rec.title or "").strip())
-            if not (_TITLE_MIN <= n <= _TITLE_MAX):
+            if not (lo <= n <= hi):
                 out.append(self.result(sample=rec.label,
                                        message=f"{self.description} (Found: {n})"))
         return out
@@ -201,10 +206,6 @@ class BP_R0019(BpRule):
         return out
 
 
-# publication id: PubMed(数字) / PMC(PMC 数字) / DOI(10.xxxx/...) / URL
-_PUB_RE = re.compile(r"^(\d+|PMC\d+|10\.\d+/\S+|https?://\S+)$", re.IGNORECASE)
-
-
 class BP_R0014(BpRule):
     rule_id = "BP_R0014"
     level = "warning"
@@ -213,9 +214,12 @@ class BP_R0014(BpRule):
 
     def validate(self, submission, context):
         out = []
+        # publication id: PubMed(数字) / PMC(PMC 数字) / DOI(10.xxxx/...) / URL
+        f = (context.definitions or {}).get("formats", {}) if context else formats()
+        pub_re = compiled(f.get("publication_id", r"^(\d+|PMC\d+|10\.\d+/\S+|https?://\S+)$"), re.IGNORECASE)
         for rec in submission.records:
             for pub in rec.publications:
-                if pub.id and not _PUB_RE.match(pub.id.strip()):
+                if pub.id and not pub_re.match(pub.id.strip()):
                     out.append(self.result(sample=rec.label,
                                            message=f"Invalid publication identifier. (Found: '{pub.id}')"))
         return out

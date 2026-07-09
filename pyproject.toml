@@ -39,6 +39,7 @@ include = ["common*", "apps*"]
 [tool.setuptools.package-data]
 "apps.ddbj.resources" = ["*.json"]
 "apps.biosample.resources" = ["*.json", "xsd/*.xsd"]
+"apps.bioproject.resources" = ["*.json"]
 "common.resources" = ["*.txt", "*.json"]
 "common.resources.geo" = ["*.parquet", "*.json"]
 
