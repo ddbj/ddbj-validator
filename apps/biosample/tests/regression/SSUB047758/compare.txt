@@ -1,0 +1,41 @@
+biosample_accession	*sample_name	*sample_title	description	*organism	taxonomy_id	bioproject_id	host	isolation_source	*collection_date	*geo_loc_name	*lat_lon	ref_biomaterial	rel_to_oxygen	samp_collect_device	samp_mat_process	samp_size	source_material_id
+SAMD01937956	1	metagenome test 01		soil metagenome	410658			soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E						src-01
+SAMD01937957	2	metagenome test 02		soil metagenome	410658			soil	2020/13/45	Japan:Tokyo	35.6895 N 139.6917 E						src-02
+SAMD01937958	3	metagenome test 03		soil metagenome	410658			soil	2020/01/02	Japan:Tokyo	35.6895 N 139.6917 E						src-03
+SAMD01937959	4	metagenome test 04		soil metagenome	410658			soil	2099-12-31	Japan:Tokyo	35.6895 N 139.6917 E						src-04
+SAMD01937960	5	metagenome test 05		soil metagenome	410658			soil	missing	Japan:Tokyo	35.6895 N 139.6917 E						src-05
+SAMD01937961	6	metagenome test 06		soil metagenome	410658			soil	2020-01-01	Japan:Tokyo	35.6895,139.6917						src-06
+SAMD01937962	7	metagenome test 07		soil metagenome	410658			soil	2020-01-01	Japan:Tokyo	200.0 N 400.0 E						src-07
+SAMD01937963	8	metagenome test 08		soil metagenome	410658			soil	2020-01-01	Japan:Tokyo	40.71 N 74.00 W						src-08
+SAMD01937964	9	metagenome test 09		soil metagenome	410658			soil	2020-01-01	Atlantis:City	35.6895 N 139.6917 E						src-09
+SAMD01937965	10	metagenome test 10		soil metagenome	410658			soil	2020-01-01	japan:Osaka	35.6895 N 139.6917 E						src-10
+SAMD01937966	11	metagenome test 11		soil metagenome	410658			soil	2020-01-01	Vietnam:Hanoi	35.6895 N 139.6917 E						src-11
+SAMD01937967	12	metagenome test 12		soil metagenome	410658			soil	2020-01-01	Japan: Kyoto	35.6895 N 139.6917 E						src-12
+SAMD01937968	13	metagenome test 13		soil metagenome	9606			soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E						src-13
+SAMD01937969	14	metagenome test 14		1423				soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E						src-14
+SAMD01937970	15	metagenome test 15		Notarealus fakeus				soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E						src-15
+SAMD01937971	16	metagenome test 16		soil metagenome	410658			Amazôn sample	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E						src-16
+SAMD01937972	17	metagenome test 17		soil metagenome	410658			soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E						src-17
+SAMD01937973	18	metagenome test 18		soil metagenome	410658			soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E					5 µL	src-18
+SAMD01937974	19	metagenome test 19		soil metagenome	410658			soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E						src-19
+SAMD01937975	20	metagenome test 20		soil metagenome	410658			soil	N/A	Japan:Tokyo	35.6895 N 139.6917 E						src-20
+SAMD01937976	21	metagenome test 21		soil metagenome	410658			soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E						src-21
+SAMD01937977	22	metagenome test 22		soil metagenome	410658	PRJDB		soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E						src-22
+SAMD01937978	23	metagenome test 23		soil metagenome	410658			soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E						src-23
+SAMD01937979	24	metagenome test 24		soil metagenome	410658			soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E						src-24
+SAMD01937980	25	metagenome test 25		soil metagenome	410658			soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E						src-25
+SAMD01937981	26	metagenome test 26		soil metagenome	410658			soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E						src-26
+SAMD01937982	27	DUP TITLE		soil metagenome	410658			soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E						src-27
+SAMD01937983	28	DUP TITLE		soil metagenome	410658			soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E						src-28
+SAMD01937984	29	metagenome test 29						soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E						src-29
+SAMD01937985	30	metagenome test 30		Escherichia coli	562			soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E						src-30
+SAMD01937986	31	metagenome test 31		soil metagenome	410658				2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E						src-31
+SAMD01937987	32	metagenome test 32		soil metagenome	410658			soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E		Aerobe				src-32
+SAMD01937988	33	metagenome test 33		soil metagenome	410658			soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E		loves air				src-33
+SAMD01937989	34	metagenome test 34		soil metagenome	410658			soil	2020-01-01		35.6895 N 139.6917 E						src-34
+SAMD01937990	35	metagenome test 35		soil metagenome	410658			soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E						src-35
+SAMD01937991	36	metagenome test 36		soil metagenome	410658			soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E						src-36
+SAMD01937992	37	metagenome test 37		soil metagenome	410658			soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E						src-37
+SAMD01937993	38	metagenome test 38		soil metagenome	410658			soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E						src-38
+SAMD01937994	39	metagenome test 39		soil metagenome	410658			soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E						src-39
+SAMD01937995	40	metagenome test 40		soil metagenome	410658			soil	2020-01-01	Japan:Tokyo	35.6895 N 139.6917 E						src-40

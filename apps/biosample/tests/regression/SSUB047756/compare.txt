@@ -1,0 +1,41 @@
+biosample_accession	*sample_name	*sample_title	description	*organism	taxonomy_id	bioproject_id	locus_tag_prefix	host	lab_host	*collection_date	*geo_loc_name	*isolate	*isolation_source	strain	altitude	biomaterial_provider	collected_by	culture_collection	depth	disease	env_broad_scale	genotype	host_tissue_sampled	identified_by	lat_lon	passage_history	samp_size	serotype	specimen_voucher	temp
+SAMD01937916	1	virus test 01		Dengue virus	12637	PRJDB5168	LT0001	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937917	2	virus test 02		Dengue virus	12637	PRJDB5168	LT0002	Homo sapiens		2020/13/45	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937918	3	virus test 03		Dengue virus	12637	PRJDB5168	LT0003	Homo sapiens		2020/01/02	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937919	4	virus test 04		Dengue virus	12637	PRJDB5168	LT0004	Homo sapiens		2099-12-31	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937920	5	virus test 05		Dengue virus	12637	PRJDB5168	LT0005	Homo sapiens		missing	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937921	6	virus test 06		Dengue virus	12637	PRJDB5168	LT0006	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												35.6895,139.6917					
+SAMD01937922	7	virus test 07		Dengue virus	12637	PRJDB5168	LT0007	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												200.0 N 400.0 E					
+SAMD01937923	8	virus test 08		Dengue virus	12637	PRJDB5168	LT0008	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												40.71 N 74.00 W					
+SAMD01937924	9	virus test 09		Dengue virus	12637	PRJDB5168	LT0009	Homo sapiens		2020-01-01	Atlantis:City	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937925	10	virus test 10		Dengue virus	12637	PRJDB5168	LT0010	Homo sapiens		2020-01-01	japan:Osaka	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937926	11	virus test 11		Dengue virus	12637	PRJDB5168	LT0011	Homo sapiens		2020-01-01	Vietnam:Hanoi	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937927	12	virus test 12		Dengue virus	12637	PRJDB5168	LT0012	Homo sapiens		2020-01-01	Japan: Kyoto	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937928	13	virus test 13		Dengue virus	9606	PRJDB5168	LT0013	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937929	14	virus test 14		1423		PRJDB5168	LT0014	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937930	15	virus test 15		Notarealus fakeus		PRJDB5168	LT0015	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937931	16	virus test 16		Dengue virus	12637	PRJDB5168	LT0016	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	Amazôn sample												35.6895 N 139.6917 E					
+SAMD01937932	17	virus test 17		Dengue virus	12637	PRJDB5168	LT0017	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					25 ℃
+SAMD01937933	18	virus test 18		Dengue virus	12637	PRJDB5168	LT0018	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E		5 µL			
+SAMD01937934	19	virus test 19		Dengue virus	12637	PRJDB5168	LT0019	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum		missing										35.6895 N 139.6917 E					
+SAMD01937935	20	virus test 20		Dengue virus	12637	PRJDB5168	LT0020	Homo sapiens		N/A	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937936	21	virus test 21		Dengue virus	12637	PRJDB5168	LT0021	Homo sapiens		2020-01-01	Japan:Tokyo	  iso  1 	serum												35.6895 N 139.6917 E					
+SAMD01937937	22	virus test 22		Dengue virus	12637	PRJDB	LT0022	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937938	23	virus test 23		Dengue virus	12637		ABCLOCUS	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937939	24	virus test 24		Dengue virus	12637	PRJDB5168	1AB	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937940	25	virus test 25		Dengue virus	12637	PRJDB5168	DUPPFX	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937941	26	virus test 26		Dengue virus	12637	PRJDB5168	DUPPFX	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937942	27	DUP TITLE		Dengue virus	12637	PRJDB5168	LT0027	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937943	28	DUP TITLE		Dengue virus	12637	PRJDB5168	LT0028	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937944	29	virus test 29				PRJDB5168	LT0029	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937945	30	virus test 30		Escherichia coli	562	PRJDB5168	LT0030	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937946	31	virus test 31		Dengue virus	12637	PRJDB5168	LT0031			2020-01-01	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937947	32	virus test 32		Dengue virus	12637	PRJDB5168	LT0032	Homo sapiens		2020-01-01	Japan:Tokyo		serum												35.6895 N 139.6917 E					
+SAMD01937948	33	virus test 33		Dengue virus	12637	PRJDB5168	LT0033	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01													35.6895 N 139.6917 E					
+SAMD01937949	34	virus test 34		Dengue virus	12637	PRJDB5168	LT0034	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937950	35	virus test 35		Dengue virus	12637	PRJDB5168	LT0035	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937951	36	virus test 36		Dengue virus	12637	PRJDB5168	LT0036	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937952	37	virus test 37		Dengue virus	12637	PRJDB5168	LT0037	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937953	38	virus test 38		Dengue virus	12637	PRJDB5168	LT0038	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937954	39	virus test 39		Dengue virus	12637	PRJDB5168	LT0039	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					
+SAMD01937955	40	virus test 40		Dengue virus	12637	PRJDB5168	LT0040	Homo sapiens		2020-01-01	Japan:Tokyo	isolate-01	serum												35.6895 N 139.6917 E					

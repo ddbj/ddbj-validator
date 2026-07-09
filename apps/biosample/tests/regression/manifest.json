@@ -1,0 +1,65 @@
+[
+  {
+    "ssub": "SSUB047747",
+    "package": "MIGS.ba.air",
+    "account": "dradev",
+    "tsv": "SSUB047747/compare.txt",
+    "prod_json": "SSUB047747/prod.json"
+  },
+  {
+    "ssub": "SSUB047751",
+    "package": "MIMAG.food-human_foods",
+    "account": "dradev",
+    "tsv": "SSUB047751/compare.txt",
+    "prod_json": "SSUB047751/prod.json"
+  },
+  {
+    "ssub": "SSUB047754",
+    "package": "Microbe",
+    "account": "dradev",
+    "tsv": "SSUB047754/compare.txt",
+    "prod_json": "SSUB047754/prod.json"
+  },
+  {
+    "ssub": "SSUB047755",
+    "package": "MIGS.eu.sediment",
+    "account": "dradev",
+    "tsv": "SSUB047755/compare.txt",
+    "prod_json": "SSUB047755/prod.json"
+  },
+  {
+    "ssub": "SSUB047756",
+    "package": "Virus",
+    "account": "dradev",
+    "tsv": "SSUB047756/compare.txt",
+    "prod_json": "SSUB047756/prod.json"
+  },
+  {
+    "ssub": "SSUB047757",
+    "package": "Plant",
+    "account": "dradev",
+    "tsv": "SSUB047757/compare.txt",
+    "prod_json": "SSUB047757/prod.json"
+  },
+  {
+    "ssub": "SSUB047758",
+    "package": "Metagenome.environmental",
+    "account": "dradev",
+    "tsv": "SSUB047758/compare.txt",
+    "prod_json": "SSUB047758/prod.json"
+  },
+  {
+    "ssub": "SSUB047765",
+    "package": "SARS-CoV-2.cl",
+    "account": "dradev",
+    "tsv": "SSUB047765/compare.txt",
+    "prod_json": "SSUB047765/prod.json"
+  },
+  {
+    "ssub": "SSUB047766",
+    "package": "MIUVIG.symbiont-associated",
+    "account": "dradev",
+    "tsv": "SSUB047766/compare.txt",
+    "prod_json": "SSUB047766/prod.json"
+  }
+]

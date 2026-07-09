@@ -1,0 +1,46 @@
+biosample_accession	*sample_name	*sample_title	description	*organism	taxonomy_id	bioproject_id	locus_tag_prefix	strain	isolate	host	isolation_source	*collection_date	*geo_loc_name	*sample_type	altitude	biomaterial_provider	collected_by	culture_collection	depth	env_broad_scale	genotype	host_tissue_sampled	identified_by	lab_host	lat_lon	mating_type	passage_history	samp_size	serotype	serovar	specimen_voucher	temp
+SAMD01937807	1	microbe test 01		Escherichia coli	562	PRJDB5168	LT0001	K-12			soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937808	2	microbe test 02		Escherichia coli	562	PRJDB5168	LT0002	K-12			soil	2020/13/45	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937809	3	microbe test 03		Escherichia coli	562	PRJDB5168	LT0003	K-12			soil	2020/01/02	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937810	4	microbe test 04		Escherichia coli	562	PRJDB5168	LT0004	K-12			soil	2099-12-31	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937811	5	microbe test 05		Escherichia coli	562	PRJDB5168	LT0005	K-12			soil	210424	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937812	6	microbe test 06		Escherichia coli	562	PRJDB5168	LT0006	K-12			soil	missing	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937813	7	microbe test 07		Escherichia coli	562	PRJDB5168	LT0007	K-12			soil	2020-01-01	Japan:Tokyo	cell culture											35.6895,139.6917							
+SAMD01937814	8	microbe test 08		Escherichia coli	562	PRJDB5168	LT0008	K-12			soil	2020-01-01	Japan:Tokyo	cell culture											200.0 N 400.0 E							
+SAMD01937815	9	microbe test 09		Escherichia coli	562	PRJDB5168	LT0009	K-12			soil	2020-01-01	Japan:Tokyo	cell culture											40.71 N 74.00 W							
+SAMD01937816	10	microbe test 10		Escherichia coli	562	PRJDB5168	LT0010	K-12			soil	2020-01-01	Atlantis:City	cell culture											35.6895 N 139.6917 E							
+SAMD01937817	11	microbe test 11		Escherichia coli	562	PRJDB5168	LT0011	K-12			soil	2020-01-01	japan:Osaka	cell culture											35.6895 N 139.6917 E							
+SAMD01937818	12	microbe test 12		Escherichia coli	562	PRJDB5168	LT0012	K-12			soil	2020-01-01	Vietnam:Hanoi	cell culture											35.6895 N 139.6917 E							
+SAMD01937819	13	microbe test 13		Escherichia coli	562	PRJDB5168	LT0013	K-12			soil	2020-01-01	Japan: Kyoto	cell culture											35.6895 N 139.6917 E							
+SAMD01937820	14	microbe test 14		Escherichia coli	9606	PRJDB5168	LT0014	K-12			soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937821	15	microbe test 15		1423		PRJDB5168	LT0015	K-12			soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937822	16	microbe test 16		Enterobacter aerogenes		PRJDB5168	LT0016	K-12			soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937823	17	microbe test 17		Escherichia	561	PRJDB5168	LT0017	K-12			soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937824	18	microbe test 18		Notarealus fakeus		PRJDB5168	LT0018	K-12			soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937825	19	microbe test 19		Escherichia coli	562	PRJDB5168	LT0019	K-12			Amazôn soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937826	20	microbe test 20		Escherichia coli	562	PRJDB5168	LT0020	K-12			soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							25 ℃
+SAMD01937827	21	microbe test 21		Escherichia coli	562	PRJDB5168	LT0021	K-12			soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E			5 µL				
+SAMD01937828	22	microbe test 22		Escherichia coli	562	PRJDB5168	LT0022	K-12			soil	2020-01-01	Japan:Tokyo	cell culture	missing										35.6895 N 139.6917 E							
+SAMD01937829	23	microbe test 23		Escherichia coli	562	PRJDB5168	LT0023	K-12			soil	2020-01-01	Japan:Tokyo	N/A											35.6895 N 139.6917 E							
+SAMD01937830	24	microbe test 24		Escherichia coli	562	PRJDB5168	LT0024	K-12			soil	2020-01-01	Japan:Tokyo	cell culture					unknown						35.6895 N 139.6917 E							
+SAMD01937831	25	microbe test 25		Escherichia coli	562	PRJDB5168	LT0025	  K-12  test 			soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937832	26	microbe test 26		Escherichia coli	562	PRJDB	LT0026	K-12			soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937833	27	microbe test 27		Escherichia coli	562		ABCLOCUS	K-12			soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937834	28	microbe test 28		Escherichia coli	562	PRJDB5168	1AB	K-12			soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937835	29	microbe test 29		Escherichia coli	562	PRJDB5168	DUPPFX	K-12			soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937836	30	microbe test 30		Escherichia coli	562	PRJDB5168	DUPPFX	K-12			soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937837	31	microbe test 31		Escherichia coli	562	PRJDB5168	LT0031					2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937838	32	microbe test 32		Escherichia coli	562	PRJDB5168	LT0032				soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937839	33	microbe test 33		Escherichia coli	562	PRJDB5168	LT0033	Escherichia coli			soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937840	34	microbe test 34		Escherichia sp.		PRJDB5168	LT0034	K-12			soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937841	35	microbe test 35		Escherichia coli	562	PRJDB5168	LT0035	K-12			soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E						ABRC 12345	
+SAMD01937842	36	microbe test 36		Escherichia coli	562	PRJDB5168	LT0036	K-12			soil	2020-01-01	Japan:Tokyo	cell culture				ATCC12345							35.6895 N 139.6917 E							
+SAMD01937843	37	microbe test 37		Escherichia coli	562	PRJDB5168	LT0037	K-12			soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E						badformat	
+SAMD01937844	38	microbe test 38		Escherichia coli	562	PRJDB5168	LT0038	K-12			soil	2020-01-01	Japan:Tokyo	cell culture				ATCC:111							35.6895 N 139.6917 E						ATCC:222	
+SAMD01937845	39	DUP TITLE		Escherichia coli	562	PRJDB5168	LT0039	K-12			soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937846	40	DUP TITLE		Escherichia coli	562	PRJDB5168	LT0040	K-12			soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937847	41	microbe test 41				PRJDB5168	LT0041	K-12			soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937848	42	microbe test 42		Escherichia coli	562	PRJDB5168	LT0042	K-12			soil	2020-01-01	Japan:Tokyo												35.6895 N 139.6917 E							
+SAMD01937849	43	microbe test 43		Escherichia coli	562	PRJDB5168	LT0043	K-12			soil	2020-01-01		cell culture											35.6895 N 139.6917 E							
+SAMD01937850	44	microbe test 44		Escherichia coli	562	PRJDB5168	LT0044	K-12			soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							
+SAMD01937851	45	microbe test 45		Escherichia coli	562	PRJDB5168	LT0045	K-12			soil	2020-01-01	Japan:Tokyo	cell culture											35.6895 N 139.6917 E							

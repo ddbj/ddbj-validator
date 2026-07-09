@@ -1,0 +1,103 @@
+"""BioProject XML のパース。
+
+- BP_R0001: XML well-formed（パース失敗で検出）。
+- BP_R0002: XSD スキーマ検証（XSD が bundle され lxml があるときのみ。無ければスキップ）。
+- BP_R0037: 1 XML に複数 project → error。
+戻り値: (BioProjectSubmission | None, pre_errors[])。パース不可なら submission=None。
+"""
+import defusedxml.ElementTree as ET
+from apps.bioproject.model import BioProjectRecord, BioProjectSubmission, Publication
+
+
+def _text(el):
+    return el.text.strip() if el is not None and el.text else None
+
+
+def _build_record(proj):
+    """内側 Project 要素から BioProjectRecord を組む。"""
+    rec = BioProjectRecord(raw=proj)
+    arch = proj.find("./ProjectID/ArchiveID")
+    if arch is not None:
+        rec.accession = arch.get("accession")
+        rec.archive = arch.get("archive")
+    descr = proj.find("./ProjectDescr")
+    if descr is not None:
+        rec.title = _text(descr.find("./Title"))
+        rec.description = _text(descr.find("./Description"))
+        rec.release_date = _text(descr.find("./ProjectReleaseDate"))
+        for pub in descr.findall("./Publication"):
+            rec.publications.append(Publication(
+                id=(pub.get("id") or "").strip() or None,
+                db_type=_text(pub.find("./DbType")),
+                reference=_text(pub.find("./Reference"))))
+    # Relevance（ProjectDescr 配下）: Other 要素の有無・text
+    rel = descr.find("./Relevance") if descr is not None else None
+    if rel is not None:
+        rec.relevance_present = True
+        rec.relevance_other = _text(rel.find("./Other"))
+    ptype = proj.find("./ProjectType")
+    if ptype is not None:
+        admin = ptype.find("./ProjectTypeTopAdmin")
+        if admin is not None:
+            rec.project_kind = "umbrella"
+            rec.top_admin_subtype = admin.get("subtype")
+            rec.subtype_other_descr = _text(admin.find("./DescriptionSubtypeOther"))
+        elif ptype.find("./ProjectTypeSubmission") is not None:
+            rec.project_kind = "submission"
+            tgt = ptype.find(".//Target")
+            if tgt is not None:
+                rec.sample_scope = tgt.get("sample_scope")
+                rec.material = tgt.get("material")
+                rec.capture = tgt.get("capture")
+                rec.target_description = _text(tgt.find("./Description"))
+            m = ptype.find(".//Method")
+            if m is not None:
+                rec.method_type = m.get("method_type")
+                rec.method_text = _text(m)          # Method 本文（eOther 説明）
+            for d in ptype.findall(".//Objectives/Data"):
+                rec.data_entries.append({"type": d.get("data_type"), "text": _text(d)})
+                if d.get("data_type"):
+                    rec.data_types.append(d.get("data_type"))
+            for dt in ptype.findall(".//ProjectDataTypeSet/DataType"):
+                if _text(dt):
+                    rec.data_types.append(_text(dt))
+        elif ptype.find("./ProjectTypeTopSingleOrganism") is not None:
+            rec.project_kind = "single_organism"
+        else:
+            rec.project_kind = "other"
+    # Organism は project_kind に依らず ProjectType 配下のどこかにある
+    org = proj.find(".//Organism")
+    if org is not None:
+        rec.tax_id = org.get("taxID")
+        rec.organism_name = _text(org.find("./OrganismName"))
+    # LocusTagPrefix は ProjectDescr 配下にあることが多いため下位も探索する
+    for ltp in proj.findall(".//LocusTagPrefix"):
+        rec.locus_tags.append({"prefix": _text(ltp), "biosample_id": ltp.get("biosample_id")})
+    return rec
+
+
+def parse_xml(xml_path, account=None):
+    try:
+        tree = ET.parse(xml_path)
+    except Exception as e:
+        return None, [{"rule_id": "BP_R0001", "level": "error", "target": "#file_format",
+                       "sample": None, "message": f"XML document is not well-formed. ({e})"}]
+    root = tree.getroot()
+    projects = root.findall("./Package/Project/Project")
+    if not projects:  # 構造が想定外（Project 無し）
+        projects = root.findall(".//Project/Project")
+    # umbrella 参照（Package 直下の ProjectLinks/Link/Hierarchical[@type='TopAdmin']/MemberID@accession）
+    umbrella_members = []
+    for mid in root.findall(".//ProjectLinks/Link/Hierarchical[@type='TopAdmin']/MemberID"):
+        acc = (mid.get("accession") or "").strip()
+        if acc:
+            umbrella_members.append(acc)
+    pre_errors = []
+    if len(projects) > 1:
+        pre_errors.append({"rule_id": "BP_R0037", "level": "error", "target": "#file_format",
+                           "sample": None, "message": "Only one project is allowed in BioProject XML."})
+    records = [_build_record(p) for p in projects]
+    for rec in records:  # 通常 1 project。umbrella 参照は project に紐づける
+        rec.umbrella_member_ids = list(umbrella_members)
+    sub = BioProjectSubmission(records=records, account=account)
+    return sub, pre_errors

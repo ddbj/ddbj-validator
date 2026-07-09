@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PackageSet>
+<Package>
+  <Project><Project>
+    <ProjectID><ArchiveID accession="PRJDB0001" archive="DDBJ"/></ProjectID>
+    <ProjectDescr><Title>Test Project</Title><Description>Grown at 25 ℃ in lab.</Description></ProjectDescr>
+    <ProjectType><ProjectTypeSubmission>
+      <Target sample_scope="eMonoisolate" material="eGenome" capture="eWhole">
+        <Organism taxID="9606"><OrganismName>Homo sapiens</OrganismName></Organism>
+      </Target>
+      <Method method_type="eSequencing"/>
+      <Objectives><Data data_type="eRawSequenceReads"/></Objectives>
+    </ProjectTypeSubmission></ProjectType>
+  </Project></Project>
+  <Submission><Submission submitted="2020-01-01"><Description>
+    <Organization type="center" role="owner"><Name>NIG</Name></Organization><Access>public</Access>
+  </Description></Submission></Submission>
+</Package>
+</PackageSet>

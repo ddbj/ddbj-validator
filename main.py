@@ -4,16 +4,17 @@ import sys
 import argparse
 
 # 既知のトップレベルサブコマンド（将来サブコマンドが増えたらここに追加）
-KNOWN_COMMANDS = {"ddbj", "biosample"}
+KNOWN_COMMANDS = {"ddbj", "biosample", "bioproject"}
 
 def main():
     parser = argparse.ArgumentParser(
         description="DDBJ Validation Tools",
-        usage="ddbj-validator [ddbj|biosample] [<args>]",
+        usage="ddbj-validator [ddbj|biosample|bioproject] [<args>]",
     )
     subparsers = parser.add_subparsers(dest="command")
     subparsers.add_parser("ddbj", help="Run DDBJ Validator")
     subparsers.add_parser("biosample", help="Run BioSample Validator")
+    subparsers.add_parser("bioproject", help="Run BioProject Validator")
 
     # --- 'ddbj' サブコマンドの省略を許可する ---
     # 第1引数が既知のサブコマンドでなければ、暗黙的に 'ddbj' を補完する。
@@ -37,6 +38,10 @@ def main():
         sys.argv = [f"{sys.argv[0]} biosample"] + unknown
         from apps.biosample.cli import main as biosample_main
         biosample_main()
+    elif args.command == "bioproject":
+        sys.argv = [f"{sys.argv[0]} bioproject"] + unknown
+        from apps.bioproject.cli import main as bioproject_main
+        bioproject_main()
     else:
         parser.print_help()
 

@@ -5,10 +5,10 @@
 """
 from apps.biosample.rules.base import is_internal_ignore
 from apps.biosample.rules.mandatory import BS_R0018, BS_R0020, BS_R0025, BS_R0026, BS_R0027
-from apps.biosample.rules.structure import BS_R0003, BS_R0061, BS_R0126
+from apps.biosample.rules.structure import BS_R0003, BS_R0061, BS_R0126, BS_R0143
 from apps.biosample.rules.value_format import BS_R0007, BS_R0009, BS_R0011, BS_R0040, BS_R0093, BS_R0101, BS_R0136, BS_R0139
 from apps.biosample.rules.consistency import BS_R0024, BS_R0036, BS_R0062, BS_R0073, BS_R0135, BS_R0137, BS_R0132, BS_R0133, BS_R0001
-from apps.biosample.rules.value_ascii import BS_R0058, BS_R0100, BS_R0012, BS_R0013
+from apps.biosample.rules.value_ascii import BS_R0058, BS_R0100, BS_R0012, BS_R0013, BS_R0142
 from apps.biosample.rules.identifier import BS_R0005, BS_R0069, BS_R0099, BS_R0102, BS_R0122, BS_R0109, BS_R0091
 from apps.biosample.rules.geo import BS_R0008, BS_R0041, BS_R0094
 from apps.biosample.rules.taxonomy import BS_R0004, BS_R0096, BS_R0059, BS_R0115, BS_R0106, BS_R0141, BS_R0045, BS_R0105, BS_R0134, BS_R0140, BS_R0104, BS_R0015
@@ -34,6 +34,7 @@ class Validator:
             # --- フェーズ A: 構造・重複・値形式（DB 非依存）---
             BS_R0061(),  # 同名属性の複数値
             BS_R0003(),  # sample_title 重複
+            BS_R0143(),  # sample_name 重複（submission 内一意）
             BS_R0007(),  # collection_date 形式
             BS_R0136(),  # collection_date 整形（autofix）
             BS_R0040(),  # collection_date 未来日
@@ -48,6 +49,7 @@ class Validator:
             BS_R0132(),  # genome/clinical で種以下識別子が null（error）
             BS_R0133(),  # Microbe で strain/isolate が null（warning）
             BS_R0058(),  # 非 ASCII 値（BS_R0012 の autocleanup 後に評価するため ℃ 等は既に置換済み）
+            BS_R0142(),  # HTML マークアップ禁止（INSDC Sample Min Spec。非ASCII では捕まらない ASCII タグ）
             BS_R0100(),  # 任意属性の missing 値
             BS_R0005(),  # BioProject 形式
             BS_R0099(),  # locus_tag_prefix 形式

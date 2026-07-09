@@ -38,6 +38,15 @@ def _non_ascii(v):
         return True
 
 
+# HTML マークアップ（タグ）検出。`<tag ...>` / `</tag>` / `<br/>` を拾う。
+# 開始 `<` の直後（空白許容）に英字が来る場合のみタグとみなし、"a < 5" のような数式の不等号は誤検知しない。
+_HTML_RE = re.compile(r"<\s*/?\s*[A-Za-z][^<>]*>")
+
+
+def _has_html(v):
+    return bool(v) and bool(_HTML_RE.search(v))
+
+
 class BS_R0013(BsRule):
     rule_id = "BS_R0013"
     level = "warning"
@@ -87,6 +96,32 @@ class BS_R0058(BsRule):
                     if v and _non_ascii(v):
                         out.append(self.result(sample=rec.sample_id, target=name,
                                                message=f"Non-ASCII characters detected in '{name}'. (Found: '{v}')"))
+                        break
+        return out
+
+
+class BS_R0142(BsRule):
+    rule_id = "BS_R0142"
+    level = "error"
+    target = "#attributes"
+    description = "Sample description should not include HTML markup."
+
+    def validate(self, submission, context):
+        # INSDC Sample Minimum Specification: メタデータに HTML マークアップを含めてはならない（reject 対象）。
+        # R0058(非ASCII) は HTML タグ（ASCII）を捕まえないため専用に検出する。対象は属性値＋Description 由来。
+        out = []
+        for rec in submission.records:
+            checked = dict(rec.attributes)
+            extra = {"sample_name": rec.sample_name, "sample_title": rec.title, "organism": rec.organism}
+            for name, v in extra.items():
+                if v:
+                    checked.setdefault(name, [v])
+            for name in sorted(checked):
+                for v in checked[name]:
+                    if _has_html(v):
+                        out.append(self.result(
+                            sample=rec.sample_id, target=name,
+                            message=f"HTML markup is not allowed in metadata; remove HTML tags. ({name}: '{v}')"))
                         break
         return out
 
