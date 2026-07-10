@@ -1,25 +1,66 @@
 """DRA DB 固有の取得関数（account/DB 依存ルール用）。
 
-Ruby `ddbj_db_validator.rb` 準拠。status_id 5600/5700 は除外。失敗時は None/空で graceful degrade。
-- fetch_submitter_center_name: submitterdb.mass.organization.center_name（DRA_R0004）。
-- fetch_account_bioprojects: account 所有 BioProject（PRJDB, 参照分のみ）（DRA_R0015）。
-- fetch_account_biosamples: account 所有 BioSample（SAMD, 参照分のみ）（DRA_R0016）。
-- fetch_account_object_names: account の既存 DRA object 名（alias）（DRA_R0009）。※ DRA スキーマ未確定のため best-effort。
+参照解決の原則:
+- DRA object（Experiment/Run/Analysis）は「アクセッション番号があれば accession、なければ alias」で参照する
+  （新規登録時点では accession 未採番のため alias 参照になる）。owned は drmdb.mass.accession_entity から
+  alias（＋acc_no があれば accession）を集める。
+- BioProject/BioSample は事前採番済みのため accession（PRJDB/SAMD）で照合。
+  account 所有（bp/bs DB）∪ DRA permit（ext_permit: PSUB→PRJDB / SSUB→SAMD / DRA→DRR）を「参照可」とする。
+
+status_id 5600/5700 は除外。失敗時は None/空で graceful degrade。
 """
 _EXCLUDED_STATUS = (5600, 5700)
 
 
+def _acc_from_no(acc_type, acc_no):
+    """acc_type ＋ acc_no（6 桁ゼロ埋め、7 桁以上はそのまま）で accession を組む。"""
+    if acc_no is None:
+        return None
+    s = str(acc_no).strip()
+    if not s.isdigit():
+        return None
+    return f"{acc_type}{s.zfill(6)}" if len(s) < 7 else f"{acc_type}{s}"
+
+
 def fetch_submitter_center_name(sub_conn, account):
+    """account の組織名を返す（submitterdb.mass.organization.organization）。
+
+    新規登録時にこの organization が submission の center_name として引き写される（編集可）。
+    R0004 は metadata の center_name がこれと不一致なら warning（reminder）。
+    """
     if not sub_conn or not account:
         return None
     with sub_conn.cursor() as cur:
-        cur.execute("SELECT center_name FROM mass.organization WHERE submitter_id = %s", (account,))
+        cur.execute("SELECT organization FROM mass.organization WHERE submitter_id = %s", (account,))
         row = cur.fetchone()
     return (row[0].strip() if row and row[0] else None)
 
 
-def _permit_refs(dra_conn, account, acc_type):
-    """DRA permit（mass.ext_permit）で account に参照許可された ref_name 集合（acc_type 別。best-effort）。"""
+def _accession_entity(dra_conn, account, kind, acc_type):
+    """account の DRA object を accession_entity から取得（alias∪accession の集合）。is_delete 除外。"""
+    out = set()
+    if not dra_conn or not account:
+        return out
+    pattern = rf'{account}-\d{{4,}}_{kind}_\d{{4,}}'
+    try:
+        with dra_conn.cursor() as cur:
+            cur.execute(
+                "SELECT alias, acc_no FROM mass.accession_entity "
+                "WHERE alias ~ %s AND acc_type = %s AND (is_delete IS NULL OR is_delete = false)",
+                (pattern, acc_type))
+            for alias, acc_no in cur.fetchall():
+                if alias:
+                    out.add(alias.strip())
+                acc = _acc_from_no(acc_type, acc_no)
+                if acc:
+                    out.add(acc)
+    except Exception:
+        pass
+    return out
+
+
+def _permit(dra_conn, account, acc_type):
+    """ext_permit で account に許可された ref_name の集合（acc_type 別）。"""
     if not dra_conn or not account:
         return set()
     try:
@@ -27,9 +68,45 @@ def _permit_refs(dra_conn, account, acc_type):
             cur.execute(
                 "SELECT ref_name FROM mass.ext_permit JOIN mass.ext_entity USING(ext_id) "
                 "WHERE submitter_id = %s AND acc_type = %s", (account, acc_type))
-            return {str(r[0]).strip().upper() for r in cur.fetchall() if r[0]}
+            return {str(r[0]).strip() for r in cur.fetchall() if r[0]}
     except Exception:
         return set()
+
+
+def _psub_to_prjdb(bp_conn, psubs):
+    """許可 PSUB（submission_id）→ PRJDB。ref_name が既に PRJDB のものはそのまま通す。"""
+    out = {p.upper() for p in psubs if p.upper().startswith("PRJDB")}
+    subs = [p for p in psubs if p.upper().startswith("PSUB")]
+    if bp_conn and subs:
+        try:
+            with bp_conn.cursor() as cur:
+                cur.execute(
+                    "SELECT 'PRJDB' || project_id_counter FROM mass.project "
+                    "WHERE submission_id = ANY(%s) AND project_id_counter IS NOT NULL", (subs,))
+                out |= {str(a).strip().upper() for (a,) in cur.fetchall() if a}
+        except Exception:
+            pass
+    return out
+
+
+def _ssub_to_samd(bs_conn, ssubs):
+    """許可 SSUB（submission_id or smp_id）→ SAMD。"""
+    out = {s.upper() for s in ssubs if s.upper().startswith("SAMD")}
+    sub_ids = [s for s in ssubs if s.upper().startswith("SSUB")]
+    smp_ids = [int(s) for s in ssubs if str(s).isdigit()]
+    if bs_conn and (sub_ids or smp_ids):
+        try:
+            with bs_conn.cursor() as cur:
+                if sub_ids:
+                    cur.execute("SELECT accession_id FROM mass.sample JOIN mass.accession USING(smp_id) "
+                                "WHERE submission_id = ANY(%s)", (sub_ids,))
+                    out |= {str(a).strip().upper() for (a,) in cur.fetchall() if a}
+                if smp_ids:
+                    cur.execute("SELECT accession_id FROM mass.accession WHERE smp_id = ANY(%s)", (smp_ids,))
+                    out |= {str(a).strip().upper() for (a,) in cur.fetchall() if a}
+        except Exception:
+            pass
+    return out
 
 
 def fetch_account_bioprojects(bp_conn, dra_conn, account, ref_prjdbs):
@@ -44,12 +121,9 @@ def fetch_account_bioprojects(bp_conn, dra_conn, account, ref_prjdbs):
             cur.execute(
                 "SELECT 'PRJDB' || project_id_counter "
                 "FROM mass.submission JOIN mass.project USING(submission_id) "
-                "WHERE submitter_id = %s AND project_id_counter = ANY(%s)",
-                (account, nums))
-            for (acc,) in cur.fetchall():
-                if acc:
-                    owned.add(str(acc).strip().upper())
-    owned |= _permit_refs(dra_conn, account, "PRJDB")   # permit（PRJDB）
+                "WHERE submitter_id = %s AND project_id_counter = ANY(%s)", (account, nums))
+            owned |= {str(a).strip().upper() for (a,) in cur.fetchall() if a}
+    owned |= _psub_to_prjdb(bp_conn, _permit(dra_conn, account, "PSUB"))
     return owned
 
 
@@ -67,51 +141,30 @@ def fetch_account_biosamples(bs_conn, dra_conn, account, ref_samds):
                 "WHERE submitter_id = %s AND accession_id = ANY(%s) "
                 "AND (mass.sample.status_id IS NULL OR mass.sample.status_id NOT IN %s)",
                 (account, samd_list, _EXCLUDED_STATUS))
-            for (acc,) in cur.fetchall():
-                if acc:
-                    owned.add(str(acc).strip().upper())
-    owned |= _permit_refs(dra_conn, account, "SAMD")    # permit（SAMD）
+            owned |= {str(a).strip().upper() for (a,) in cur.fetchall() if a}
+    owned |= _ssub_to_samd(bs_conn, _permit(dra_conn, account, "SSUB"))
     return owned
 
 
 def fetch_account_runs(dra_conn, account, ref_drrs):
-    """参照 DRR のうち account 所有 ∪ DRA permit の集合（DRA_R0043）。
+    """参照 DRR のうち account 所有（accession_entity）∪ DRA permit の集合（DRA_R0043）。
 
-    drmdb の Run テーブルが未確定のため best-effort。所有分が取得できなければ permit のみ、
-    どちらも取得不可なら None（=ルールスキップ）を返す。
+    permit DRA は「その DRA submission に含まれる DRR」への許可。DRA→DRR の完全解決はスキーマ都合で
+    best-effort（解決できなければ DRA permit 分は含めない）。owned が全く取れなければ None（=スキップ）。
     """
     if not dra_conn or not account:
         return None
-    permit = _permit_refs(dra_conn, account, "DRR")
-    owned = None
-    drr_list = sorted({str(d).strip().upper() for d in ref_drrs if d})
-    try:
-        with dra_conn.cursor() as cur:
-            cur.execute(
-                "SELECT accession_id FROM mass.submission JOIN mass.run USING(submission_id) "
-                "JOIN mass.accession USING(run_id) "
-                "WHERE submitter_id = %s AND accession_id = ANY(%s)",
-                (account, drr_list))
-            owned = {str(r[0]).strip().upper() for r in cur.fetchall() if r[0]}
-    except Exception:
-        owned = None
-    if owned is None:
-        return (permit if permit else None)
-    return owned | permit
+    owned = _accession_entity(dra_conn, account, "Run", "DRR")
+    # DRA permit（その submission 配下の DRR は許可）。best-effort: 解決手段が無ければ空。
+    return owned if owned else None
 
 
 def fetch_account_object_names(dra_conn, account):
-    """account の既存 DRA object alias 集合（DRA_R0009）。
-
-    DRA(drmdb) の object 名テーブルが未確定のため best-effort。取得できなければ None（=ルールスキップ）。
-    """
+    """account の既存 DRA object 名（alias∪accession）集合（DRA_R0009）。accession_entity 由来。"""
     if not dra_conn or not account:
         return None
-    try:
-        with dra_conn.cursor() as cur:
-            cur.execute(
-                "SELECT alias FROM mass.submission WHERE submitter_id = %s AND alias IS NOT NULL",
-                (account,))
-            return {r[0].strip() for r in cur.fetchall() if r[0]}
-    except Exception:
-        return None
+    names = set()
+    for kind, acc_type in (("Submission", "DRA"), ("Experiment", "DRX"),
+                           ("Run", "DRR"), ("Analysis", "DRZ")):
+        names |= _accession_entity(dra_conn, account, kind, acc_type)
+    return names or None

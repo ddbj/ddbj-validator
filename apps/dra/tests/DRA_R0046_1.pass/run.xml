@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RUN_SET>
+    <RUN alias="dradev-0062_Run_0001" center_name="(Filled by DDBJ)" accession="DRR070703">
+        <TITLE>Illumina HiSeq 1000 sequencing of SAMD00061138 10</TITLE>
+        <EXPERIMENT_REF refname="dradev-0062_Experiment_0001" refcenter="NIG" accession="DRX064653"/>
+        <DATA_BLOCK>
+            <FILES>
+                <FILE filename="multi-fasta.bam" filetype="bam" checksum_method="MD5" checksum="bae0c88cd6afb2ffc3bed68c4dd84163"/>
+                <FILE filename="multi.fa" filetype="reference_fasta" checksum_method="MD5" checksum="55cd6d27ab987599723a929af8207162"/>
+                <FILE filename="nig_egl-0013_SN.txt" filetype="tab" checksum_method="MD5" checksum="018d33667735da10a6a9939a421492bf"/>
+            </FILES>
+        </DATA_BLOCK>
+    </RUN>
+    <RUN alias="dradev-0062_Run_0002" center_name="(Filled by DDBJ)" accession="DRR070704">
+        <TITLE>Illumina HiSeq 1000 sequencing of SAMD00061138 10</TITLE>
+        <EXPERIMENT_REF refname="dradev-0062_Experiment_0002" refcenter="NIG" accession="DRX064654"/>
+        <DATA_BLOCK>
+            <FILES>
+                <FILE filename="accession.tab" filetype="tab" checksum_method="MD5" checksum="537e142c7714d654276ac1e79b42a7b0"/>
+                <FILE filename="accession_r1000.bam" filetype="bam" checksum_method="MD5" checksum="39187ce760eab5f83be8c114b13a3d2a"/>
+            </FILES>
+        </DATA_BLOCK>
+    </RUN>
+    <RUN alias="dradev-0062_Run_0003" center_name="(Filled by DDBJ)" accession="DRR070705">
+        <TITLE>Illumina HiSeq 1000 sequencing of SAMD00061135 10</TITLE>
+        <EXPERIMENT_REF refname="dradev-0062_Experiment_0003" refcenter="NIG" accession="DRX064655"/>
+        <DATA_BLOCK>
+            <FILES>
+                <FILE filename="latf-single.fastq" filetype="generic_fastq" checksum_method="MD5" checksum="71ce5a93fa81dfe7fccfa7b473588b8b"/>
+            </FILES>
+        </DATA_BLOCK>
+    </RUN>
+    <RUN alias="dradev-0062_Run_0004" center_name="(Filled by DDBJ)" accession="DRR070706">
+        <TITLE>Illumina HiSeq 1000 sequencing of SAMD00061138 10</TITLE>
+        <EXPERIMENT_REF refname="dradev-0062_Experiment_0004" refcenter="NIG" accession="DRX064656"/>
+        <DATA_BLOCK>
+            <FILES>
+                <FILE filename="latf-paired-1.fastq" filetype="generic_fastq" checksum_method="MD5" checksum="cabbd426836f67f63ae56199ce029184"/>
+                <FILE filename="latf-paired-2.fastq" filetype="generic_fastq" checksum_method="MD5" checksum="b2a50c7fa0b06ee1297bed0cdcbc68f5"/>
+            </FILES>
+        </DATA_BLOCK>
+    </RUN>
+    <RUN alias="dradev-0062_Run_0006" center_name="(Filled by DDBJ)" accession="DRR070708">
+        <TITLE>Illumina HiSeq 1000 sequencing of SAMD00061138 10</TITLE>
+        <EXPERIMENT_REF refname="dradev-0062_Experiment_0006" refcenter="NIG" accession="DRX064658"/>
+        <DATA_BLOCK>
+            <FILES>
+                <FILE filename="fastq-load-1.fastq" filetype="fastq" checksum_method="MD5" checksum="293866ae90a4b57c0905bf4de794fe5f"/>
+                <FILE filename="fastq-load-2.fastq" filetype="fastq" checksum_method="MD5" checksum="70bce007541f96b750aba7011e299b3d"/>
+            </FILES>
+        </DATA_BLOCK>
+    </RUN>
+    <RUN alias="dradev-0062_Run_0007" center_name="(Filled by DDBJ)" accession="DRR070709">
+        <TITLE>454 GS FLX sequencing of SAMD00061138 10</TITLE>
+        <EXPERIMENT_REF refname="dradev-0062_Experiment_0007" refcenter="NIG" accession="DRX064659"/>
+        <DATA_BLOCK>
+            <FILES>
+                <FILE filename="454Reads.MID7.sff" filetype="sff" checksum_method="MD5" checksum="f63417223715d010f9df08fbed4d7e53"/>
+            </FILES>
+        </DATA_BLOCK>
+    </RUN>
+    <RUN alias="dradev-0062_Run_0008" center_name="(Filled by DDBJ)" accession="DRR070710">
+        <TITLE>PacBio RS II sequencing of SAMD00061138 10</TITLE>
+        <EXPERIMENT_REF refname="dradev-0062_Experiment_0008" refcenter="NIG" accession="DRX064660"/>
+        <DATA_BLOCK>
+            <FILES>
+                <FILE filename="m141027_090618_42192_c100683792550000001823142502221576_s1_p0.1.bax.h5" filetype="PacBio_HDF5" checksum_method="MD5" checksum="54492a5c02e46c44db621044132e6270"/>
+                <FILE filename="m141027_090618_42192_c100683792550000001823142502221576_s1_p0.2.bax.h5" filetype="PacBio_HDF5" checksum_method="MD5" checksum="697389328ab446b49890be670ce3a0d8"/>
+                <FILE filename="m141027_090618_42192_c100683792550000001823142502221576_s1_p0.3.bax.h5" filetype="PacBio_HDF5" checksum_method="MD5" checksum="3f77b47110beee1a3d6e964e3b5a69fb"/>
+                <FILE filename="m141027_090618_42192_c100683792550000001823142502221576_s1_p0.bas.h5" filetype="PacBio_HDF5" checksum_method="MD5" checksum="a3ab39a7c039a7e8b22d6281541abf1e"/>
+            </FILES>
+        </DATA_BLOCK>
+    </RUN>
+    <RUN alias="dradev-0062_Run_0009" center_name="(Filled by DDBJ)" accession="DRR070711">
+        <TITLE>AB SOLiD System 3.0 sequencing of SAMD00061138 10</TITLE>
+        <EXPERIMENT_REF refname="dradev-0062_Experiment_0009" refcenter="NIG" accession="DRX064661"/>
+        <DATA_BLOCK>
+            <FILES>
+                <FILE filename="solid.csfasta" filetype="SOLiD_native" checksum_method="MD5" checksum="3e1d3d31a2058101ca99cdbbe4dbd0e1"/>
+                <FILE filename="solid.qual" filetype="SOLiD_native" checksum_method="MD5" checksum="d8a165cf8f0a8a8e240502ec857d611a"/>
+            </FILES>
+        </DATA_BLOCK>
+    </RUN>
+    <RUN alias="dradev-0062_Run_0010" center_name="(Filled by DDBJ)" accession="DRR070712">
+        <TITLE>PacBio RS II sequencing of SAMD00061136 10</TITLE>
+        <EXPERIMENT_REF refname="dradev-0062_Experiment_0010" refcenter="NIG" accession="DRX064662"/>
+        <DATA_BLOCK>
+            <FILES>
+                <FILE filename="pacbio-unmapped100.bam" filetype="bam" checksum_method="MD5" checksum="733338bb1050918c32b162443e0744fa"/>
+            </FILES>
+        </DATA_BLOCK>
+    </RUN>
+</RUN_SET>

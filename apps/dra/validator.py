@@ -8,7 +8,7 @@ from apps.dra.rules.structure import DRA_R0002
 from apps.dra.rules.cv import DRA_R0039
 from apps.dra.rules.reference import (
     DRA_R0003, DRA_R0017, DRA_R0033, DRA_R0034, DRA_R0035, DRA_R0036, DRA_R0037, DRA_R0038,
-    DRA_R0041, DRA_R0042, DRA_R0043,
+    DRA_R0041, DRA_R0042, DRA_R0043, DRA_R0048,
 )
 from apps.dra.rules.content import (
     DRA_R0010, DRA_R0011, DRA_R0012, DRA_R0013, DRA_R0014, DRA_R0018, DRA_R0019, DRA_R0020,
@@ -38,6 +38,7 @@ class Validator:
             # --- 参照整合 ---
             DRA_R0003(), DRA_R0017(), DRA_R0034(), DRA_R0033(),
             DRA_R0035(), DRA_R0036(), DRA_R0037(), DRA_R0038(),
+            DRA_R0048(),   # submission あたり Run 数上限（2000）
             # --- account/DB（-l/-n ではスキップ）---
             DRA_R0006(),   # hold date（DB 非依存）
             DRA_R0004(), DRA_R0009(),

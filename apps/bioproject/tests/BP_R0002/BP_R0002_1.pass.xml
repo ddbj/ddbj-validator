@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<PackageSet>
+	<Package>
+		<Project>
+			<Project>
+				<ProjectID>
+					<ArchiveID accession="PRJDB5168" archive="DDBJ" />
+				</ProjectID>
+				<ProjectDescr>
+					<Title>dddddddddddddddd</Title>
+					<Description>ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd</Description>
+					<ProjectReleaseDate>2026-04-06T09:08:03.517+09:00</ProjectReleaseDate>
+				</ProjectDescr>
+				<ProjectType>
+					<ProjectTypeSubmission>
+						<Target sample_scope="eMonoisolate" material="eGenome" capture="eWhole">
+							<Organism taxID="9606">
+								<OrganismName>Homo sapiens</OrganismName>
+							</Organism>
+						</Target>
+						<Method method_type="eSequencing" />
+						<Objectives>
+							<Data data_type="eRawSequenceReads" />
+						</Objectives>
+						<ProjectDataTypeSet>
+							<DataType>Genome Sequencing</DataType>
+						</ProjectDataTypeSet>
+					</ProjectTypeSubmission>
+				</ProjectType>
+			</Project>
+		</Project>
+		<Submission>
+			<Submission submitted="2016-07-20">
+				<Description>
+					<Organization type="center" role="owner">
+						<Name>(Filled by DDBJ)</Name>
+						<Contact email="trace@ddbj.nig.ac.jp">
+							<Name>
+								<First>Yuichi</First>
+								<Last>Kodama</Last>
+							</Name>
+						</Contact>
+						<Contact email="mishima@ddbj.nig.ac.jp">
+							<Name>
+								<First>Hanako</First>
+								<Last>Mishima</Last>
+							</Name>
+						</Contact>
+					</Organization>
+					<Access>public</Access>
+				</Description>
+			</Submission>
+		</Submission>
+	</Package>
+</PackageSet>

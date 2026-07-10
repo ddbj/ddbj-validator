@@ -80,24 +80,33 @@ def _collect_paths(args):
 
 
 def _fetch_db_meta(context, submission, account):
-    """内部 DB 依存ルール用メタを context へ（DRA_R0004 center / R0009 名 / R0015 BP / R0016 BS）。"""
-    try:
-        from common.db_manager import DatabaseManager
-        from apps.dra import db_meta
-        dm = DatabaseManager()
-        dra_conn = dm.get_dra_conn()
-        context.account_org_name = db_meta.fetch_submitter_center_name(dm.get_submitter_conn(), account)
-        ref_bp = {(o.study_ref or "").strip() for o in submission.experiments + submission.analyses if o.study_ref}
-        context.account_bioprojects = db_meta.fetch_account_bioprojects(dm.get_bp_conn(), dra_conn, account, ref_bp)
-        ref_bs = {(e.sample_ref or "").strip() for e in submission.experiments if e.sample_ref}
-        for a in submission.analyses:
-            ref_bs.update(s.strip() for s in a.sample_refs)
-        context.account_biosamples = db_meta.fetch_account_biosamples(dm.get_bs_conn(), dra_conn, account, ref_bs)
-        ref_drr = {d.strip() for a in submission.analyses for d in a.run_refs if d}
-        context.account_runs = db_meta.fetch_account_runs(dra_conn, account, ref_drr)
-        context.account_object_names = db_meta.fetch_account_object_names(dra_conn, account)
-    except Exception as e:
-        print(f"[WARN] dra DB meta fetch failed: {e}", file=sys.stderr)
+    """内部 DB 依存ルール用メタを context へ（DRA_R0004 center / R0009 名 / R0015/16/41/42/43）。
+
+    取得ごとに独立して失敗を吸収する（1 つの DB/接続失敗が他ルール用メタ取得を巻き込まないため）。
+    """
+    from common.db_manager import DatabaseManager
+    from apps.dra import db_meta
+    dm = DatabaseManager()
+
+    def _try(label, fn):
+        try:
+            return fn()
+        except Exception as e:
+            print(f"[WARN] dra DB meta fetch failed ({label}): {e}", file=sys.stderr)
+            return None
+
+    dra_conn = _try("dra_conn", dm.get_dra_conn)
+    ref_bp = {(o.study_ref or "").strip() for o in submission.experiments + submission.analyses if o.study_ref}
+    ref_bs = {(e.sample_ref or "").strip() for e in submission.experiments if e.sample_ref}
+    for a in submission.analyses:
+        ref_bs.update(s.strip() for s in a.sample_refs)
+    ref_drr = {d.strip() for a in submission.analyses for d in a.run_refs if d}
+
+    context.account_org_name = _try("org", lambda: db_meta.fetch_submitter_center_name(dm.get_submitter_conn(), account))
+    context.account_bioprojects = _try("bp", lambda: db_meta.fetch_account_bioprojects(dm.get_bp_conn(), dra_conn, account, ref_bp))
+    context.account_biosamples = _try("bs", lambda: db_meta.fetch_account_biosamples(dm.get_bs_conn(), dra_conn, account, ref_bs))
+    context.account_runs = _try("runs", lambda: db_meta.fetch_account_runs(dra_conn, account, ref_drr))
+    context.account_object_names = _try("obj_names", lambda: db_meta.fetch_account_object_names(dra_conn, account))
 
 
 def run(args):

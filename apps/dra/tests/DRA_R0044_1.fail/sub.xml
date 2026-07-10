@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<SUBMISSION submission_date="2016-09-14T14:54:38.445+09:00" lab_name="10 DRA Developers, CIB-DDBJ, National Institute of Genetics" alias="dradev-0062_Submission" center_name="(Filled by DDBJ)" accession="DRA005117">
+    <CONTACTS><BOGUS_ELEMENT/>
+        <CONTACT name="Hanako Mishima" inform_on_status="mishima@ddbj.nig.ac.jp" inform_on_error="ykodama@nig.ac.jp"/>
+    </CONTACTS>
+    <ACTIONS>
+        <ACTION>
+            <ADD source="dradev-0062.Experiment.xml" schema="experiment"/>
+        </ACTION>
+        <ACTION>
+            <ADD source="dradev-0062.Run.xml" schema="run"/>
+        </ACTION>
+        <ACTION>
+            <HOLD HoldUntilDate="2030-04-12+09:00"/>
+        </ACTION>
+    </ACTIONS>
+</SUBMISSION>

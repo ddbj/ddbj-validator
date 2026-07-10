@@ -211,3 +211,18 @@ class DRA_R0043(DraRule):
                     if key not in owned:
                         out.append(self.result(sample=a.label, message=f"{self.description} (Found: '{key}')"))
         return out
+
+
+class DRA_R0048(DraRule):
+    """submission 内の Run 数が上限（2000）を超過 → error。"""
+    rule_id = "DRA_R0048"
+    level = "error"
+    target = "#submission"
+    description = "The number of runs in a submission must not exceed 2,000. Please split your submission."
+    RUN_LIMIT = 2000
+
+    def validate(self, submission, context):
+        n = len(submission.runs)
+        if n > self.RUN_LIMIT:
+            return [self.result(sample=None, message=f"{self.description} (Found: {n} runs)")]
+        return []

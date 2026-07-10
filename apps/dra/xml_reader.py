@@ -9,10 +9,45 @@
 - DRA_R0002（XSD）は well-formed＋構造の粗いゲートに縮小（別途 structure.py 側で構造チェック）。
 戻り値: (DraSubmission, pre_errors[])。
 """
+from pathlib import Path
 import defusedxml.ElementTree as ET
 from apps.dra.model import (
     DraSubmission, DraSubmissionMeta, DraExperiment, DraRun, DraAnalysis, DraFile,
 )
+
+_XSD_DIR = Path(__file__).parent / "resources" / "xsd"
+# role -> (XSD ファイル, rule_id)。R0044-0047: 各 XML が XSD スキーマに不適合。
+_ROLE_XSD = {
+    "submission": ("SRA.submission.xsd", "DRA_R0044"),
+    "experiment": ("SRA.experiment.xsd", "DRA_R0045"),
+    "run": ("SRA.run.xsd", "DRA_R0046"),
+    "analysis": ("SRA.analysis.xsd", "DRA_R0047"),
+}
+_SCHEMA_ERR_CAP = 20
+
+
+def _schema_validate(path, role):
+    """role に対応する XSD で lxml 検証。lxml/XSD が無ければスキップ（空）。"""
+    info = _ROLE_XSD.get(role)
+    if not info:
+        return []
+    xsd_name, rule_id = info
+    try:
+        import lxml.etree as LE
+    except ImportError:
+        return []
+    try:
+        doc = LE.parse(str(path))
+        schema = LE.XMLSchema(LE.parse(str(_XSD_DIR / xsd_name)))
+    except Exception:
+        return []   # XSD 読込不可・整形不正（R0001 が別途検出）はスキップ
+    if schema.validate(doc):
+        return []
+    out = []
+    for err in list(schema.error_log)[:_SCHEMA_ERR_CAP]:
+        out.append(_err(rule_id, f"Invalid against schema (line {err.line}): {err.message}",
+                        target="#file_format", sample=str(path)))
+    return out
 
 
 def _text(el):
@@ -122,6 +157,8 @@ def parse_files(paths, account=None):
             pre.append(_err("DRA_R0001", f"XML document is not well-formed. ({e})", sample=str(p)))
             continue
         role = _ROOTS.get(root.tag)
+        if role:   # R0044-0047: XSD スキーマ検証（lxml。無ければスキップ）
+            pre.extend(_schema_validate(p, role))
         if role == "submission":
             if sub.submission is None:
                 sub.submission = _build_submission(root)

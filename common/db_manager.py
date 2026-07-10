@@ -34,11 +34,12 @@ class DatabaseManager:
             "tax": None,
             "bp": None,
             "bs": None,
-            "dra": None
+            "dra": None,
+            "submitter": None
         }
 
     def _get_conn(self, key, db_env_name, is_tax=False):
-        if self._conns[key] is None:
+        if self._conns.get(key) is None:
             if is_tax:
                 db_name = os.environ.get("PGDATABASE") or os.environ.get("DDBJ_DB_NAME")
                 db_port = os.environ.get("PGPORT") or os.environ.get("DDBJ_DB_PORT")
