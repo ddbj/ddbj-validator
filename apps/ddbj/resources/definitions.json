@@ -6417,13 +6417,5 @@
         "rearranged"
       ]
     }
-  },
-  "nsss_skip_rules": [
-    "ANN3050",
-    "ANN3290",
-    "ANN0410",
-    "ANN0450",
-    "ANN0470",
-    "ANN2670"
-  ]
+  }
 }

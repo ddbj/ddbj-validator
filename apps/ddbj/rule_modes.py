@@ -34,18 +34,19 @@ import functools
 import json
 from pathlib import Path
 
-# -w（NSSS web submission）モードで適用しないルール ID の正本は resources/definitions.json の nsss_skip_rules。
-_DEFINITIONS_PATH = Path(__file__).parent / "resources" / "definitions.json"
+# -w（NSSS web submission）モードで適用しないルール ID の正本は resources/nsss_skip_rules.json。
+# 一般ユーザに無関係な内部設定のため、definitions.json とは分離した専用 JSON に置く。
+_NSSS_SKIP_PATH = Path(__file__).parent / "resources" / "nsss_skip_rules.json"
 
 
 @functools.lru_cache(maxsize=1)
 def get_web_mode_skip_rules():
-    """-w モードで適用しないルール ID の集合を返す（definitions.json の nsss_skip_rules）。"""
+    """-w モードで適用しないルール ID の集合を返す（resources/nsss_skip_rules.json の nsss_skip_rules）。"""
     try:
-        with open(_DEFINITIONS_PATH, encoding="utf-8") as f:
+        with open(_NSSS_SKIP_PATH, encoding="utf-8") as f:
             return frozenset(json.load(f).get("nsss_skip_rules", []))
     except Exception as e:
-        print(f"Warning: Failed to load nsss_skip_rules from definitions.json: {e}")
+        print(f"Warning: Failed to load nsss_skip_rules.json: {e}")
         return frozenset()
 
 
