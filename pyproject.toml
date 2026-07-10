@@ -40,6 +40,7 @@ include = ["common*", "apps*"]
 "apps.ddbj.resources" = ["*.json"]
 "apps.biosample.resources" = ["*.json", "xsd/*.xsd"]
 "apps.bioproject.resources" = ["*.json"]
+"apps.dra.resources" = ["*.json"]
 "common.resources" = ["*.txt", "*.json"]
 "common.resources.geo" = ["*.parquet", "*.json"]
 

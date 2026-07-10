@@ -71,6 +71,9 @@ class DatabaseManager:
     def get_dra_conn(self):
         return self._get_conn("dra", "DRA_DB_NAME")
 
+    def get_submitter_conn(self):
+        return self._get_conn("submitter", "SUBMITTER_DB_NAME")
+
     def close_all(self):
         for conn in self._conns.values():
             if conn:

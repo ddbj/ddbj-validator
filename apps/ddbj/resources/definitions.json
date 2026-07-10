@@ -4643,10 +4643,18 @@
       }
     },
     "Assembly Method": {
-      "qualifier_type": "metadata_field"
+      "qualifier_type": "metadata_field",
+      "max_length": 256
     },
     "Genome Coverage": {
-      "qualifier_type": "metadata_field"
+      "qualifier_type": "metadata_field",
+      "max_length": 256,
+      "format_pattern": "^\\d+(\\.\\d+)?x$",
+      "format_rule": {
+        "rule_id": "ANN0185",
+        "level": "error",
+        "message": "Genome Coverage must be a number followed by a lower-case 'x' (e.g. 12x)."
+      }
     },
     "hold_date": {
       "qualifier_type": "metadata_field",
@@ -4880,16 +4888,20 @@
       }      
     },
     "Finishing Goal": {
-      "qualifier_type": "metadata_field"
+      "qualifier_type": "metadata_field",
+      "max_length": 256
     },
     "Current Finishing Status": {
-      "qualifier_type": "metadata_field"
+      "qualifier_type": "metadata_field",
+      "max_length": 256
     },
     "Assembly Name": {
-      "qualifier_type": "metadata_field"
+      "qualifier_type": "metadata_field",
+      "max_length": 100
     },
     "Sequencing Technology": {
-      "qualifier_type": "metadata_field"
+      "qualifier_type": "metadata_field",
+      "max_length": 256
     },
     "Coverage": {
       "qualifier_type": "metadata_field"

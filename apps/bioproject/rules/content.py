@@ -2,7 +2,7 @@
 
 - BP_R0004: 提出済み project と title＋description が両方重複 → warning（要 DB/account）。
 - BP_R0006: description が 20-4000 文字（inclusive）でない → error（INSDC min spec）。
-- BP_R0070: title が 20-250 文字（inclusive）でない → error（INSDC min spec）。
+- BP_R0005: title が 20-250 文字（inclusive）でない → error（INSDC min spec。旧 BP_R0005 廃止 ID を再利用）。
 - BP_R0007: Relevance の 'Other' に説明が無い → error。
 - BP_R0008: ProjectTypeTopAdmin subtype=eOther で DescriptionSubtypeOther が無い → error。
 - BP_R0009/0010/0011: Target の sample_scope/material/capture=eOther で Target/Description が無い → error。
@@ -87,8 +87,9 @@ class BP_R0006(BpRule):
         return out
 
 
-class BP_R0070(BpRule):
-    rule_id = "BP_R0070"
+class BP_R0005(BpRule):
+    # 旧 BP_R0005（title==description。廃止）の ID を再利用し、title 文字数制限（min spec）に割り当て。
+    rule_id = "BP_R0005"
     level = "error"
     target = "Title"
     description = ("Project title must be between 20 and 250 characters in length, "
