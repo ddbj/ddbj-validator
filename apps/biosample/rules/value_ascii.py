@@ -7,44 +7,10 @@
 import re
 from apps.biosample.rules.base import BsRule
 from apps.biosample.rules._util import is_missing_value, is_empty
-
-
-_WS_RE = re.compile(r"\s+")
-
-
-def normalize_data_format(v):
-    """連続空白の畳み込み（前後 strip＋タブ/改行/連続空白→半角空白1つ）＋前後を囲む対クオートの除去。
-    Ruby v invalid_data_format(String#squish 相当) に準拠。補正不要なら元の値と同じ文字列を返す。"""
-    s = _WS_RE.sub(" ", v.strip())
-    if len(s) >= 2 and s[0] == s[-1] and s[0] in ('"', "'"):
-        s = _WS_RE.sub(" ", s[1:-1].strip())
-    return s
-
-
-def apply_special_chars(value, special_chars):
-    """special_chars に従い特殊文字を置換した文字列を返す。
-    長いキーを先に処理し "μm"→"micro"+"m" のような部分置換を防ぐ。"""
-    out = value
-    for target in sorted(special_chars, key=len, reverse=True):
-        out = out.replace(target, special_chars[target])
-    return out
-
-
-def _non_ascii(v):
-    try:
-        v.encode("ascii")
-        return False
-    except (UnicodeEncodeError, AttributeError):
-        return True
-
-
-# HTML マークアップ（タグ）検出。`<tag ...>` / `</tag>` / `<br/>` を拾う。
-# 開始 `<` の直後（空白許容）に英字が来る場合のみタグとみなし、"a < 5" のような数式の不等号は誤検知しない。
-_HTML_RE = re.compile(r"<\s*/?\s*[A-Za-z][^<>]*>")
-
-
-def _has_html(v):
-    return bool(v) and bool(_HTML_RE.search(v))
+# 純テキストユーティリティは common に集約（bioproject と共有。app 間相互 import を避ける）。
+from common.text import (
+    _WS_RE, _HTML_RE, normalize_data_format, apply_special_chars, _non_ascii, _has_html,
+)
 
 
 class BS_R0013(BsRule):

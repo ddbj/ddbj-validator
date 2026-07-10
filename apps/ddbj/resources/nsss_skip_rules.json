@@ -1,5 +1,7 @@
 {
   "nsss_skip_rules": [
+    "ANN0185",
+    "ANN3020",
     "ANN3050",
     "ANN3290",
     "ANN0410",
