@@ -41,6 +41,7 @@ include = ["common*", "apps*"]
 "apps.biosample.resources" = ["*.json", "xsd/*.xsd"]
 "apps.bioproject.resources" = ["*.json", "xsd/*.xsd"]
 "apps.dra.resources" = ["*.json", "xsd/*.xsd"]
+"apps.metabobank.resources" = ["*.json"]
 "common.resources" = ["*.txt", "*.json"]
 "common.resources.geo" = ["*.parquet", "*.json"]
 
