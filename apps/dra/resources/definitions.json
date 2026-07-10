@@ -1,0 +1,327 @@
+{
+  "cv_terms": {
+    "library_strategy": [
+      "WGS",
+      "WGA",
+      "WXS",
+      "RNA-Seq",
+      "ssRNA-seq",
+      "miRNA-Seq",
+      "ncRNA-Seq",
+      "FL-cDNA",
+      "EST",
+      "Hi-C",
+      "ATAC-seq",
+      "WCS",
+      "RAD-Seq",
+      "CLONE",
+      "POOLCLONE",
+      "AMPLICON",
+      "CLONEEND",
+      "FINISHING",
+      "ChIP-Seq",
+      "MNase-Seq",
+      "DNase-Hypersensitivity",
+      "Bisulfite-Seq",
+      "CTS",
+      "MRE-Seq",
+      "MeDIP-Seq",
+      "MBD-Seq",
+      "Tn-Seq",
+      "VALIDATION",
+      "FAIRE-seq",
+      "SELEX",
+      "NOMe-Seq",
+      "RIP-Seq",
+      "ChIA-PET",
+      "Synthetic-Long-Read",
+      "Targeted-Capture",
+      "Tethered Chromatin Conformation Capture",
+      "OTHER"
+    ],
+    "library_source": [
+      "GENOMIC",
+      "GENOMIC SINGLE CELL",
+      "TRANSCRIPTOMIC",
+      "TRANSCRIPTOMIC SINGLE CELL",
+      "METAGENOMIC",
+      "METATRANSCRIPTOMIC",
+      "SYNTHETIC",
+      "VIRAL RNA",
+      "OTHER"
+    ],
+    "library_selection": [
+      "RANDOM",
+      "PCR",
+      "RANDOM PCR",
+      "RT-PCR",
+      "HMPR",
+      "MF",
+      "repeat fractionation",
+      "size fractionation",
+      "MSLL",
+      "cDNA",
+      "cDNA_randomPriming",
+      "cDNA_oligo_dT",
+      "PolyA",
+      "Oligo-dT",
+      "Inverse rRNA",
+      "ChIP",
+      "MNase",
+      "DNase",
+      "Hybrid Selection",
+      "Reduced Representation",
+      "Restriction Digest",
+      "5-methylcytidine antibody",
+      "MBD2 protein methyl-CpG binding domain",
+      "CAGE",
+      "RACE",
+      "MDA",
+      "padlock probes capture method",
+      "other",
+      "unspecified"
+    ],
+    "study_type": [
+      "Whole Genome Sequencing",
+      "Metagenomics",
+      "Transcriptome Sequencing",
+      "Transcriptome Analysis",
+      "Epigenetics",
+      "Synthetic Genomics",
+      "Cancer Genomics",
+      "Population Genomics",
+      "Exome Sequencing",
+      "Pooled Clone Sequencing",
+      "Other"
+    ],
+    "read_type": [
+      "Forward",
+      "Reverse",
+      "Adapter",
+      "Primer",
+      "Linker",
+      "BarCode",
+      "Other"
+    ],
+    "read_class": [
+      "Application Read",
+      "Technical Read"
+    ],
+    "run_filetype": [
+      "sra",
+      "srf",
+      "sff",
+      "fastq",
+      "tab",
+      "454_native",
+      "454_native_seq",
+      "454_native_qual",
+      "Helicos_native",
+      "Illumina_native",
+      "Illumina_native_seq",
+      "Illumina_native_prb",
+      "Illumina_native_int",
+      "Illumina_native_qseq",
+      "Illumina_native_scarf",
+      "SOLiD_native",
+      "SOLiD_native_csfasta",
+      "SOLiD_native_qual",
+      "PacBio_HDF5",
+      "CompleteGenomics_native",
+      "CompleteGenomics_native_MAP",
+      "CompleteGenomics_native_ASM",
+      "CompleteGenomics_native_LIB",
+      "bam",
+      "cram",
+      "bam_header",
+      "reference_fasta",
+      "generic_fastq"
+    ],
+    "analysis_filetype": [
+      "ace",
+      "tab",
+      "bam",
+      "fasta",
+      "wig",
+      "bed",
+      "vcf",
+      "maf",
+      "gff",
+      "csv",
+      "tsv"
+    ],
+    "checksum_method": [
+      "MD5"
+    ],
+    "quality_scoring_system": [
+      "phred",
+      "log-odds"
+    ],
+    "quality_encoding": [
+      "ascii",
+      "decimal",
+      "hexadecimal"
+    ],
+    "instrument_model_by_platform": {
+      "454": [
+        "454 GS",
+        "454 GS 20",
+        "454 GS FLX",
+        "454 GS FLX+",
+        "454 GS FLX Titanium",
+        "454 GS Junior",
+        "unspecified"
+      ],
+      "Illumina": [
+        "Illumina Genome Analyzer",
+        "Illumina Genome Analyzer II",
+        "Illumina Genome Analyzer IIx",
+        "Illumina HiSeq 1000",
+        "Illumina HiSeq 1500",
+        "Illumina HiSeq 2000",
+        "Illumina HiSeq 2500",
+        "Illumina HiSeq 3000",
+        "Illumina HiSeq 4000",
+        "HiSeq X Five",
+        "HiSeq X Ten",
+        "Illumina HiSeq X",
+        "Illumina HiScanSQ",
+        "Illumina NovaSeq 6000",
+        "Illumina NovaSeq X",
+        "Illumina NovaSeq X Plus",
+        "Illumina MiSeq",
+        "Illumina MiSeq i100",
+        "Illumina MiSeq i100 Plus",
+        "Illumina MiniSeq",
+        "Illumina iSeq 100",
+        "NextSeq 500",
+        "NextSeq 550",
+        "NextSeq 1000",
+        "NextSeq 2000",
+        "unspecified"
+      ],
+      "Helicos": [
+        "Helicos HeliScope",
+        "unspecified"
+      ],
+      "AbiSolid": [
+        "AB SOLiD System",
+        "AB SOLiD System 2.0",
+        "AB SOLiD System 3.0",
+        "AB SOLiD 3 Plus System",
+        "AB SOLiD 4 System",
+        "AB SOLiD 4hq System",
+        "AB SOLiD PI System",
+        "AB 5500 Genetic Analyzer",
+        "AB 5500xl Genetic Analyzer",
+        "AB 5500xl-W Genetic Analysis System",
+        "unspecified"
+      ],
+      "CG": [
+        "Complete Genomics",
+        "unspecified"
+      ],
+      "BGISEQ": [
+        "BGISEQ-50",
+        "BGISEQ-500",
+        "MGISEQ-2000RS",
+        "CycloneSEQ",
+        "unspecified"
+      ],
+      "DNBSEQ": [
+        "DNBSEQ-G400",
+        "DNBSEQ-G400 FAST",
+        "DNBSEQ-T7",
+        "DNBSEQ-G50",
+        "DNBSEQ-T1+",
+        "unspecified"
+      ],
+      "PacBio": [
+        "PacBio RS",
+        "PacBio RS II",
+        "Sequel",
+        "Sequel II",
+        "Sequel IIe",
+        "Onso",
+        "Revio",
+        "unspecified"
+      ],
+      "Iontorrent": [
+        "Ion Torrent PGM",
+        "Ion Torrent Proton",
+        "Ion Torrent S5",
+        "Ion Torrent S5 XL",
+        "Ion GeneStudio S5",
+        "Ion GeneStudio S5 plus",
+        "Ion GeneStudio S5 prime",
+        "Ion Torrent Genexus",
+        "unspecified"
+      ],
+      "Capillary": [
+        "AB 3730xL Genetic Analyzer",
+        "AB 3730 Genetic Analyzer",
+        "AB 3500xL Genetic Analyzer",
+        "AB 3500 Genetic Analyzer",
+        "AB 3130xL Genetic Analyzer",
+        "AB 3130 Genetic Analyzer",
+        "AB 310 Genetic Analyzer",
+        "unspecified"
+      ],
+      "OxfordNanopore": [
+        "MinION",
+        "GridION",
+        "PromethION",
+        "unspecified"
+      ],
+      "Genapsys": [
+        "GENIUS",
+        "Genapsys Sequencer",
+        "GS111",
+        "unspecified"
+      ],
+      "VelaDiagnostics": [
+        "Sentosa SQ301",
+        "unspecified"
+      ],
+      "Element": [
+        "Element AVITI",
+        "unspecified"
+      ],
+      "GeneMind": [
+        "GenoCare 1600",
+        "GenoLab M",
+        "FASTASeq 300",
+        "SURFSeq 5000",
+        "SURFSeq Q",
+        "unspecified"
+      ],
+      "Ultima": [
+        "UG 100",
+        "unspecified"
+      ],
+      "Tapestri": [
+        "Tapestri",
+        "unspecified"
+      ],
+      "Salus": [
+        "Saluseq Nimbo",
+        "Salus Pro",
+        "Salus EVO",
+        "unspecified"
+      ],
+      "GeneusTech": [
+        "G-seq500",
+        "unspecified"
+      ],
+      "SingularGenomics": [
+        "G4",
+        "unspecified"
+      ]
+    }
+  },
+  "formats": {
+    "filename": "^[A-Za-z0-9._-]+$",
+    "md5_checksum": "^[A-Za-z0-9]{32}$",
+    "insert_size_max": 10000000
+  }
+}

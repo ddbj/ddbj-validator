@@ -18,7 +18,7 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     "BS_R0113", "BS_R0114", "BS_R0115", "BS_R0116", "BS_R0118",
     "BS_R0120", "BS_R0121", "BS_R0128", "BS_R0130", "BS_R0132",
     "BS_R0135", "BS_R0137", "BS_R0138", "BS_R0139", "BS_R0141",
-    "BS_R0142",
+    "BS_R0142", "BS_R0144",
 })
 
 

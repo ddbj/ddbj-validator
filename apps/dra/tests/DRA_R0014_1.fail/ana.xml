@@ -1,0 +1,1 @@
+<ANALYSIS_SET><ANALYSIS alias="A1" accession="DRZ1"><TITLE>Ana title</TITLE><STUDY_REF accession="PRJDB1"/><TARGETS><TARGET sra_object_type="SAMPLE" accession="SAMD00000001"/></TARGETS><DATA_BLOCK><FILES><FILE filename="out.tab" filetype="tab" checksum_method="MD5" checksum="00000000000000000000000000000000"/></FILES></DATA_BLOCK></ANALYSIS></ANALYSIS_SET>

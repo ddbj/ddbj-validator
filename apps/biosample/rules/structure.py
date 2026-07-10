@@ -70,3 +70,18 @@ class BS_R0143(BsRule):
                 out.append(self.result(sample=rec.sample_id,
                                        message=f"Sample name is duplicated in the submission. (sample_name: '{rec.sample_name}')"))
         return out
+
+
+class BS_R0144(BsRule):
+    """submission 内の Sample 数が上限（1000）を超過 → error（internal_ignore）。"""
+    rule_id = "BS_R0144"
+    level = "error"
+    target = "#submission"
+    description = "The number of samples in a submission must not exceed 1,000. Please split your submission."
+    SAMPLE_LIMIT = 1000
+
+    def validate(self, submission, context):
+        n = len(submission.records)
+        if n > self.SAMPLE_LIMIT:
+            return [self.result(message=f"{self.description} (Found: {n} samples)")]
+        return []

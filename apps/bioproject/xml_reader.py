@@ -5,8 +5,37 @@
 - BP_R0037: 1 XML に複数 project → error。
 戻り値: (BioProjectSubmission | None, pre_errors[])。パース不可なら submission=None。
 """
+from pathlib import Path
 import defusedxml.ElementTree as ET
 from apps.bioproject.model import BioProjectRecord, BioProjectSubmission, Publication
+
+_XSD = Path(__file__).parent / "resources" / "xsd" / "Package.xsd"
+_SCHEMA_ERR_CAP = 20
+
+
+def _schema_validate(xml_path):
+    """BP_R0002: lxml で Package.xsd 検証。lxml/XSD が無ければスキップ（空）。"""
+    try:
+        import lxml.etree as LE
+    except ImportError:
+        return []
+    try:
+        doc = LE.parse(str(xml_path))
+        schema = LE.XMLSchema(LE.parse(str(_XSD)))
+    except Exception:
+        return []
+    if schema.validate(doc):
+        return []
+    out = []
+    for err in list(schema.error_log):
+        # 既知の XSD 厳格差はスルー: 空 ProjectReleaseDate（実データに多く運用上許容）。XSD は変更しない。
+        if "ProjectReleaseDate" in err.message and "is not a valid value" in err.message:
+            continue
+        out.append({"rule_id": "BP_R0002", "level": "error", "target": "#file_format",
+                    "sample": None, "message": f"Invalid against schema (line {err.line}): {err.message}"})
+        if len(out) >= _SCHEMA_ERR_CAP:
+            break
+    return out
 
 
 def _text(el):
@@ -92,7 +121,7 @@ def parse_xml(xml_path, account=None):
         acc = (mid.get("accession") or "").strip()
         if acc:
             umbrella_members.append(acc)
-    pre_errors = []
+    pre_errors = _schema_validate(xml_path)   # BP_R0002: XSD スキーマ検証（lxml。無ければスキップ）
     if len(projects) > 1:
         pre_errors.append({"rule_id": "BP_R0037", "level": "error", "target": "#file_format",
                            "sample": None, "message": "Only one project is allowed in BioProject XML."})

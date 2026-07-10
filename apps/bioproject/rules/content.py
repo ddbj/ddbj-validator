@@ -2,7 +2,7 @@
 
 - BP_R0004: 提出済み project と title＋description が両方重複 → warning（要 DB/account）。
 - BP_R0006: description が 20-4000 文字（inclusive）でない → error（INSDC min spec）。
-- BP_R0070: title が 20-250 文字（inclusive）でない → error（INSDC min spec）。
+- BP_R0005: title が 20-250 文字（inclusive）でない → error（INSDC min spec。旧 BP_R0005 廃止 ID を再利用）。
 - BP_R0007: Relevance の 'Other' に説明が無い → error。
 - BP_R0008: ProjectTypeTopAdmin subtype=eOther で DescriptionSubtypeOther が無い → error。
 - BP_R0009/0010/0011: Target の sample_scope/material/capture=eOther で Target/Description が無い → error。
@@ -15,6 +15,7 @@
 """
 import re
 from apps.bioproject.rules.base import BpRule
+from apps.bioproject.defs import formats, compiled
 
 _EMPTY = (None, "")
 
@@ -23,9 +24,11 @@ def _empty(v):
     return v is None or not str(v).strip()
 
 
-# INSDC min spec の title/description 文字数（inclusive, 空白含む）
-_DESC_MIN, _DESC_MAX = 20, 4000
-_TITLE_MIN, _TITLE_MAX = 20, 250
+def _len_range(context, key, default_min, default_max):
+    """definitions.formats から (min, max) を取得（無ければ default）。"""
+    f = ((context.definitions or {}).get("formats", {}) if context else {}) or formats()
+    spec = f.get(key) or {}
+    return spec.get("min", default_min), spec.get("max", default_max)
 
 
 class BP_R0004(BpRule):
@@ -75,16 +78,18 @@ class BP_R0006(BpRule):
 
     def validate(self, submission, context):
         out = []
+        lo, hi = _len_range(context, "description_length", 20, 4000)
         for rec in submission.records:
             n = len((rec.description or "").strip())
-            if not (_DESC_MIN <= n <= _DESC_MAX):
+            if not (lo <= n <= hi):
                 out.append(self.result(sample=rec.label,
                                        message=f"{self.description} (Found: {n})"))
         return out
 
 
-class BP_R0070(BpRule):
-    rule_id = "BP_R0070"
+class BP_R0005(BpRule):
+    # 旧 BP_R0005（title==description。廃止）の ID を再利用し、title 文字数制限（min spec）に割り当て。
+    rule_id = "BP_R0005"
     level = "error"
     target = "Title"
     description = ("Project title must be between 20 and 250 characters in length, "
@@ -92,9 +97,10 @@ class BP_R0070(BpRule):
 
     def validate(self, submission, context):
         out = []
+        lo, hi = _len_range(context, "title_length", 20, 250)
         for rec in submission.records:
             n = len((rec.title or "").strip())
-            if not (_TITLE_MIN <= n <= _TITLE_MAX):
+            if not (lo <= n <= hi):
                 out.append(self.result(sample=rec.label,
                                        message=f"{self.description} (Found: {n})"))
         return out
@@ -201,10 +207,6 @@ class BP_R0019(BpRule):
         return out
 
 
-# publication id: PubMed(数字) / PMC(PMC 数字) / DOI(10.xxxx/...) / URL
-_PUB_RE = re.compile(r"^(\d+|PMC\d+|10\.\d+/\S+|https?://\S+)$", re.IGNORECASE)
-
-
 class BP_R0014(BpRule):
     rule_id = "BP_R0014"
     level = "warning"
@@ -213,9 +215,12 @@ class BP_R0014(BpRule):
 
     def validate(self, submission, context):
         out = []
+        # publication id: PubMed(数字) / PMC(PMC 数字) / DOI(10.xxxx/...) / URL
+        f = (context.definitions or {}).get("formats", {}) if context else formats()
+        pub_re = compiled(f.get("publication_id", r"^(\d+|PMC\d+|10\.\d+/\S+|https?://\S+)$"), re.IGNORECASE)
         for rec in submission.records:
             for pub in rec.publications:
-                if pub.id and not _PUB_RE.match(pub.id.strip()):
+                if pub.id and not pub_re.match(pub.id.strip()):
                     out.append(self.result(sample=rec.label,
                                            message=f"Invalid publication identifier. (Found: '{pub.id}')"))
         return out
@@ -248,4 +253,44 @@ class BP_R0040(BpRule):
         for rec in submission.records:
             if rec.project_kind == "single_organism":
                 out.append(self.result(sample=rec.label, message=self.description))
+        return out
+
+
+class BP_R0070(BpRule):
+    """管理語彙（cv_terms）に無い値 → error（旧 BP_R0070 title 長は BP_R0005 へ移設済み・ID 再利用）。
+
+    検査対象フィールド（xxxxx）: sample_scope / material / capture / method_type / subtype /
+    data_type / db_type。definitions.json の cv_terms（Core.xsd 由来）と照合する。
+    """
+    rule_id = "BP_R0070"
+    level = "error"
+    target = "controlled vocabulary"
+    description = "Value is not defined in controlled vocabulary."
+
+    def validate(self, submission, context):
+        cv = context.cv_terms or {}
+        out = []
+        for rec in submission.records:
+            checks = [
+                ("sample_scope", rec.sample_scope, cv.get("sample_scope")),
+                ("material", rec.material, cv.get("material")),
+                ("capture", rec.capture, cv.get("capture")),
+                ("method_type", rec.method_type, cv.get("method_type")),
+                ("subtype", rec.top_admin_subtype, cv.get("top_admin_subtype")),
+            ]
+            for name, val, allowed in checks:
+                v = (val or "").strip()
+                if v and allowed and v not in allowed:
+                    out.append(self.result(sample=rec.label, target=name,
+                                           message=f"Value is not defined in controlled vocabulary ({name}). (Found: '{v}')"))
+            for d in rec.data_entries:   # Objectives/Data@data_type
+                v = (d.get("type") or "").strip()
+                if v and cv.get("data_type") and v not in cv["data_type"]:
+                    out.append(self.result(sample=rec.label, target="data_type",
+                                           message=f"Value is not defined in controlled vocabulary (data_type). (Found: '{v}')"))
+            for pub in rec.publications:
+                v = (pub.db_type or "").strip()
+                if v and cv.get("db_type") and v not in cv["db_type"]:
+                    out.append(self.result(sample=rec.label, target="db_type",
+                                           message=f"Value is not defined in controlled vocabulary (db_type). (Found: '{v}')"))
         return out

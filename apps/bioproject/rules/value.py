@@ -5,8 +5,8 @@
 検査対象: title / description / organism_name / publication reference（自由文フィールド）。
 """
 from apps.bioproject.rules.base import BpRule
-# 空白正規化は biosample と共有ロジック（連続空白畳み込み＋囲みクオート除去）
-from apps.biosample.rules.value_ascii import normalize_data_format, _non_ascii
+# 空白正規化・非 ASCII 判定は common に集約した共有ロジック（旧: apps.biosample.rules.value_ascii）
+from common.text import normalize_data_format, _non_ascii
 
 
 def _text_fields(rec):

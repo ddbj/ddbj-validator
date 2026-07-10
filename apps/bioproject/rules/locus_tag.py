@@ -9,11 +9,18 @@ DB 依存（default/-l ではスキップ、-d 内部 DB のみ実行）:
 - BP_R0016: ProjectLinks で参照する umbrella が DB 上 umbrella project でない → error。
 - BP_R0021: LocusTagPrefix の prefix と biosample_id(SAMD) のペアが BioSample DB と不一致 → error。
 """
-import re
 from apps.bioproject.rules.base import BpRule
+from apps.bioproject.defs import formats, compiled
 
-_SAMD_RE = re.compile(r"^SAMD\d{8,}$")                    # BioSample accession（SAMD＋8桁以上）
-_PREFIX_RE = re.compile(r"^[A-Za-z][A-Za-z0-9]{2,11}$")   # 3-12 英数・先頭非数字
+
+def _samd_re(context):   # BioSample accession（SAMD＋8桁以上）
+    f = (context.definitions or {}).get("formats", {}) if context else formats()
+    return compiled(f.get("biosample_accession", r"^SAMD\d{8,}$"))
+
+
+def _prefix_re(context):  # locus_tag_prefix（3-12 英数・先頭非数字）
+    f = (context.definitions or {}).get("formats", {}) if context else formats()
+    return compiled(f.get("locus_tag_prefix", r"^[A-Za-z][A-Za-z0-9]{2,11}$"))
 
 
 class BP_R0022(BpRule):
@@ -24,10 +31,11 @@ class BP_R0022(BpRule):
 
     def validate(self, submission, context):
         out = []
+        samd_re = _samd_re(context)
         for rec in submission.records:
             for lt in rec.locus_tags:
                 bs = (lt.get("biosample_id") or "").strip()
-                if bs and not _SAMD_RE.match(bs):
+                if bs and not samd_re.match(bs):
                     out.append(self.result(sample=rec.label,
                                            message=f"Invalid BioSample accession. (Found: '{bs}')"))
         return out
@@ -41,10 +49,11 @@ class BP_R0041(BpRule):
 
     def validate(self, submission, context):
         out = []
+        prefix_re = _prefix_re(context)
         for rec in submission.records:
             for lt in rec.locus_tags:
                 pfx = (lt.get("prefix") or "").strip()
-                if pfx and not _PREFIX_RE.match(pfx):
+                if pfx and not prefix_re.match(pfx):
                     out.append(self.result(sample=rec.label,
                                            message=f"Invalid locus tag prefix format. (Found: '{pfx}')"))
         return out
@@ -103,11 +112,12 @@ class BP_R0021(BpRule):
         bs_prefix = getattr(context, "bs_locus_prefix", None)
         if bs_prefix is None:   # DB 未取得（スキップ）
             return out
+        samd_re = _samd_re(context)
         for rec in submission.records:
             for lt in rec.locus_tags:
                 samd = (lt.get("biosample_id") or "").strip()
                 pfx = (lt.get("prefix") or "").strip()
-                if not pfx or not _SAMD_RE.match(samd):
+                if not pfx or not samd_re.match(samd):
                     continue   # prefix 無し / SAMD 形式不正は対象外
                 if pfx not in bs_prefix.get(samd, set()):
                     out.append(self.result(sample=rec.label,

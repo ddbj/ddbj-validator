@@ -5,7 +5,7 @@
 """
 from apps.biosample.rules.base import is_internal_ignore
 from apps.biosample.rules.mandatory import BS_R0018, BS_R0020, BS_R0025, BS_R0026, BS_R0027
-from apps.biosample.rules.structure import BS_R0003, BS_R0061, BS_R0126, BS_R0143
+from apps.biosample.rules.structure import BS_R0003, BS_R0061, BS_R0126, BS_R0143, BS_R0144
 from apps.biosample.rules.value_format import BS_R0007, BS_R0009, BS_R0011, BS_R0040, BS_R0093, BS_R0101, BS_R0136, BS_R0139
 from apps.biosample.rules.consistency import BS_R0024, BS_R0036, BS_R0062, BS_R0073, BS_R0135, BS_R0137, BS_R0132, BS_R0133, BS_R0001
 from apps.biosample.rules.value_ascii import BS_R0058, BS_R0100, BS_R0012, BS_R0013, BS_R0142
@@ -35,6 +35,7 @@ class Validator:
             BS_R0061(),  # 同名属性の複数値
             BS_R0003(),  # sample_title 重複
             BS_R0143(),  # sample_name 重複（submission 内一意）
+            BS_R0144(),  # submission あたり Sample 数上限（1000）
             BS_R0007(),  # collection_date 形式
             BS_R0136(),  # collection_date 整形（autofix）
             BS_R0040(),  # collection_date 未来日

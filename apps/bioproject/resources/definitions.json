@@ -1,0 +1,22 @@
+{
+  "_note": "BioProject validator の定義（cv_terms/formats）。cv_terms は Core.xsd の enumeration 由来。formats は INSDC min spec 等の数値・正規表現。",
+  "cv_terms": {
+    "top_admin_subtype": ["eDisease", "eComparativeGenomics", "eMetagenome", "eSingleOrganismDiscovery", "eFundingInitiative", "eAuthorizedAccess", "eAccounting", "eOther"],
+    "sample_scope": ["eMonoisolate", "eMultiisolate", "eMultispecies", "eEnvironment", "eSynthetic", "eSingleCell", "eOther"],
+    "material": ["eGenome", "ePartialGenome", "eTranscriptome", "eReagent", "eProteome", "ePhenotype", "eOther"],
+    "capture": ["eWhole", "eCloneEnds", "eExome", "eTargetedLocusLoci", "eRandomSurvey", "eOther"],
+    "method_type": ["eSequencing", "eArray", "eMassSpectrometry", "eOther"],
+    "data_type": ["eRawSequenceReads", "eSequence", "eAnalysis", "eAssembly", "eAnnotation", "eVariation", "eEpigeneticMarkers", "eExpression", "eMaps", "ePhenotype", "eOther"],
+    "project_data_type": ["genome sequencing", "raw sequence reads", "genome sequencing and assembly", "metagenome", "metagenomic assembly", "assembly", "transcriptome", "proteomic", "map", "clone ends", "targeted loci", "targeted loci cultured", "targeted loci environmental", "random survey", "exome", "variation", "epigenomics", "phenotype or genotype", "other"],
+    "db_type": ["ePMC", "ePubmed", "eDOI", "eNotAvailable"],
+    "organism_representation": ["eReference", "eAlternate", "eOther"],
+    "archive": ["NCBI", "EBI", "DDBJ"]
+  },
+  "formats": {
+    "title_length": {"min": 20, "max": 250},
+    "description_length": {"min": 20, "max": 4000},
+    "biosample_accession": "^SAMD\\d{8,}$",
+    "locus_tag_prefix": "^[A-Za-z][A-Za-z0-9]{2,11}$",
+    "publication_id": "^(\\d+|PMC\\d+|10\\.\\d+/\\S+|https?://\\S+)$"
+  }
+}
