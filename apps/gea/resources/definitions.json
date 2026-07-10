@@ -1,0 +1,728 @@
+{
+  "idf": {
+    "fields": [
+      "MAGE-TAB Version",
+      "Investigation Title",
+      "Experiment Description",
+      "Experimental Design",
+      "Experimental Factor Name",
+      "Experimental Factor Type",
+      "Person Last Name",
+      "Person First Name",
+      "Person Mid Initials",
+      "Person Affiliation",
+      "Person Roles",
+      "Date of Experiment",
+      "Public Release Date",
+      "PubMed ID",
+      "Publication DOI",
+      "Protocol Name",
+      "Protocol Type",
+      "Protocol Description",
+      "SDRF File",
+      "Comment[GEAAccession]",
+      "Comment[AEExperimentType]",
+      "Comment[Number of channel]",
+      "Comment[Array Design REF]",
+      "Comment[BioProject]",
+      "Comment[SecondaryAccession]",
+      "Comment[Related study]",
+      "Comment[DBCLS]",
+      "Comment[AdditionalFile:TXT]",
+      "Comment[Public Release Date]",
+      "Comment[Last Update Date]"
+    ],
+    "single_value": [
+      "MAGE-TAB Version",
+      "Investigation Title",
+      "Experiment Description",
+      "Date of Experiment",
+      "Public Release Date",
+      "SDRF File",
+      "Comment[GEAAccession]",
+      "Comment[AEExperimentType]",
+      "Comment[Number of channel]",
+      "Comment[Array Design REF]",
+      "Comment[BioProject]",
+      "Comment[Last Update Date]"
+    ],
+    "blank_before": [
+      "Experimental Design",
+      "Person Last Name",
+      "PubMed ID",
+      "Protocol Name",
+      "Public Release Date",
+      "SDRF File",
+      "Comment[GEAAccession]"
+    ],
+    "required_error": [
+      "MAGE-TAB Version",
+      "Investigation Title",
+      "Experiment Description",
+      "Experimental Factor Name",
+      "Person Last Name",
+      "Person Affiliation",
+      "Person Roles",
+      "Protocol Name",
+      "Protocol Type",
+      "SDRF File",
+      "Comment[AEExperimentType]"
+    ],
+    "required_warning": [
+      "Person First Name",
+      "Experimental Factor Type",
+      "Protocol Description"
+    ],
+    "required_ignore_error": [
+      "Comment[GEAAccession]",
+      "Comment[BioProject]",
+      "Comment[Last Update Date]"
+    ],
+    "required_not_null": [
+      "MAGE-TAB Version",
+      "Investigation Title",
+      "Experiment Description",
+      "Person Last Name",
+      "Person Affiliation",
+      "Person Roles",
+      "Protocol Name",
+      "Protocol Type",
+      "Comment[AEExperimentType]"
+    ],
+    "required_group_error": {
+      "Experimental Factor": [
+        "Experimental Factor Name",
+        "Experimental Factor Type"
+      ],
+      "Person": [
+        "Person Last Name",
+        "Person First Name",
+        "Person Affiliation",
+        "Person Roles"
+      ],
+      "Protocol": [
+        "Protocol Name",
+        "Protocol Type",
+        "Protocol Description"
+      ]
+    },
+    "required_group_warning": {
+      "Publication": [
+        "PubMed ID",
+        "Publication DOI"
+      ]
+    },
+    "required_microarray": [
+      "Experimental Design",
+      "Comment[Number of channel]",
+      "Comment[Array Design REF]"
+    ],
+    "description_min_length": 100,
+    "protocol_description_min_length": 100,
+    "person_roles": [
+      "submitter"
+    ]
+  },
+  "sdrf": {
+    "fields": [
+      "Source Name",
+      "Sample Name",
+      "Extract Name",
+      "Labeled Extract Name",
+      "Assay Name",
+      "Scan Name",
+      "Normalization Name",
+      "Array Data File",
+      "Derived Array Data File",
+      "Array Data Matrix File",
+      "Derived Array Data Matrix File",
+      "Array Design REF",
+      "Technology Type",
+      "Material Type",
+      "Label",
+      "Provider",
+      "Performer",
+      "Date",
+      "Protocol REF",
+      "Term Source REF",
+      "Term Accession Number",
+      "Description",
+      "Characteristics\\[.*\\]",
+      "Parameter Value\\[.*\\]",
+      "Comment\\[.*\\]",
+      "Unit\\[.*\\]",
+      "Factor Value\\[.*\\]"
+    ],
+    "node_columns": [
+      "Source Name",
+      "Sample Name",
+      "Extract Name",
+      "Labeled Extract Name",
+      "Assay Name",
+      "Scan Name",
+      "Normalization Name",
+      "Array Data File",
+      "Derived Array Data File",
+      "Array Data Matrix File",
+      "Derived Array Data Matrix File"
+    ],
+    "required_columns_error": [
+      "Source Name",
+      "Extract Name",
+      "Assay Name",
+      "Technology Type",
+      "Protocol REF",
+      "Characteristics[organism]"
+    ],
+    "required_columns_warning": [
+      "Characteristics\\[taxonomy_id\\]",
+      "Comment\\[BioSample\\]",
+      "Comment\\[sample_title\\]",
+      "Factor Value\\[[-_ A-Za-z0-9.]+\\]"
+    ],
+    "required_columns_microarray": [
+      "Labeled Extract Name",
+      "Label",
+      "Array Design REF"
+    ],
+    "required_columns_sequencing": [
+      "Comment\\[SRA_RUN\\]",
+      "Comment\\[SRA_EXPERIMENT\\]"
+    ],
+    "singleton_columns": [
+      "Source Name",
+      "Sample Name",
+      "Extract Name",
+      "Labeled Extract Name",
+      "Assay Name",
+      "Characteristics[organism]",
+      "Characteristics[taxonomy_id]"
+    ],
+    "required_data_file_group": {
+      "raw": [
+        "Array Data File",
+        "Array Data Matrix File"
+      ],
+      "derived": [
+        "Derived Array Data File",
+        "Derived Array Data Matrix File"
+      ]
+    }
+  },
+  "controlled_terms": {
+    "idf": {
+      "error": {
+        "MAGE-TAB Version": [
+          "1.1"
+        ],
+        "Person Roles": [
+          "submitter"
+        ],
+        "Comment[Number of channel]": [
+          "single-channel",
+          "dual-channel"
+        ]
+      },
+      "warning": {
+        "Experimental Design": [
+          "biological variation design",
+          "case control design",
+          "cell component comparison design",
+          "cell cycle design",
+          "cell type comparison design",
+          "cellular modification design",
+          "clinical history design",
+          "compound treatment design",
+          "cross sectional design",
+          "development or differentiation design",
+          "disease state design",
+          "dose response design",
+          "family based design",
+          "genetic modification design",
+          "genotype design",
+          "growth condition design",
+          "imprinting design",
+          "injury design",
+          "innate behavior design",
+          "observational design",
+          "organism part comparison design",
+          "organism status design",
+          "pathogenicity design",
+          "population based design",
+          "RNA stability design",
+          "sex design",
+          "species design",
+          "stimulus or stress design",
+          "strain or line design",
+          "time series design",
+          "twin design",
+          "biomolecular annotation design",
+          "binding site identification design",
+          "genotyping design",
+          "mobile element identification design",
+          "operon identification design",
+          "secreted protein identification design",
+          "translational bias design",
+          "transposable element identification design",
+          "methodological variation design",
+          "all pairs",
+          "array platform variation design",
+          "array specific design",
+          "dye swap design",
+          "hardware variation design",
+          "loop design",
+          "normalization testing design",
+          "operator variation design",
+          "optimization design",
+          "quality control testing design",
+          "reference design",
+          "replicate design",
+          "self vs self design",
+          "software variation design",
+          "validation by real time PCR design",
+          "validation by reverse transcription PCR design"
+        ],
+        "Protocol Type": [
+          "array scanning and feature extraction protocol",
+          "conversion protocol",
+          "dissection protocol",
+          "growth protocol",
+          "high throughput sequence alignment protocol",
+          "normalization data transformation protocol",
+          "nucleic acid extraction protocol",
+          "nucleic acid hybridization to array protocol",
+          "nucleic acid labeling protocol",
+          "nucleic acid library construction protocol",
+          "nucleic acid sequencing protocol",
+          "sample collection protocol",
+          "treatment protocol"
+        ]
+      }
+    },
+    "sdrf": {
+      "error": {
+        "Technology Type": [
+          "array assay",
+          "sequencing assay"
+        ]
+      },
+      "warning": {
+        "Material Type": [
+          "total RNA",
+          "polyA RNA",
+          "cytoplasmic RNA",
+          "nuclear RNA",
+          "genomic DNA",
+          "protein",
+          "other"
+        ]
+      }
+    }
+  },
+  "value_formats": {
+    "Comment[GEAAccession]": "E-GEAD-\\d+",
+    "Comment[BioProject]": "(PRJDB\\d+|PSUB\\d{6,})",
+    "Comment[SecondaryAccession]": "[A-Za-z0-9:_.-]+",
+    "Comment[BioSample]": "(SAMD\\d{8}|SSUB\\d{6,})",
+    "Comment[SRA_EXPERIMENT]": "DRX\\d{6,}",
+    "Comment[SRA_RUN]": "DRR\\d{6,}",
+    "Comment[SRA_ANALYSIS]": "DRZ\\d{6,}",
+    "Comment[JGA_STUDY]": "JGAS\\d{6,}",
+    "Comment[JGA_SAMPLE]": "JGAN\\d{6,}",
+    "Comment[JGA_EXPERIMENT]": "JGAX\\d{6,}",
+    "Comment[JGA_DATA]": "JGAD\\d{6,}",
+    "Comment[JGA_ANALYSIS]": "JGAZ\\d{6,}",
+    "Comment[GEO_SAMPLE]": "GSM\\d+",
+    "Comment[GEO_SERIES]": "GSE\\d+",
+    "Comment[ArrayExpress_Experiment]": "E-[A-Z]+-\\d+",
+    "Protocol Name": "(P-GEAD-\\d+|[A-Za-z0-9]+-?\\d*_Protocol_\\d+)",
+    "Protocol REF": "(P-GEAD-\\d+|[A-Za-z0-9]+-?\\d*_Protocol_\\d+)",
+    "Array Design REF": "(A-[A-Z]+-\\d+|[-_ A-Za-z0-9.]+)",
+    "PubMed ID": "\\d+",
+    "Public Release Date": "\\d{4}-\\d{2}-\\d{2}",
+    "Date of Experiment": "\\d{4}-\\d{2}-\\d{2}",
+    "Date": "\\d{4}-\\d{2}-\\d{2}",
+    "AdditionalFile": "[A-Za-z0-9._-]+"
+  },
+  "null_values": {
+    "accepted": [
+      "not applicable",
+      "not collected",
+      "not provided",
+      "missing",
+      "restricted access"
+    ],
+    "not_recommended": [
+      "NA",
+      "N/A",
+      "N\\. ?A\\.?",
+      "Unknown",
+      "\\.",
+      "\\-"
+    ]
+  },
+  "biosample_sync": {
+    "biosample_ref_columns": [
+      "Comment[BioSample]"
+    ],
+    "source_name_default": "sample_name",
+    "sync_characteristics": [
+      "organism",
+      "taxonomy_id",
+      "collection_date",
+      "geo_loc_name",
+      "isolate",
+      "strain",
+      "cultivar",
+      "sex",
+      "tissue",
+      "age",
+      "sample_name"
+    ],
+    "mapping": {}
+  },
+  "types": [
+    {
+      "submission_type": "microarray",
+      "rule_experiment_type": "Micro-array",
+      "technology_type": "array assay"
+    },
+    {
+      "submission_type": "sequencing",
+      "rule_experiment_type": "HTS",
+      "technology_type": "sequencing assay"
+    },
+    {
+      "submission_type": "other",
+      "rule_experiment_type": "Both",
+      "technology_type": null
+    }
+  ],
+  "technology_type_map": {
+    "array assay": "microarray",
+    "sequencing assay": "sequencing"
+  },
+  "experiment_types": {
+    "4C": {
+      "efo": "EFO_0007690",
+      "technology": "sequencing"
+    },
+    "antigen profiling": {
+      "efo": "EFO_0000747",
+      "technology": "other"
+    },
+    "ATAC-seq": {
+      "efo": "EFO_0007045",
+      "technology": "sequencing"
+    },
+    "Bisulfite-seq": {
+      "efo": "EFO_0003753",
+      "technology": "sequencing"
+    },
+    "Capture-C": {
+      "efo": "EFO_0007691",
+      "technology": "sequencing"
+    },
+    "ChIP-chip by array": {
+      "efo": "EFO_0002760",
+      "technology": "microarray"
+    },
+    "ChIP-chip by SNP array": {
+      "efo": "EFO_0002764",
+      "technology": "microarray"
+    },
+    "ChIP-chip by tiling array": {
+      "efo": "EFO_0002762",
+      "technology": "microarray"
+    },
+    "ChIP-seq": {
+      "efo": "EFO_0002692",
+      "technology": "sequencing"
+    },
+    "CLIP-seq": {
+      "efo": "EFO_0003143",
+      "technology": "sequencing"
+    },
+    "comparative genomic hybridization by array": {
+      "efo": "EFO_0000749",
+      "technology": "microarray"
+    },
+    "DNA-seq": {
+      "efo": "EFO_0002693",
+      "technology": "sequencing"
+    },
+    "FAIRE-seq": {
+      "efo": "EFO_0004428",
+      "technology": "sequencing"
+    },
+    "genotyping by array": {
+      "efo": "EFO_0002767",
+      "technology": "microarray"
+    },
+    "genotyping by high throughput sequencing": {
+      "efo": "EFO_0002771",
+      "technology": "sequencing"
+    },
+    "GRO-seq": {
+      "efo": "EFO_0005227",
+      "technology": "sequencing"
+    },
+    "Hi-C": {
+      "efo": "EFO_0007693",
+      "technology": "sequencing"
+    },
+    "MeDIP-seq": {
+      "efo": "EFO_0003749",
+      "technology": "sequencing"
+    },
+    "metabolomic profiling": {
+      "efo": "EFO_0000752",
+      "technology": "other"
+    },
+    "methylation profiling by array": {
+      "efo": "EFO_0002759",
+      "technology": "microarray"
+    },
+    "methylation profiling by high throughput sequencing": {
+      "efo": "EFO_0002761",
+      "technology": "sequencing"
+    },
+    "microRNA profiling by array": {
+      "efo": "EFO_0000753",
+      "technology": "microarray"
+    },
+    "microRNA profiling by high throughput sequencing": {
+      "efo": "EFO_0002896",
+      "technology": "sequencing"
+    },
+    "MNase-seq": {
+      "efo": "EFO_0003751",
+      "technology": "sequencing"
+    },
+    "proteomic profiling by array": {
+      "efo": "EFO_0002765",
+      "technology": "microarray"
+    },
+    "proteomic profiling by mass spectrometer": {
+      "efo": "EFO_0002766",
+      "technology": "other"
+    },
+    "RIP-chip by array": {
+      "efo": "EFO_0005517",
+      "technology": "microarray"
+    },
+    "RIP-seq": {
+      "efo": "EFO_0005310",
+      "technology": "sequencing"
+    },
+    "RNA-seq of coding RNA": {
+      "efo": "EFO_0003738",
+      "technology": "sequencing"
+    },
+    "RNA-seq of coding RNA from single cells": {
+      "efo": "EFO_0005684",
+      "technology": "sequencing"
+    },
+    "RNA-seq of non coding RNA": {
+      "efo": "EFO_0003737",
+      "technology": "sequencing"
+    },
+    "RNA-seq of non coding RNA from single cells": {
+      "efo": "EFO_0005685",
+      "technology": "sequencing"
+    },
+    "tiling path by array": {
+      "efo": "EFO_0001031",
+      "technology": "microarray"
+    },
+    "transcription profiling by array": {
+      "efo": "EFO_0002768",
+      "technology": "microarray"
+    },
+    "transcription profiling by MPSS": {
+      "efo": "EFO_0002942",
+      "technology": "sequencing"
+    },
+    "transcription profiling by RT-PCR": {
+      "efo": "EFO_0002943",
+      "technology": "other"
+    },
+    "transcription profiling by SAGE": {
+      "efo": "EFO_0002941",
+      "technology": "sequencing"
+    },
+    "transcription profiling by tiling array": {
+      "efo": "EFO_0002769",
+      "technology": "microarray"
+    },
+    "translation profiling": {
+      "efo": "EFO_0001033",
+      "technology": "other"
+    },
+    "whole chromosome random sequencing": {
+      "efo": "EFO_0004160",
+      "technology": "sequencing"
+    }
+  },
+  "protocols": {
+    "all_types": [
+      "array scanning and feature extraction protocol",
+      "conversion protocol",
+      "dissection protocol",
+      "growth protocol",
+      "high throughput sequence alignment protocol",
+      "normalization data transformation protocol",
+      "nucleic acid extraction protocol",
+      "nucleic acid hybridization to array protocol",
+      "nucleic acid labeling protocol",
+      "nucleic acid library construction protocol",
+      "nucleic acid sequencing protocol",
+      "sample collection protocol",
+      "treatment protocol"
+    ],
+    "required": {
+      "microarray": [
+        "sample collection protocol",
+        "nucleic acid extraction protocol",
+        "nucleic acid labeling protocol",
+        "nucleic acid hybridization to array protocol",
+        "array scanning and feature extraction protocol",
+        "normalization data transformation protocol"
+      ],
+      "sequencing": [
+        "sample collection protocol",
+        "nucleic acid extraction protocol",
+        "nucleic acid library construction protocol",
+        "nucleic acid sequencing protocol",
+        "normalization data transformation protocol"
+      ]
+    },
+    "optional": {
+      "microarray": [
+        "growth protocol",
+        "treatment protocol",
+        "conversion protocol",
+        "dissection protocol"
+      ],
+      "sequencing": [
+        "growth protocol",
+        "treatment protocol",
+        "conversion protocol",
+        "dissection protocol",
+        "high throughput sequence alignment protocol"
+      ]
+    }
+  },
+  "allowed_db_elements": [
+    "abrc_stock",
+    "AmoebaDB",
+    "asrp",
+    "atcc",
+    "bdgp",
+    "beebase",
+    "candida_genome_db",
+    "candidadb",
+    "catma",
+    "celera_transcript",
+    "cog",
+    "dbsnp",
+    "ddbj",
+    "dfci_rgi",
+    "dfci_asgi",
+    "dfci_atgi",
+    "dfci_mtgi",
+    "dfci_ssgi",
+    "dfci_stgi",
+    "dfci_zgi",
+    "dfci_zmgi",
+    "dictybase",
+    "embl",
+    "ens_fam_id",
+    "ens_gene_id",
+    "ens_trscrpt_id",
+    "ensembl",
+    "entrez",
+    "entrez_gene",
+    "flybase",
+    "flybase_bt",
+    "flybase_computed_gene",
+    "flybase_dv",
+    "genbank",
+    "genecards",
+    "genedb",
+    "genesnps",
+    "genolevures",
+    "go",
+    "gpcrdb",
+    "gxd",
+    "halolex",
+    "HarvEST35",
+    "hgmd",
+    "howdy",
+    "hpa",
+    "hugo",
+    "image",
+    "incyte",
+    "insdc",
+    "insdc_locus_tag",
+    "interpro",
+    "kegg",
+    "locus",
+    "mgc",
+    "mgd",
+    "mips",
+    "mirbase",
+    "MO",
+    "msu_rga",
+    "mtb",
+    "nasc",
+    "ncbi_clone_registry",
+    "ncbitax",
+    "netaffx",
+    "neurosporadb",
+    "nia_nih",
+    "omim",
+    "pdb",
+    "pfam",
+    "pharmgkb",
+    "phyca11",
+    "pir",
+    "plantgdb",
+    "PlantOntology",
+    "plasmodb",
+    "populusDB",
+    "prf",
+    "prodom",
+    "prosite",
+    "pubmed",
+    "refseq",
+    "rgd",
+    "rgd_qtl",
+    "rhizobase",
+    "scop",
+    "sgd",
+    "sgn",
+    "subtilist",
+    "sulfolobus",
+    "swissprot",
+    "tair",
+    "tair_anat",
+    "tair_dev",
+    "tigr_tagi",
+    "ToxoDB",
+    "toxoest",
+    "trembl",
+    "TriTrypDB",
+    "tuberculist",
+    "uhn_cpg",
+    "unigene",
+    "uniprot",
+    "unists",
+    "vectorbase",
+    "vega_cf",
+    "vega_dr",
+    "vega_hs",
+    "vega_mm",
+    "wormbase"
+  ]
+}

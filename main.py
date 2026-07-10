@@ -4,7 +4,7 @@ import sys
 import argparse
 
 # 既知のトップレベルサブコマンド（将来サブコマンドが増えたらここに追加）
-KNOWN_COMMANDS = {"ddbj", "biosample", "bioproject", "dra", "metabobank", "mb"}
+KNOWN_COMMANDS = {"ddbj", "biosample", "bioproject", "dra", "metabobank", "mb", "gea"}
 
 def main():
     parser = argparse.ArgumentParser(
@@ -18,6 +18,7 @@ def main():
     subparsers.add_parser("dra", help="Run DRA Validator")
     subparsers.add_parser("metabobank", help="Run MetaboBank Validator")
     subparsers.add_parser("mb", help="Run MetaboBank Validator (alias)")
+    subparsers.add_parser("gea", help="Run GEA Validator")
 
     # --- 'ddbj' サブコマンドの省略を許可する ---
     # 第1引数が既知のサブコマンドでなければ、暗黙的に 'ddbj' を補完する。
@@ -53,6 +54,10 @@ def main():
         sys.argv = [f"{sys.argv[0]} {args.command}"] + unknown
         from apps.metabobank.cli import main as mb_main
         mb_main()
+    elif args.command == "gea":
+        sys.argv = [f"{sys.argv[0]} gea"] + unknown
+        from apps.gea.cli import main as gea_main
+        gea_main()
     else:
         parser.print_help()
 

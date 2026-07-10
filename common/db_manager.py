@@ -35,7 +35,8 @@ class DatabaseManager:
             "bp": None,
             "bs": None,
             "dra": None,
-            "submitter": None
+            "submitter": None,
+            "gea": None
         }
 
     def _get_conn(self, key, db_env_name, is_tax=False):
@@ -74,6 +75,9 @@ class DatabaseManager:
 
     def get_submitter_conn(self):
         return self._get_conn("submitter", "SUBMITTER_DB_NAME")
+
+    def get_gea_conn(self):
+        return self._get_conn("gea", "GEA_DB_NAME")
 
     def close_all(self):
         for conn in self._conns.values():

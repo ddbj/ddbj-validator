@@ -1,6 +1,6 @@
-"""MetaboBank 定義ファイル（resources/definitions.json）ローダ。
+"""GEA の定義ファイル（resources/definitions.json）ローダ。
 
-ロード実体と正規表現コンパイルは common/defs_loader に集約（bp/dra/metabobank で共通）。
+ロード実体と正規表現コンパイルは common/defs_loader に集約（bp/dra/metabobank/gea で共通）。
 """
 from pathlib import Path
 from common.defs_loader import load_json, compiled  # noqa: F401  （compiled は再エクスポート）
