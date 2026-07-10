@@ -254,3 +254,43 @@ class BP_R0040(BpRule):
             if rec.project_kind == "single_organism":
                 out.append(self.result(sample=rec.label, message=self.description))
         return out
+
+
+class BP_R0070(BpRule):
+    """管理語彙（cv_terms）に無い値 → error（旧 BP_R0070 title 長は BP_R0005 へ移設済み・ID 再利用）。
+
+    検査対象フィールド（xxxxx）: sample_scope / material / capture / method_type / subtype /
+    data_type / db_type。definitions.json の cv_terms（Core.xsd 由来）と照合する。
+    """
+    rule_id = "BP_R0070"
+    level = "error"
+    target = "controlled vocabulary"
+    description = "Value is not defined in controlled vocabulary."
+
+    def validate(self, submission, context):
+        cv = context.cv_terms or {}
+        out = []
+        for rec in submission.records:
+            checks = [
+                ("sample_scope", rec.sample_scope, cv.get("sample_scope")),
+                ("material", rec.material, cv.get("material")),
+                ("capture", rec.capture, cv.get("capture")),
+                ("method_type", rec.method_type, cv.get("method_type")),
+                ("subtype", rec.top_admin_subtype, cv.get("top_admin_subtype")),
+            ]
+            for name, val, allowed in checks:
+                v = (val or "").strip()
+                if v and allowed and v not in allowed:
+                    out.append(self.result(sample=rec.label, target=name,
+                                           message=f"Value is not defined in controlled vocabulary ({name}). (Found: '{v}')"))
+            for d in rec.data_entries:   # Objectives/Data@data_type
+                v = (d.get("type") or "").strip()
+                if v and cv.get("data_type") and v not in cv["data_type"]:
+                    out.append(self.result(sample=rec.label, target="data_type",
+                                           message=f"Value is not defined in controlled vocabulary (data_type). (Found: '{v}')"))
+            for pub in rec.publications:
+                v = (pub.db_type or "").strip()
+                if v and cv.get("db_type") and v not in cv["db_type"]:
+                    out.append(self.result(sample=rec.label, target="db_type",
+                                           message=f"Value is not defined in controlled vocabulary (db_type). (Found: '{v}')"))
+        return out

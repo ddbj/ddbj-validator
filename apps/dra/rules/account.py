@@ -69,6 +69,16 @@ class DRA_R0009(DraRule):
         used = getattr(context, "account_object_names", None)
         if not used:   # None/空（未取得）はスキップ
             return []
+        # 自己除外: 検証対象自身の submission に属する登録済みオブジェクト（同一 alias prefix）は
+        # 「既使用」としない（登録済みデータの再検証で自己 alias に誤ヒットするのを防ぐ）。
+        # submission alias 例 "dradev-0062_Submission" → prefix "dradev-0062"。同 prefix の登録名を除外。
+        self_prefix = None
+        sm = submission.submission
+        if sm and sm.alias:
+            a = sm.alias.strip()
+            self_prefix = a.split("_Submission")[0] if "_Submission" in a else a
+        if self_prefix:
+            used = {n for n in used if not n.startswith(self_prefix)}
         out = []
         objs = ([submission.submission] if submission.submission else []) \
             + submission.experiments + submission.runs + submission.analyses

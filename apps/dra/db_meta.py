@@ -147,16 +147,41 @@ def fetch_account_biosamples(bs_conn, dra_conn, account, ref_samds):
 
 
 def fetch_account_runs(dra_conn, account, ref_drrs):
-    """参照 DRR のうち account 所有（accession_entity）∪ DRA permit の集合（DRA_R0043）。
+    """参照 DRR のうち account 所有（accession_entity）∪ DRA permit（その DRA submission 配下の DRR）の集合（DRA_R0043）。
 
-    permit DRA は「その DRA submission に含まれる DRR」への許可。DRA→DRR の完全解決はスキーマ都合で
-    best-effort（解決できなければ DRA permit 分は含めない）。owned が全く取れなければ None（=スキップ）。
+    DRA permit の ref_name は DRA submission の acc_no（数値）または alias（例 dradev-0041）。
+    それを submission alias の prefix（`_Submission` 前）に解決し、同 prefix の DRR を許可対象に含める。
+    owned/permit が全く取れなければ None（=スキップ）。
     """
+    import re as _re
     if not dra_conn or not account:
         return None
     owned = _accession_entity(dra_conn, account, "Run", "DRR")
-    # DRA permit（その submission 配下の DRR は許可）。best-effort: 解決手段が無ければ空。
-    return owned if owned else None
+    try:
+        permit_dra = _permit(dra_conn, account, "DRA")
+        prefixes = {r for r in permit_dra if r and not r.isdigit()}   # alias 直接（dradev-XXXX）
+        nums = sorted({int(r) for r in permit_dra if r.isdigit()})
+        if nums:
+            with dra_conn.cursor() as cur:
+                cur.execute("SELECT alias FROM mass.accession_entity WHERE acc_type='DRA' AND acc_no = ANY(%s)", (nums,))
+                for (alias,) in cur.fetchall():
+                    if alias:
+                        prefixes.add(alias.split("_Submission")[0].strip())
+        if prefixes:
+            pat = "^(" + "|".join(_re.escape(p) for p in sorted(prefixes)) + ")_"
+            with dra_conn.cursor() as cur:
+                cur.execute(
+                    "SELECT alias, acc_no FROM mass.accession_entity "
+                    "WHERE acc_type='DRR' AND alias ~ %s AND (is_delete IS NULL OR is_delete=false)", (pat,))
+                for alias, acc_no in cur.fetchall():
+                    if alias:
+                        owned.add(alias.strip())
+                    acc = _acc_from_no("DRR", acc_no)
+                    if acc:
+                        owned.add(acc)
+    except Exception:
+        pass
+    return owned or None
 
 
 def fetch_account_object_names(dra_conn, account):

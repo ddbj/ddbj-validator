@@ -8,7 +8,7 @@ from apps.bioproject.rules.value import BP_R0060, BP_R0059
 from apps.bioproject.rules.taxonomy import BP_R0018, BP_R0020, BP_R0038, BP_R0039
 from apps.bioproject.rules.content import (
     BP_R0004, BP_R0005, BP_R0006, BP_R0007, BP_R0008, BP_R0009, BP_R0010, BP_R0011,
-    BP_R0012, BP_R0013, BP_R0014, BP_R0015, BP_R0019, BP_R0040,
+    BP_R0012, BP_R0013, BP_R0014, BP_R0015, BP_R0019, BP_R0040, BP_R0070,
 )
 from apps.bioproject.rules.locus_tag import (
     BP_R0016, BP_R0021, BP_R0022, BP_R0041, BP_R0042,
@@ -37,6 +37,7 @@ class Validator:
             BP_R0015(),  # publication reference 欠落
             BP_R0019(),  # multi-species は organism 説明必須
             BP_R0040(),  # ProjectTypeTopSingleOrganism は不正
+            BP_R0070(),  # cv_terms（sample_scope/material/capture/method_type/subtype/data_type/db_type）
             # --- locus_tag / umbrella（Step4）---
             BP_R0022(),  # BioSample accession 形式
             BP_R0041(),  # locus_tag_prefix 形式
