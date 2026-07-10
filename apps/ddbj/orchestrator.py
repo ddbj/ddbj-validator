@@ -38,6 +38,7 @@ from apps.ddbj.autofix import (
 )
 from apps.ddbj.reporter import ValidationReporter
 from apps.ddbj.context import ValidationContext
+from apps.ddbj.rule_modes import get_web_mode_skip_rules
 from common.ncbi_api import filter_target_accessions, check_ncbi_public_status
 from apps.ddbj.utils.translation import get_cds_translation_params, get_insdc_translation
 from apps.ddbj.utils.features import get_features
@@ -250,10 +251,10 @@ def _validate_single_file_set(task):
             acc = p["entry"].split('_')[0]
             current = p["old_value"]
             fixed = p["new_value"]
-            # -o オプションがあればそこへ。なければ入力ファイルの親へ
+            # -o オプションがあればそこへ。なければ入力ファイルの親へ。updQ は reports/ 配下に出す
             base_out = Path(report_out_dir) if report_out_dir else Path(ann_path).parent
             out_name = f"{Path(ann_path).stem}.updQ.txt"
-            out_path = base_out / out_name
+            out_path = base_out / "reports" / out_name
             file_updq_data.append((out_path, f">{acc}\tPCR_primers\t{current}\tPCR_primers\t{fixed}\n"))
 
     # ====================================================
@@ -278,8 +279,14 @@ def _validate_single_file_set(task):
     # ====================================================
     # メインプロセスにデータを返さず、専用のテンポラリJSONLに書き捨てる
     # ====================================================
+    # -w（NSSS）モードでは所定のルールを適用しない（結果を除外。リストは web_mode_skip_rules.json）
+    if is_web_mode:
+        web_skip = get_web_mode_skip_rules()
+        if web_skip:
+            file_results = [r for r in file_results if r.get("rule") not in web_skip]
+
     tmp_jsonl_path = Path(tmp_dir_str) / f"{Path(ann_path).name}.jsonl"
-    
+
     with open(tmp_jsonl_path, "w", encoding="utf-8") as f_jsonl:
         def write_record(rec_type, data):
             f_jsonl.write(json.dumps({"type": rec_type, "data": data}) + "\n")
@@ -854,6 +861,12 @@ class ValidatorPipeline:
                     "level": "ERROR", "entry": "ALL_ENTRIES", "feature_type": "locus_tag", "target": "locus_tag", "message": msg
                 })
                 
+        # -w（NSSS）モードでは submission-level も所定ルールを除外
+        if self.is_web_mode:
+            web_skip = get_web_mode_skip_rules()
+            if web_skip:
+                cross_file_results = [r for r in cross_file_results if r.get("rule") not in web_skip]
+
         # クロスファイルのチェック結果も専用の JSONL に書き出して先頭に追加
         if cross_file_results:
             cross_jsonl = self.tmp_dir / "Submission_Cross_File.jsonl"
@@ -945,6 +958,7 @@ class ValidatorPipeline:
         if self.is_web_mode and self.updq_data:
             print("\n[NSSS Mode] Exporting DB update files...")
             for out_path, lines in self.updq_data.items():
+                Path(out_path).parent.mkdir(parents=True, exist_ok=True)  # reports/ を確実に作る
                 with open(out_path, "w", encoding="utf-8", newline="\n") as f:
                     f.writelines(lines)
                 print(f"  => DB update TSV saved to: {out_path}")
