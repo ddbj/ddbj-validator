@@ -12,6 +12,50 @@ class ValidationReporter:
         self.out_dir.mkdir(parents=True, exist_ok=True)
         self.show_location = False
 
+    def write_json_report(self, jsonl_paths, version=None):
+        """JSON レポート出力（--json）。biosample/bioproject/dra と揃えたスキーマ＋ddbj 固有粒度。
+
+        messages[] に entry/feature_type/qualifier/location/line_number を含める（ddbj は feature/entry 単位）。
+        auto-cleanup（is_cleanup）は level="auto-cleanup" として error にカウントしない。
+        """
+        counts = {"error": 0, "warning": 0, "info": 0, "auto-cleanup": 0}
+        messages = []
+        for jsonl_path in jsonl_paths:
+            try:
+                with open(jsonl_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        rec = json.loads(line)
+                        if rec.get("type") != "result":
+                            continue
+                        res = rec["data"]
+                        level = "auto-cleanup" if res.get("is_cleanup") else str(res.get("level", "warning")).lower()
+                        counts[level] = counts.get(level, 0) + 1
+                        messages.append({
+                            "id": res.get("rule"),
+                            "level": level,
+                            "message": res.get("message", ""),
+                            "target": res.get("target", ""),
+                            "file": res.get("file"),
+                            "entry": res.get("entry"),
+                            "feature_type": res.get("feature_type"),
+                            "qualifier": res.get("qualifier"),
+                            "location": res.get("location"),
+                            "line_number": res.get("line_number"),
+                            "external": res.get("internal_ignore", False),
+                        })
+            except FileNotFoundError:
+                continue
+        payload = {
+            "version": version,
+            "validity": counts.get("error", 0) == 0,
+            "stats": {"error": counts.get("error", 0), "warning": counts.get("warning", 0),
+                      "info": counts.get("info", 0), "auto-cleanup": counts.get("auto-cleanup", 0)},
+            "messages": messages,
+        }
+        out_path = self.out_dir / "validation_report.json"
+        out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        return out_path
+
     def generate_report(self, jsonl_paths, print_console=True, start_time=None, end_time=None, version=None):
         """レポート出力の統括メソッド (JSONLストリーミング対応版)"""
         report_summary_path = self.out_dir / "validation_report_summary.txt"

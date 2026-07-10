@@ -25,6 +25,7 @@ def _build_parser():
     parser.add_argument("--account", type=str, help="Submitter account ID")
     parser.add_argument("-j", "--jobs", type=int, default=None, help="Number of parallel processes (default: up to 8. Use 0 to use all available cores)")
     parser.add_argument("-w", "--web", action="store_true", help="NSSS (web submission) mode")
+    parser.add_argument("--json", action="store_true", help="Output report as JSON (validation_report.json). -j is --jobs, not JSON")
     parser.add_argument("-f", "--force-fix", action="store_true", help="Automatically apply all auto-fixes without prompting")
     # 関連 BioSample を SSUB 単位の更新用 TSV として出力（内部使用のみ・要内部DB）
     parser.add_argument("-b", "--biosample", action="store_true", help="Generate SSUB-unit BioSample update TSV from DBLINK biosample accessions (internal use; requires internal DB)")
@@ -293,16 +294,22 @@ def _run(args, pairs, report_out_dir, target_dirs_for_report, skip_db, skip_ncbi
         # -o オプションがあればそれを最優先に、なければ対象ディレクトリに出力
         target_dir = report_out_dir if args.out_dir else (target_dirs_for_report[0] if target_dirs_for_report else Path(report_out_dir))
         reporter = ValidationReporter(out_dir=target_dir)
-        reporter.generate_report(jsonl_paths, print_console=True, start_time=start_time, end_time=end_time, version=tool_version)
-        
+        if args.json:
+            reporter.write_json_report(jsonl_paths, version=tool_version)
+            report_files = ["validation_report.json"]
+        else:
+            reporter.generate_report(jsonl_paths, print_console=True, start_time=start_time, end_time=end_time, version=tool_version)
+            report_files = ["validation_report_summary.txt", "validation_report_details.txt"]
+
         # 3. Autofix の承認と適用
         pipeline.run_autofix()
-        
+
         # --- 変更点: 表示用パスに reports ディレクトリを追加 ---
         reports_dir = target_dir / "reports"
         print(f"\n\n[ All reports successfully generated to {reports_dir} ]")
-        print(f"  validation_report_summary.txt")
-        print(f"  validation_report_details.txt\n")
+        for _f in report_files:
+            print(f"  {_f}")
+        print()
     finally:
         # 4. コンテナやホストのディスクを圧迫しないよう、テンポラリファイルを確実に削除
         pipeline.cleanup_tmp_dir()
