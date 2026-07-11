@@ -4,7 +4,8 @@
 - DRA linkage: SDRF が参照する DRR から連携先 DRA submission を特定し、その全 Run/BioSample を取得。REF0003/0004 用。
 """
 
-_ARRAY_DESIGN_TYPE = 3   # dordb mass.accession.accession_type: ArrayDesign
+_ARRAY_DESIGN_TYPE = 3    # dordb mass.accession.accession_type: ArrayDesign
+_PUBLIC_STATUS = 300      # dordb mass.current_object_status.object_status_type: 公開（released）
 
 
 def _acc_from_no(acc_type, acc_no):
@@ -13,17 +14,30 @@ def _acc_from_no(acc_type, acc_no):
     return f"{acc_type}{s if len(s) >= 6 else s.zfill(6)}"
 
 
-def fetch_array_designs(gea_conn, account):
-    """account が使用可能な Array Design accession 集合（所有＋公開）。"""
+def fetch_array_designs(gea_conn, account=None):
+    """REF0005 で参照可能な Array Design accession 集合。
+
+    「この account に登録済み（非公開含む） ∪ 公開」を許容する:
+    - 自 account 登録済み: dordb mass.accession type3 で submitter_id=account（状態問わず＝非公開も可）。
+    - 公開: object_status_type=300（released。任意 owner） ∪ mass.resource_adf（ArrayExpress 公開マスタ）。
+    他 account の非公開 ADF は許容しない（実在しても error）。
+    """
     owned, public = set(), set()
     with gea_conn.cursor() as cur:
+        if account:
+            cur.execute(
+                "SELECT accession FROM mass.accession "
+                "WHERE accession_type=%s AND submitter_id=%s AND accession IS NOT NULL",
+                (_ARRAY_DESIGN_TYPE, account))
+            owned = {r[0].strip().upper() for r in cur.fetchall() if r[0]}
         cur.execute(
-            "SELECT accession FROM mass.accession "
-            "WHERE accession_type=%s AND submitter_id=%s AND accession IS NOT NULL",
-            (_ARRAY_DESIGN_TYPE, account))
-        owned = {r[0].strip().upper() for r in cur.fetchall() if r[0]}
-        cur.execute("SELECT adf_accession FROM mass.resource_adf")
+            "SELECT a.accession FROM mass.accession a "
+            "JOIN mass.current_object_status cos USING(accession_id) "
+            "WHERE a.accession_type=%s AND cos.object_status_type=%s AND a.accession IS NOT NULL",
+            (_ARRAY_DESIGN_TYPE, _PUBLIC_STATUS))
         public = {r[0].strip().upper() for r in cur.fetchall() if r[0]}
+        cur.execute("SELECT adf_accession FROM mass.resource_adf")
+        public |= {r[0].strip().upper() for r in cur.fetchall() if r[0]}
     return owned | public
 
 

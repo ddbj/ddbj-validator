@@ -149,8 +149,9 @@ def fetch_account_biosamples(bs_conn, dra_conn, account, ref_samds):
 def fetch_account_runs(dra_conn, account, ref_drrs):
     """参照 DRR のうち account 所有（accession_entity）∪ DRA permit（その DRA submission 配下の DRR）の集合（DRA_R0043）。
 
-    DRA permit の ref_name は DRA submission の acc_no（数値）または alias（例 dradev-0041）。
+    DRA permit の ref_name は DRA submission の acc_id（数値。accession_entity.acc_id）または alias（例 dradev-0041）。
     それを submission alias の prefix（`_Submission` 前）に解決し、同 prefix の DRR を許可対象に含める。
+    ※他アカウントの DRR を ext_permit 経由で参照する場合（DRA Analysis の RUN_REF / GEA の SRA_RUN）に効く。
     owned/permit が全く取れなければ None（=スキップ）。
     """
     import re as _re
@@ -162,8 +163,9 @@ def fetch_account_runs(dra_conn, account, ref_drrs):
         prefixes = {r for r in permit_dra if r and not r.isdigit()}   # alias 直接（dradev-XXXX）
         nums = sorted({int(r) for r in permit_dra if r.isdigit()})
         if nums:
+            # DRA permit の numeric ref_name は accession_entity の acc_id（acc_no ではない）。
             with dra_conn.cursor() as cur:
-                cur.execute("SELECT alias FROM mass.accession_entity WHERE acc_type='DRA' AND acc_no = ANY(%s)", (nums,))
+                cur.execute("SELECT alias FROM mass.accession_entity WHERE acc_type='DRA' AND acc_id = ANY(%s)", (nums,))
                 for (alias,) in cur.fetchall():
                     if alias:
                         prefixes.add(alias.split("_Submission")[0].strip())
