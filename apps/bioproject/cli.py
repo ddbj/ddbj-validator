@@ -7,6 +7,8 @@
 import argparse
 import datetime
 import sys
+
+from common import cli_modes
 from pathlib import Path
 
 from apps.bioproject.context import ValidationContext
@@ -32,30 +34,15 @@ def _build_parser():
 
 
 def _tool_version():
-    try:
-        from apps.bioproject import __version__
-        return __version__
-    except Exception:
-        return "unknown"
+    return cli_modes.tool_version("apps.bioproject")
 
 
 def _env_internal_db():
-    import os
-    return os.environ.get("DDBJ_VALIDATOR_INTERNAL_DB", "").strip().lower() not in ("", "0", "false", "no")
+    return cli_modes.env_internal_db()
 
 
 def _resolve_modes(args):
-    if args.local:
-        skip_db, skip_ncbi = True, True
-    elif args.ncbi_api:
-        skip_db, skip_ncbi = True, False
-    elif args.internal_db:
-        skip_db, skip_ncbi = False, False
-    elif _env_internal_db():
-        skip_db, skip_ncbi = False, False
-    else:
-        skip_db, skip_ncbi = True, False
-    return skip_db, skip_ncbi, skip_db  # skip_auth は skip_db に従う
+    return cli_modes.resolve_modes(args)
 
 
 def _fetch_taxonomy(context, organisms, taxids):

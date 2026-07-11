@@ -1,0 +1,102 @@
+"""MAGE-TAB の BioSample 整合の共通ロジック（MetaboBank / GEA で共有）。
+
+SDRF の Characteristics[attr] を、参照 BioSample（Comment[BioSample] 等 = SAMD）の DB 属性と突合する
+core を提供する。ルール ID / level / autofix の付け方は各 app のルールクラス側で行う。
+比較対象は definitions.biosample_sync（biosample_ref_columns / sync_characteristics）。
+"""
+import re
+
+_SAMD = re.compile(r"^SAMD\d+$")
+
+
+def ref_columns(context, default=("Comment[BioSample]",)):
+    """SDRF 上で SAMD を探す参照列（definitions.biosample_sync.biosample_ref_columns）。"""
+    cols = (context.definitions or {}).get("biosample_sync", {}).get("biosample_ref_columns")
+    return list(cols) if cols else list(default)
+
+
+def row_samd(sub, row, cols):
+    for col in cols:
+        for i in sub.sdrf.col_indices(col):
+            v = (row[i] if i < len(row) else "").strip()
+            if _SAMD.match(v):
+                return v
+    return None
+
+
+def char_columns(sub, context):
+    """Characteristics[attr] のうち sync 対象の {attr: 先頭列 index}。"""
+    sync = (context.definitions or {}).get("biosample_sync", {}).get("sync_characteristics", [])
+    out = {}
+    for h in sub.sdrf.header:
+        m = re.fullmatch(r"Characteristics\[(.+)\]", h)
+        if m and m.group(1) in sync:
+            out[m.group(1)] = sub.sdrf.col_indices(h)[0]
+    return out
+
+
+def iter_missing_attrs(sub, context, attrs, cols):
+    """Characteristics にあるが参照 BioSample に無い属性。yield (samd, attr)。"""
+    cc = char_columns(sub, context)
+    for row in sub.sdrf.rows:
+        samd = row_samd(sub, row, cols)
+        if not samd or samd not in attrs:
+            continue
+        bs = attrs[samd]
+        for attr in cc:
+            if attr not in bs:
+                yield samd, attr
+
+
+def iter_unknown_biosamples(sub, attrs, cols):
+    """account/DB に無い（属性ゼロ含む）参照 BioSample。yield samd（重複なし）。"""
+    seen = set()
+    for row in sub.sdrf.rows:
+        samd = row_samd(sub, row, cols)
+        if samd and samd not in seen:
+            seen.add(samd)
+            if samd not in attrs or not attrs[samd]:
+                yield samd
+
+
+def iter_value_mismatches(sub, context, attrs, cols):
+    """Characteristics 値と BioSample 属性値の不一致。yield (samd, attr, sdrf_value, bs_value)。"""
+    cc = char_columns(sub, context)
+    for row in sub.sdrf.rows:
+        samd = row_samd(sub, row, cols)
+        if not samd or samd not in attrs:
+            continue
+        bs = attrs[samd]
+        for attr, idx in cc.items():
+            sdrf_v = (row[idx] if idx < len(row) else "").strip()
+            bs_v = str(bs.get(attr, "")).strip()
+            if attr in bs and sdrf_v and bs_v and sdrf_v != bs_v:
+                yield samd, attr, sdrf_v, bs_v
+
+
+def fetch_biosample_attrs(sub, cols):
+    """参照 SAMD の BioSample 属性を内部 DB から取得。{SAMD: {attr: value}} を返す。
+
+    参照 SAMD が無ければ {}。DB 例外は呼び出し側で捕捉する（ここでは投げる）。
+    """
+    from common.db_manager import DatabaseManager
+    samds = set()
+    if sub.sdrf:
+        for col in cols:
+            for i in sub.sdrf.col_indices(col):
+                for row in sub.sdrf.rows:
+                    v = (row[i] if i < len(row) else "").strip()
+                    if _SAMD.match(v):
+                        samds.add(v)
+    if not samds:
+        return {}
+    conn = DatabaseManager().get_bs_conn()
+    attrs = {}
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT acc.accession_id, attr.attribute_name, attr.attribute_value "
+            "FROM mass.attribute attr JOIN mass.accession acc USING(smp_id) "
+            "WHERE acc.accession_id = ANY(%s)", (sorted(samds),))
+        for acc_id, name, value in cur.fetchall():
+            attrs.setdefault(str(acc_id).strip(), {})[str(name).strip()] = value
+    return attrs

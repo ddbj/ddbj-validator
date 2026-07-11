@@ -195,8 +195,8 @@ class GEA_LC0001(GeaRule):
             if not idxs:
                 miss.append(c)
                 continue
-            # 1 行でも空があれば不足扱い
-            if any(_empty(row[idxs[0]] if idxs[0] < len(row) else "") for row in sub.sdrf.rows):
+            # 列が複数出現する場合は全 occurrence を検査（重複列の空セルも不足扱い）。1 行でも空なら不足。
+            if any(_empty(row[i] if i < len(row) else "") for i in idxs for row in sub.sdrf.rows):
                 miss.append(c)
         return [self.result(message=f"{self.description} (missing/empty: {', '.join(miss)})")] if miss else []
 

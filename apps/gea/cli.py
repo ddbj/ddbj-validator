@@ -8,6 +8,8 @@ import argparse
 import datetime
 import re
 import sys
+
+from common import cli_modes
 from pathlib import Path
 
 from apps.gea.context import ValidationContext
@@ -36,28 +38,15 @@ def _build_parser():
 
 
 def _tool_version():
-    try:
-        from apps.gea import __version__
-        return __version__
-    except Exception:
-        return "unknown"
+    return cli_modes.tool_version("apps.gea")
 
 
 def _env_internal_db():
-    import os
-    return os.environ.get("DDBJ_VALIDATOR_INTERNAL_DB", "").strip().lower() not in ("", "0", "false", "no")
+    return cli_modes.env_internal_db()
 
 
 def _resolve_modes(args):
-    if args.local:
-        skip_db, skip_ncbi = True, True
-    elif args.ncbi_api:
-        skip_db, skip_ncbi = True, False
-    elif args.internal_db or _env_internal_db():
-        skip_db, skip_ncbi = False, False
-    else:
-        skip_db, skip_ncbi = True, False
-    return skip_db, skip_ncbi, skip_db
+    return cli_modes.resolve_modes(args)
 
 
 def _resolve_inputs(args):
@@ -73,30 +62,10 @@ def _resolve_inputs(args):
 
 
 def _fetch_biosample_attrs(context, sub, account):
-    """参照 SAMD の BioSample 属性を内部 DB から取得（GEA_BS0001/0002/0003 用）。"""
+    """参照 SAMD の BioSample 属性を内部 DB から取得（GEA_BS0001/0002/0003 用）。core は common/magetab/biosample。"""
+    from common.magetab import biosample as _bs
     try:
-        from common.db_manager import DatabaseManager
-        samds = set()
-        if sub.sdrf:
-            for col in context.definitions.get("biosample_sync", {}).get("biosample_ref_columns", []):
-                for i in sub.sdrf.col_indices(col):
-                    for row in sub.sdrf.rows:
-                        v = (row[i] if i < len(row) else "").strip()
-                        if re.match(r"^SAMD\d+$", v):
-                            samds.add(v)
-        if not samds:
-            context.biosample_attrs = {}
-            return
-        conn = DatabaseManager().get_bs_conn()
-        attrs = {}
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT acc.accession_id, attr.attribute_name, attr.attribute_value "
-                "FROM mass.attribute attr JOIN mass.accession acc USING(smp_id) "
-                "WHERE acc.accession_id = ANY(%s)", (sorted(samds),))
-            for acc_id, name, value in cur.fetchall():
-                attrs.setdefault(str(acc_id).strip(), {})[str(name).strip()] = value
-        context.biosample_attrs = attrs
+        context.biosample_attrs = _bs.fetch_biosample_attrs(sub, _bs.ref_columns(context))
     except Exception as e:
         print(f"[WARN] gea BioSample fetch failed: {e}", file=sys.stderr)
         context.biosample_attrs = None

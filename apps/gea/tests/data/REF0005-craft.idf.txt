@@ -1,0 +1,19 @@
+Comment[GEAAccession]	E-GEAD-1288
+MAGE-TAB Version	1.1
+Investigation Title	test microarray adf ref
+Experiment Description	test microarray adf ref
+Experimental Design	disease state design	genotyping design	reference design
+Experimental Factor Name	test
+Experimental Factor Type	test
+Person Last Name	Kodama
+Person First Name	Yuich
+Person Affiliation	ddbj
+Person Roles	submitter
+Protocol Name	P-GEAD-5940	P-GEAD-5941	P-GEAD-5942	P-GEAD-5943	P-GEAD-5944	P-GEAD-5945
+Protocol Type	sample collection protocol	nucleic acid extraction protocol	nucleic acid labeling protocol	nucleic acid hybridization to array protocol	array scanning and feature extraction protocol	normalization data transformation protocol
+Protocol Description	ddddddddddddddddddddddddddddddddddd	ddddddddddddddddddddddddddddddddddd	ddddddddddddddddddddddddddddddddddd	ddddddddddddddddddddddddddddddddddd	ddddddddddddddddddddddddddddddddddd	ddddddddddddddddddddddddddddddddddd
+SDRF File	E-GEAD-1288.sdrf.txt
+Comment[Number of channel]	single-channel
+Comment[Array Design REF]	A-GEAD-999999
+Comment[AEExperimentType]	tiling path by array
+Comment[BioProject]	PRJDB6833
