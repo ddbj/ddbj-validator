@@ -147,6 +147,7 @@ def _fetch_account_refs(context, sub, account):
         runs_bs = _try("dra_link", lambda: gea_db.fetch_dra_submission_objects(dra_conn, dm.get_bs_conn(), ref_drr))
         if runs_bs:
             context.dra_submission_runs, context.dra_submission_biosamples = runs_bs
+        context.dra_run_triples = _try("dra_triples", lambda: gea_db.fetch_dra_run_triples(dra_conn, ref_drr))
 
 
 def _write_fixed(sub, out_dir, results, context):

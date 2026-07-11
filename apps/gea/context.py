@@ -21,6 +21,8 @@ class ValidationContext:
     # DB 依存（GEA_REF0003/0004）: 連携先 DRA submission の全 Run/BioSample。None=DRA 連携なし/未取得
     dra_submission_runs: Any = None
     dra_submission_biosamples: Any = None
+    # DB 依存（GEA_REF0008）: DRR -> {drx, biosample, bioproject} の DRA 実 triple
+    dra_run_triples: Any = None
 
     def __post_init__(self):
         if self.definitions is None:

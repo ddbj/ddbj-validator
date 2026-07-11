@@ -105,3 +105,39 @@ class GEA_REF0005(GeaRule):
             if re.match(r"^A-[A-Z]+-\d+$", ad) and ad not in reg:
                 out.append(self.result(message=f"{self.description} (Array Design: '{ad}')"))
         return out
+
+
+class GEA_REF0008(GeaRule):
+    rule_id = "GEA_REF0008"; level = "error"; target = "SDRF"; only_type = "sequencing"
+    requires_rdb = True; requires_auth = True
+    description = "BioSample-Experiment-Run sets are not identical in the DRA submission and SDRF."
+
+    def validate(self, sub, context):
+        triples = getattr(context, "dra_run_triples", None)
+        if not triples or not sub.sdrf:
+            return []
+        run_i = sub.sdrf.col_indices("Comment[SRA_RUN]")
+        drx_i = sub.sdrf.col_indices("Comment[SRA_EXPERIMENT]")
+        bs_i = sub.sdrf.col_indices("Comment[BioSample]")
+        if not run_i:
+            return []
+        out, seen = [], set()
+        for row in sub.sdrf.rows:
+            drr = (row[run_i[0]] if run_i[0] < len(row) else "").strip().upper()
+            if not drr.startswith("DRR") or drr in seen:
+                continue
+            seen.add(drr)
+            dra = triples.get(drr)
+            if not dra:   # DRA 側に無い（未登録参照は REF0002 で検出）
+                continue
+            tsv_drx = (row[drx_i[0]] if drx_i and drx_i[0] < len(row) else "").strip().upper()
+            tsv_bs = (row[bs_i[0]] if bs_i and bs_i[0] < len(row) else "").strip().upper()
+            diffs = []
+            if tsv_drx and dra.get("drx") and tsv_drx != dra["drx"]:
+                diffs.append(f"Experiment SDRF '{tsv_drx}' != DRA '{dra['drx']}'")
+            # BioSample は PRIMARY_ID(BioSample ID) 由来（SAMD）。DRA 側で導出不可（旧 DRS 等）なら None＝skip。
+            if tsv_bs and dra.get("biosample") and tsv_bs != dra["biosample"]:
+                diffs.append(f"BioSample SDRF '{tsv_bs}' != DRA '{dra['biosample']}'")
+            if diffs:
+                out.append(self.result(message=f"{self.description} ({drr}: {'; '.join(diffs)})"))
+        return out

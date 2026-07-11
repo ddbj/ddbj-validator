@@ -104,6 +104,61 @@ def fetch_dra_submission_objects(dra_conn, bs_conn, ref_drrs):
     return runs, samds
 
 
+def fetch_dra_run_triples(dra_conn, ref_drrs):
+    """参照 DRR ごとの DRA 実 triple（DRX / BioSample / BioProject）を返す（REF0008 用）。
+
+    docs/dra/drr2taxon.rb のロジックを踏襲: DRR の parent(DRX) の Experiment XML から
+    STUDY_REF=BioProject, SAMPLE_DESCRIPTOR=BioSample を導出。
+    ※ BioSample は `SAMPLE_DESCRIPTOR/IDENTIFIERS/PRIMARY_ID[label="BioSample ID"]`（＝SAMD）を優先し、
+      無ければ SAMPLE_DESCRIPTOR@accession（SAMD 系の時のみ）を使う。@accession が DRS のケース（旧
+      submission。self-closing で BioSample 子要素なし）は None（＝突合スキップ）。
+    戻り値: {DRR accession: {"drx": DRX, "biosample": SAMD, "bioproject": PRJDB}}。
+    """
+    import re as _re
+    nos = []
+    for d in ref_drrs:
+        d = str(d).strip().upper()
+        if d.startswith("DRR") and d[3:].isdigit():
+            nos.append(int(d[3:]))
+    if not nos or not dra_conn:
+        return {}
+    with dra_conn.cursor() as cur:
+        # DRR(acc_no) → parent DRX(acc_id)
+        cur.execute(
+            "SELECT acc_no, p_acc_id FROM mass.dra_accession_view "
+            "WHERE acc_type='DRR' AND acc_no = ANY(%s)", (nos,))
+        drr_to_drxid = {int(no): pid for no, pid in cur.fetchall() if pid is not None}
+        drx_ids = sorted(set(drr_to_drxid.values()))
+        drx_info = {}
+        if drx_ids:
+            cur.execute(
+                "SELECT DISTINCT acc.acc_id, acc.acc_no, meta.content "
+                "FROM mass.dra_accession_view acc JOIN mass.dra_accession_meta_view meta USING(acc_id) "
+                "WHERE acc.acc_type='DRX' AND acc.acc_id = ANY(%s)", (drx_ids,))
+            for acc_id, acc_no, content in cur.fetchall():
+                c = content or ""
+                bp = _re.search(r'<STUDY_REF[^>]*accession="([^"]+)"', c)
+                # BioSample: PRIMARY_ID[label="BioSample ID"] を優先、無ければ @accession（SAM系のみ）
+                bs_pid = _re.search(r'<PRIMARY_ID[^>]*label="BioSample ID"[^>]*>([^<]+)</PRIMARY_ID>', c)
+                bs_acc = _re.search(r'<SAMPLE_DESCRIPTOR[^>]*accession="([^"]+)"', c)
+                biosample = None
+                if bs_pid:
+                    biosample = bs_pid.group(1).strip().upper()
+                elif bs_acc and _re.match(r'^SAM[DNE]', bs_acc.group(1).strip().upper()):
+                    biosample = bs_acc.group(1).strip().upper()
+                drx_info[acc_id] = {
+                    "drx": _acc_from_no("DRX", acc_no),
+                    "bioproject": (bp.group(1).strip().upper() if bp else None),
+                    "biosample": biosample,
+                }
+    out = {}
+    for no, drxid in drr_to_drxid.items():
+        info = drx_info.get(drxid)
+        if info:
+            out[_acc_from_no("DRR", no)] = info
+    return out
+
+
 def fetch_experiment_metadata(gea_conn, esub_or_egead):
     """dordb から Experiment の IDF/SDRF テキストを取得。(idf_text, sdrf_text) を返す。
 

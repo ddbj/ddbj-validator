@@ -54,7 +54,7 @@ class Validator:
             # --- BioSample DB 整合 ---
             B.GEA_BS0002(), B.GEA_BS0001(), B.GEA_BS0003(),
             # --- DRA/DB 参照整合 ---
-            RDB.GEA_REF0002(), RDB.GEA_REF0003(), RDB.GEA_REF0004(), RDB.GEA_REF0005(),
+            RDB.GEA_REF0002(), RDB.GEA_REF0003(), RDB.GEA_REF0004(), RDB.GEA_REF0005(), RDB.GEA_REF0008(),
         ]
         self.active_rules = []
         for rule in available_rules:
