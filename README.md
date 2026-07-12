@@ -172,34 +172,6 @@ NCBI_API_EMAIL=あなたのメールアドレス
   超過時に一時ブロックされる可能性があります。頻繁に利用する場合は `NCBI_API_KEY` の取得を推奨します。
 - API キーは [こちら](https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen#chapter2.API_Keys)から取得できます。
 
-## BioSample の検証（`biosample` サブコマンド）
-
-BioSample 登録データ（XML または TSV）を検証します。
-
-```bash
-# XML 入力
-ddbj-validator biosample -x <input.xml> [オプション]
-
-# TSV 入力（submission id / package はファイル名 SSUBxxxx.<Package>.txt から補完。-s/-p で明示指定可）
-ddbj-validator biosample -t <SSUBxxxx.Package.txt> [-s SSUBxxxx] [-p <package>] [オプション]
-```
-
-### 入力・出力
-
-* `-x`, `--xml` / `-t`, `--tsv` 入力ファイル（どちらか必須）。
-* `-s`, `--submission-id` / `-p`, `--package` TSV の submission id / package。省略時はファイル名（`SSUBxxxx.<Package>.txt`）から補完します。
-* `-o`, `--out-dir` レポート（summary / details）・自動修正済み XML の出力先。
-* `-j`, `--json` 出力を result.json 互換 JSON にします（既定は summary / details のテキスト出力。summary は標準出力にも表示）。
-
-### 実行モード
-
-* **既定（フラグ無し）: NCBI API モード** — 内部 DB / 権限検証をスキップし、Taxonomy は NCBI API で検証します（一般ユーザ向け・推奨）。
-* `-l`, `--local` 完全ローカル（DB / API アクセスなし）。
-* `-n`, `--ncbi-api` NCBI API モード（明示。既定と同じ）。
-* `-d`, `--internal-db` 内部 DDBJ DB を利用する **curator モード**（権限検証あり）。
-* 環境変数 **`DDBJ_VALIDATOR_INTERNAL_DB=1`** を設定すると、フラグ無しでも既定が curator（内部 DB）モードになります（`.env` に記載可）。`-l` / `-n` / `-d` は常に優先されます。
-* `--account <submitter_id>` は **curator（内部 DB）モードでのみ有効**です（`-n` / `-l` など他モードで指定するとエラー終了します）。
-
 ## メモリ使用量
 
 本ツールは並列数に比例してメモリを消費します。1プロセスあたりのメモリ使用量は、対象となる個別の FASTA ファイルサイズに大きく依存します。メモリ不足（OOM）による強制終了を防ぐため、以下の目安を参考に `-j` の数値を調整してください。
@@ -225,6 +197,119 @@ ddbj-validator biosample -t <SSUBxxxx.Package.txt> [-s SSUBxxxx] [-p <package>] 
     * `autofix_confirmation_summary.txt`: Autofix（自動修正）の提案一覧です。
 * `fixed/` 承認された Autofix（または、`-f` オプションで自動適用された修正）が反映されたファイルが格納されます。
 * `aa/` CDS feature から翻訳されたアミノ酸配列（FASTA 形式）が格納されます。
+
+# 各データベースの検証（サブコマンド）
+
+本ツールは塩基配列アノテーション（`ddbj`）以外にも、DDBJ の各データベースの登録データを
+サブコマンドで検証できます。第 1 引数がサブコマンド名でない場合は暗黙的に `ddbj` が補完されるため、
+`ddbj` サブコマンドは省略できます（上記「使い方」はこの `ddbj` の説明です）。
+
+| サブコマンド | 対象 | 入力 |
+|---|---|---|
+| `ddbj`（省略可・既定） | 塩基配列アノテーション | `.ann` ＋ FASTA のペア（ディレクトリ） |
+| `bioproject` | BioProject | XML |
+| `biosample` | BioSample | XML または TSV |
+| `dra` | DRA（Sequence Read Archive） | Submission/Experiment/Run/Analysis XML |
+| `gea` | GEA（Genomic Expression Archive） | MAGE-TAB（IDF/SDRF） |
+| `metabobank`（`mb`） | MetaboBank | MAGE-TAB（IDF/SDRF） |
+
+## 共通事項
+
+- **実行モード**（`ddbj` 以外の 5 サブコマンド共通）
+  - 既定（フラグ無し）: **NCBI API モード**（内部 DB・権限検証をスキップ、Taxonomy は NCBI API で確認。一般ユーザ向け）
+  - `-l`, `--local`: 完全ローカル（DB・API アクセスなし）
+  - `-n`, `--ncbi-api`: NCBI API モード（明示。既定と同じ）
+  - `-d`, `--internal-db`: 内部 DDBJ DB を使う **curator モード**（権限検証あり）
+  - 環境変数 **`DDBJ_VALIDATOR_INTERNAL_DB=1`** で、フラグ無しの既定を curator（内部 DB）モードにできます（`.env` 可）。`-l`/`-n`/`-d` は常に優先。
+  - `--account <submitter_id>` は **内部 DB モードでのみ有効**（他モードと併用するとエラー終了）。
+- **出力**: `-o`/`--out-dir` 指定先（省略時は入力ファイルの親）に `reports/` を作成し、
+  `validation_report_summary.txt` と `validation_report_details.txt` を出力します。
+  `-j`/`--json` を付けると代わりに `validation_report.json` を出力します。
+  - 注: `-j` の意味はサブコマンドで異なります。**`ddbj` のみ `-j` は並列数**（JSON は `--json`）。
+    それ以外（`bioproject`/`biosample`/`dra`/`gea`/`metabobank`）は **`-j`/`--json` が JSON 出力**です。
+
+## BioProject（`bioproject`）
+
+BioProject 登録 XML を検証します。
+
+```bash
+# XML を指定（-x は必須）
+ddbj-validator bioproject -x PSUB012060.xml
+```
+
+- 入力: `-x`, `--xml`（BioProject XML、**必須**）。
+- モード: 既定 NCBI API。内部 DB モード（`-d`）では umbrella/locus_tag/重複チェック用のメタ情報を取得します。
+- サンプル: `docs/bioproject/PSUB003313.xml` ほか。
+
+## BioSample（`biosample`）
+
+BioSample 登録データ（XML または TSV）を検証します。
+
+```bash
+# XML 入力
+ddbj-validator biosample -x SSUB045342.xml
+
+# TSV 入力（submission id / package はファイル名 SSUBxxxx.<Package>.txt から補完。-s/-p で明示指定可）
+ddbj-validator biosample -t SSUB045342.Human.txt [-s SSUB045342] [-p Human]
+```
+
+- 入力: `-x`, `--xml` または `-t`, `--tsv`（どちらか必須）。TSV は内部で XML に変換して検証します。
+- `-s`, `--submission-id` / `-p`, `--package`: TSV の submission id / package。省略時はファイル名（`SSUBxxxx.<Package>.txt`）から補完。
+- autofix は常に自動適用され、修正済み XML を `fixed/` に出力します（`reports/` には autofix 確認ファイルも出力）。
+- モード: 既定 NCBI API。`-d` で内部 DB（account / BioProject / 登録済み locus_tag_prefix の取得）。
+- サンプル: `docs/biosample/SSUB045342.xml` / `SSUB045342.txt` ほか。
+
+## DRA（`dra`）
+
+1 セッション分の DRA XML 群（Submission / Experiment / Run / Analysis）を検証します。
+
+```bash
+# ディレクトリ指定（中の *.xml をルート要素で役割自動判定）
+ddbj-validator dra docs/dra/dradev-0062/
+
+# ファイルを個別指定（--ana は任意）
+ddbj-validator dra --sub xxx_submission.xml --exp xxx_experiment.xml --run xxx_run.xml [--ana xxx_analysis.xml]
+```
+
+- 入力: positional でディレクトリ、または `--sub`/`--exp`/`--run`/`--ana`（各複数指定可）で個別に。両者併用可。
+- モード: 既定 NCBI API。`-d` で内部 DB（account・DB 依存ルール用メタ取得）。
+- サンプル: `docs/dra/dradev-0062/`（analysis 無し）、`docs/dra/amr_ddbj-0104/`（analysis 有り）。
+
+## GEA（`gea`）
+
+GEA の MAGE-TAB（IDF / SDRF）を検証します。
+
+```bash
+# ディレクトリ指定（*.idf.txt / *.sdrf.txt を自動検出）
+ddbj-validator gea docs/gea/magetab/E-GEAD-1103/
+
+# ファイルを個別指定
+ddbj-validator gea --idf E-GEAD-1103.idf.txt --sdrf E-GEAD-1103.sdrf.txt
+```
+
+- 入力: positional でディレクトリ、または `--idf` / `--sdrf`。
+- `-f`, `--force-fix`: autofix（日付 `/`→`-`、非推奨 null→`missing`、Experimental Factor Type の補完、BioSample 値への同期など）を適用し `fixed/` に出力。
+- モード: 既定 NCBI API。`-d` で内部 DB（BioSample 属性突合 `GEA_BS0001-0003`、参照先の登録確認 `GEA_REF`）。
+- MetaboBank の MAGE-TAB など GEA 以外の入力を検出した場合はエラーで中断します。
+- サンプル: `docs/gea/magetab/E-GEAD-1103/` ほか。
+
+## MetaboBank（`metabobank` / `mb`）
+
+MetaboBank の MAGE-TAB（IDF / SDRF）を検証します。`mb` は `metabobank` の別名です。
+
+```bash
+# ディレクトリ指定（*.idf.txt / *.sdrf.txt を自動検出）
+ddbj-validator mb docs/mb/magatab/MTBKS231/
+
+# ファイルを個別指定
+ddbj-validator metabobank --idf MTBKS231.idf.txt --sdrf MTBKS231.sdrf.txt
+```
+
+- 入力: positional でディレクトリ、または `--idf` / `--sdrf`。
+- `-f`, `--force-fix`: autofix（日付 `/`→`-`〔MB_IR0013〕、非推奨 null→`missing`〔MB_IR0021〕、Experimental Factor Type の補完〔MB_IR0035〕）を適用し `fixed/` に出力。
+- モード: 既定 NCBI API。`-d` で内部 DB（BioSample 属性突合 `MB_SR0021-0023`）。
+- GEA の MAGE-TAB など MetaboBank 以外の入力を検出した場合はエラーで中断します。
+- サンプル: `docs/mb/magatab/MTBKS231/` ほか。
 
 # DDBJ Validator
 
@@ -399,34 +484,6 @@ NCBI_API_EMAIL=your_email_address
 - It works even with **neither the API key nor the email set**, but the rate limit is 3 req/s (per IP)
   and you may be temporarily blocked when exceeding it. For frequent use, obtaining an `NCBI_API_KEY` is recommended.
 - Get an API key [here](https://www.ncbi.nlm.nih.gov/books/NBK25497/#chapter2.Usage_Guidelines_and_Requiremen#chapter2.API_Keys).
-
-## Validating BioSample (`biosample` subcommand)
-
-Validates BioSample submission data (XML or TSV).
-
-```bash
-# XML input
-ddbj-validator biosample -x <input.xml> [options]
-
-# TSV input (submission id / package are inferred from the filename SSUBxxxx.<Package>.txt; override with -s/-p)
-ddbj-validator biosample -t <SSUBxxxx.Package.txt> [-s SSUBxxxx] [-p <package>] [options]
-```
-
-### Input / Output
-
-* `-x`, `--xml` / `-t`, `--tsv`: Input file (one is required).
-* `-s`, `--submission-id` / `-p`, `--package`: submission id / package for TSV. Inferred from the filename (`SSUBxxxx.<Package>.txt`) when omitted.
-* `-o`, `--out-dir`: Output directory for reports (summary / details) and auto-fixed XML.
-* `-j`, `--json`: Emit a result.json-compatible JSON instead of the default text reports (summary is also printed to stdout).
-
-### Execution modes
-
-* **Default (no flag): NCBI API mode** — skips the internal DB / authorization checks and validates Taxonomy via the NCBI API (recommended for general users).
-* `-l`, `--local`: Fully local (no DB / API access).
-* `-n`, `--ncbi-api`: NCBI API mode (explicit; same as the default).
-* `-d`, `--internal-db`: **Curator mode** using the internal DDBJ DB (includes authorization checks).
-* Setting the environment variable **`DDBJ_VALIDATOR_INTERNAL_DB=1`** makes curator (internal DB) mode the default without a flag (can be placed in `.env`). Explicit `-l` / `-n` / `-d` always take precedence.
-* `--account <submitter_id>` is **valid only in curator (internal DB) mode** (specifying it with `-n` / `-l` aborts with an error).
 
 ## Memory Usage
 
