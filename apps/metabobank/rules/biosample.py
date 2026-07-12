@@ -22,8 +22,9 @@ class MB_SR0021(MbRule):
         attrs = getattr(context, "biosample_attrs", None)
         if attrs is None or not sub.sdrf:
             return []
-        return [self.result(message=f"{self.description} ({samd}: '{attr}')")
-                for samd, attr in _bs.iter_missing_attrs(sub, context, attrs, _cols(context))]
+        return [self.result(message=f"{self.description} ({samd}: '{attr}')",
+                            line=ri + 1, assay=_bs.assay_name(sub, ri))
+                for samd, attr, ri in _bs.iter_missing_attrs(sub, context, attrs, _cols(context))]
 
 
 class MB_SR0022(MbRule):
@@ -34,8 +35,9 @@ class MB_SR0022(MbRule):
         attrs = getattr(context, "biosample_attrs", None)
         if attrs is None or not sub.sdrf:
             return []
-        return [self.result(message=f"{self.description} ({samd})")
-                for samd in _bs.iter_unknown_biosamples(sub, attrs, _cols(context))]
+        return [self.result(message=f"{self.description} ({samd})",
+                            line=ri + 1, assay=_bs.assay_name(sub, ri))
+                for samd, ri in _bs.iter_unknown_biosamples(sub, attrs, _cols(context))]
 
 
 class MB_SR0023(MbRule):
@@ -47,6 +49,7 @@ class MB_SR0023(MbRule):
         if attrs is None or not sub.sdrf:
             return []
         out = []
-        for samd, attr, sdrf_v, bs_v in _bs.iter_value_mismatches(sub, context, attrs, _cols(context)):
-            out.append(self.result(message=f"{self.description} ({samd} {attr}: SDRF '{sdrf_v}' != BS '{bs_v}')"))
+        for samd, attr, sdrf_v, bs_v, ri in _bs.iter_value_mismatches(sub, context, attrs, _cols(context)):
+            out.append(self.result(message=f"{self.description} ({samd} {attr}: SDRF '{sdrf_v}', BioSample '{bs_v}')",
+                                    line=ri + 1, assay=_bs.assay_name(sub, ri)))
         return out

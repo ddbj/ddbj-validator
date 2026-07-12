@@ -193,6 +193,10 @@ def run(args):
     skip_db, skip_ncbi, skip_auth = _resolve_modes(args)
     context = ValidationContext(account=args.account, skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
     sub, pre = reader.parse(idf_path, sdrf_path, account=args.account)
+    reason = reader.wrong_db_reason(sub)
+    if reason:
+        print(f"[ERROR] {reason} Aborting GEA validation. (use the correct subcommand)", file=sys.stderr)
+        return 2
     out_dir = args.out_dir or str(Path(idf_path or sdrf_path).parent)
 
     if not context.skip_db:

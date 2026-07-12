@@ -22,3 +22,8 @@ def parse(idf_path=None, sdrf_path=None, account=None):
         idf_err_id="GEA_ERR0001", sdrf_err_id="GEA_ERR0001",
         account=account,
     )
+
+
+def wrong_db_reason(sub):
+    """IDF が GEA 以外（MetaboBank）の MAGE-TAB に見えれば理由文字列を返す（abort 用）。"""
+    return base.check_flavor(sub.idf, "gea")

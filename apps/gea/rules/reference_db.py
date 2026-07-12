@@ -35,7 +35,7 @@ def _idf_array_designs(sub):
 
 
 class GEA_REF0002(GeaRule):
-    rule_id = "GEA_REF0002"; level = "error"; target = "IDF and SDRF"
+    rule_id = "GEA_REF0002"; level = "error"; target = "IDF/SDRF"
     requires_rdb = True; requires_auth = True
     description = "Referencing object is not registered in this submission account."
 
@@ -44,18 +44,19 @@ class GEA_REF0002(GeaRule):
         bps_owned = getattr(context, "account_bioprojects", None)
         bs_owned = getattr(context, "account_biosamples", None)
         runs_owned = getattr(context, "account_runs", None)
+        # agg_noun を付けると summary で「'first' etc, N Nouns」に件数集約される（details は全件）。
         if bps_owned is not None:
             for bp in sorted(_idf_bps(sub)):
                 if bp and re.match(r"^(PRJDB|PSUB)", bp) and bp not in {x.upper() for x in bps_owned}:
-                    out.append(self.result(message=f"{self.description} (BioProject: '{bp}')"))
+                    out.append(self.result(message=f"{self.description} (BioProject: '{bp}')", agg_noun="BioProjects"))
         if bs_owned is not None:
             for s in sorted(_sdrf_col_values(sub, "Comment[BioSample]")):
                 if s and re.match(r"^SAMD", s) and s not in {x.upper() for x in bs_owned}:
-                    out.append(self.result(message=f"{self.description} (BioSample: '{s}')"))
+                    out.append(self.result(message=f"{self.description} (BioSample: '{s}')", agg_noun="BioSamples"))
         if runs_owned is not None:
             for r in sorted(_sdrf_col_values(sub, "Comment[SRA_RUN]")):
                 if r and re.match(r"^DRR", r) and r not in {x.upper() for x in runs_owned}:
-                    out.append(self.result(message=f"{self.description} (Run: '{r}')"))
+                    out.append(self.result(message=f"{self.description} (Run: '{r}')", agg_noun="Runs"))
         return out
 
 
@@ -90,7 +91,7 @@ class GEA_REF0004(GeaRule):
 
 
 class GEA_REF0005(GeaRule):
-    rule_id = "GEA_REF0005"; level = "error"; target = "IDF and SDRF"; only_type = "microarray"
+    rule_id = "GEA_REF0005"; level = "error"; target = "IDF/SDRF"; only_type = "microarray"
     requires_rdb = True; requires_auth = True
     description = "ADF accession is not registered in this submission account or publicly available."
 
@@ -121,8 +122,9 @@ class GEA_REF0008(GeaRule):
         bs_i = sub.sdrf.col_indices("Comment[BioSample]")
         if not run_i:
             return []
+        from common.magetab.biosample import assay_name
         out, seen = [], set()
-        for row in sub.sdrf.rows:
+        for ri, row in enumerate(sub.sdrf.rows):
             drr = (row[run_i[0]] if run_i[0] < len(row) else "").strip().upper()
             if not drr.startswith("DRR") or drr in seen:
                 continue
@@ -139,5 +141,6 @@ class GEA_REF0008(GeaRule):
             if tsv_bs and dra.get("biosample") and tsv_bs != dra["biosample"]:
                 diffs.append(f"BioSample SDRF '{tsv_bs}' != DRA '{dra['biosample']}'")
             if diffs:
-                out.append(self.result(message=f"{self.description} ({drr}: {'; '.join(diffs)})"))
+                out.append(self.result(message=f"{self.description} ({drr}: {'; '.join(diffs)})",
+                                       line=ri + 1, assay=assay_name(sub, ri)))
         return out

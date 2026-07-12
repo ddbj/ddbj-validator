@@ -84,3 +84,4 @@ class DraSubmission:
     runs: list = field(default_factory=list)
     analyses: list = field(default_factory=list)
     account: Optional[str] = None
+    role_files: dict = field(default_factory=dict)  # role('submission'/'experiment'/'run'/'analysis') -> [filename]

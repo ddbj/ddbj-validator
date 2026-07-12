@@ -158,6 +158,7 @@ def parse_files(paths, account=None):
             continue
         role = _ROOTS.get(root.tag)
         if role:   # R0044-0047: XSD スキーマ検証（lxml。無ければスキップ）
+            sub.role_files.setdefault(role, []).append(Path(p).name)
             pre.extend(_schema_validate(p, role))
         if role == "submission":
             if sub.submission is None:

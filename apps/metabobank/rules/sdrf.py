@@ -26,6 +26,12 @@ def _matches_any(colname, patterns):
     return False
 
 
+def _assay(sub, row):
+    """行の Assay Name 値（レポートの location 用）。Assay Name 列が無ければ空。"""
+    idxs = sub.sdrf.col_indices("Assay Name") if sub.sdrf else []
+    return row[idxs[0]].strip() if idxs and idxs[0] < len(row) else ""
+
+
 class MB_SR0003(MbRule):
     rule_id = "MB_SR0003"; level = "error"; target = "SDRF"
     description = "Column names are duplicated."
@@ -110,7 +116,7 @@ class MB_SR0009(MbRule):
             for r, row in enumerate(sub.sdrf.rows):
                 v = row[idxs[0]] if idxs[0] < len(row) else ""
                 if _empty(v) or v.strip() in nulls:
-                    out.append(self.result(message=f"{self.description} ({col}, row {r + 1})"))
+                    out.append(self.result(message=f"{self.description} ({col}, row {r + 1})", assay=_assay(sub, row), line=r + 1))
                     break
         return out
 
@@ -154,11 +160,11 @@ class MB_SR0019(MbRule):
         out = []
         for col, pat in fmts.items():
             idxs = sub.sdrf.col_indices(col)
-            for row in sub.sdrf.rows:
+            for r, row in enumerate(sub.sdrf.rows):
                 for i in idxs:
                     v = row[i] if i < len(row) else ""
                     if v and v.strip() and not re.fullmatch(pat, v.strip()):
-                        out.append(self.result(message=f"{self.description} ({col}: '{v}')"))
+                        out.append(self.result(message=f"{self.description} ({col}: '{v}')", assay=_assay(sub, row), line=r + 1))
         return out
 
 
@@ -212,7 +218,7 @@ class MB_SR0033(MbRule):
         out = []
         for r, row in enumerate(sub.sdrf.rows):
             if all(_empty(row[i]) if i < len(row) else True for i in idxs):
-                out.append(self.result(message=f"{self.description} (row {r + 1})"))
+                out.append(self.result(message=f"{self.description} (row {r + 1})", assay=_assay(sub, row), line=r + 1))
         return out
 
 
@@ -228,7 +234,7 @@ class MB_SR0030(MbRule):
             for c, cell in enumerate(row):
                 if any(ord(ch) < 32 and ch not in "\t" for ch in cell):
                     col = sub.sdrf.header[c] if c < len(sub.sdrf.header) else f"col{c}"
-                    out.append(self.result(message=f"{self.description} (row {r + 1}, {col})"))
+                    out.append(self.result(message=f"{self.description} (row {r + 1}, {col})", assay=_assay(sub, row), line=r + 1))
                     return out
         return out
 
@@ -242,11 +248,11 @@ class _SdrfCvBase(MbRule):
         out = []
         for col, allowed in cv.items():
             idxs = sub.sdrf.col_indices(col)
-            for row in sub.sdrf.rows:
+            for r, row in enumerate(sub.sdrf.rows):
                 for i in idxs:
                     v = row[i] if i < len(row) else ""
                     if v and v.strip() and v.strip() not in allowed:
-                        out.append(self.result(message=f"{self.description} ({col}: '{v}')"))
+                        out.append(self.result(message=f"{self.description} ({col}: '{v}')", assay=_assay(sub, row), line=r + 1))
         return out
 
 
