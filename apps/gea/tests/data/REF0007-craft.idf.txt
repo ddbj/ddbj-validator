@@ -1,0 +1,19 @@
+Comment[GEAAccession]	E-GEAD-1114
+MAGE-TAB Version	1.1
+Investigation Title	pre-mRNA splicing regulates cellular dedifferentiation via lipid metabolism in a cytokinin-dependent manner in Arabidopsis
+Experiment Description	Time-course RNA-seq was conducted to analyze gene expression dynamics during callus formation in Arabidopsis thaliana. Wild-type and rrd4-1 mutant hypocotyl explants were cultured on CIM- (without kinetin) or CIM+ (containing 0.1 mg l-1 kinetin) at 28 degrees C for 12, 24, or 48 hours to induce callus formation. Total RNA was extracted and subjected to RNA-seq analysis.
+Experimental Design	compound treatment design	genotype design	growth condition design	time series design
+Experimental Factor Name	genotype	compound	time
+Experimental Factor Type	genotype	compound	time
+Person Last Name	Takeuchi
+Person First Name	Ami
+Person Affiliation	The University of Tokyo
+Person Roles	submitter
+Public Release Date	2025-10-01
+Protocol Name	P-GEAD-5001	P-GEAD-5002	P-GEAD-5003	P-GEAD-5004	P-GEAD-5005
+Protocol Type	sample collection protocol	nucleic acid extraction protocol	nucleic acid library construction protocol	nucleic acid sequencing protocol	normalization data transformation protocol
+Protocol Description	Arabidopsis hypocotyl explants were excised from 12-day-old seedlings and cultured on callus-inducing medium (CIM) for 0, 12, 24, and 48 hours under continuous light at 28 degrees C. Samples were harvested at each time point and immediately frozen in liquid nitrogen.	Total RNA was extracted using the RNeasy Plant Mini Kit (Qiagen) according to the manufacturer's protocol.	RNA-seq libraries were constructed using the NEBNext Ultra II Directional RNA Library Prep Kit for Illumina (New England Biolabs) according to the manufacturer's instructions, including poly(A) mRNA enrichment.	The libraries were sequenced on an Illumina NovaSeq 6000 platform to generate 150-bp paired-end reads.	Raw read counts were generated using featureCounts (v2.0.3). TPM values were used for normalization.
+SDRF File	E-GEAD-1114.sdrf.txt
+Comment[AEExperimentType]	RNA-seq of coding RNA
+Comment[BioProject]	PRJDB35886
+Comment[Last Update Date]	2025-10-01

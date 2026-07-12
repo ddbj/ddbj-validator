@@ -1,0 +1,1322 @@
+{
+  "idf": {
+    "fields": [
+      "MAGE-TAB Version",
+      "Comment[MetaboBank accession]",
+      "Study Title",
+      "Study Description",
+      "Experimental Design",
+      "Experimental Factor Name",
+      "Experimental Factor Type",
+      "Person Last Name",
+      "Person First Name",
+      "Person Mid Initials",
+      "Person Email",
+      "Person Affiliation",
+      "Person Roles",
+      "PubMed ID",
+      "Publication DOI",
+      "Publication Author List",
+      "Publication Title",
+      "Publication Journal",
+      "Publication Status",
+      "Protocol Name",
+      "Protocol Type",
+      "Protocol Description",
+      "Protocol Parameters",
+      "Protocol Hardware",
+      "Protocol Software",
+      "Public Release Date",
+      "Term Source Name",
+      "Term Source File",
+      "Term Source Version",
+      "SDRF File",
+      "Comment[Study type]",
+      "Comment[Experiment type]",
+      "Comment[Submission type]",
+      "Comment[BioProject]",
+      "Comment[Reanalysis of]",
+      "Comment[Reanalyzed by]",
+      "Comment[Related study]",
+      "Comment[Contributor]",
+      "Comment[Submission Date]",
+      "Comment[Last Update Date]"
+    ],
+    "single_value": [
+      "MAGE-TAB Version",
+      "Comment[MetaboBank accession]",
+      "Study Title",
+      "Study Description",
+      "Date of Experiment",
+      "Public Release Date",
+      "SDRF File",
+      "Comment[Submission type]",
+      "Comment[BioProject]",
+      "Comment[Contributor]",
+      "Comment[Submission Date]",
+      "Comment[Last Update Date]"
+    ],
+    "blank_before": [
+      "Experimental Design",
+      "Person Last Name",
+      "PubMed ID",
+      "Protocol Name",
+      "Public Release Date",
+      "Term Source Name",
+      "SDRF File",
+      "Comment[Study type]"
+    ],
+    "required_error": [
+      "MAGE-TAB Version",
+      "Study Title",
+      "Study Description",
+      "Experimental Design",
+      "Experimental Factor Name",
+      "Experimental Factor Type",
+      "Person Last Name",
+      "Person First Name",
+      "Person Affiliation",
+      "Person Roles",
+      "Protocol Name",
+      "Protocol Type",
+      "Protocol Description",
+      "Comment[Study type]",
+      "Comment[Experiment type]",
+      "Comment[Submission type]"
+    ],
+    "required_warning": [],
+    "required_ignore_error": [
+      "Comment[BioProject]",
+      "Comment[Submission Date]",
+      "Comment[Last Update Date]"
+    ],
+    "required_not_null": [
+      "MAGE-TAB Version",
+      "Study Title",
+      "Study Description",
+      "Person Last Name",
+      "Person First Name",
+      "Person Affiliation",
+      "Person Roles",
+      "Protocol Name",
+      "Protocol Type",
+      "Comment[Study type]",
+      "Comment[Experiment type]",
+      "Comment[Submission type]"
+    ],
+    "required_group_error": {
+      "Experimental Factor": [
+        "Experimental Factor Name",
+        "Experimental Factor Type"
+      ],
+      "Person": [
+        "Person Last Name",
+        "Person First Name",
+        "Person Affiliation",
+        "Person Roles"
+      ],
+      "Publication": [
+        "Publication Title",
+        "Publication Author List",
+        "Publication Status"
+      ],
+      "Protocol": [
+        "Protocol Name",
+        "Protocol Type",
+        "Protocol Description"
+      ],
+      "Term Source": [
+        "Term Source Name",
+        "Term Source File",
+        "Term Source Version"
+      ]
+    },
+    "required_group_warning": [],
+    "required_protocol_types": {
+      "LC-MS": [
+        "Sample collection",
+        "Extraction",
+        "Chromatography",
+        "Mass spectrometry",
+        "Data processing",
+        "Metabolite identification"
+      ],
+      "LC-DAD-MS": [
+        "Sample collection",
+        "Extraction",
+        "Chromatography",
+        "Mass spectrometry",
+        "Data processing",
+        "Metabolite identification"
+      ],
+      "GC-MS": [
+        "Sample collection",
+        "Extraction",
+        "Chromatography",
+        "Mass spectrometry",
+        "Data processing",
+        "Metabolite identification"
+      ],
+      "GCGC-MS": [
+        "Sample collection",
+        "Extraction",
+        "Chromatography",
+        "Mass spectrometry",
+        "Data processing",
+        "Metabolite identification"
+      ],
+      "GC-FID-MS": [
+        "Sample collection",
+        "Extraction",
+        "Chromatography",
+        "Mass spectrometry",
+        "Data processing",
+        "Metabolite identification"
+      ],
+      "CE-MS": [
+        "Sample collection",
+        "Extraction",
+        "Capillary Electrophoresis",
+        "Mass spectrometry",
+        "Data processing",
+        "Metabolite identification"
+      ],
+      "DI-MS": [
+        "Sample collection",
+        "Extraction",
+        "Direct infusion",
+        "Mass spectrometry",
+        "Data processing",
+        "Metabolite identification"
+      ],
+      "FIA-MS": [
+        "Sample collection",
+        "Extraction",
+        "Flow injection analysis",
+        "Mass spectrometry",
+        "Data processing",
+        "Metabolite identification"
+      ],
+      "MALDI-MS": [
+        "Sample collection",
+        "Extraction",
+        "Mass spectrometry",
+        "Data processing",
+        "Metabolite identification"
+      ],
+      "MSI": [
+        "Sample collection",
+        "Preparation",
+        "Mass spectrometry",
+        "Histology",
+        "Data processing",
+        "Metabolite identification"
+      ],
+      "NMR": [
+        "Sample collection",
+        "Extraction",
+        "NMR sample",
+        "NMR spectroscopy",
+        "NMR assay",
+        "Data processing",
+        "Metabolite identification"
+      ]
+    },
+    "required_protocol_parameters": {
+      "LC-MS": {
+        "Extraction": [
+          "Post extraction",
+          "Derivatization"
+        ],
+        "Chromatography": [
+          "Chromatography instrument",
+          "Autosampler model",
+          "Column model",
+          "Column type",
+          "Resolution",
+          "Temperature",
+          "Guard column"
+        ],
+        "Mass spectrometry": [
+          "Scan polarity",
+          "Scan m/z range",
+          "Instrument",
+          "Ion source",
+          "Mass analyzer"
+        ]
+      },
+      "LC-DAD-MS": {
+        "Extraction": [
+          "Post extraction",
+          "Derivatization"
+        ],
+        "Chromatography": [
+          "Chromatography instrument",
+          "Autosampler model",
+          "Column model",
+          "Column type",
+          "Resolution",
+          "Temperature",
+          "Guard column",
+          "Detector",
+          "Signal range"
+        ],
+        "Mass spectrometry": [
+          "Scan polarity",
+          "Scan m/z range",
+          "Instrument",
+          "Ion source",
+          "Mass analyzer"
+        ]
+      },
+      "GC-MS": {
+        "Extraction": [
+          "Post extraction",
+          "Derivatization"
+        ],
+        "Chromatography": [
+          "Chromatography instrument",
+          "Autosampler model",
+          "Column model",
+          "Column type",
+          "Resolution",
+          "Temperature",
+          "Guard column"
+        ],
+        "Mass spectrometry": [
+          "Scan polarity",
+          "Scan m/z range",
+          "Instrument",
+          "Ion source",
+          "Mass analyzer"
+        ]
+      },
+      "GCGC-MS": {
+        "Extraction": [
+          "Post extraction",
+          "Derivatization"
+        ],
+        "Chromatography": [
+          "Chromatography instrument",
+          "Autosampler model",
+          "Column model 1",
+          "Column type 1",
+          "Resolution 1",
+          "Temperature 1",
+          "Guard column",
+          "Column model 2",
+          "Column type 2",
+          "Resolution 2",
+          "Temperature 2"
+        ],
+        "Mass spectrometry": [
+          "Scan polarity",
+          "Scan m/z range",
+          "Instrument",
+          "Ion source",
+          "Mass analyzer"
+        ]
+      },
+      "GC-FID-MS": {
+        "Extraction": [
+          "Post extraction",
+          "Derivatization"
+        ],
+        "Chromatography": [
+          "Chromatography instrument",
+          "Autosampler model",
+          "Column model",
+          "Column type",
+          "Resolution",
+          "Temperature",
+          "Guard column",
+          "Detector"
+        ],
+        "Mass spectrometry": [
+          "Scan polarity",
+          "Scan m/z range",
+          "Instrument",
+          "Ion source",
+          "Mass analyzer"
+        ]
+      },
+      "CE-MS": {
+        "Extraction": [
+          "Post extraction",
+          "Derivatization"
+        ],
+        "Capillary Electrophoresis": [
+          "CE instrument",
+          "Autosampler model",
+          "Column model",
+          "Column type"
+        ],
+        "Mass spectrometry": [
+          "Scan polarity",
+          "Scan m/z range",
+          "Instrument",
+          "Ion source",
+          "Mass analyzer"
+        ]
+      },
+      "DI-MS": {
+        "Extraction": [
+          "Post extraction",
+          "Derivatization"
+        ],
+        "Direct infusion": [
+          "DI instrument"
+        ],
+        "Mass spectrometry": [
+          "Scan polarity",
+          "Scan m/z range",
+          "Instrument",
+          "Ion source",
+          "Mass analyzer"
+        ]
+      },
+      "FIA-MS": {
+        "Extraction": [
+          "Post extraction",
+          "Derivatization"
+        ],
+        "Flow injection analysis": [
+          "FIA instrument"
+        ],
+        "Mass spectrometry": [
+          "Scan polarity",
+          "Scan m/z range",
+          "Instrument",
+          "Ion source",
+          "Mass analyzer"
+        ]
+      },
+      "MALDI-MS": {
+        "Extraction": [
+          "Post extraction",
+          "Derivatization"
+        ],
+        "Mass spectrometry": [
+          "Scan polarity",
+          "Scan m/z range",
+          "Instrument",
+          "Ion source",
+          "Mass analyzer"
+        ]
+      },
+      "MSI": {
+        "Preparation": [
+          "Sample mounting",
+          "Sample preservation",
+          "Tissue modification",
+          "Sectioning instrument",
+          "Section thickness",
+          "Matrix",
+          "Matrix application"
+        ],
+        "Mass spectrometry": [
+          "Scan polarity",
+          "Scan m/z range",
+          "Instrument",
+          "Instrument manufacturer",
+          "Ion source",
+          "Mass analyzer",
+          "Solvent",
+          "Target material",
+          "Spatial resolution",
+          "Pixel size x",
+          "Pixel size y",
+          "Max count of pixel x",
+          "Max count of pixel y",
+          "Max dimension x",
+          "Max dimension y",
+          "Inlet type",
+          "Detector",
+          "Detector mode",
+          "Resolving power",
+          "Resolving power m/z",
+          "Native spectrum identifier format",
+          "Data file content",
+          "Spectrum representation",
+          "Raw data file format",
+          "Instrument software",
+          "Instrument software version",
+          "Line scan direction",
+          "Line scan sequence",
+          "Scan pattern",
+          "Scan type",
+          "Number of scans"
+        ],
+        "Histology": [
+          "Stain"
+        ],
+        "Data processing": [
+          "Data processing software",
+          "Data processing software version"
+        ]
+      },
+      "NMR": {
+        "Extraction": [
+          "Extraction method"
+        ],
+        "NMR sample": [
+          "NMR tube type",
+          "Solvent",
+          "Sample pH",
+          "Temperature"
+        ],
+        "NMR spectroscopy": [
+          "Instrument",
+          "NMR probe",
+          "Number of transients",
+          "Pulse sequence name",
+          "Magnetic field strength"
+        ]
+      }
+    },
+    "required_experiment_types": {
+      "LC-MS": [
+        "liquid chromatography-mass spectrometry"
+      ],
+      "LC-DAD-MS": [
+        "liquid chromatography-mass spectrometry"
+      ],
+      "GC-MS": [
+        "gas chromatography-mass spectrometry"
+      ],
+      "GCGC-MS": [
+        "gas chromatography-mass spectrometry",
+        "two-dimensional gas chromatography"
+      ],
+      "GC-FID-MS": [
+        "gas chromatography-mass spectrometry"
+      ],
+      "CE-MS": [
+        "capillary electrophoresis-mass spectrometry"
+      ],
+      "DI-MS": [
+        "direct infusion-mass spectrometry"
+      ],
+      "FIA-MS": [
+        "flow injection analysis-mass spectrometry"
+      ],
+      "MALDI-MS": [
+        "matrix-assisted laser desorption-ionisation mass spectrometry"
+      ],
+      "MSI": [
+        "mass spectrometry imaging"
+      ],
+      "NMR": [
+        "nuclear magnetic resonance spectroscopy"
+      ]
+    }
+  },
+  "sdrf": {
+    "fields": [
+      "Source Name",
+      "Sample Name",
+      "Extract Name",
+      "Labeled Extract Name",
+      "Assay Name",
+      "Raw Data File",
+      "Image Data File",
+      "Processed Data File",
+      "Metabolite Assignment File",
+      "Label",
+      "Protocol REF",
+      "Characteristics\\[.*\\]",
+      "Parameter Value\\[.*\\]",
+      "Comment\\[.*\\]",
+      "Unit\\[.*\\]",
+      "Factor Value\\[.*\\]"
+    ],
+    "required_columns_error": [
+      "Source Name",
+      "Sample Name",
+      "Extract Name",
+      "Assay Name",
+      "Protocol REF",
+      "Characteristics[organism]",
+      "Characteristics[taxonomy_id]"
+    ],
+    "required_columns_warning": [
+      "Comment\\[BioSample\\]",
+      "Comment\\[sample_title\\]",
+      "Raw Data File",
+      "Processed Data File",
+      "Metabolite Assignment File",
+      "Factor Value\\[[-_ A-Za-z0-9.]+\\]"
+    ],
+    "required_group_warning": {
+      "Raw Data File": [
+        "Raw Data File",
+        "Comment[Raw Data File md5]"
+      ],
+      "Processed Data File": [
+        "Processed Data File",
+        "Comment[Processed Data File md5]"
+      ],
+      "Metabolite Assignment File": [
+        "Metabolite Assignment File",
+        "Comment[Metabolite Assignment File md5]"
+      ]
+    },
+    "singleton_columns": [
+      "Source Name",
+      "Sample Name",
+      "Extract Name",
+      "Labeled Extract Name",
+      "Assay Name",
+      "Characteristics[biosample_accession]",
+      "Characteristics[organism]",
+      "Characteristics[taxonomy_id]"
+    ],
+    "column_order": {
+      "LC-MS": [
+        "Source Name",
+        "Characteristics[]",
+        "Protocol REF:Sample collection",
+        "Sample Name",
+        "Protocol REF:Extraction",
+        "Parameter Value[Post extraction]",
+        "Parameter Value[Derivatization]",
+        "Extract Name",
+        "Protocol REF:Chromatography",
+        "Parameter Value[Chromatography instrument]",
+        "Parameter Value[Autosampler model]",
+        "Parameter Value[Column model]",
+        "Parameter Value[Column type]",
+        "Parameter Value[Resolution]",
+        "Parameter Value[Temperature]",
+        "Parameter Value[Guard column]",
+        "Labeled Extract Name",
+        "Label",
+        "Protocol REF:Mass spectrometry",
+        "Parameter Value[Scan polarity]",
+        "Parameter Value[Scan m/z range]",
+        "Parameter Value[Instrument]",
+        "Parameter Value[Ion source]",
+        "Parameter Value[Mass analyzer]",
+        "Assay Name",
+        "Comment[technical_replicate]",
+        "Raw Data File",
+        "Comment[Raw Data File md5]",
+        "Protocol REF:Data processing",
+        "Processed Data File",
+        "Comment[Processed Data File md5]",
+        "Protocol REF:Metabolite identification",
+        "Metabolite Assignment File",
+        "Comment[Metabolite Assignment File md5]",
+        "Comment[maf_value_unit]",
+        "Factor Value[]"
+      ],
+      "LC-DAD-MS": [
+        "Source Name",
+        "Characteristics[]",
+        "Protocol REF:Sample collection",
+        "Sample Name",
+        "Protocol REF:Extraction",
+        "Parameter Value[Post extraction]",
+        "Parameter Value[Derivatization]",
+        "Extract Name",
+        "Protocol REF:Chromatography",
+        "Parameter Value[Chromatography instrument]",
+        "Parameter Value[Autosampler model]",
+        "Parameter Value[Column model]",
+        "Parameter Value[Column type]",
+        "Parameter Value[Guard column]",
+        "Parameter Value[Detector]",
+        "Parameter Value[Signal range]",
+        "Parameter Value[Resolution]",
+        "Parameter Value[Temperature]",
+        "Labeled Extract Name",
+        "Label",
+        "Protocol REF:Mass spectrometry",
+        "Parameter Value[Scan polarity]",
+        "Parameter Value[Scan m/z range]",
+        "Parameter Value[Instrument]",
+        "Parameter Value[Ion source]",
+        "Parameter Value[Mass analyzer]",
+        "Assay Name",
+        "Comment[technical_replicate]",
+        "Raw Data File",
+        "Comment[Raw Data File md5]",
+        "Protocol REF:Data processing",
+        "Processed Data File",
+        "Comment[Processed Data File md5]",
+        "Protocol REF:Metabolite identification",
+        "Metabolite Assignment File",
+        "Comment[Metabolite Assignment File md5]",
+        "Comment[maf_value_unit]",
+        "Factor Value[]"
+      ],
+      "GC-MS": [
+        "Source Name",
+        "Characteristics[]",
+        "Protocol REF:Sample collection",
+        "Sample Name",
+        "Protocol REF:Extraction",
+        "Parameter Value[Post extraction]",
+        "Parameter Value[Derivatization]",
+        "Extract Name",
+        "Protocol REF:Chromatography",
+        "Parameter Value[Chromatography instrument]",
+        "Parameter Value[Autosampler model]",
+        "Parameter Value[Column model]",
+        "Parameter Value[Column type]",
+        "Parameter Value[Resolution]",
+        "Parameter Value[Temperature]",
+        "Parameter Value[Guard column]",
+        "Labeled Extract Name",
+        "Label",
+        "Protocol REF:Mass spectrometry",
+        "Parameter Value[Scan polarity]",
+        "Parameter Value[Scan m/z range]",
+        "Parameter Value[Instrument]",
+        "Parameter Value[Ion source]",
+        "Parameter Value[Mass analyzer]",
+        "Assay Name",
+        "Comment[technical_replicate]",
+        "Raw Data File",
+        "Comment[Raw Data File md5]",
+        "Protocol REF:Data processing",
+        "Processed Data File",
+        "Comment[Processed Data File md5]",
+        "Protocol REF:Metabolite identification",
+        "Metabolite Assignment File",
+        "Comment[Metabolite Assignment File md5]",
+        "Comment[maf_value_unit]",
+        "Factor Value[]"
+      ],
+      "GCGC-MS": [
+        "Source Name",
+        "Characteristics[]",
+        "Protocol REF:Sample collection",
+        "Sample Name",
+        "Protocol REF:Extraction",
+        "Parameter Value[Post extraction]",
+        "Parameter Value[Derivatization]",
+        "Extract Name",
+        "Protocol REF:Chromatography",
+        "Parameter Value[Chromatography instrument]",
+        "Parameter Value[Autosampler model]",
+        "Parameter Value[Column model 1]",
+        "Parameter Value[Column type 1]",
+        "Parameter Value[Resolution 1]",
+        "Parameter Value[Temperature 1]",
+        "Parameter Value[Guard column]",
+        "Parameter Value[Column model 2]",
+        "Parameter Value[Column type 2]",
+        "Parameter Value[Resolution 2]",
+        "Parameter Value[Temperature 2]",
+        "Labeled Extract Name",
+        "Label",
+        "Protocol REF:Mass spectrometry",
+        "Parameter Value[Scan polarity]",
+        "Parameter Value[Scan m/z range]",
+        "Parameter Value[Instrument]",
+        "Parameter Value[Ion source]",
+        "Parameter Value[Mass analyzer]",
+        "Assay Name",
+        "Comment[technical_replicate]",
+        "Raw Data File",
+        "Comment[Raw Data File md5]",
+        "Protocol REF:Data processing",
+        "Processed Data File",
+        "Comment[Processed Data File md5]",
+        "Protocol REF:Metabolite identification",
+        "Metabolite Assignment File",
+        "Comment[Metabolite Assignment File md5]",
+        "Comment[maf_value_unit]",
+        "Factor Value[]"
+      ],
+      "GC-FID-MS": [
+        "Source Name",
+        "Characteristics[]",
+        "Protocol REF:Sample collection",
+        "Sample Name",
+        "Protocol REF:Extraction",
+        "Parameter Value[Post extraction]",
+        "Parameter Value[Derivatization]",
+        "Extract Name",
+        "Protocol REF:Chromatography",
+        "Parameter Value[Chromatography instrument]",
+        "Parameter Value[Autosampler model]",
+        "Parameter Value[Column model]",
+        "Parameter Value[Column type]",
+        "Parameter Value[Resolution]",
+        "Parameter Value[Temperature]",
+        "Parameter Value[Guard column]",
+        "Parameter Value[Detector]",
+        "Parameter Value[Temperature]",
+        "Unit[]",
+        "Labeled Extract Name",
+        "Label",
+        "Protocol REF:Mass spectrometry",
+        "Parameter Value[Scan polarity]",
+        "Parameter Value[Scan m/z range]",
+        "Parameter Value[Instrument]",
+        "Parameter Value[Ion source]",
+        "Parameter Value[Mass analyzer]",
+        "Assay Name",
+        "Comment[technical_replicate]",
+        "Raw Data File",
+        "Comment[Raw Data File md5]",
+        "Protocol REF:Data processing",
+        "Processed Data File",
+        "Comment[Processed Data File md5]",
+        "Protocol REF:Metabolite identification",
+        "Metabolite Assignment File",
+        "Comment[Metabolite Assignment File md5]",
+        "Comment[maf_value_unit]",
+        "Factor Value[]"
+      ],
+      "CE-MS": [
+        "Source Name",
+        "Characteristics[]",
+        "Protocol REF:Sample collection",
+        "Sample Name",
+        "Protocol REF:Extraction",
+        "Parameter Value[Post extraction]",
+        "Parameter Value[Derivatization]",
+        "Extract Name",
+        "Protocol REF:Capillary Electrophoresis",
+        "Parameter Value[CE instrument]",
+        "Parameter Value[Autosampler model]",
+        "Parameter Value[Column model]",
+        "Parameter Value[Column type]",
+        "Labeled Extract Name",
+        "Label",
+        "Protocol REF:Mass spectrometry",
+        "Parameter Value[Scan polarity]",
+        "Parameter Value[Scan m/z range]",
+        "Parameter Value[Instrument]",
+        "Parameter Value[Ion source]",
+        "Parameter Value[Mass analyzer]",
+        "Assay Name",
+        "Comment[technical_replicate]",
+        "Raw Data File",
+        "Comment[Raw Data File md5]",
+        "Protocol REF:Data processing",
+        "Processed Data File",
+        "Comment[Processed Data File md5]",
+        "Protocol REF:Metabolite identification",
+        "Metabolite Assignment File",
+        "Comment[Metabolite Assignment File md5]",
+        "Comment[maf_value_unit]",
+        "Factor Value[]"
+      ],
+      "DI-MS": [
+        "Source Name",
+        "Characteristics[]",
+        "Protocol REF:Sample collection",
+        "Sample Name",
+        "Protocol REF:Extraction",
+        "Parameter Value[Post extraction]",
+        "Parameter Value[Derivatization]",
+        "Extract Name",
+        "Protocol REF:Direct infusion",
+        "Parameter Value[DI instrument]",
+        "Labeled Extract Name",
+        "Label",
+        "Protocol REF:Mass spectrometry",
+        "Parameter Value[Scan polarity]",
+        "Parameter Value[Scan m/z range]",
+        "Parameter Value[Instrument]",
+        "Parameter Value[Ion source]",
+        "Parameter Value[Mass analyzer]",
+        "Assay Name",
+        "Comment[technical_replicate]",
+        "Raw Data File",
+        "Comment[Raw Data File md5]",
+        "Protocol REF:Data processing",
+        "Processed Data File",
+        "Comment[Processed Data File md5]",
+        "Protocol REF:Metabolite identification",
+        "Metabolite Assignment File",
+        "Comment[Metabolite Assignment File md5]",
+        "Comment[maf_value_unit]",
+        "Factor Value[]"
+      ],
+      "FIA-MS": [
+        "Source Name",
+        "Characteristics[]",
+        "Protocol REF:Sample collection",
+        "Sample Name",
+        "Protocol REF:Extraction",
+        "Parameter Value[Post extraction]",
+        "Parameter Value[Derivatization]",
+        "Extract Name",
+        "Protocol REF:Flow injection analysis",
+        "Parameter Value[FIA instrument]",
+        "Labeled Extract Name",
+        "Label",
+        "Protocol REF:Mass spectrometry",
+        "Parameter Value[Scan polarity]",
+        "Parameter Value[Scan m/z range]",
+        "Parameter Value[Instrument]",
+        "Parameter Value[Ion source]",
+        "Parameter Value[Mass analyzer]",
+        "Assay Name",
+        "Comment[technical_replicate]",
+        "Raw Data File",
+        "Comment[Raw Data File md5]",
+        "Protocol REF:Data processing",
+        "Processed Data File",
+        "Comment[Processed Data File md5]",
+        "Protocol REF:Metabolite identification",
+        "Metabolite Assignment File",
+        "Comment[Metabolite Assignment File md5]",
+        "Comment[maf_value_unit]",
+        "Factor Value[]"
+      ],
+      "MALDI-MS": [
+        "Source Name",
+        "Characteristics[]",
+        "Protocol REF:Sample collection",
+        "Sample Name",
+        "Protocol REF:Extraction",
+        "Parameter Value[Post extraction]",
+        "Parameter Value[Derivatization]",
+        "Extract Name",
+        "Labeled Extract Name",
+        "Label",
+        "Protocol REF:Mass spectrometry",
+        "Parameter Value[Scan polarity]",
+        "Parameter Value[Scan m/z range]",
+        "Parameter Value[Instrument]",
+        "Parameter Value[Ion source]",
+        "Parameter Value[Mass analyzer]",
+        "Assay Name",
+        "Comment[technical_replicate]",
+        "Raw Data File",
+        "Comment[Raw Data File md5]",
+        "Protocol REF:Data processing",
+        "Processed Data File",
+        "Comment[Processed Data File md5]",
+        "Protocol REF:Metabolite identification",
+        "Metabolite Assignment File",
+        "Comment[Metabolite Assignment File md5]",
+        "Comment[maf_value_unit]",
+        "Factor Value[]"
+      ],
+      "MSI": [
+        "Source Name",
+        "Characteristics[]",
+        "Protocol REF:Sample collection",
+        "Sample Name",
+        "Protocol REF:Preparation",
+        "Parameter Value[Sample mounting]",
+        "Parameter Value[Sample preservation]",
+        "Parameter Value[Tissue modification]",
+        "Parameter Value[Sectioning instrument]",
+        "Parameter Value[Section thickness]",
+        "Unit[]",
+        "Parameter Value[Matrix]",
+        "Parameter Value[Matrix application]",
+        "Protocol REF:Mass spectrometry",
+        "Parameter Value[Scan polarity]",
+        "Parameter Value[Scan m/z range]",
+        "Parameter Value[Instrument]",
+        "Parameter Value[Instrument manufacturer]",
+        "Parameter Value[Ion source]",
+        "Parameter Value[Mass analyzer]",
+        "Parameter Value[Solvent]",
+        "Parameter Value[Target material]",
+        "Parameter Value[Spatial resolution]",
+        "Unit[]",
+        "Parameter Value[Pixel size x]",
+        "Unit[]",
+        "Parameter Value[Pixel size y]",
+        "Unit[]",
+        "Parameter Value[Max count of pixel x]",
+        "Parameter Value[Max count of pixel y]",
+        "Parameter Value[Max dimension x]",
+        "Unit[]",
+        "Parameter Value[Max dimension y]",
+        "Unit[]",
+        "Parameter Value[Inlet type]",
+        "Parameter Value[Detector]",
+        "Parameter Value[Detector mode]",
+        "Parameter Value[Resolving power]",
+        "Parameter Value[Resolving power m/z]",
+        "Parameter Value[Native spectrum identifier format]",
+        "Parameter Value[Data file content]",
+        "Parameter Value[Spectrum representation]",
+        "Parameter Value[Raw data file format]",
+        "Parameter Value[Instrument software]",
+        "Parameter Value[Instrument software version]",
+        "Parameter Value[Line scan direction]",
+        "Parameter Value[Line scan sequence]",
+        "Parameter Value[Scan pattern]",
+        "Parameter Value[Scan type]",
+        "Parameter Value[Number of scans]",
+        "Assay Name",
+        "Comment[technical_replicate]",
+        "Raw Data File",
+        "Comment[Raw Data File md5]",
+        "Protocol REF:Histology",
+        "Parameter Value[Stain]",
+        "Image Data File",
+        "Comment[Image Data File md5]",
+        "Protocol REF:Data processing",
+        "Parameter Value[Data processing software]",
+        "Parameter Value[Data processing software version]",
+        "Processed Data File",
+        "Comment[Processed Data File md5]",
+        "Protocol REF:Metabolite identification",
+        "Metabolite Assignment File",
+        "Comment[Metabolite Assignment File md5]",
+        "Comment[maf_value_unit]",
+        "Factor Value[]"
+      ],
+      "NMR": [
+        "Source Name",
+        "Characteristics[]",
+        "Protocol REF:Sample collection",
+        "Sample Name",
+        "Protocol REF:Extraction",
+        "Parameter Value[Extraction method]",
+        "Extract Name",
+        "Protocol REF:NMR sample",
+        "Parameter Value[NMR tube type]",
+        "Parameter Value[Solvent]",
+        "Parameter Value[Sample pH]",
+        "Parameter Value[Temperature]",
+        "Unit[]",
+        "Labeled Extract Name",
+        "Label",
+        "Protocol REF:NMR spectroscopy",
+        "Parameter Value[Instrument]",
+        "Parameter Value[NMR probe]",
+        "Parameter Value[Number of transients]",
+        "Parameter Value[Pulse sequence name]",
+        "Parameter Value[Magnetic field strength]",
+        "Unit[]",
+        "Acquisition Parameter Data File",
+        "Comment[Acquisition Parameter Data File md5]",
+        "Protocol REF:NMR assay",
+        "Assay Name",
+        "Comment[technical_replicate]",
+        "Raw Data File",
+        "Comment[Raw Data File md5]",
+        "Free Induction Decay Data File",
+        "Comment[Free Induction Decay Data File md5]",
+        "Protocol REF:Data processing",
+        "Processed Data File",
+        "Comment[Processed Data File md5]",
+        "Protocol REF:Metabolite identification",
+        "Metabolite Assignment File",
+        "Comment[Metabolite Assignment File md5]",
+        "Comment[maf_value_unit]",
+        "Factor Value[]"
+      ]
+    }
+  },
+  "controlled_terms": {
+    "idf": {
+      "error": {
+        "MAGE-TAB Version": [
+          "1.1"
+        ],
+        "Comment[Study type]": [
+          "targeted metabolite profiling",
+          "untargeted metabolite profiling",
+          "metabolic fingerprinting",
+          "metabolite target analysis",
+          "metabolite profiling",
+          "metabolomics",
+          "metabolic profiling",
+          "metabonomics",
+          "lipid profiling",
+          "biomarker",
+          "volatile organic compound",
+          "method development",
+          "microbiome",
+          "cancer",
+          "reference compound",
+          "blood metabolite profiling",
+          "secondary metabolite profiling",
+          "COVID-19",
+          "drug metabolism",
+          "MicroRNA profiling",
+          "chemical library",
+          "amino acids",
+          "organic acids"
+        ],
+        "Experimental Design": [
+          "case control design",
+          "cell component comparison design",
+          "cell cycle design",
+          "cell type comparison design",
+          "cellular modification design",
+          "clinical history design",
+          "compound treatment design",
+          "cross sectional design",
+          "development or differentiation design",
+          "disease state design",
+          "dose response design",
+          "family based design",
+          "twin design",
+          "genetic modification design",
+          "genotype design",
+          "growth condition design",
+          "imprinting design",
+          "injury design",
+          "innate behavior design",
+          "observational design",
+          "organism part comparison design",
+          "organism status design",
+          "pathogenicity design",
+          "population based design",
+          "sex design",
+          "species design",
+          "stimulus or stress design",
+          "strain or line design",
+          "time series design",
+          "hardware variation design",
+          "normalization testing design",
+          "operator variation design",
+          "optimization design",
+          "quality control testing design",
+          "reference design",
+          "replicate design",
+          "software variation design"
+        ],
+        "Comment[Experiment type]": [
+          "capillary electrophoresis-mass spectrometry",
+          "data-dependent acquisition",
+          "data-independent acquisition",
+          "direct infusion-mass spectrometry",
+          "flow injection analysis-mass spectrometry",
+          "fourier transform ion cyclotron resonance mass spectrometry",
+          "gas chromatography-mass spectrometry",
+          "ion mobility spectrometry-mass spectrometry",
+          "ion trap mass spectrometry",
+          "isotope ratio mass spectrometry",
+          "laser mass spectrometry",
+          "liquid chromatography-mass spectrometry",
+          "mass spectrometry imaging",
+          "matrix-assisted laser desorption-ionisation imaging mass spectrometry",
+          "matrix-assisted laser desorption-ionisation time-of-flight mass spectrometry",
+          "orbitrap",
+          "quadrupole mass spectrometer",
+          "selected reaction monitoring",
+          "selective ion monitoring",
+          "SWATH MS",
+          "tandem mass spectrometry",
+          "time-of-flight mass spectrometry",
+          "two-dimensional gas chromatography",
+          "high-resolution mass spectrometry",
+          "ultra-performance liquid chromatography-mass spectrometry",
+          "13C nuclear magnetic resonance spectroscopy",
+          "1H nuclear magnetic resonance spectroscopy",
+          "four-dimensional nuclear magnetic resonance spectroscopy",
+          "nuclear magnetic resonance spectroscopy",
+          "one-dimensional nuclear magnetic resonance spectroscopy",
+          "three-dimensional nuclear magnetic resonance spectroscopy",
+          "two-dimensional nuclear magnetic resonance spectroscopy"
+        ],
+        "Comment[Submission type]": [
+          "LC-MS",
+          "LC-DAD-MS",
+          "GC-MS",
+          "GCGC-MS",
+          "GC-FID-MS",
+          "CE-MS",
+          "DI-MS",
+          "FIA-MS",
+          "MALDI-MS",
+          "MSI",
+          "NMR"
+        ],
+        "Person Roles": [
+          "submitter"
+        ]
+      },
+      "warning": {
+        "Protocol Type": [
+          "Sample collection",
+          "Extraction",
+          "Chromatography",
+          "Mass spectrometry",
+          "Data processing",
+          "Metabolite identification",
+          "Capillary Electrophoresis",
+          "Direct infusion",
+          "Flow injection analysis",
+          "Preparation",
+          "Histology",
+          "NMR sample",
+          "NMR spectroscopy",
+          "NMR assay"
+        ]
+      }
+    },
+    "sdrf": {
+      "warning": {
+        "Parameter Value[Scan polarity]": [
+          "positive",
+          "negative",
+          "alternating"
+        ]
+      }
+    }
+  },
+  "value_formats": {
+    "Characteristics[biosample_accession]": "SAMD\\d{8}",
+    "Comment[Reanalysis of]": "MTBKS\\d{1,}:[^:]+"
+  },
+  "null_values": {
+    "accepted": [
+      "not applicable",
+      "not collected",
+      "not provided",
+      "missing",
+      "restricted access"
+    ],
+    "not_recommended": [
+      "NA",
+      "N/A",
+      "N\\. ?A\\.?",
+      "Unknown",
+      "\\.",
+      "\\-"
+    ]
+  },
+  "biosample_sync": {
+    "biosample_ref_columns": [
+      "Comment[BioSample]",
+      "Characteristics[biosample_accession]"
+    ],
+    "sync_characteristics": [
+      "organism",
+      "taxonomy_id",
+      "collection_date",
+      "isolate",
+      "tissue",
+      "sample_name"
+    ],
+    "mapping": {}
+  },
+  "types": [
+    {
+      "category": "MSC",
+      "submission_type": "LC-MS",
+      "short_name": "MS Chromatography, LC",
+      "display_name": "Liquid chromatography-mass spectrometry",
+      "experiment_type": "liquid chromatography-mass spectrometry"
+    },
+    {
+      "category": "MSC",
+      "submission_type": "LC-DAD-MS",
+      "short_name": "MS Chromatography, DAD, LC",
+      "display_name": "Liquid chromatography, diode array detector-mass spectrometry",
+      "experiment_type": "liquid chromatography-mass spectrometry"
+    },
+    {
+      "category": "MSC",
+      "submission_type": "GC-MS",
+      "short_name": "MS Chromatography, GC",
+      "display_name": "Gas chromatography-mass spectrometry",
+      "experiment_type": "gas chromatography-mass spectrometry"
+    },
+    {
+      "category": "MSC",
+      "submission_type": "GCGC-MS",
+      "short_name": "MS Chromatography, GCxGC",
+      "display_name": "Two dimensional gas chromatography-mass spectrometry",
+      "experiment_type": "gas chromatography-mass spectrometry"
+    },
+    {
+      "category": "MSC",
+      "submission_type": "GC-FID-MS",
+      "short_name": "MS Chromatography, FID, GC",
+      "display_name": "Gas chromatography, flame ionization detector-mass spectrometry",
+      "experiment_type": "gas chromatography-mass spectrometry"
+    },
+    {
+      "category": "MSC",
+      "submission_type": "CE-MS",
+      "short_name": "MS Chromatography, CE",
+      "display_name": "Capillary electrophoresis-mass spectrometry",
+      "experiment_type": "capillary electrophoresis-mass spectrometry"
+    },
+    {
+      "category": "MSD",
+      "submission_type": "DI-MS",
+      "short_name": "MS Direct injection, DI",
+      "display_name": "Direct infusion-mass spectrometry",
+      "experiment_type": "direct infusion-mass spectrometry"
+    },
+    {
+      "category": "MSD",
+      "submission_type": "FIA-MS",
+      "short_name": "MS Direct injection, FIA",
+      "display_name": "Flow injection analysis-mass spectrometry",
+      "experiment_type": "flow injection analysis-mass spectrometry"
+    },
+    {
+      "category": "MSD",
+      "submission_type": "MALDI-MS",
+      "short_name": "MS Direct injection, MALDI",
+      "display_name": "Matrix-assisted laser desorption-ionisation mass spectrometry",
+      "experiment_type": "matrix-assisted laser desorption-ionisation mass spectrometry"
+    },
+    {
+      "category": "MSI",
+      "submission_type": "MSI",
+      "short_name": "MS Imaging",
+      "display_name": "Mass spectrometry imaging",
+      "experiment_type": "mass spectrometry imaging"
+    },
+    {
+      "category": "NMR",
+      "submission_type": "NMR",
+      "short_name": "NMR",
+      "display_name": "Nuclear magnetic resonance spectroscopy",
+      "experiment_type": "nuclear magnetic resonance spectroscopy"
+    }
+  ],
+  "maf": {
+    "MS": [
+      "database_identifier",
+      "chemical_formula",
+      "smiles",
+      "inchi",
+      "metabolite_identification",
+      "metabolite_class",
+      "mass_to_charge",
+      "fragmentation",
+      "modifications",
+      "charge",
+      "retention_time",
+      "taxid",
+      "species",
+      "database",
+      "database_version",
+      "reliability",
+      "search_engine",
+      "search_engine_score",
+      "peak_identifier"
+    ],
+    "NMR": [
+      "database_identifier",
+      "chemical_formula",
+      "smiles",
+      "inchi",
+      "metabolite_identification",
+      "metabolite_class",
+      "chemical_shift",
+      "multiplicity",
+      "taxid",
+      "species",
+      "database",
+      "database_version",
+      "reliability",
+      "search_engine",
+      "search_engine_score",
+      "peak_identifier"
+    ]
+  }
+}

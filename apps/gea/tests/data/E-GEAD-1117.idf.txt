@@ -1,0 +1,21 @@
+Comment[GEAAccession]	E-GEAD-1117
+MAGE-TAB Version	1.1
+Investigation Title	Spatial analysis of cellular interaction of colorectal tumors
+Experiment Description	Accumulating evidence has determined the critical role of tumor stroma-infiltrating cells in the tumor microenvironment of advanced colorectal cancer (CRC). MSI-H CRCs are characterized by abundant T cells and responsive to immunotherapy. On the other hand, mesenchymal MSS CRCs enriched with myeloid cells and fibroblasts, contain few cytotoxic cells and exhibit immunotherapy resistance. Interestingly, both type of CRCs can arise from colon tumors with BRAF mutation. To elucidate the mechanisms underlying these distinct phenotypes, we analyzed spatial interactions among stromal cell populations, aiming to uncover how their crosstalk shapes the tumor microenvironment.
+Experimental Design	clinical history design
+Experimental Factor Name	mss/msi status
+Experimental Factor Type	mss/msi status
+Person Last Name	Iwane
+Person First Name	Kosuke
+Person Affiliation	Kyoto University Graduate School of Medicine
+Person Roles	submitter
+Public Release Date	2025-10-27
+Protocol Name	P-GEAD-5016	P-GEAD-5017	P-GEAD-5018	P-GEAD-5019	P-GEAD-5020	P-GEAD-5021
+Protocol Type	sample collection protocol	nucleic acid extraction protocol	nucleic acid labeling protocol	nucleic acid hybridization to array protocol	array scanning and feature extraction protocol	normalization data transformation protocol
+Protocol Description	Surgically resected colorectal tumors which were already identified as BRAFV600E mutated and MSI or MSS were collected.	Nucleic acids were extracted from FFPE sections according to 10X genomics Xenium In Situ for FFPE Tissues protocol.	Nucleic acids were labeled according to 10X genomics Xenium In Situ Gene Expression protocol.	Nucleic acids hybridization to array was performed according to 10X genomics Xenium In Situ Gene Expression protocol.	Array scanning and feature extraction were performed according to 10X genomics Xenium In Situ Gene Expression protocol.	Normalization was not performed in the submitted data.
+SDRF File	E-GEAD-1117.sdrf.txt
+Comment[Number of channel]	single-channel
+Comment[Array Design REF]	A-GEAD-11
+Comment[AEExperimentType]	transcription profiling by array
+Comment[BioProject]	PRJDB35892
+Comment[Last Update Date]	2025-10-27
