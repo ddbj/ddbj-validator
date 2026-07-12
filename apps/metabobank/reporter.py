@@ -12,23 +12,36 @@ from collections import OrderedDict
 from common import reporter as _r
 
 _TITLE = "MetaboBank"
+_DATA = "MetaboBank"
 
 # 後方互換（既存 import 用）
 _counts = _r.counts
 write_text_reports = _r.write_text_reports
 
 
-def _input_block(fname):
-    """"a.idf.txt b.sdrf.txt" → "IDF: a.idf.txt" / "SDRF: b.sdrf.txt" の行。ラベル不明トークンは Input: 行に。"""
+def _input_lines(fname, sample_count):
+    """"a.idf.txt b.sdrf.txt" → ["IDF: a.idf.txt", "SDRF: b.sdrf.txt (N samples)"]。"""
     lines = []
     for tok in (fname or "").split():
         if ".idf." in tok:
             lines.append(f"IDF: {tok}")
         elif ".sdrf." in tok:
-            lines.append(f"SDRF: {tok}")
+            suffix = f" ({sample_count} samples)" if sample_count is not None else ""
+            lines.append(f"SDRF: {tok}{suffix}")
         else:
             lines.append(f"Input: {tok}")
-    return "\n".join(lines)
+    return lines
+
+
+def _header(title, fname, version, when, elapsed, sample_count, sub_type, with_time):
+    """gea/mb 共通体裁のヘッダ（Data/Version→空行→IDF/SDRF(+samples)→Submission type→空行）。"""
+    lines = [f"=== {_TITLE} Validation {title} ===", f"Validation Date: {when}"]
+    if with_time:
+        lines.append(f"Process Time: {elapsed}")
+    lines += [f"Data: {_DATA}", f"Version: {version}", ""]
+    lines += _input_lines(fname, sample_count)
+    lines += [f"Submission type: {sub_type or '-'}", ""]
+    return lines
 
 
 def _is_row_level(r):
@@ -87,15 +100,10 @@ def _summary_lines(results, is_err):
     return out
 
 
-def build_summary(results, fname, version, when, elapsed):
+def build_summary(results, fname, version, when, elapsed, sample_count=None, sub_type=None):
     c = _r.counts(results)
-    lines = [
-        f"=== {_TITLE} Validation Summary ===",
-        f"Validation Date: {when}", f"Process Time: {elapsed}", f"Version: {version}",
-        _input_block(fname),
-        f"Error: {c.get('error',0)}   Warning: {c.get('warning',0)}",
-        "",
-    ]
+    lines = _header("Summary", fname, version, when, elapsed, sample_count, sub_type, with_time=True)
+    lines += [f"Error: {c.get('error',0)}   Warning: {c.get('warning',0)}", ""]
     errs, wars = _summary_lines(results, True), _summary_lines(results, False)
     if errs:
         lines.append("[ ERROR ]"); lines += errs; lines.append("")
@@ -104,9 +112,8 @@ def build_summary(results, fname, version, when, elapsed):
     return "\n".join(lines).rstrip("\n") + "\n"
 
 
-def build_details(results, fname, version, when, elapsed):
-    lines = [f"=== {_TITLE} Validation Details ===",
-             f"Validation Date: {when}", f"Version: {version}", _input_block(fname), ""]
+def build_details(results, fname, version, when, elapsed, sample_count=None, sub_type=None):
+    lines = _header("Details", fname, version, when, elapsed, sample_count, sub_type, with_time=False)
     errs = [r for r in results if r.get("level") == "error"]
     wars = [r for r in results if r.get("level") != "error"]
     if errs:

@@ -15,6 +15,20 @@ def ref_columns(context, default=("Comment[BioSample]",)):
     return list(cols) if cols else list(default)
 
 
+def referenced_samds(sub, cols):
+    """SDRF が参照する BioSample(SAMD) の重複排除集合（ヘッダの "(N samples)" 用）。"""
+    out = set()
+    if not sub.sdrf:
+        return out
+    for col in cols:
+        for i in sub.sdrf.col_indices(col):
+            for row in sub.sdrf.rows:
+                v = (row[i] if i < len(row) else "").strip()
+                if _SAMD.match(v):
+                    out.add(v)
+    return out
+
+
 def row_samd(sub, row, cols):
     for col in cols:
         for i in sub.sdrf.col_indices(col):

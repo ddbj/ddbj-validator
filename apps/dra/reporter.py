@@ -4,11 +4,16 @@
 - ERROR / WARNING セクションに分割。各セクション内は SUBMISSION→EXPERIMENT→RUN→ANALYSIS の順に object type で
   グルーピング。
 - 各行は `{rule_id}:{OBJECT}:{accession or alias}:{message}`（object は accession/alias/target から導出）。
+- summary は (rule_id, object) ごとに件数集約（`{first} etc ({N})`、メッセージが行ごとに違えば末尾に ' etc'）。
+  details は全件展開。
 共通の counts / write_text_reports / write_json_report は common/reporter を利用。
 """
+from collections import OrderedDict
+
 from common import reporter as _r
 
 _TITLE = "DRA"
+_DATA = "DRA"
 
 # 後方互換（既存 import 用）
 _counts = _r.counts
@@ -78,7 +83,20 @@ def _section(results, is_err):
     return out
 
 
-def _body(results):
+def _agg_line(rid, obj, rs):
+    """(rule_id, object) の集約 1 行。N>1 は `{first} etc ({N})`、メッセージが行ごとに違えば末尾に ' etc'。"""
+    n = len(rs)
+    sample0 = rs[0].get("sample") or "-"
+    msg0 = rs[0].get("message", "")
+    if n == 1:
+        return f"{rid}:{obj}:{sample0}:{msg0}"
+    if len({r.get("message", "") for r in rs}) > 1:   # メッセージが揃わない（acc 等が行ごとに違う）
+        msg0 = (msg0[:-1] + " etc)") if msg0.endswith(")") else f"{msg0} etc"
+    return f"{rid}:{obj}:{sample0} etc ({n}):{msg0}"
+
+
+def _detail_body(results):
+    """details 本文（全件展開）。"""
     lines = []
     errs, wars = _section(results, True), _section(results, False)
     if errs:
@@ -88,22 +106,46 @@ def _body(results):
     return lines
 
 
+def _summary_body(results):
+    """summary 本文（(rule_id, object) 件数集約）。"""
+    lines = []
+    for is_err, hdr in ((True, "[ ERROR ]"), (False, "[ WARNING ]")):
+        picked = [r for r in results if (r.get("level") == "error") == is_err]
+        if not picked:
+            continue
+        section = []
+        for obj in _OBJ_ORDER:
+            groups = OrderedDict()
+            for r in picked:
+                if _obj_type(r) == obj:
+                    groups.setdefault(r["rule_id"], []).append(r)
+            for rid, rs in groups.items():
+                section.append(_agg_line(rid, obj, rs))
+        lines.append(hdr); lines += section; lines.append("")
+    return lines
+
+
+def _head(title, submission, version, when, elapsed, with_time):
+    lines = [f"=== {_TITLE} Validation {title} ===", f"Validation Date: {when}"]
+    if with_time:
+        lines.append(f"Process Time: {elapsed}")
+    lines += [f"Data: {_DATA}", f"Version: {version}", ""]
+    lines += _header_lines(submission)
+    lines.append("")
+    return lines
+
+
 def build_summary(results, submission, version, when, elapsed):
     c = _r.counts(results)
-    lines = [f"=== {_TITLE} Validation Summary ===",
-             f"Validation Date: {when}", f"Process Time: {elapsed}", f"Version: {version}"]
-    lines += _header_lines(submission)
+    lines = _head("Summary", submission, version, when, elapsed, with_time=True)
     lines += [f"Error: {c.get('error',0)}   Warning: {c.get('warning',0)}", ""]
-    lines += _body(results)
+    lines += _summary_body(results)
     return "\n".join(lines).rstrip("\n") + "\n"
 
 
 def build_details(results, submission, version, when, elapsed):
-    lines = [f"=== {_TITLE} Validation Details ===",
-             f"Validation Date: {when}", f"Version: {version}"]
-    lines += _header_lines(submission)
-    lines.append("")
-    lines += _body(results)
+    lines = _head("Details", submission, version, when, elapsed, with_time=False)
+    lines += _detail_body(results)
     return "\n".join(lines).rstrip("\n") + "\n"
 
 
