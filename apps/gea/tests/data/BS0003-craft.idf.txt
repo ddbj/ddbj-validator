@@ -1,0 +1,17 @@
+Comment[GEAAccession]	E-GEAD-1289
+MAGE-TAB Version	1.1
+Investigation Title	drr drx bs triplet diff, ref to external bs
+Experiment Description	drr drx bs triplet diff, ref to external bs
+Experimental Design	growth condition design	secreted protein identification design	optimization design
+Experimental Factor Name	test
+Experimental Factor Type	test
+Person Last Name	Kodama
+Person First Name	Yuich
+Person Affiliation	ddbj
+Person Roles	submitter
+Protocol Name	P-GEAD-5946	P-GEAD-5947	P-GEAD-5948	P-GEAD-5949	P-GEAD-5950
+Protocol Type	sample collection protocol	nucleic acid extraction protocol	nucleic acid library construction protocol	nucleic acid sequencing protocol	normalization data transformation protocol
+Protocol Description	ddddddddddddddddddddddddddddddddddd	ddddddddddddddddddddddddddddddddddd	ddddddddddddddddddddddddddddddddddd	ddddddddddddddddddddddddddddddddddd	ddddddddddddddddddddddddddddddddddd
+SDRF File	E-GEAD-1289.sdrf.txt
+Comment[AEExperimentType]	methylation profiling by high throughput sequencing
+Comment[BioProject]	PRJDB5168

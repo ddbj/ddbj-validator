@@ -30,7 +30,7 @@ def _info_header(kind, sample_count, input_name, submission_id, package, version
         f"=== Validation {kind} ===",
         f"Validation Date: {when}",
         f"Process Time: {elapsed} seconds",
-        "Data: biosample",
+        "Data: BioSample",
         f"Version: {version}",
         "",
         f"File: {input_name}",

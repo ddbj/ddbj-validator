@@ -7,7 +7,7 @@ from apps.gea.rules.base import GeaRule
 
 
 class GEA_REF0001(GeaRule):
-    rule_id = "GEA_REF0001"; level = "warning"; target = "IDF and SDRF"
+    rule_id = "GEA_REF0001"; level = "warning"; target = "IDF/SDRF"
     description = "IDF should not contain protocol definitions that are not used in SDRF."
 
     def validate(self, sub, context):
@@ -25,7 +25,7 @@ class GEA_REF0001(GeaRule):
 
 
 class GEA_REF0006(GeaRule):
-    rule_id = "GEA_REF0006"; level = "error"; target = "IDF and SDRF"; only_type = "microarray"
+    rule_id = "GEA_REF0006"; level = "error"; target = "IDF/SDRF"; only_type = "microarray"
     description = "Array designs referenced in IDF and SDRF are not identical."
 
     def validate(self, sub, context):

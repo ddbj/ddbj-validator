@@ -71,6 +71,33 @@ def parse_sdrf(path, sdrf_cls=Sdrf):
     return sdrf
 
 
+# DB 種別（flavor）判定用の IDF 特徴フィールド。accession Comment に加え、accession 未採番の
+# 新規 submission でも判別できるよう title/description の構造フィールドも含める。
+_FLAVOR_MARKERS = {
+    "gea": {"Comment[GEAAccession]", "Investigation Title", "Experiment Description"},
+    "metabobank": {"Comment[MetaboBank accession]", "Study Title", "Study Description"},
+}
+_FLAVOR_LABEL = {"gea": "GEA", "metabobank": "MetaboBank"}
+
+
+def check_flavor(idf, expected):
+    """IDF が expected('gea'/'metabobank') と異なる DB の MAGE-TAB に見えれば理由文字列を返す（判定不能は None）。
+
+    「相手 DB の特徴フィールドがあり、かつ自 DB の特徴フィールドが 1 つも無い」場合のみ誤取り違えと判定する
+    （accession 未採番の自 DB ファイルを誤検出しないため）。
+    """
+    if idf is None:
+        return None
+    fields = set(idf.field_order)
+    other = "metabobank" if expected == "gea" else "gea"
+    foreign = _FLAVOR_MARKERS[other] & fields
+    own = _FLAVOR_MARKERS[expected] & fields
+    if foreign and not own:
+        return (f"This is a {_FLAVOR_LABEL[other]} MAGE-TAB (found {', '.join(sorted(foreign))}), "
+                f"not a {_FLAVOR_LABEL[expected]} submission.")
+    return None
+
+
 def parse(idf_path=None, sdrf_path=None, submission_cls=Submission, idf_cls=Idf, sdrf_cls=Sdrf,
           known_fields=frozenset(), idf_err_id="IR0001", sdrf_err_id="SR0001", account=None):
     sub = submission_cls(account=account)

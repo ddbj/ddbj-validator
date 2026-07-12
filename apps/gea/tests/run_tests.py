@@ -41,10 +41,13 @@ GEA_DB_EXPECTED = {
     "ESUB002706": set(),                              # sequencing, DRA Run ref ext-permit all OK（重複列なし）
     "ESUB002705": {"GEA_REF0003", "GEA_REF0004", "GEA_LC0001", "GEA_RC0002"},  # partial ＋ 重複列
     "ESUB002704": {"GEA_LC0001", "GEA_RC0002"},       # DRA Run ref OK ＋ 重複列
-    # 存在しない SAMD00000000（正規表現通過・未登録）→ REF0002＋BS0002、triple 不一致で REF0008、BS 値不一致で BS0003、重複列で LC0001/RC0002
-    "ESUB002710": {"GEA_REF0002", "GEA_REF0008", "GEA_BS0002", "GEA_BS0003", "GEA_LC0001", "GEA_RC0002"},
+    # 存在しない SAMD00000000（正規表現通過・未登録）→ REF0002＋BS0002、triple 不一致で REF0008、重複列で LC0001/RC0002
+    # ※ sync 属性を ddbj biosample_sync（common）に絞ったため sample_name 不一致では BS0003 は発火しない（→ BS0003-craft で担保）
+    "ESUB002710": {"GEA_REF0002", "GEA_REF0008", "GEA_BS0002", "GEA_LC0001", "GEA_RC0002"},
     # crafted fixture: bogus A-GEAD-999999（自 account 未登録かつ非公開でない）→ REF0005 error
     "REF0005-craft": {"GEA_REF0005"},
+    # crafted fixture（ESUB002710 派生）: sync 対象 collection_date を BS と不一致にして BS0003 error を担保
+    "BS0003-craft": {"GEA_REF0002", "GEA_REF0008", "GEA_BS0002", "GEA_BS0003", "GEA_LC0001", "GEA_RC0002"},
 }
 
 

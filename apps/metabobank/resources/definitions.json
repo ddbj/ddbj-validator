@@ -1190,12 +1190,13 @@
       "Characteristics[biosample_accession]"
     ],
     "sync_characteristics": [
-      "organism",
-      "taxonomy_id",
       "collection_date",
+      "cultivar",
+      "geo_loc_name",
       "isolate",
-      "tissue",
-      "sample_name"
+      "metagenome_source",
+      "organism",
+      "strain"
     ],
     "mapping": {}
   },

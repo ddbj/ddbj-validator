@@ -15,6 +15,20 @@ def ref_columns(context, default=("Comment[BioSample]",)):
     return list(cols) if cols else list(default)
 
 
+def referenced_samds(sub, cols):
+    """SDRF が参照する BioSample(SAMD) の重複排除集合（ヘッダの "(N samples)" 用）。"""
+    out = set()
+    if not sub.sdrf:
+        return out
+    for col in cols:
+        for i in sub.sdrf.col_indices(col):
+            for row in sub.sdrf.rows:
+                v = (row[i] if i < len(row) else "").strip()
+                if _SAMD.match(v):
+                    out.add(v)
+    return out
+
+
 def row_samd(sub, row, cols):
     for col in cols:
         for i in sub.sdrf.col_indices(col):
@@ -35,34 +49,45 @@ def char_columns(sub, context):
     return out
 
 
+def assay_name(sub, row_index):
+    """行（0-based）の Assay Name 値。レポートの location 用。無ければ空。"""
+    if not sub.sdrf:
+        return ""
+    idxs = sub.sdrf.col_indices("Assay Name")
+    if not idxs or row_index >= len(sub.sdrf.rows):
+        return ""
+    row = sub.sdrf.rows[row_index]
+    return row[idxs[0]].strip() if idxs[0] < len(row) else ""
+
+
 def iter_missing_attrs(sub, context, attrs, cols):
-    """Characteristics にあるが参照 BioSample に無い属性。yield (samd, attr)。"""
+    """Characteristics にあるが参照 BioSample に無い属性。yield (samd, attr, row_index)。"""
     cc = char_columns(sub, context)
-    for row in sub.sdrf.rows:
+    for ri, row in enumerate(sub.sdrf.rows):
         samd = row_samd(sub, row, cols)
         if not samd or samd not in attrs:
             continue
         bs = attrs[samd]
         for attr in cc:
             if attr not in bs:
-                yield samd, attr
+                yield samd, attr, ri
 
 
 def iter_unknown_biosamples(sub, attrs, cols):
-    """account/DB に無い（属性ゼロ含む）参照 BioSample。yield samd（重複なし）。"""
+    """account/DB に無い（属性ゼロ含む）参照 BioSample。yield (samd, row_index)（重複なし・初出行）。"""
     seen = set()
-    for row in sub.sdrf.rows:
+    for ri, row in enumerate(sub.sdrf.rows):
         samd = row_samd(sub, row, cols)
         if samd and samd not in seen:
             seen.add(samd)
             if samd not in attrs or not attrs[samd]:
-                yield samd
+                yield samd, ri
 
 
 def iter_value_mismatches(sub, context, attrs, cols):
-    """Characteristics 値と BioSample 属性値の不一致。yield (samd, attr, sdrf_value, bs_value)。"""
+    """Characteristics 値と BioSample 属性値の不一致。yield (samd, attr, sdrf_value, bs_value, row_index)。"""
     cc = char_columns(sub, context)
-    for row in sub.sdrf.rows:
+    for ri, row in enumerate(sub.sdrf.rows):
         samd = row_samd(sub, row, cols)
         if not samd or samd not in attrs:
             continue
@@ -71,7 +96,7 @@ def iter_value_mismatches(sub, context, attrs, cols):
             sdrf_v = (row[idx] if idx < len(row) else "").strip()
             bs_v = str(bs.get(attr, "")).strip()
             if attr in bs and sdrf_v and bs_v and sdrf_v != bs_v:
-                yield samd, attr, sdrf_v, bs_v
+                yield samd, attr, sdrf_v, bs_v, ri
 
 
 def fetch_biosample_attrs(sub, cols):

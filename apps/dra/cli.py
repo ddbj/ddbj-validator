@@ -118,19 +118,17 @@ def run(args):
         _fetch_db_meta(context, submission, args.account)
     results = pre_errors + Validator(context).run(submission)
 
-    counts_obj = {"experiments": len(submission.experiments), "runs": len(submission.runs),
-                  "analyses": len(submission.analyses)}
     now = datetime.datetime.now(_JST)
     when = started.strftime("%Y-%m-%d %H:%M:%S JST")
     elapsed = str(datetime.timedelta(seconds=int((now - started).total_seconds())))
     version = _tool_version()
     label = f"{len(paths)} files"
-    summary = build_summary(results, counts_obj, label, version, when, elapsed)
+    summary = build_summary(results, submission, version, when, elapsed)
     if args.json:
         write_json_report(results, out_dir, label, version)
         report_files = ["validation_report.json"]
     else:
-        details = build_details(results, label, version, when, elapsed)
+        details = build_details(results, submission, version, when, elapsed)
         write_text_reports(summary, details, out_dir)
         report_files = ["validation_report_summary.txt", "validation_report_details.txt"]
         print(summary.rstrip("\n"))

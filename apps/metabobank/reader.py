@@ -22,3 +22,8 @@ def parse(idf_path=None, sdrf_path=None, account=None):
         idf_err_id="MB_IR0001", sdrf_err_id="MB_SR0001",
         account=account,
     )
+
+
+def wrong_db_reason(sub):
+    """IDF が MetaboBank 以外（GEA）の MAGE-TAB に見えれば理由文字列を返す（abort 用）。"""
+    return base.check_flavor(sub.idf, "metabobank")

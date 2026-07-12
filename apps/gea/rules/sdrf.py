@@ -408,13 +408,15 @@ class GEA_SDRF_REGEX(GeaRule):
         fmts = (context.definitions or {}).get("value_formats", {})
         nulls = null_values(context)
         out = []
+        from common.magetab.biosample import assay_name
         for col in self._sdrf_fields:
             pat = fmts.get(col)
             if not pat:
                 continue
             for i in sub.sdrf.col_indices(col):
-                for row in sub.sdrf.rows:
+                for ri, row in enumerate(sub.sdrf.rows):
                     v = (row[i] if i < len(row) else "").strip()
                     if v and v not in nulls and not re.fullmatch(pat, v):
-                        out.append(self.result(message=f"Format Error '{col}' ('{v}')"))
+                        out.append(self.result(message=f"Format Error '{col}' ('{v}')",
+                                               line=ri + 1, assay=assay_name(sub, ri)))
         return out

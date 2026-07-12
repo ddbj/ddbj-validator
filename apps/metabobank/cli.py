@@ -127,6 +127,10 @@ def run(args):
     skip_db, skip_ncbi, skip_auth = _resolve_modes(args)
     context = ValidationContext(account=args.account, skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
     sub, pre = reader.parse(idf_path, sdrf_path, account=args.account)
+    reason = reader.wrong_db_reason(sub)
+    if reason:
+        print(f"[ERROR] {reason} Aborting MetaboBank validation. (use the correct subcommand)", file=sys.stderr)
+        return 2
     out_dir = args.out_dir or str(Path(idf_path or sdrf_path).parent)
 
     if not context.skip_db:
@@ -138,12 +142,17 @@ def run(args):
     elapsed = str(datetime.timedelta(seconds=int((now - started).total_seconds())))
     version = _tool_version()
     label = f"{Path(idf_path).name if idf_path else ''} {Path(sdrf_path).name if sdrf_path else ''}".strip()
-    summary = build_summary(results, label, version, when, elapsed)
+    # ヘッダ用: 参照 SAMD の重複排除数 ＋ submission type（Comment[Submission type]）
+    from common.magetab import biosample as _bs
+    _cols = _bs.ref_columns(context, default=("Comment[BioSample]", "Characteristics[biosample_accession]"))
+    sample_count = len(_bs.referenced_samds(sub, _cols)) if sub.sdrf else None
+    sub_type = sub.idf.submission_type if sub.idf else ""
+    summary = build_summary(results, label, version, when, elapsed, sample_count, sub_type)
     if args.json:
         write_json_report(results, out_dir, label, version)
         report_files = ["validation_report.json"]
     else:
-        details = build_details(results, label, version, when, elapsed)
+        details = build_details(results, label, version, when, elapsed, sample_count, sub_type)
         write_text_reports(summary, details, out_dir)
         report_files = ["validation_report_summary.txt", "validation_report_details.txt"]
         print(summary.rstrip("\n"))

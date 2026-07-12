@@ -227,7 +227,7 @@ class GEA_PR0002(GeaRule):
             return []
         protos = sub.idf.protocols()
         bad = sum(1 for p in protos if _empty(p["Protocol Name"]) and not _empty(p["Protocol Type"]))
-        return [self.result(message=f"{self.description} ({bad})")] if bad else []
+        return [self.result(message=f"{self.description} ({bad} Protocol{'s' if bad != 1 else ''})")] if bad else []
 
 
 class GEA_PR0003(GeaRule):
@@ -239,7 +239,7 @@ class GEA_PR0003(GeaRule):
             return []
         protos = sub.idf.protocols()
         bad = sum(1 for p in protos if not _empty(p["Protocol Name"]) and _empty(p["Protocol Type"]))
-        return [self.result(message=f"{self.description} ({bad})")] if bad else []
+        return [self.result(message=f"{self.description} ({bad} Protocol{'s' if bad != 1 else ''})")] if bad else []
 
 
 class GEA_PR0005(GeaRule):
@@ -251,7 +251,7 @@ class GEA_PR0005(GeaRule):
             return []
         protos = sub.idf.protocols()
         bad = sum(1 for p in protos if not _empty(p["Protocol Name"]) and _empty(p["Protocol Description"]))
-        return [self.result(message=f"{self.description} ({bad})")] if bad else []
+        return [self.result(message=f"{self.description} ({bad} Protocol{'s' if bad != 1 else ''})")] if bad else []
 
 
 class GEA_PR0006(GeaRule):
@@ -264,7 +264,7 @@ class GEA_PR0006(GeaRule):
         mn = _idf(context).get("protocol_description_min_length", 100)
         protos = sub.idf.protocols()
         bad = sum(1 for p in protos if p["Protocol Description"] and 0 < len(p["Protocol Description"].strip()) < mn)
-        return [self.result(message=f"{self.description} ({bad})")] if bad else []
+        return [self.result(message=f"{self.description} ({bad} Protocol{'s' if bad != 1 else ''})")] if bad else []
 
 
 class _ProtocolRequired(GeaRule):

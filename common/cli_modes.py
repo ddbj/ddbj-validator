@@ -27,7 +27,10 @@ def resolve_modes(args):
 
 
 def tool_version(package):
-    """package（例 "apps.gea"）の __version__ を返す。取得不可なら "unknown"。"""
+    """package（例 "apps.gea"）の __version__ を返す。取得不可なら "unknown"。
+
+    各サブコマンドの版は apps/<app>/__init__.py の __version__ で個別管理（release.sh --all が bump する運用）。
+    """
     try:
         return getattr(importlib.import_module(package), "__version__", "unknown")
     except Exception:

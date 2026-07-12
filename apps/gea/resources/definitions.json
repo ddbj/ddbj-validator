@@ -367,17 +367,13 @@
     ],
     "source_name_default": "sample_name",
     "sync_characteristics": [
-      "organism",
-      "taxonomy_id",
       "collection_date",
+      "cultivar",
       "geo_loc_name",
       "isolate",
-      "strain",
-      "cultivar",
-      "sex",
-      "tissue",
-      "age",
-      "sample_name"
+      "metagenome_source",
+      "organism",
+      "strain"
     ],
     "mapping": {}
   },
