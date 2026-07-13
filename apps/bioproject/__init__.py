@@ -1,2 +1,2 @@
 """BioProject validator（サブコマンド bioproject）。ddbj/biosample と独立にバージョン管理。"""
-__version__ = "0.3.4-beta"
+__version__ = "0.3.5-beta"
