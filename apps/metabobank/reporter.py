@@ -90,13 +90,26 @@ def _summary_lines(results, is_err):
         else:
             _, rid, tag, target, noun = k
             out.append(f"{rid}:{tag}:{target}:{_agg_msg(rs[0].get('message',''), len(rs), noun)}")
+    # SDRF 行単位の集約:
+    #  samd を持つ行（SR0021/SR0023 等）は SAMD を除いたメッセージで集約し、SAMD の違いを「first etc」に吸収
+    #  （sdrf 行数 x samd 数 x 属性数 で膨らむのを 1 行にまとめる）。samd 無しは message で集約（従来）。
     groups = OrderedDict()
     for r in results:
-        if _is_row_level(r) and (r.get("level") == "error") == is_err:
-            key = (r["rule_id"], _tag(r), r.get("message", ""))
-            groups[key] = groups.get(key, 0) + 1
-    for (rid, tag, msg), n in groups.items():
-        out.append(f"{rid}:{tag}:SDRF:{n} lines:{msg}")
+        if not (_is_row_level(r) and (r.get("level") == "error") == is_err):
+            continue
+        rid, tag, msg = r["rule_id"], _tag(r), r.get("message", "")
+        samd = r.get("samd")
+        key = (rid, tag, msg.replace(samd, "<samd>") if samd else msg)
+        g = groups.get(key)
+        if g is None:
+            g = {"rid": rid, "tag": tag, "msg": msg, "samd": samd, "n": 0}
+            groups[key] = g
+        g["n"] += 1
+    for g in groups.values():
+        msg = g["msg"]
+        if g["samd"] and g["n"] > 1:   # SAMD を「first etc」に（複数 SAMD をまとめた印）
+            msg = msg.replace(g["samd"], f"{g['samd']} etc", 1)
+        out.append(f"{g['rid']}:{g['tag']}:SDRF:{g['n']} lines:{msg}")
     return out
 
 

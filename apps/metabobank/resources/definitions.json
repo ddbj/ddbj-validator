@@ -1189,15 +1189,6 @@
       "Comment[BioSample]",
       "Characteristics[biosample_accession]"
     ],
-    "sync_characteristics": [
-      "collection_date",
-      "cultivar",
-      "geo_loc_name",
-      "isolate",
-      "metagenome_source",
-      "organism",
-      "strain"
-    ],
     "mapping": {}
   },
   "types": [

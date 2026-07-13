@@ -34,6 +34,11 @@ def _build_parser():
     p.add_argument("-d", "--internal-db", action="store_true", help="内部 DDBJ DB を使う")
     p.add_argument("-j", "--json", action="store_true", help="出力を JSON にする")
     p.add_argument("-f", "--force-fix", action="store_true", help="autofix を全適用（fixed/ に出力）")
+    p.add_argument("-b", "--biosample", action="store_true",
+                   help="SDRF->BioSample の autofix を SSUB 更新 TSV として biosample/ に出力（内部 DB 必須）")
+    # -f 時の既定方向（内部/テスト用・非表示）: bs2sdrf=BioSample->SDRF / sdrf2bs=SDRF->BioSample
+    p.add_argument("--biosample-apply", choices=["bs2sdrf", "sdrf2bs"], default="bs2sdrf",
+                   help=argparse.SUPPRESS)
     return p
 
 
@@ -157,7 +162,24 @@ def run(args):
         report_files = ["validation_report_summary.txt", "validation_report_details.txt"]
         print(summary.rstrip("\n"))
 
-    if args.force_fix:
+    # BioSample <-> SDRF 双方向 autofix（MB_SR0023）。内部 DB モードのみ提案が出る。
+    from apps.metabobank import autofix
+    if args.biosample and context.skip_db:
+        print("[WARN] Local mode or --skip-db is enabled. The --biosample (-b) option will be ignored.",
+              file=sys.stderr)
+    proposals = autofix.build_proposals(results)
+    if proposals:
+        # -b（biosample_mode）あり時のみ SDRF -> BioSample 提案を出す（無ければ BS -> SDRF のみ）
+        autofix.review(proposals, force_fix=args.force_fix,
+                       biosample_apply=args.biosample_apply, biosample_mode=args.biosample)
+        autofix.write_confirmation(proposals, out_dir)
+        autofix.apply_bs2sdrf(sub, proposals)   # sub.sdrf を BioSample 値へ（fixed/ に反映される）
+        if args.biosample and not context.skip_db:
+            autofix.build_ssub_tsvs(sub, proposals, out_dir, _cols)   # ddbj 体裁で保存メッセージを出力
+
+    # fixed 出力: -f 指定時、または bs2sdrf の autofix が確定した場合に SDRF/IDF を fixed/ へ
+    has_bs2sdrf = any(p["direction"] == "bs2sdrf" for p in proposals)
+    if args.force_fix or has_bs2sdrf:
         for p in _write_fixed(sub, out_dir):
             print(f"  => fixed file: {p}")
 

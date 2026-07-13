@@ -44,7 +44,9 @@ class GEA_BS0003(GeaRule):
             return []
         out = []
         for samd, attr, sdrf_v, bs_v, ri in _bs.iter_value_mismatches(sub, context, attrs, _bs.ref_columns(context)):
+            # 双方向 autofix 用の構造化フィールド（sdrf_value/bs_value）も付与
             out.append(self.result(
                 message=f"{self.description} ({samd} {attr}: SDRF '{sdrf_v}', BioSample '{bs_v}')",
-                autofix=True, samd=samd, attr=attr, new_value=bs_v, line=ri + 1, assay=_bs.assay_name(sub, ri)))
+                autofix=True, samd=samd, attr=attr, new_value=bs_v,
+                sdrf_value=sdrf_v, bs_value=bs_v, line=ri + 1, assay=_bs.assay_name(sub, ri)))
         return out

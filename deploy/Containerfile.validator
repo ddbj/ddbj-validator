@@ -1,0 +1,13 @@
+# validator コンテナ（検証エンジン）。UUID/イベントは持たない。
+# 既存 CLI（main.py: ddbj/biosample/bioproject/dra/gea/metabobank）をそのまま提供する。
+FROM python:3.11-slim
+
+WORKDIR /app
+COPY . /app
+
+RUN pip install --no-cache-dir . \
+    && useradd -m runner
+USER runner
+
+# web からは共有ボリューム上の run dir を -o に渡して呼ばれる。
+ENTRYPOINT ["ddbj-validator"]

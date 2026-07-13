@@ -16,14 +16,17 @@ def _cols(context):
 
 class MB_SR0021(MbRule):
     rule_id = "MB_SR0021"; level = "warning"; target = "SDRF"; requires_rdb = True; requires_auth = True
-    description = "BioSample attribute referenced in Characteristics is missing in the BioSample."
+    # SDRF が参照する Characteristics 属性が BioSample 側に存在しない（BS が持っていない）ケース。
+    description = "Attribute referenced in SDRF Characteristics is not present in the BioSample."
 
     def validate(self, sub, context):
         attrs = getattr(context, "biosample_attrs", None)
         if attrs is None or not sub.sdrf:
             return []
+        # summary は属性でまとめる（SAMD の違いは集約）→ agg_by_attr / desc を付与
         return [self.result(message=f"{self.description} ({samd}: '{attr}')",
-                            line=ri + 1, assay=_bs.assay_name(sub, ri))
+                            line=ri + 1, assay=_bs.assay_name(sub, ri),
+                            samd=samd, attr=attr, agg_by_attr=True, desc=self.description)
                 for samd, attr, ri in _bs.iter_missing_attrs(sub, context, attrs, _cols(context))]
 
 
@@ -50,6 +53,9 @@ class MB_SR0023(MbRule):
             return []
         out = []
         for samd, attr, sdrf_v, bs_v, ri in _bs.iter_value_mismatches(sub, context, attrs, _cols(context)):
+            # autofix 用に構造化フィールドも持たせる（BS↔SDRF 双方向 autofix の入力）
             out.append(self.result(message=f"{self.description} ({samd} {attr}: SDRF '{sdrf_v}', BioSample '{bs_v}')",
-                                    line=ri + 1, assay=_bs.assay_name(sub, ri)))
+                                    line=ri + 1, assay=_bs.assay_name(sub, ri),
+                                    autofix=True, samd=samd, attr=attr,
+                                    sdrf_value=sdrf_v, bs_value=bs_v))
         return out

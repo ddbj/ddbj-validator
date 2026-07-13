@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ddbj-validator"
-version = "0.3.4-beta"
+version = "0.3.5-beta"
 description = "Validation tools for DDBJ, BioProject, BioSample etc."
 dependencies = [
     "biopython",
@@ -18,6 +18,15 @@ dependencies = [
     "pyarrow",
     "shapely",
     "lxml"
+]
+
+[project.optional-dependencies]
+# Web API（FastAPI）用。validator 本体には不要なので extra に分離。
+# インストール: pip install .[web]
+web = [
+    "fastapi",
+    "uvicorn[standard]",
+    "python-multipart",
 ]
 
 [project.scripts]

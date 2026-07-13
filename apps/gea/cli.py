@@ -34,6 +34,10 @@ def _build_parser():
     p.add_argument("-d", "--internal-db", action="store_true", help="内部 DDBJ DB を使う")
     p.add_argument("-j", "--json", action="store_true", help="出力を JSON にする")
     p.add_argument("-f", "--force-fix", action="store_true", help="autofix を全適用（fixed/ に出力）")
+    p.add_argument("-b", "--biosample", action="store_true",
+                   help="SDRF->BioSample の autofix を SSUB 更新 TSV として biosample/ に出力（内部 DB 必須）")
+    p.add_argument("--biosample-apply", choices=["bs2sdrf", "sdrf2bs"], default="bs2sdrf",
+                   help=argparse.SUPPRESS)
     return p
 
 
@@ -153,25 +157,8 @@ def _write_fixed(sub, out_dir, results, context):
         written.append(str(p))
     if sub.sdrf:
         s = sub.sdrf
-        # BioSample 同期（GEA_BS0003 autofix）: 該当 SAMD 行の Characteristics[attr] を BS 値へ上書き
-        fixes = [r for r in results if r.get("autofix") and r.get("samd") and r.get("attr")]
-        if fixes:
-            ref_cols = context.definitions.get("biosample_sync", {}).get("biosample_ref_columns", [])
-            for row in s.rows:
-                samd = None
-                for col in ref_cols:
-                    for i in s.col_indices(col):
-                        v = (row[i] if i < len(row) else "").strip()
-                        if re.match(r"^SAMD\d+$", v):
-                            samd = v
-                if not samd:
-                    continue
-                for fx in fixes:
-                    if fx["samd"] != samd:
-                        continue
-                    for i in s.col_indices(f"Characteristics[{fx['attr']}]"):
-                        if i < len(row):
-                            row[i] = fx["new_value"]
+        # BioSample 同期（GEA_BS0003）は autofix.apply_bs2sdrf が方向に応じて sub.sdrf.rows に反映済み。
+        # ここでは sub.sdrf をそのまま直列化する。
         rows = ["\t".join(s.header)] + ["\t".join(r) for r in s.rows]
         p = fixed / Path(s.raw_path).name
         p.write_text("\n".join(rows) + "\n", encoding="utf-8")
@@ -223,7 +210,22 @@ def run(args):
         report_files = ["validation_report_summary.txt", "validation_report_details.txt"]
         print(summary.rstrip("\n"))
 
-    if args.force_fix:
+    # BioSample <-> SDRF 双方向 autofix（GEA_BS0003）。mb と同一仕様。内部 DB モードのみ提案が出る。
+    from apps.gea import autofix
+    if args.biosample and context.skip_db:
+        print("[WARN] Local mode or --skip-db is enabled. The --biosample (-b) option will be ignored.",
+              file=sys.stderr)
+    proposals = autofix.build_proposals(results)
+    if proposals:
+        autofix.review(proposals, force_fix=args.force_fix,
+                       biosample_apply=args.biosample_apply, biosample_mode=args.biosample)
+        autofix.write_confirmation(proposals, out_dir)
+        autofix.apply_bs2sdrf(sub, proposals)   # bs2sdrf を sub.sdrf に反映（fixed/ へ）
+        if args.biosample and not context.skip_db:
+            autofix.build_ssub_tsvs(sub, proposals, out_dir, _bs.ref_columns(context))
+
+    has_bs2sdrf = any(p["direction"] == "bs2sdrf" for p in proposals)
+    if args.force_fix or has_bs2sdrf:
         for p in _write_fixed(sub, out_dir, results, context):
             print(f"  => fixed file: {p}")
 
