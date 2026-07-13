@@ -20,6 +20,15 @@ dependencies = [
     "lxml"
 ]
 
+[project.optional-dependencies]
+# Web API（FastAPI）用。validator 本体には不要なので extra に分離。
+# インストール: pip install .[web]
+web = [
+    "fastapi",
+    "uvicorn[standard]",
+    "python-multipart",
+]
+
 [project.scripts]
 # main.py の multiplexer を指す（ddbj / biosample サブコマンドを振り分ける）。
 # 第1引数が既知サブコマンドでなければ暗黙的に ddbj を補完するため後方互換

@@ -1,0 +1,16 @@
+# web コンテナ（FastAPI + uvicorn）。UUID 発行・run dir 作成・status/log 管理・validator 呼び出し。
+FROM python:3.11-slim
+
+WORKDIR /app
+COPY . /app
+
+# web extra（fastapi / uvicorn / python-multipart）込みでインストール
+RUN pip install --no-cache-dir ".[web]" \
+    && useradd -m web
+USER web
+
+EXPOSE 8000
+
+# 既定は同一イメージ内の validator を子プロセス起動（DDBJ_VALIDATOR_CMD 未設定時）。
+# 別コンテナ運用では compose 側で DDBJ_VALIDATOR_CMD を `podman exec ...` に設定する。
+CMD ["uvicorn", "apps.webapi.app:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -39,12 +39,16 @@ def row_samd(sub, row, cols):
 
 
 def char_columns(sub, context):
-    """Characteristics[attr] のうち sync 対象の {attr: 先頭列 index}。"""
+    """比較対象の Characteristics[attr] → {attr: 先頭列 index}。
+
+    definitions.biosample_sync.sync_characteristics が定義されていればその属性のみ（gea）、
+    未定義/空なら **全ての Characteristics[attr]** を対象にする（mb: BS の引き写しのため全属性比較）。
+    """
     sync = (context.definitions or {}).get("biosample_sync", {}).get("sync_characteristics", [])
     out = {}
     for h in sub.sdrf.header:
         m = re.fullmatch(r"Characteristics\[(.+)\]", h)
-        if m and m.group(1) in sync:
+        if m and (not sync or m.group(1) in sync):
             out[m.group(1)] = sub.sdrf.col_indices(h)[0]
     return out
 
