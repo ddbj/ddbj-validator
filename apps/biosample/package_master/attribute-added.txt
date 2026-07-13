@@ -1,0 +1,914 @@
+Name	Harmonized name	Synonym	type	allowed_values	invalid_values	allow_multiple	Description	DescriptionJa
+sample_name	sample_name					false	"The sample name is a name that you choose for the sample.  Each sample name must be <span class=""attention_text"">unique</span> in a submission."	"sample name は登録者がサンプルに付ける名前です。sample name は Submission において<span class=""attention_text"">ユニーク</span>である必要があります。"
+sample_title	sample_title					false	"Sample title should be short and informative. Each sample title must be <span class=""attention_text"">unique</span> in a submission.  Examples: 1) Escherichia coli O104:H4 str. C227-11 clinical isolate 2010_333_NC-6;  2) CD8+ T cells from female TSG6-knockout BALB/c mouse;  3) Human metagenome isolated from urine of healthy female."	"タイトルはサンプルをよく表す簡潔なものを記入します。 タイトルは Submission において<span class=""attention_text"">ユニーク</span>である必要があります。 例: 1) Escherichia coli O104:H4 str. C227-11 clinical isolate 2010_333_NC-6;  2) CD8+ T cells from female TSG6-knockout BALB/c mouse;  3) Human metagenome isolated from urine of healthy female."
+description	description					false	A brief description for the sample.	サンプルに対する簡潔な補足情報。
+organism	organism					false	"The most descriptive organism name for this sample (to the species, if relevant) in the <a href=""http://www.ncbi.nlm.nih.gov/taxonomy"">NCBI Taxonomy database</a>. If it is not in the database, provide as much information about the organism as possible and the DDBJ staff apply a new organism name to NCBI Taxonomy."	"<a href=""http://www.ncbi.nlm.nih.gov/taxonomy"">NCBI Taxonomy database</a> に登録されている最も下位のランクの生物名 (適切な場合は species まで)。データベースに登録されていない場合，未登録の生物に関する情報をできるだけ記入してください。 DDBJ スタッフが NCBI Taxonomy に未登録の生物を申請します。"
+taxonomy_id	taxonomy_id		integer			false	"NCBI Taxonomy identifier. This is appropriate for individual organisms, <a href=""http://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Undef&id=12908&lvl=3&lin=f&keep=1&srchmode=1&unlock"">some metagenomes and environmental samples</a>.  If it is not in the database, leave empty. The DDBJ staff apply a new organism name to NCBI Taxonomy, and then an assigned TaxID will be auto-filled."	"NCBI Taxonomy identifier. 個別の生物、<a href=""http://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Undef&id=12908&lvl=3&lin=f&keep=1&srchmode=1&unlock"">メタゲノムや環境サンプル</a>に割り当てられています。データベースに登録されていない場合，空欄にします。DDBJ スタッフが NCBI Taxonomy に未登録の生物を申請後、割り当てられた TaxID が自動的に記入されます。"
+bioproject_id	bioproject_id					false	Associated BioProject accession number (PRJDB)	関連する BioProject アクセッション番号 (PRJDB)
+locus_tag_prefix	locus_tag_prefix					true	"A <a href=""https://www.ddbj.nig.ac.jp/ddbj/locus_tag-e.html"">locus tag prefix</a> is for an annotated genome. A locus tag prefix cannot be changed after registration, so avoid to register a prefix following an organism name or a strain name which may be changed in the future. Enter a locus tag prefix along with a corresponding BioProject accession."	"アノテーションを記載するゲノムに対するユニークな <a href=""https://www.ddbj.nig.ac.jp/ddbj/locus_tag.html"">locus tag prefix</a>。取得した prefix は変更できません。そのため将来変わる可能性がある生物名や株名に揃えた prefix は避けてください。locus tag prefix と対応する BioProject アクセッション番号を記入します。"
+strain	strain				"[""bacteria"", ""clinical isolate"", ""environmental"", ""microbial"", ""no"", ""soil"", ""sp"", ""sp."", ""strain"", ""whole organism"", ""yes"", ""subsp.*"", ""serovar*""]"	false	"Microbial or eukaryotic strain name. See <a href=""https://www.ddbj.nig.ac.jp/ddbj/identifiers-e.html"">Identifiers</a> for details."	"微生物や真核生物の株名。詳しくは<a href=""https://www.ddbj.nig.ac.jp/ddbj/identifiers.html"">識別子について</a>を参照。"
+isolate	isolate					false	"Identifier of the specific individual or sample, from which this sample was obtained, typically a sample ID. See <a href=""https://www.ddbj.nig.ac.jp/ddbj/identifiers-e.html"">Identifiers</a> for details."	"サンプルが得られた個体やサンプルの識別子、典型的には Sample ID。詳しくは<a href=""https://www.ddbj.nig.ac.jp/ddbj/identifiers.html"">識別子について</a>を参照。"
+breed	breed					false	"Breed name - chiefly used in domesticated animals or plants. See <a href=""https://www.ddbj.nig.ac.jp/ddbj/identifiers-e.html"">Identifiers</a> for details."	"品種の名称。主に家畜化された動物や栽培化された植物に用いられます。詳しくは<a href=""https://www.ddbj.nig.ac.jp/ddbj/identifiers.html"">識別子について</a>を参照。"
+cultivar	cultivar					false	"Cultivated variety of plant. See <a href=""https://www.ddbj.nig.ac.jp/ddbj/identifiers-e.html"">Identifiers</a> for details."	"植物の栽培品種名。詳しくは<a href=""https://www.ddbj.nig.ac.jp/ddbj/identifiers.html"">識別子について</a>を参照。"
+ecotype	ecotype					false	"A population within a given species displaying genetically based, phenotypic traits that reflect adaptation to a local habitat, e.g., Columbia. See <a href=""https://www.ddbj.nig.ac.jp/ddbj/identifiers-e.html"">Identifiers</a> for details."	"局所的な生育環境への適応を反映した、遺伝型に基づいた表現型特性を示す種内集団 (例: Columbia)。詳しくは<a href=""https://www.ddbj.nig.ac.jp/ddbj/identifiers.html"">識別子について</a>を参照。"
+isolation_source	isolation_source	isolation_source				false	Describes the physical, environmental and/or local geographical source of the biological sample from which the sample was derived.	サンプルが得られた生物学的サンプルに関する, 物理的, 環境的, かつまたは, 地理的な由来
+host	host	specific host, host, nat-host				false	"The natural (as opposed to laboratory) host to the organism from which the sample was obtained. Use the full taxonomic name, eg, ""Homo sapiens""."	生物の(実験室ではない)自然界における宿主の学名 (例: Homo sapiens)
+lab_host	lab_host					false	Originally meaning host on which a parasite is maintained in the lab, which may not be the same as the natural host (example hamster cells used to support a parasite normally found in mouse in the wild).	配列決定した分子を得た生物を増殖させるために実験室で使われた宿主の学名
+age	age	age				false	age at the time of sampling; relevant scale depends on species and study, e.g. could be seconds for amoebae or centuries for trees	サンプリング時の年齢。規模は種や研究に依存する。(例：アメーバに対する秒、樹木に対する世紀)
+dev_stage	dev_stage	developmental stage, development stage				false	Developmental stage at the time of sampling.	サンプリング時における生物の発生段階
+tissue	tissue					false	Type of tissue the sample was taken from	サンプルの組織の名称
+sex	sex	sex		"[""male"", ""female"", ""pooled male and female"", ""neuter"", ""hermaphrodite"", ""intersex"", ""not determined""]"		false	"Physical sex of sampled organism. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"サンプル生物の性別。<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+biomaterial_provider	biomaterial_provider					false	Name and address of the lab or PI, or a culture collection identifier	実験材料の提供元(例: culture collection identifier，Principal Investigator，研究室名)
+sample_type	sample_type	sample type, sample_type, sampletype				false	Sample type, such as cell culture, mixed culture, tissue sample, whole organism, single cell, metagenomic assembly, primary cell	サンプル種別。例 cell culture, mixed culture, tissue sample, whole organism, single cell, metagenomic assembly, primary cell
+collection_date	collection_date	collection date	timestamp			false	"Time of sampling (single instance or interval, eg., 2008-01-23T19:23:10Z, 2008-01-23, 2008-01, 2008, 1952-10-21T11:43Z/1952-10-21T17:43Z, 1952-10-21/1953-02-15, 1952-10/1953-02, 1952/1953)  Follow ISO 8601 standard ""YYYY-mm-dd"", ""YYYY-mm"" or ""YYYY-mm-ddThh:mm:ssZ"" (e.g., 1990-10-30, 1990-10 or 1990-10-30T14:41:36Z). Collection times must be in Coordinated Universal Time (UTC). Times without time zone are processed as UTC. Non-UTC times are converted to UTC."	サンプルを採取した日付を ISO 8601 形式で記載します。スラッシュによる範囲指定に対応しています。例: 2008-01-23T19:23:10Z, 2008-01-23, 2008-01, 2008, 1952-10-21T11:43Z/1952-10-21T17:43Z, 1952-10-21/1953-02-15, 1952-10/1953-02, 1952/1953。日時は国際標準時 (UTC) で記載します。タイムゾーンの指定が無い時間は UTC として処理され、UTC ではない時間は UTC に変換されます。
+geo_loc_name	geo_loc_name	geographic location (country and/or sea,region)				false	"Geographical origin of the sample indicated by countries or oceans, followed by regions and localities. Use an appropriate country or ocean name from the <a href=""https://www.ddbj.nig.ac.jp/ddbj/country-e.html"">country list</a> and add region and locality after a colon to separate the country or ocean e.g. ""Japan:Kanagawa, Hakone, Lake Ashi"". Entering multiple localities in one attribute is not allowed."	"サンプルを得た地域を国、または、海洋の名称で示し、続けて地方・地域を示します。国名は <a href=""https://www.ddbj.nig.ac.jp/ddbj/country.html"">country list</a> の名前を選択し、コロンに続けて地方・地域を記載します。一つの属性内で複数の地点を記載することは禁止しています。例 Japan:Kanagawa, Hakone, Lake Ashi"
+lat_lon	lat_lon	geographic location (latitude and longitude)				false	"The geographical coordinates of the location where the sample was collected. Specify as decimal degrees latitude and longitude in format ""d[d.dddddddd] N|S d[dd.dddddddd] W|E"", eg, “47.94 N 28.12 W” “45.0123 S 4.1234 E” When the information is lacking or specification of location is not appropriate, please enter ""missing""."	"サンプルが採取された位置の地理的座標。 (書式：d[d.dddddddd] <N or S> d[dd.dddddddd] <W or E>) (例： ""47.94 N 28.12 W"", ""45.0123 S 4.1234 E"")  小数点以下の数字は分秒ではなく小数で記載してください。位置情報が無い、あるいは、記載することが不適切な場合は ""missing"" と記入してください。"
+env_broad_scale	env_broad_scale	env_biome, environmental biome				false	"Add terms that identify the major environment type(s) where your sample was collected. Recommend subclasses of <a href=""https://www.ebi.ac.uk/ols/ontologies/envo/terms?iri=http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FENVO_00000428"">biome [ENVO:00000428]</a>. Multiple terms can be separated by one or more pipes e.g. mangrove biome [ENVO:01000181]|estuarine biome [ENVO:01000020]"	"サンプル採取場所の主な環境を記載します。<a href=""https://www.ebi.ac.uk/ols/ontologies/envo/terms?iri=http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FENVO_00000428"">biome [ENVO:00000428]</a> サブクラスの用語を推奨。複数の用語はパイプ (|) で区切って記載します。例 mangrove biome [ENVO:01000181]|estuarine biome [ENVO:01000020]"
+env_local_scale	env_local_scale	env_feature, environmental feature				false	"Add terms that identify environmental entities having causal influences upon the entity at time of sampling, multiple terms can be separated by pipes, e.g.:  shoreline [ENVO:00000486]|intertidal zone [ENVO:00000316]	"	採取時点のサンプルに実質的な影響を及ぼす環境要因を記載します。複数の用語はパイプ (|) で区切って記載します。例 shoreline [ENVO:00000486]|intertidal zone [ENVO:00000316]
+env_medium	env_medium	env_material, environment (material)				false	Add terms that identify the material displaced by the entity at time of sampling. Recommend subclasses of environmental material [ENVO:00010483]. Multiple terms can be separated by pipes e.g.: estuarine water [ENVO:01000301]|estuarine mud [ENVO:00002160]	"採取時点のサンプルによって置換されていた物質を記載します。<a href=""https://www.ebi.ac.uk/ols/ontologies/envo/terms?iri=http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FENVO_00010483"">environmental material [ENVO:00010483]</a> サブクラスの用語を推奨。複数の用語はパイプ (|) で区切って記載します。例 estuarine water [ENVO:01000301]|estuarine mud [ENVO:00002160]"
+depth	depth	depth				false	Depth is defined as the vertical distance below surface, e.g. for sediment or soil samples depth is measured from sediment or soil surface, respectively. Depth can be reported as an interval for subsurface samples.	水深・深度。局所表面下の垂直距離。例えば、堆積物や土壌サンプルの深度は堆積物や土壌の表面から測定される。深度は地下サンプルに対する距離として報告される。
+elev	elev	elevation				false	The elevation of the sampling site as measured by the vertical distance from mean sea level.	サンプルを採取した場所の標高。平均海面からの垂直距離。
+altitude	altitude	altitude				false	The altitude of the sample is the vertical distance between Earth's surface above Sea Level and the sampled position in the air.	海抜上の地表面から空中にあるサンプルを採取した位置までの垂直距離。
+isol_growth_condt	isol_growth_condt	isolation and growth condition	reference			false	Publication reference in the form of pubmed ID, DOI or URL for isolation and growth condition specifications of the organism/material	単離や生育条件の詳細を記載している pubmed ID, DOI,  あるいは URL
+propagation	propagation	propagation				false	This field is specific to different taxa. For phage: lytic/lysogenic/temperate/obligately lytic;  for plasmid: incompatibility group;  for eukaryote: asexual/sexual	増殖・繁殖方法。Phage: lytic/lysogenic/temperate/obligately lytic から選択します。Plasmid: 不和合性グループを記載します。真核生物: asexual/sexual のどちらか選択します。
+ref_biomaterial	ref_biomaterial	reference for biomaterial	reference			false	Primary publication if isolated before genome publication; otherwise, primary genome report in the form of pubmed ID, DOI or URL	Primary publication か primary genome report の pubmed ID, DOI, URL
+num_replicons	num_replicons	number of replicons	integer			false	Reports the number of replicons in a nuclear genome of eukaryotes, in the genome of a bacterium or archaea or the number of segments in a segmented virus. Always applied to the haploid chromosome count of a eukaryote	真核生物の核ゲノム、微生物のゲノムにおけるレプリコンの数、セグメント化されたウィルスにおけるセグメントの数。
+collected_by	collected_by	collected_by				false	Name of persons or institute who collected the sample	標本個体を採集した人物、または、団体の名称
+host_disease	host_disease					false	"Name of relevant disease, e.g. Salmonella gastroenteritis. For the controlled vocabulary, please see Human Disease Ontology or <a href=""http://www.ncbi.nlm.nih.gov/mesh"">MeSH</a>."	"宿主の病気の名称。(例：Salmonella gastroenteritis) Controlled vocabulary として Human Disease Ontology，<a href=""http://www.ncbi.nlm.nih.gov/mesh"">MeSH</a> を参照してください。"
+metagenome_source	metagenome_source					true	"Source of metagenomic sample described by <a href=""https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Tree&id=408169&lvl=3&lin=f&keep=1&srchmode=1&unlock"">metagenomic organism names</a> in the taxonomy database. eg, ""soil metagenome"""	"データが由来するメタゲノムサンプル。Taxonomy database の <a href=""https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Tree&id=408169&lvl=3&lin=f&keep=1&srchmode=1&unlock"">metagenomic organism</a> 名で記載。例 ""soil metagenome"""
+derived_from	derived_from					false	Indicates where one BioSample was derived from another BioSample(s) by its BioSample accessions. e.g., SAMD00000001,SAMD00000002,SAMD00000005-SAMD00000010	サンプルの派生元 BioSample をそのアクセッション番号で示します。例 SAMD00000001,SAMD00000002,SAMD00000005-SAMD00000010
+abs_air_humidity	abs_air_humidity					false	Actual mass of water vapor - mh20 - present in the air water vapor mixture	
+air_temp	air_temp					false	Temperature of the air at the time of sampling	
+build_occup_type	build_occup_type			"[""office"", ""market"", ""restaurant"", ""residence"", ""school"", ""residential"", ""commercial"", ""low rise"", ""high rise"", ""wood framed"", ""health care"", ""airport"", ""sports complex""]"		false	"Primary function for which a building or discrete part of a building is intended to be used. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+building_setting	building_setting			"[""urban"", ""suburban"", ""exurban"", ""rural""]"		false	"Location (geography) where a building is set. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+carb_dioxide	carb_dioxide	carbon dioxide				false	Carbon dioxide (gas) amount or concentration at the time of sampling	
+filter_type	filter_type			"[""particulate air filter"", ""chemical air filter"", ""low-MERV pleated media"", ""HEPA"", ""electrostatic"", ""gas-phase or ultraviolet air treatments""]"		false	"Device which removes solid particulates or airborne molecular contaminants. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+heat_cool_type	heat_cool_type			"[""radiant system"", ""heat pump"", ""forced air system"", ""steam forced heat"", ""wood stove""]"		false	"Methods of conditioning or heating a room or building. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+indoor_space	indoor_space			"[""bedroom"", ""office"", ""bathroom"", ""foyer"", ""kitchen"", ""locker room"", ""hallway"", ""elevator""]"		false	"A distinguishable space within a structure, the purpose for which discrete areas of a building is used. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+light_type	light_type			"[""natural light"", ""electric light"", ""no light""]"		false	"Application of light to achieve some practical or aesthetic effect. Lighting includes the use of both artificial light sources such as lamps and light fixtures, as well as natural illumination by capturing daylight. Can also include absence of light. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+occup_samp	occup_samp					false	Number of occupants present at time of sample within the given space	
+occupant_dens_samp	occupant_dens_samp					false	Average number of occupants at time of sampling per square footage	
+organism_count	organism_count	organism count				false	Total count of any organism per gram or volume of sample, should include name of organism followed by count; can include multiple organism counts	
+rel_air_humidity	rel_air_humidity					false	Partial vapor and air pressure, density of the vapor and air, or by the actual mass of the vapor and air	
+space_typ_state	space_typ_state			"[""typical occupied"", ""typically unoccupied""]"		false	"Customary or normal state of the space. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+typ_occupant_dens	typ_occupant_dens					false	Customary or normal density of occupants	
+ventilation_type	ventilation_type	ventilation type				false	Ventilation system used in the sampled premises	
+source_uvig	source_uvig			"[""metagenome (not viral targeted)"", ""viral fraction metagenome (virome)"", ""sequence-targeted metagenome"", ""metatranscriptome (not viral targeted)"", ""viral fraction RNA metagenome (RNA virome)"", ""sequence-targeted RNA metagenome"", ""microbial single amplified genome (SAG)"", ""viral single amplified genome (vSAG)"", ""isolate microbial genome""]"		false	"Type of dataset from which the UViG was obtained. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+virus_enrich_appr	virus_enrich_appr			"[""filtration"", ""ultrafiltration"", ""centrifugation"", ""ultracentrifugation"", ""PEG Precipitation"", ""FeCl Precipitation"", ""CsCl density gradient"", ""DNAse"", ""RNAse"", ""targeted sequence capture""]"		true	"Approach used to enrich the sample for viruses, if any. If more than one approach was used, include multiple ‘virus_enrich_appr’ fields. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+beta_lactamase_family	beta_lactamase_family			"[""ACC"", ""ACT"", ""ADC"", ""BEL"", ""CARB"", ""CBP"", ""CFE"", ""CMY"", ""CTX-M"", ""DHA"", ""FOX"", ""GES"", ""GIM"", ""KPC"", ""IMI"", ""IMP"", ""IND"", ""LAT"", ""MIR"", ""MOX"", ""NDM"", ""OXA"", ""PER"", ""PDC"", ""SHV"", ""SME"", ""TEM"", ""VEB"", ""VIM"", ""unknown""]"		false	"Specify the beta-lactamase family for this gene. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+carbapenemase	carbapenemase			"[""yes"", ""no""]"		false	"Does the enzyme exhibit carbapenemase activity? If the enzyme does exhibit carbapenemase activity, the response should be ""yes"", otherwise ""no."". Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+edta_inhibitor_tested	edta_inhibitor_tested			"[""yes"", ""no""]"		false	"Was carbapenemase activity tested in the presence of EDTA? If carbapenemase activity was tested in the presence of EDTA, the response should be ""yes"", otherwise ""no”. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+ww_population	ww_population					false	"Number of persons contributing wastewater to this sample collection site; if unknown, estimate to the nearest order of magnitude, e.g., 10000. If no estimate is available, input ""not applicable""."	
+ww_sample_duration	ww_sample_duration					false	Duration of composite sample collected, in units of hours, e.g., 24. Specify integer values. If the sample is not a composite sample, use 0.	
+ww_sample_matrix	ww_sample_matrix					false	The wastewater matrix that was sampled	
+ww_sample_type	ww_sample_type					false	Type of wastewater sample collected	
+ww_surv_target_1	ww_surv_target_1					false	Taxonomic name of the surveillance target. For the COVID-19 response, use 'SARS-CoV-2'.	
+ww_surv_target_1_known_present	ww_surv_target_1_known_present					false	Is genetic material of the surveillance target(s) known to the submitter to be present in this wastewater sample? Presence defined as microbiological evidence of the target organism in the wastewater sample, such as genetic- or culture-based detection.	
+biological_replicate	biological_replicate					false	biological replicate	
+antibody	antibody					false	Antibody name, provider name, lot number, if used.	
+add_recov_method	add_recov_method					false	Additional (i.e. secondary, tertiary, etc.) recovery methods deployed for increase of hydrocarbon recovery from resource and start date for each one of them, e.g., water injection {timestamp}, dump flood {timestamp}, gas injection {timestamp}, wag immiscible injection {timestamp}, polymer addition {timestamp}, surfactant addition {timestamp}	
+additional_info	additional_info					false	Information that doesn't fit anywhere else	
+address	address					false	The street name and building number where the sampling occurred	
+adj_room	adj_room					false	List of rooms (room number, room name) immediately adjacent to the sampling room	
+adjacent_environment	adjacent_environment					false	Description of the environmental system or features that are adjacent to the sampling site. This field accepts terms under ecosystem (http://purl.obolibrary.org/obo/ENVO_01001110) and human construction (http://purl.obolibrary.org/obo/ENVO_00000070). Multiple terms can be separated by pipes	
+aero_struc	aero_struc					false	Aerospace structures typically consist of thin plates with stiffeners for the external surfaces, bulkheads and frames to support the shape and fasteners such as welds, rivets, screws and bolts to hold the components together, e.g., plane, glider	
+affection_status	affection_status					false	Case control status of the subject	
+agrochem_addition	agrochem_addition	history/agrochemical additions				false	addition of fertilizers, pesticides, etc. - amount and time of applications	
+air_flow_impede	air_flow_impede					false	Presence of objects in the area that would influence or impede air flow through the air filter, e.g., obstructed, unobstructed	
+air_pm_concen	air_pm_concen					false	concentration of substances that remain suspended in the air, and comprise mixtures of organic and inorganic substances (PM10 and PM2.5); can report multiple PM's by entering numeric values preceded by name of PM	
+air_temp_regm	air_temp_regm	air temperature regimen				false	information about treatment involving an exposure to varying temperatures; should include the temperature, treatment duration, interval and total experimental duration; can include different temperature regimens	
+al_sat	al_sat	extreme_unusual_properties/Al saturation				false	aluminum saturation (esp. for tropical soils)	
+al_sat_meth	al_sat_meth	extreme_unusual_properties/Al saturation method	reference			false	reference or method used in determining Al saturation	
+alkalinity	alkalinity	alkalinity				false	alkalinity, the ability of a solution to neutralize acids to the equivalence point of carbonate or bicarbonate	
+alkalinity_method	alkalinity_method					false	Method used for alkalinity measurement	
+alkyl_diethers	alkyl_diethers	alkyl diethers				false	concentration of alkyl diethers	
+aminopept_act	aminopept_act	aminopeptidase activity				false	measurement of aminopeptidase activity	
+ammonium	ammonium	ammonium				false	concentration of ammonium	
+amniotic_fluid_color	amniotic_fluid_color	amniotic fluid/color				false	specification of the color of the amniotic fluid sample	
+amount_light	amount_light					false	The unit of illuminance and luminous emittance, measuring luminous flux per unit area	
+analyte_type	analyte_type					false	analyte type	
+anamorph	anamorph					false	Genus and species of the asexually reproducing stage of fungi - note that anamorph and teleomorph forms of the same taxon may have used taxonomic different names.	
+ances_data	ances_data					false	Information about either pedigree or other ancestral information description, e.g., parental variety in case of mutant or selection, A/3*B (meaning [(A x B) x B] x B)	
+anim_water_method	anim_water_method					false	Description of the equipment or method used to distribute water to livestock. This field accepts terms listed under water delivery equipment. Multiple terms can be separated by pipes	
+animal_am_dur	animal_am_dur					false	The duration of time (days) that the antimicrobial was administered to the food animal	
+animal_am_freq	animal_am_freq					false	The frequency per day that the antimicrobial was adminstered to the food animal	
+animal_am_route	animal_am_route					false	The route by which the antimicrobial is adminstered into the body of the food animal	
+animal_am_use	animal_am_use					false	The prescribed intended use of or the condition treated by the antimicrobial given to the food animal by any route of administration	
+animal_body_cond	animal_body_cond					false	Body condition scoring is a production management tool used to evaluate overall health and nutritional needs of a food animal, e.g., normal, over conditioned, under conditioned	
+animal_diet	animal_diet					false	If the isolate is from a food animal, the type of diet eaten by the food animal. Please list the main food staple and the setting, if appropriate. For a list of acceptable animal feed terms or categories, please see http://www.feedipedia.org. Multiple terms may apply and can be separated by pipes. Food product for animal covers foods intended for consumption by domesticated animals. Consult http://purl.obolibrary.org/obo/FOODON_03309997. If the proper descriptor is not listed please use text to describe the food type. Multiple terms can be separated by one or more pipes. If the proper descriptor is not listed please use text to describe the food product type	
+animal_feed_equip	animal_feed_equip					false	Description of the feeding equipment used for livestock. This field accepts terms listed under feed delivery (http://opendata.inra.fr/EOL/EOL_0001757). Multiple terms can be separated by one or more pipes	
+animal_intrusion	animal_intrusion					false	Identification of animals intruding on the sample or sample site including invertebrates (such as pests or pollinators) and vertebrates (such as wildlife or domesticated animals). This field encourages terms under organism (http://purl.obolibrary.org/obo/NCIT_C14250). This field also encourages identification numbers from NCBI under https://www.ncbi.nlm.nih.gov/taxonomy. Multiple terms can be separated by pipes, e.g., large flies	
+animal_sex	animal_sex					false	The sex and reproductive status of the food animal, e.g., castrated female, castrated male, intact female, intact male	
+annual_precpt	annual_precpt					false	The average of all annual precipitation values known, or an estimated equivalent value derived by such methods as regional indexes or Isohyetal maps	
+annual_season_precpt	annual_season_precpt	mean annual and seasonal precipitation				false	mean annual and seasonal precipitation (mm)	
+annual_season_temp	annual_season_temp	mean annual and seasonal temperature				false	mean annual and seasonal temperature (degree C)	
+annual_temp	annual_temp					false	Mean annual temperature	
+antibiotic_regm	antibiotic_regm	antibiotic regimen				false	information about treatment involving antibiotic administration; should include the name of antibiotic, amount administered, treatment duration, interval and total experimental duration; can include multiple antibiotic regimens	
+antiviral_treatment_agent	antiviral_treatment_agent					false	Antiviral treatment agent	
+api	api					false	API gravity is a measure of how heavy or light a petroleum liquid is compared to water (source: https://en.wikipedia.org/wiki/API_gravity), e.g. 31.1 API	
+arch_struc	arch_struc					false	An architectural structure is a human-made, free-standing, immobile outdoor construction, e.g., building, shed, home	
+area_samp_size	area_samp_size					false	The total amount or size (volume (ml), mass (g) or area (m2) ) of sample collected	
+aromatics_pc	aromatics_pc					false	Saturate, Aromatic, Resin and Asphaltene (SARA) is an analysis method that divides crude oil components according to their polarizability and polarity. There are three main methods to obtain SARA results. The most popular one is known as the Iatroscan TLC-FID and is referred to as IP-143 (source: https://en.wikipedia.org/wiki/Saturate,_aromatic,_resin_and_asphaltene)	
+asphaltenes_pc	asphaltenes_pc					false	Saturate, Aromatic, Resin and Asphaltene (SARA) is an analysis method that divides crude oil components according to their polarizability and polarity. There are three main methods to obtain SARA results. The most popular one is known as the Iatroscan TLC-FID and is referred to as IP-143 (source: https://en.wikipedia.org/wiki/Saturate,_aromatic,_resin_and_asphaltene)	
+association_duration	association_duration					false	Time spent in host of the symbiotic organism at the time of sampling; relevant scale depends on symbiotic organism and study	
+atmospheric_data	atmospheric_data	atmospheric data				false	measurement of atmospheric data; can include multiple data	
+authority	authority					false	Authority for the species identification.	
+avg_dew_point	avg_dew_point					false	The average of dew point measures taken at the beginning of every hour over a 24 hour period on the sampling day	
+avg_occup	avg_occup					false	Daily average occupancy of room. Indicate the number of person(s) daily occupying the sampling room	
+avg_temp	avg_temp					false	The average of temperatures taken at the beginning of every hour over a 24 hour period on the sampling day	
+bac_prod	bac_prod					false	bacterial production in the water column measured by isotope uptake	
+bac_resp	bac_resp					false	measurement of bacterial respiration in the water column	
+bacteria_carb_prod	bacteria_carb_prod	bacterial carbon production				false	measurement of bacterial carbon production	
+bacterial_density	bacterial_density					false	Number of bacteria in sample, as defined by bacteria density (http://purl.obolibrary.org/obo/GENEPIO_0000043)	
+barometric_press	barometric_press	barometric pressure				false	force per unit area exerted against a surface by the weight of air above that surface	
+basin_name	basin_name					false	Name of the basin, e.g. Campos	
+bathroom_count	bathroom_count					false	The number of bathrooms in the building	
+bedroom_count	bedroom_count					false	The number of bedrooms in the building	
+benzene	benzene					false	Concentration of benzene in the sample	
+bio_material	bio_material					false	Identifier for the biological material from which the nucleic acid sequenced was obtained.	
+biochem_oxygen_dem	biochem_oxygen_dem	biochemical oxygen demand				false	a measure of the relative oxygen-depletion effect of a waste contaminant	
+biocide_admin	biocide_admin					false	List of biocides (commercial name of product and supplier) and date of administration	
+biocide_admin_method	biocide_admin_method					false	Method of biocide administration (dose, frequency, duration, time elapsed between last biociding and sampling), e.g., 150 mg/l; weekly; 4 hr; 3 days	
+biocide_used	biocide_used					false	Substance intended for preventing, neutralizing, destroying, repelling, or mitigating the effects of any pest or microorganism; that inhibits the growth, reproduction, and activity of organisms, including fungal cells; decreases the number of fungi or pests present; deters microbial growth and degradation of other ingredients in the formulation. Indicate the biocide used on the location where the sample was taken. Multiple terms can be separated by pipes, e.g., Quaternary ammonium compound|SterBac	
+biol_stat	biol_stat					false	The level of genome modification, e.g., wild, natural, semi-natural, inbred line, breeder's line, hybrid, clonal selection, mutant	
+biomass	biomass	biomass				false	amount of biomass; should include the name for the part of biomass measured, e.g. microbial, total. can include multiple measurements	
+biotic_regm	biotic_regm					false	Information about treatment(s) involving use of biotic factors, such as bacteria, viruses or fungi	
+biotic_relationship	biotic_relationship	observed biotic relationship		"[""free living"", ""parasite"", ""commensal"", ""symbiont""]"		false	"Free-living or from host (define relationship). Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+biovar	biovar					false	A biovar is a variant prokaryotic strain that differs physiologically and/or biochemically from other strains in a particular species.	
+birth_control	birth_control	birth control				false	specification of birth control medication used	
+birth_date	birth_date		timestamp			false	birth date	
+birth_location	birth_location					false	birth location	
+bishomohopanol	bishomohopanol	bishomohopanol				false	concentration of bishomohopanol	
+blood_blood_disord	blood_blood_disord	blood/blood disorder				false	history of blood disorders; can include multiple disorders	
+blood_press_diast	blood_press_diast	blood pressure diastolic				false	resting diastolic blood pressure, measured as mm mercury	
+blood_press_syst	blood_press_syst	blood pressure systolic				false	resting systolic blood pressure, measured as mm mercury	
+body_habitat	body_habitat	body habitat				false	original body habitat where the sample was obtained from	
+body_mass_index	body_mass_index	body-mass index				false	body mass index, calculated as weight/(height)squared	
+body_product	body_product	body product				false	substance produced by the plant where the sample was obtained from	
+breeding_history	breeding_history					false	breeding history	
+breeding_method	breeding_method					false	breeding method	
+bromide	bromide	bromide				false	concentration of bromide	
+build_docs	build_docs					false	The building design, construction and operation documents, e.g., building information model, commissioning report, complaint logs, contract administration, cost estimate, janitorial schedules or logs, maintenance plans, schedule, sections, shop drawings, submittals, ventilation system, windows	
+built_struc_age	built_struc_age					false	The age of the built structure since construction	
+built_struc_set	built_struc_set					false	The characterization of the location of the built structure as high or low human density, e.g., urban, rural	
+built_struc_type	built_struc_type					false	A physical structure that is a body or assemblage of bodies in space to form a system capable of supporting loads	
+calcium	calcium	calcium				false	concentration of calcium	
+carb_monoxide	carb_monoxide	carbon monoxide				false	carbon monoxide (gas) amount or concentration at the time of sampling	
+carb_nitro_ratio	carb_nitro_ratio	carbon/nitrogen ratio				false	ratio of amount or concentrations of carbon to nitrogen	
+ceil_area	ceil_area					false	The area of the ceiling space within the room	
+ceil_cond	ceil_cond					false	The physical condition of the ceiling at the time of sampling, e.g., new, visible wear, needs repair, damaged, rupture	
+ceil_finish_mat	ceil_finish_mat					false	The type of material used to finish a ceiling, e.g., drywall, mineral fibre, tiles, PVC, plasterboard, metal, fiberglass, stucco, mineral wool/calcium silicate, wood	
+ceil_struc	ceil_struc					false	The construction format of the ceiling, e.g., wood frame, concrete	
+ceil_texture	ceil_texture					false	The feel, appearance, or consistency of a ceiling surface, e.g., crows feet, crows-foot stomp, double skip, hawk and trowel, knockdown, popcorn, orange peel, rosebud stomp, Santa-Fe texture, skip trowel, smooth, stomp knockdown, swirl	
+ceil_thermal_mass	ceil_thermal_mass					false	The ability of the ceiling to provide inertia against temperature fluctuations. Generally this means concrete that is exposed. A metal deck that supports a concrete slab will act thermally as long as it is exposed to room air flow	
+ceil_type	ceil_type					false	The type of ceiling according to the ceiling's appearance or construction, e.g., cathedral, dropped, concave, barrel-shaped, coffered, cove, stretched	
+ceil_water_mold	ceil_water_mold					false	Signs of the presence of mold or mildew on the ceiling, e.g., presence of mold visible, no presence of mold visible	
+cell_line	cell_line	cell_line, cell line				false	Name of the cell line.	cell line の名称
+cell_subtype	cell_subtype					false	cell subtype	
+cell_type	cell_type	cell_type, cell type				false	Type of cell of the sample or from which the sample was obtained.	サンプルの細胞のタイプ
+chem_administration	chem_administration	chemical administration				false	List of chemical compounds administered to the host or site where sampling occurred, and when (e.g. antibiotics, N fertilizer, air filter); can include multiple compounds. For Chemical Entities of Biological Interest ontology (CHEBI) (v1.72).	
+chem_mutagen	chem_mutagen	chemical mutagen				false	treatment involving use of mutagens; should include the name of mutagen, amount administered, treatment duration, interval and total experimental duration; can include multiple mutagen regimens	
+chem_oxygen_dem	chem_oxygen_dem	chemical oxygen demand				false	a measure of the relative oxygen-depletion effect of a waste contaminant	
+chem_treat_method	chem_treat_method					false	Method of chemical administration, dose, frequency, duration, time elapsed between administration and sampling, e.g., 50 mg/l; twice a week; 1 hr; 0 days	
+chem_treatment	chem_treatment					false	List of chemical compounds administered upstream the sampling location where sampling occurred, e.g., glycols, H2S scavenger, corrosion and scale inhibitors, demulsifiers, and other production chemicals. The commercial name of the product and name of the supplier should be provided. The date of administration should also be included	
+child_of	child_of					false	indicates parentage; only applicable to sexual organisms, for bacteria use 'derived from'	
+chloride	chloride	chloride				false	concentration of chloride	
+chlorophyll	chlorophyll	chlorophyll				false	concentration of chlorophyll	
+climate_environment	climate_environment	climate environment				false	treatment involving an exposure to a particular climate; can include multiple climates	
+clone	clone					false	Name for the clone or subculture from which the sample was taken.	
+clone_lib	clone_lib					false	Formal identifier that points to source institute and clone library identifier.	
+coll_site_geo_feat	coll_site_geo_feat					false	Text or terms that describe the geographic feature where the food sample was obtained by the researcher. This field encourages selected terms listed under the following ontologies: anthropogenic geographic feature (http://purl.obolibrary.org/obo/ENVO_00000002), for example agricultural fairground [ENVO:01000986]; garden [ENVO:00000011} or any of its subclasses; market [ENVO:01000987]; water well [ENVO:01000002]; or human construction (http://purl.obolibrary.org/obo/ENVO_00000070), e.g., grocery store [GENEPIO:0001020]	
+collection_device	collection_device					false	Instrument or container used to collect sample, e.g., swab	
+collection_method	collection_method					false	Process used to collect the sample, e.g., bronchoalveolar lavage (BAL)	
+component_organism	component_organism					true	"a component organism of the mixed sample; use the full taxonomic name, eg, ""Bordetella pertussis"""	"mixed sample を構成する生物名を taxonomy database に登録されている full taxonomic name で記載。例""Bordetella pertussis"""
+conduc	conduc					false	electrical conductivity of water	
+cons_food_stor_dur	cons_food_stor_dur					false	The storage duration of the food commodity by the consumer, prior to onset of illness or sample collection. Indicate the timepoint written in ISO 8601 format	
+cons_food_stor_temp	cons_food_stor_temp					false	Temperature at which food commodity was stored by the consumer, prior to onset of illness or sample collection	
+cons_purch_date	cons_purch_date					false	The date a food product was purchased by consumer	
+cons_qty_purchased	cons_qty_purchased					false	The quantity of food purchased by consumer	
+cool_syst_id	cool_syst_id					false	The cooling system identifier	
+crop_rotation	crop_rotation	history/crop rotation				false	whether or not crop is rotated, and if yes, rotation schedule	
+crop_yield	crop_yield					false	Amount of crop produced per unit or area of land	
+cult_isol_date	cult_isol_date					false	A culture isolation date is a date-time entity marking the end of a process in which a sample yields a positive result for the target microbial analyte(s) in the form of an isolated colony or colonies, e.g., 5/24/2020	
+cult_result	cult_result					false	Any result of a bacterial culture experiment reported as a binary assessment, e.g., absent, active, inactive, negative, no, present, positive, yes	
+cult_result_org	cult_result_org					false	Taxonomic information about the cultured organism(s)	
+cult_root_med	cult_root_med					false	Name or reference for the hydroponic or in vitro culture rooting medium; can be the name of a commonly used medium or reference to a specific medium, e.g., Murashige and Skoog medium. If the medium has not been formally published, use the rooting medium descriptors	
+cult_target	cult_target					false	The target microbial analyte in terms of investigation scope. This field accepts terms under organism (http://purl.obolibrary.org/obo/NCIT_C14250). This field also accepts identification numbers from NCBI under https://www.ncbi.nlm.nih.gov/taxonomy	
+culture_collection	culture_collection	culture collection				true	"Name of source institute and unique culture identifier. See the description for the proper format and <a href=""http://www.insdc.org/controlled-vocabulary-culturecollection-qualifier"">list of allowed institutes</a>."	"配列の得られた培養細胞の保管施設と ID (例: ATCC:26370)。生きている微生物やウイルスの培養系, および細胞株を記載するのに用います。書式は <a href=""http://www.insdc.org/controlled-vocabulary-culturecollection-qualifier"">institute のリスト</a>を参照してください。"
+cur_land_use	cur_land_use	current land use		"[""cities"", ""farmstead"", ""industrial areas"", ""roads/railroads"", ""rock"", ""sand"", ""gravel"", ""mudflats"", ""salt flats"", ""badlands"", ""permanent snow or ice"", ""saline seeps"", ""mines/quarries"", ""oil waste areas"", ""small grains"", ""row crops"", ""vegetable crops"", ""horticultural plants (e.g. tulips)"", ""marshlands (grass,sedges,rushes)"", ""tundra (mosses,lichens)"", ""rangeland"", ""pastureland (grasslands used for livestock grazing)"", ""hayland"", ""meadows (grasses,alfalfa,fescue,bromegrass,timothy)"", ""shrub land (e.g. mesquite,sage-brush,creosote bush,shrub oak,eucalyptus)"", ""successional shrub land (tree saplings,hazels,sumacs,chokecherry,shrub dogwoods,blackberries)"", ""shrub crops (blueberries,nursery ornamentals,filberts)"", ""vine crops (grapes)"", ""conifers (e.g. pine,spruce,fir,cypress)"", ""hardwoods (e.g. oak,hickory,elm,aspen)"", ""intermixed hardwood and conifers"", ""tropical (e.g. mangrove,palms)"", ""rainforest (evergreen forest receiving >406 cm annual rainfall)"", ""swamp (permanent or semi-permanent water body dominated by woody plants)"", ""crop trees (nuts,fruit,christmas trees,nursery trees)""]"		false	"Present state of sample site. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+cur_vegetation	cur_vegetation	current vegetation				false	vegetation classification from one or more standard classification systems, or agricultural crop	
+cur_vegetation_meth	cur_vegetation_meth	current vegetation method	reference			false	reference or method used in vegetation classification	
+date_extr_weath	date_extr_weath					false	Date of unusual weather events that may have affected microbial populations. Multiple terms can be separated by pipes, listed in reverse chronological order	
+date_last_rain	date_last_rain					false	The date of the last time it rained	
+date_of_prior_antiviral_treat	date_of_prior_antiviral_treat					false	Date of the SARS-CoV-2 antiviral treatment, e.g., 2021-03-30	
+date_of_prior_sars_cov_2_infection	date_of_prior_sars_cov_2_infection					false	Date of the prior SARS-CoV-2 infection, e.g., 2021-03-30	
+date_of_sars_cov_2_vaccination	date_of_sars_cov_2_vaccination					false	Date of the 1st dose of the SARS-CoV-2 vaccine, e.g., 2021-03-30	
+death_date	death_date		timestamp			false	death date	
+density	density	density				false	density of sample	
+depos_env	depos_env					false	Main depositional environment (https://en.wikipedia.org/wiki/Depositional_environment), e.g., continental - alluvial, continental - aeolian, continental - fluvial, continental - lacustrine, transitional - deltaic, transitional - tidal, transitional - lagoonal, transitional - beach, transitional - lake, marine - shallow, marine - deep, marine - reef, other - evaporite, other - glacial, other - volcanic	
+dermatology_disord	dermatology_disord	dermatology disorder				false	history of dermatology disorders; can include multiple disorders	
+dew_point	dew_point					false	temperature to which a given parcel of humid air must be cooled, at constant barometric pressure, for water vapor to condense into water.	
+diet_last_six_month	diet_last_six_month	major diet change in last six months				false	specification of major diet changes in the last six months, if yes the change should be specified	
+dietary_claim_use	dietary_claim_use					false	These descriptors are used either for foods intended for special dietary use as defined in 21 CFR 105 or for foods that have special characteristics indicated in the name or labeling. This field accepts terms listed under dietary claim or use (http://purl.obolibrary.org/obo/FOODON_03510023). Multiple terms can be separated by one or more pipes, but please consider limiting this list to the most prominent dietary claim or use	
+diether_lipids	diether_lipids	diether lipids				false	concentration of diether lipids; can include multiple types of diether lipids	
+disease	disease					false	Name of relevant disease.	関連する病気の名称
+disease_stage	disease_stage	disease stage				false	Stage of disease at the time of sampling.	サンプリング時における病気の段階
+diss_carb_dioxide	diss_carb_dioxide	dissolved carbon dioxide				false	concentration of dissolved carbon dioxide	
+diss_hydrogen	diss_hydrogen	dissolved hydrogen				false	concentration of dissolved hydrogen	
+diss_inorg_carb	diss_inorg_carb	dissolved inorganic carbon				false	dissolved inorganic carbon concentration	
+diss_inorg_nitro	diss_inorg_nitro	dissolved inorganic nitrogen				false	concentration of dissolved inorganic nitrogen	
+diss_inorg_phosp	diss_inorg_phosp	dissolved inorganic phosphorus				false	concentration of dissolved inorganic phosphorus	
+diss_iron	diss_iron					false	Concentration of dissolved iron in the sample	
+diss_org_carb	diss_org_carb	dissolved organic carbon				false	concentration of dissolved organic carbon	
+diss_org_nitro	diss_org_nitro	dissolved organic nitrogen				false	"dissolved organic nitrogen concentration measured as; total dissolved nitrogen - NH<span class=""sub"">4</span> - NO<span class=""sub"">3</span> - NO<span class=""sub"">2</span>"	
+diss_oxygen	diss_oxygen	dissolved oxygen				false	concentration of dissolved oxygen	
+diss_oxygen_fluid	diss_oxygen_fluid					false	Concentration of dissolved oxygen in the oil field produced fluids as it contributes to oxgen-corrosion and microbial activity, e.g. Mic	
+dominant_hand	dominant_hand	dominant hand		"[""left"", ""right"", ""ambidextrous""]"		false	"Dominant hand of the subject. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+door_comp_type	door_comp_type					false	The composite type of the door, e.g., metal covered, revolving, sliding, telescopic	
+door_cond	door_cond					false	The physical condition of the door, e.g., damaged, needs repair, new, rupture, visible wear	
+door_direct	door_direct					false	The direction the door opens, e.g., inward, outward, sideways	
+door_loc	door_loc					false	The relative location of the door in the room, e.g., north, south, east, west	
+door_mat	door_mat					false	The material the door is composed of, e.g., aluminum, cellular PVC, engineered plastic, fiberboard, fiberglass, metal, thermoplastic alloy, vinyl, wood, wood/plastic composite	
+door_move	door_move					false	The type of movement of the door, e.g., collapsible, folding, revolving, rolling shutter, sliding, swinging	
+door_size	door_size					false	The size of the door	
+door_type	door_type					false	The type of door material, e.g., composite, metal, wooden	
+door_type_metal	door_type_metal					false	The type of metal door, e.g., collapsible, corrugated steel, hollow, rolling shutters, steel plate	
+door_type_wood	door_type_wood					false	The type of wood door, e.g., bettened and ledged, battened, ledged and braced, battened, ledged and framed, battened, ledged, braced and frame, framed and paneled, glashed or sash, flush, louvered, wire gauged	
+door_water_mold	door_water_mold					false	Signs of the presence of mold or mildew on a door, e.g., presence of mold visible, no presence of mold visible	
+douche	douche	douche	timestamp			false	date of most recent douche	
+down_par	down_par					false	visible waveband radiance and irradiance measurements in the water column	
+drainage_class	drainage_class	drainage classification		"[""very poorly"", ""poorly"", ""somewhat poorly"", ""moderately well"", ""well"", ""excessively drained""]"		false	"Drainage classification from a standard system such as the USDA system. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+drawings	drawings					false	The buildings architectural drawings, e.g., operation, as built, construction, bid, design, building navigation map, diagram, sketch	
+drug_usage	drug_usage	drug usage				false	any drug used by subject and the frequency of usage; can include multiple drugs used	
+dry_mass	dry_mass	dry mass				false	measurement of dry mass	
+efficiency_percent	efficiency_percent	efficiency percent				false	percentage of volatile solids removed from the anaerobic digestor	
+elevator	elevator					false	The number of elevators within the built structure	
+emulsions	emulsions	emulsions				false	amount or concentration of substances such as paints, adhesives, mayonnaise, hair colorants, emulsified oils, etc.; can include multiple emulsion types	
+encoded_traits	encoded_traits	encoded traits				false	Traits like antibiotic resistance/xenobiotic degration phenotypes/converting phage genes	
+enrichment_protocol	enrichment_protocol					false	The microbiological workflow or protocol followed to test for the presence or enumeration of the target microbial analyte(s). Please provide a PubMed or DOI reference for published protocols	
+env_monitoring_zone	env_monitoring_zone					false	An environmental monitoring zone is a formal designation as part of an environmental monitoring program, in which areas of a food production facility are categorized, commonly as zones 1-4, based on likelihood or risk of foodborne pathogen contamination. This field accepts entries of zones 1-4, e.g., Zone 1	
+env_package	env_package					false	MIGS/MIMS/MIENS extension for reporting of measurements and observations obtained from one or more of the environments where the sample was obtained. All environmental packages listed here are further defined in separate subtables. By giving the name of the environmental package, a selection of fields can be made from the subtables and can be reported	
+escalator	escalator					false	The number of escalators within the built structure	
+estimated_size	estimated_size	estimated size				false	Estimated size of genome	ゲノムの推定サイズ
+ethnicity	ethnicity					false	ethnicity of the subject	
+ethylbenzene	ethylbenzene					false	Concentration of ethylbenzene in the sample	
+exp_duct	exp_duct					false	The amount of exposed ductwork in the room	
+exp_pipe	exp_pipe					false	The number of exposed pipes in the room	
+experimental_factor	experimental_factor					false	Variable aspect of experimental design	
+exposure_event	exposure_event					false	Event leading to exposure, e.g., mass gathering	
+ext_door	ext_door					false	The number of exterior doors in the built structure	
+ext_wall_orient	ext_wall_orient					false	The orientation of the exterior wall, e.g., north, south, east, west, northeast, southeast, southwest, northwest	
+ext_window_orient	ext_window_orient					false	The compass direction the exterior window of the room is facing, e.g., north, south, east, west, northeast, southeast, southwest, northwest	
+extr_weather_event	extr_weather_event					false	Unusual weather events that may have affected microbial populations. Multiple terms can be separated by pipes, listed in reverse chronological order, e.g., hail	
+extrachrom_elements	extrachrom_elements	extrachromosomal elements				false	Plasmids that have significance phenotypic consequence	
+extreme_event	extreme_event	history/extreme events				false	unusual physical events that may have affected microbial populations	
+extreme_salinity	extreme_salinity	extreme_unusual_properties/salinity				false	measured salinity	
+facility_type	facility_type					false	Establishment details about the type of facility where the sample was taken. This is independent of the specific product(s) within the facility, e.g., manufacturing-processing	
+family_id	family_id					false	family id	
+family_relationship	family_relationship	family relationship, family-relationship, familyrelationship				false	relationships to other hosts in the same study; can include multiple relationships	
+fao_class	fao_class	soil_taxonomic/FAO classification				false	soil classification from the FAO World Reference Database for Soil Resources	
+farm_equip	farm_equip					false	List of relevant equipment used for planting, fertilization, harvesting, irrigation, land levelling, residue management, weeding or transplanting during the growing season.  This field encourages terms listed under agricultural implement (http://purl.obolibrary.org/obo/AGRO_00000416). Multiple terms can be separated by pipes, e.g., combine harvester [AGRO:00000473]	
+farm_equip_san	farm_equip_san					false	Method used to sanitize growing and harvesting equipment including type and concentration of sanitizing solution and frequency of sanitization	
+farm_equip_san_freq	farm_equip_san_freq					false	The number of times farm equipment is cleaned. Frequency of cleaning might be on a daily basis, weekly, monthly, quarterly or annually	
+farm_equip_shared	farm_equip_shared					false	List of planting, growing or harvesting equipment shared with other farms	
+farm_water_source	farm_water_source					false	Source of water used on the farm for irrigation of crops or watering of livestock, e.g., water well	
+ferm_chem_add	ferm_chem_add					false	Any chemicals that are added to the fermentation process to achieve the desired final product	
+ferm_chem_add_perc	ferm_chem_add_perc					false	The amount of chemical added to the fermentation process	
+ferm_headspace_oxy	ferm_headspace_oxy					false	The amount of headspace oxygen in a fermentation vessel	
+ferm_medium	ferm_medium					false	The growth medium used for the fermented food fermentation process, which supplies the required nutrients. Usually this includes a carbon and nitrogen source, water, micronutrients and chemical additives	
+ferm_ph	ferm_ph					false	The pH of the fermented food fermentation process	
+ferm_rel_humidity	ferm_rel_humidity					false	The relative humidity of the fermented food fermentation process	
+ferm_temp	ferm_temp					false	The temperature of the fermented food fermentation process	
+ferm_time	ferm_time					false	The time duration of the fermented food fermentation process	
+ferm_vessel	ferm_vessel					false	The type of vessel used for containment of the fermentation	
+fertilizer_admin	fertilizer_admin					false	Type of fertilizer or amendment added to the soil or water for the purpose of improving substrate health and quality for plant growth. This field encourages terms listed under agronomic fertilizer (http://purl.obolibrary.org/obo/AGRO_00002062). Multiple terms may apply and can be separated by pipes, listing in reverse chronological order, e.g., fish emulsion [AGRO:00000082]	
+fertilizer_date	fertilizer_date					false	Date of administration of soil amendment or fertilizer. Multiple terms may apply and can be separated by pipes, listing in reverse chronological order	
+fertilizer_regm	fertilizer_regm	fertilizer regimen				false	information about treatment involving the use of fertilizers; should include the name fertilizer, amount administered, treatment duration, interval and total experimental duration; can include multiple fertilizer regimens	
+field	field					false	Name of the hydrocarbon field, e.g., Albacora	
+fire	fire	history/fire				false	historical and/or physical evidence of fire	
+fireplace_type	fireplace_type					false	A firebox with chimney, e.g., gas burning, wood burning	
+flooding	flooding	history/flooding				false	historical and/or physical evidence of flooding	
+floor_age	floor_age					false	The time period since installment of the carpet or flooring	
+floor_area	floor_area					false	The area of the floor space within the room	
+floor_cond	floor_cond					false	The physical condition of the floor at the time of sampling, e.g., new, visible wear, needs repair, damaged, rupture	
+floor_count	floor_count					false	The number of floors in the building, including basements and mechanical penthouse	
+floor_finish_mat	floor_finish_mat					false	The floor covering type; the finished surface that is walked on, e.g., tile, wood strip or parquet, carpet, rug, laminate wood, lineoleum, vinyl composition tile, sheet vinyl, stone, bamboo, cork, terrazo, concrete, none;specify unfinished, sealed, clear finish, paint	
+floor_struc	floor_struc					false	Refers to the structural elements and subfloor upon which the finish flooring is installed, e.g., balcony, floating floor, glass floor, raised floor, sprung floor, wood-framed, concrete	
+floor_thermal_mass	floor_thermal_mass					false	The ability of the floor to provide inertia against temperature fluctuations	
+floor_water_mold	floor_water_mold					false	Signs of the presence of mold or mildew in a room, e.g., mold odor, wet floor, water stains, wall discoloration, floor discoloration, ceiling discoloration, peeling paint or wallpaper, bulging walls, condensation	
+fluor	fluor					false	raw or converted fluorescence of water	
+foetal_health_stat	foetal_health_stat	amniotic fluid/foetal health status				false	specification of foetal health status, should also include abortion	
+food_additive	food_additive					false	A substance or substances added to food to maintain or improve safety and freshness, to improve or maintain nutritional value, or improve taste, texture and appearance.  This field encourages terms listed under food additive (http://purl.obolibrary.org/obo/FOODON_03412972). Multiple terms can be separated by one or more pipes, but please consider limiting this list to the top 5 ingredients listed in order as on the food label.  See also, https://www.fda.gov/food/food-ingredients-packaging/overview-food-ingredients-additives-colors, e.g., xanthan gum [FOODON:03413321]	
+food_allergen_label	food_allergen_label					false	A label indication that the product contains a recognized allergen. This field accepts terms listed under dietary claim or use (http://purl.obolibrary.org/obo/FOODON_03510213)	
+food_clean_proc	food_clean_proc					false	The process of cleaning food to separate other environmental materials from the food source. Multiple terms can be separated by pipes, e.g., rinsed with water|scrubbed with brush	
+food_contact_surf	food_contact_surf					false	The specific container or coating materials in direct contact with the food. Multiple values can be assigned.  This field encourages terms listed under food contact surface (http://purl.obolibrary.org/obo/FOODON_03500010), e.g., aluminum surface [FOODON:03500042]	
+food_contain_wrap	food_contain_wrap					false	Type of container or wrapping defined by the main container material, the container form, and the material of the liner lids or ends. Also type of container or wrapping by form; prefer description by material first, then by form. This field encourages terms listed under food container or wrapping (http://purl.obolibrary.org/obo/FOODON_03490100), e.g., bottle or jar [FOODON:03490203]	
+food_cooking_proc	food_cooking_proc					false	The transformation of raw food by the application of heat. This field encourages terms listed under food cooking (http://purl.obolibrary.org/obo/FOODON_03450002), e.g., food blanching [FOODON:03470175]	
+food_dis_point	food_dis_point					false	A reference to a place on the Earth, by its name or by its geographical location that refers to a distribution point along the food chain. This field accepts terms listed under geographic location (http://purl.obolibrary.org/obo/GAZ_00000448). Reference: Adam Diamond, James Barham. Moving Food Along the Value Chain: Innovations in Regional Food Distribution. U.S. Dept. of Agriculture, Agricultural Marketing Service. Washington, DC. March 2012. http://dx.doi.org/10.9752/MS045.03-2012	
+food_dis_point_city	food_dis_point_city					false	A reference to a place on the Earth, by its name or by its geographical location that refers to a distribution point along the food chain. This field accepts terms listed under geographic location (http://purl.obolibrary.org/obo/GAZ_00000448). Reference: Adam Diamond, James Barham. Moving Food Along the Value Chain: Innovations in Regional Food Distribution. U.S. Dept. of Agriculture, Agricultural Marketing Service. Washington, DC. March 2012. http://dx.doi.org/10.9752/MS045.03-2012	
+food_harvest_proc	food_harvest_proc					false	A harvesting process is a process which takes in some food material from an individual or community of plant or animal organisms in a given context and time, and outputs a precursor or consumable food product. This may include a part of an organism or the whole, and may involve killing the organism	
+food_ingredient	food_ingredient					false	In this field, please list individual ingredients for multi-component food [FOODON:00002501] and simple foods that is not captured in food_type. Please use terms that are present in FoodOn. Multiple terms can be separated by one or more pipes, but please consider limiting this list to the top 5 ingredients listed in order as on the food label. See also, https://www.fda.gov/food/food-ingredients-packaging/overview-food-ingredients-additives-colors	
+food_name_status	food_name_status					false	A datum indicating that use of a food product name is regulated in some legal jurisdiction. This field accepts terms listed under food product name legal status (http://purl.obolibrary.org/obo/FOODON_03530087)	
+food_origin	food_origin					false	A reference to a place on the Earth, by its name or by its geographical location that describes the origin of the food commodity, either in terms of its cultivation or production. This field encourages terms listed under geographic location (http://purl.obolibrary.org/obo/GAZ_00000448), e.g., Thailand	
+food_pack_capacity	food_pack_capacity					false	The maximum number of product units within a package	
+food_pack_integrity	food_pack_integrity					false	A term label and term id to describe the state of the packing material and text to explain the exact condition.  This field encourages terms listed under food packing medium integrity (http://purl.obolibrary.org/obo/FOODON_03530218), e.g., food packing medium compromised [FOODON:00002517]	
+food_pack_medium	food_pack_medium					false	The medium in which the food is packed for preservation and handling or the medium surrounding homemade foods, e.g., peaches cooked in sugar syrup. The packing medium may provide a controlled environment for the food. It may also serve to improve palatability and consumer appeal. This includes edible packing media (e.g. fruit juice), gas other than air (e.g. carbon dioxide), vacuum packed, or packed with aerosol propellant. This field encourages terms under food packing medium (http://purl.obolibrary.org/obo/FOODON_03480020). Multiple terms may apply and can be separated by pipes, e.g., vacuum-packed [FOODON:03480027]	
+food_preserv_proc	food_preserv_proc					false	The methods contributing to the prevention or retardation of microbial, enzymatic or oxidative spoilage and thus to the extension of shelf life. This field encourages terms listed under food preservation process (http://purl.obolibrary.org/obo/FOODON_03470107), e.g., food fermentation [FOODON:00001304]	
+food_prior_contact	food_prior_contact					false	The material the food contacted (e.g., was processed in) prior to packaging. This field accepts terms listed under material of contact prior to food packaging (http://purl.obolibrary.org/obo/FOODON_03530077). If the proper descriptor is not listed please use text to describe the material of contact prior to food packaging	
+food_prod_char	food_prod_char					false	Descriptors of the food production system such as wild caught, free-range, organic, free-range, industrial, dairy, beef	
+food_prod_synonym	food_prod_synonym					false	Other names by which the food product is known by (e.g., regional or non-English names), e.g., pinot gris	
+food_product_qual	food_product_qual					false	"Descriptors for describing food visually or via other senses, which is useful for tasks like food inspection where little prior knowledge of how the food came to be is available. Some terms like ""food (frozen)"" are both a quality descriptor and the output of a process. This field accepts terms listed under food product by quality (http://purl.obolibrary.org/obo/FOODON_00002454)"	
+food_product_type	food_product_type					false	A food product type is a class of food products that is differentiated by its food composition (e.g., single- or multi-ingredient), processing and/or consumption characteristics. This does not include brand name products but it may include generic food dish categories. This field encourages terms under food product type (http://purl.obolibrary.org/obo/FOODON:03400361). For terms related to food product for an animal, consult food product for animal (http://purl.obolibrary.org/obo/FOODON_03309997). If the proper descriptor is not listed please use text to describe the food type. Multiple terms can be separated by one or more pipes, e.g., multi-component food product [FOODON:00002501]	
+food_quality_date	food_quality_date					false	"The date recommended for the use of the product while at peak quality, this date is not a reflection of safety unless used on infant formula this date is not a reflection of safety and is typically labeled on a food product as """"best if used by,"""" best by,"""" """"use by,"""" or """"freeze by"""", e.g., 5/24/2020"	
+food_source	food_source					false	Individual organism or category of organisms from which the food product or its major ingredient is derived, e.g., giant tiger prawn [FOODON:03412612]	
+food_source_age	food_source_age					false	The age of the food source host organim. Depending on the type of host organism, age may be more appropriate to report in days, weeks, or years	
+food_trace_list	food_trace_list					false	"The FDA is proposing to establish additional traceability recordkeeping requirements (beyond what is already required in existing regulations) for persons who manufacture, process, pack, or hold foods the Agency has designated for inclusion on the Food Traceability List. The Food Traceability List (FTL) identifies the foods for which the additional traceability records described in the proposed rule would be required. The term """"Food Traceability List"""" (FTL) refers not only to the foods specifically listed, but also to any foods that contain listed foods as ingredients, e.g., tropical tree fruits"	
+food_trav_mode	food_trav_mode					false	A descriptor for the method of movement of food commodity along the food distribution system. This field accepts terms listed under travel mode (http://purl.obolibrary.org/obo/GENEPIO_0001064). If the proper descrptor is not listed please use text to describe the mode of travel. Multiple terms can be separated by one or more pipes	
+food_trav_vehic	food_trav_vehic					false	A descriptor for the mobile machine which is used to transport food commodities along the food distribution system. This field accepts terms listed under vehicle (http://purl.obolibrary.org/obo/ENVO_01000604). If the proper descrptor is not listed please use text to describe the mode of travel. Multiple terms can be separated by one or more pipes	
+food_treat_proc	food_treat_proc					false	Used to specifically characterize a food product based on the treatment or processes applied to the product or any indexed ingredient. The processes include adding, substituting or removing components or modifying the food or component, e.g., through fermentation. Multiple values can be assigned. This fields accepts terms listed under food treatment process (http://purl.obolibrary.org/obo/FOODON_03460111)	
+forma	forma					false	Taxonomy level below subspecies (or variety in botany). Use is similar to ecotype etc.	
+forma_specialis	forma_specialis					false	Usually applied to fungus adapted to a specific host.	
+freq_clean	freq_clean					false	The number of times the sample location is cleaned, e.g., daily, weekly, monthly, quarterly, annually	
+freq_cook	freq_cook					false	The number of times a meal is cooked per week	
+fungicide_regm	fungicide_regm	fungicide regimen				false	information about treatment involving use of fungicides; should include the name of fungicide, amount administered, treatment duration, interval and total experimental duration; can include multiple fungicide regimens	
+furniture	furniture					false	The types of furniture present in the sampled room, e.g., cabinet, chair, desks	
+gaseous_environment	gaseous_environment	gaseous environment				false	use of conditions with differing gaseous environments; should include the name of gaseous compound, amount administered, treatment duration, interval and total experimental duration; can include multiple gaseous environment regimens	
+gaseous_substances	gaseous_substances	gaseous substances				false	amount or concentration of substances such as hydrogen sulfide, carbon dioxide, methane, etc.; can include multiple substances	
+gastrointest_disord	gastrointest_disord	gastrointestinal tract disorder				false	history of gastrointestinal tract disorders; can include multiple disorders	
+gender_restroom	gender_restroom					false	The gender type of the restroom, e.g., all gender, female, gender neutral, male, male and female, unisex	
+genetic_modification	genetic_modification					false	Genetic modifications of the genome of an organism, which may occur naturally by spontaneous mutation, or be introduced by some experimental means, e.g. specification of a transgene or the gene knocked-out or details of transient transfection	
+genotype	genotype	genotype				false	observed genotype	
+geo_loc_exposure	geo_loc_exposure					false	The country where the host was likely exposed to the causative agent of the illness. This location pertains to the country the host was believed to be exposed, and may not be the same as the host's country of residence, e.g., Canada	
+gestation_state	gestation_state	amniotic fluid/gestation state				false	specification of the gestation state	
+gisaid_accession	gisaid_accession					false	The GISAID accession assigned to the sequence. GISAID Accession Numbers are used as unique and permanent identifiers for each virus beginning with the letters EPI and followed by numbers, to identify viruses and/or segments; https://www.gisaid.org/; e.g., EPI_ISL_1091361	
+gisaid_virus_name	gisaid_virus_name					false	The full virus name submitted to GISAID (https://www.gisaid.org/), e.g., hCoV-19/Belgium/rega-3187/2021	
+glucosidase_act	glucosidase_act	glucosidase activity				false	measurement of glucosidase activity	
+gravidity	gravidity	gravidity				false	whether or not subject is gravid, and if yes date due or date post-conception, specifying which is used	
+gravity	gravity	gravity				false	information about treatment involving use of gravity factor to study various types of responses in presence, absence or modified levels of gravity; can include multiple treatments	
+growth_facil	growth_facil					false	Type of facility where the sampled plant was grown; controlled vocabulary: growth chamber, open top chamber, glasshouse, experimental garden, field. Alternatively use Crop Ontology (CO).	
+growth_habit	growth_habit					false	Characteristic shape, appearance or growth form of a plant species, e.g., erect, semi-erect, spreading, prostrate	
+growth_hormone_regm	growth_hormone_regm	growth hormone regimen				false	information about treatment involving use of growth hormones; should include the name of growth hormone, amount administered, treatment duration, interval and total experimental duration; can include multiple growth hormone regimens	
+growth_medium	growth_medium					false	A liquid or gel containing nutrients, salts, and other factors formulated to support the growth of microorganisms, cells, or plants (National Cancer Institute Thesaurus). The name of the medium used to grow the microorganism	
+growth_protocol	growth_protocol					false	free-text growth protocol	
+gynecologic_disord	gynecologic_disord	gynecological disorder				false	history of gynecological disorders; can include multiple disorders	
+haccp_term	haccp_term					false	Hazard Analysis Critical Control Points (HACCP) food safety terms; This field accepts terms listed under HACCP guide food safety term (http://purl.obolibrary.org/obo/FOODON_03530221)	
+hall_count	hall_count					false	The total count of hallways and cooridors in the built structure	
+handidness	handidness					false	The handidness of the individual sampled, e.g., ambidexterity, left handedness, mixed-handedness, right handedness	
+haplotype	haplotype					false	Name of the haplotype. Primarily used for identification. A combination of alleles at multiple loci on the same chromosome that are closely linked and tend to be inherited as a unit.	
+hc_produced	hc_produced					false	Main hydrocarbon type produced from resource, e.g., oil, gas-condensate, gas, bitumen, coalbed methane	
+hcr	hcr					false	Main hydrocarbon resource type. The term Hydrocarbon Resource is defined as a natural environmental feature containing large amounts of hydrocarbons at high concentrations potentially suitable for commercial exploitation, e.g., oil reservoir, gas reservoir, oil sand, coalbed, shale, tight oil reservoir, tight gas reservoir	
+hcr_fw_salinity	hcr_fw_salinity					false	Original formation water salinity (prior to secondary recovery e.g. Waterflooding) expressed as TDS	
+hcr_geol_age	hcr_geol_age					false	Geological age of hydrocarbon resource (additional info: https://en.wikipedia.org/wiki/Period_(geology)), e.g., archean, cambrian, carboniferous, cenozoic, cretaceous, devonian, jurassic, mesozoic, neogene, ordovician, paleogene, paleozoic, permian, precambrian, proterozoic, silurian, triassic	
+hcr_pressure	hcr_pressure					false	Original pressure of the hydrocarbon resource	
+hcr_temp	hcr_temp					false	Original temperature of the hydrocarbon resource	
+health_state	health_state	health state				false	Health or disease status of sample at time of collection	収集時におけるサンプルの健康あるいは病気の状態
+heat_deliv_loc	heat_deliv_loc					false	The location of heat delivery within the room, e.g., north, south, east, west	
+heat_sys_deliv_meth	heat_sys_deliv_meth					false	The method by which the heat is delivered through the system, e.g., conductive, radiant	
+heat_system_id	heat_system_id					false	The heating system identifier	
+heavy_metals	heavy_metals	extreme_unusual_properties/heavy metals				false	heavy metals present and concentrations of any drug used by subject and the frequency of usage; can include multiple heavy metals and concentrations	
+heavy_metals_meth	heavy_metals_meth	extreme_unusual_properties/heavy metals method	reference			false	reference or method used in determining heavy metals	
+height_carper_fiber	height_carper_fiber					false	The average carpet fiber height in the indoor environment	
+height_or_length	height_or_length	height or length				false	measurement of height or length	
+herbicide_regm	herbicide_regm	herbicide regimen				false	information about treatment involving use of herbicides; information about treatment involving use of growth hormones; should include the name of herbicide, amount administered, treatment duration, interval and total experimental duration; can include multiple regimens	
+histological_type	histological_type					false	histological type	
+hiv_stat	hiv_stat	HIV status				false	HIV status of subject, if yes HAART initiation status should also be indicated as [YES or NO]	
+horizon_meth	horizon_meth	horizon method	reference			false	reference or method used in determining the horizon	
+host_age	host_age	host age, host_age				false	Age of host at the time of sampling	サンプリング時の宿主の年齢
+host_am	host_am					false	The class(es) or name(s) (generic or brand) of the antimicrobial(s) given to the food animal within the last 30 days, e.g., tetracycline [CHEBI:27902]	
+host_anatomical_material	host_anatomical_material					false	Host anatomical material or substance produced by the body where the sample was obtained, e.g., stool, mucus, saliva	
+host_anatomical_part	host_anatomical_part					false	Anatomical part of the host organism (e.g. tissue) that was sampled, e.g., nasopharynx	
+host_blood_press_diast	host_blood_press_diast					false	resting diastolic blood pressureof the host, measured as mm mercury	
+host_blood_press_syst	host_blood_press_syst					false	resting systolic blood pressure of the host, measured as mm mercury	
+host_body_habitat	host_body_habitat					false	original body habitat where the sample was obtained from	
+host_body_mass_index	host_body_mass_index					false	body mass index of the host, calculated as weight/(height) squared	
+host_body_product	host_body_product					false	substance produced by the host, e.g. stool, mucus, where the sample was obtained from	
+host_body_temp	host_body_temp	host body temperature				false	core body temperature of the host when sample was collected	サンプルを採取した時の宿主の体温
+host_cellular_loc	host_cellular_loc					false	The localization of the symbiotic host organism within the host from which it was sampled, e.g., intracellular, extracellular	
+host_color	host_color	host color				false	the color of host	宿主の色
+host_common_name	host_common_name					false	The natural language (non-taxonomic) name of the host organism, e.g., mouse	
+host_dependence	host_dependence					false	Type of host dependence for the symbiotic host organism to its host., e.g., facultative, obligate	
+host_description	host_description	host description, host_description				false	Additional information not included in other defined vocabulary fields	
+host_diet	host_diet					false	type of diet depending on the sample for animals omnivore, herbivore etc., for humans high-fat, meditteranean etc.; can include multiple diet types	
+host_disease_outcome	host_disease_outcome	host disease outcome, host_disease_outcome				false	Final outcome of disease, e.g., death, chronic disease, recovery	病気の最終的な結果。(例：death, chronic disease, recovery)
+host_disease_stage	host_disease_stage					false	Stage of disease at the time of sampling	サンプリング時の宿主の病気の段階
+host_dry_mass	host_dry_mass					false	measurement of dry mass	
+host_family_relationship	host_family_relationship					false	host family relationship	
+host_genotype	host_genotype					false	host genotype	
+host_group_size	host_group_size					false	The number of food animals of the same species that are maintained together as a unit, i.e. a herd or flock, e.g., 80	
+host_growth_cond	host_growth_cond	host growth conditions	reference			false	literature reference giving growth conditions of the host	
+host_health_state	host_health_state					false	Information regarding health state of the individual sampled at the time of sampling	サンプリング時の個々のサンプルの健康状態に関する情報
+host_height	host_height					false	the height of subject	
+host_hiv_stat	host_hiv_stat					false	HIV status of subject, if yes HAART initiation status should also be indicated as [YES or NO]	
+host_housing	host_housing					false	Description of the housing system of the livestock. This field encourages terms listed under terrestrial management housing system (http://opendata.inra.fr/EOL/EOL_0001605), e.g., pen [EOL:0001902]	
+host_infra_specific_name	host_infra_specific_name					false	taxonomic information subspecies level	
+host_infra_specific_rank	host_infra_specific_rank					false	taxonomic rank information below subspecies level, such as variety, form, rank etc.	
+host_last_meal	host_last_meal					false	content of last meal and time since feeding; can include multiple values	
+host_length	host_length					false	the length of subject	
+host_life_stage	host_life_stage					false	description of host life stage	
+host_number	host_number					false	Number of symbiotic host individuals pooled at the time of collection	
+host_occupation	host_occupation					false	most frequent job performed by subject	
+host_of_host_coinf	host_of_host_coinf					false	The taxonomic name of any coinfecting organism observed in a symbiotic relationship with the host of the sampled host organism, e.g. where a sample collected from a host trematode species (A) which was collected from a host_of_host fish (B) that was also infected with a nematode (C), the value here would be (C) the nematode {species name} or {common name}. Multiple co-infecting species may be added in a comma-separated list. For listing symbiotic organisms associated with the host (A) use the term Observed host symbiont	
+host_of_host_disease	host_of_host_disease					false	List of diseases with which the host of the symbiotic host organism has been diagnosed; can include multiple diagnoses. The value of the field depends on host; for humans the terms should be chosen from the DO (Human Disease Ontology) at https://www.disease-ontology.org, non-human host diseases are free text	
+host_of_host_env_loc	host_of_host_env_loc					false	For a symbiotic host organism the local anatomical environment within its host may have causal influences. Report the anatomical entity(s) which are in the direct environment of the symbiotic host organism being sampled and which you believe have significant causal influences on your sample or specimen. For example, if the symbiotic host organism being sampled is an intestinal worm, its local environmental context will be the term for intestine from UBERON (http://uberon.github.io/)	
+host_of_host_env_med	host_of_host_env_med					false	Report the environmental material(s) immediately surrounding the symbiotic host organism at the time of sampling. This usually will be a tissue or substance type from the host, but may be another material if the symbiont is external to the host. We recommend using classes from the UBERON ontology, but subclasses of 'environmental material' (http://purl.obolibrary.org/obo/ENVO_00010483) may also be used. EnvO documentation about how to use the field: https://github.com/EnvironmentOntology/envo/wiki/Using-ENVO-with-MIxS. Terms from other OBO ontologies are permissible as long as they reference mass/volume nouns (e.g., air, water, blood) and not discrete, countable entities (e.g., intestines, heart)	
+host_of_host_fam_rel	host_of_host_fam_rel					false	Familial relationship of the host of the symbiotic host organisms to other hosts of symbiotic host organism in the same study; can include multiple relationships	
+host_of_host_geno	host_of_host_geno					false	Observed genotype of the host of the symbiotic host organism	
+host_of_host_gravid	host_of_host_gravid					false	Whether or not the host of the symbiotic host organism is gravid, and if yes date due or date post-conception, specifying which is used	
+host_of_host_infname	host_of_host_infname					false	Taxonomic name information of the host of the symbiotic host organism below subspecies level	
+host_of_host_infrank	host_of_host_infrank					false	Taxonomic rank information about the host of the symbiotic host organism below subspecies level, such as variety, form, rank	
+host_of_host_name	host_of_host_name					false	Common name of the host of the symbiotic host organism	
+host_of_host_pheno	host_of_host_pheno					false	Phenotype of the host of the symbiotic host organism. For phenotypic quality ontology (PATO) terms, see http://purl.bioontology.org/ontology/pato	
+host_of_host_sub_id	host_of_host_sub_id					false	A unique identifier by which each host of the symbiotic host organism subject can be referred to, de-identified, e.g. #H14	
+host_of_host_taxid	host_of_host_taxid					false	NCBI taxon id of the host of the symbiotic host organism	
+host_of_host_totmass	host_of_host_totmass					false	Total mass of the host of the symbiotic host organism at collection, the unit depends on the host	
+host_phenotype	host_phenotype					false	host phenotype	
+host_pulse	host_pulse					false	resting pulse of the host, measured as beats per minute	
+host_recent_travel_loc	host_recent_travel_loc					false	The name of the country that was the destination of most recent travel. Specify the countries (and more granular locations if known) travelled, e.g., United Kingdom. Can include multiple travels; separate multiple travel events with a semicolon.	
+host_recent_travel_return_date	host_recent_travel_return_date					false	The date of a person's most recent return to some residence from a journey originating at that residence, e.g., 2021-03-30	
+host_sex	host_sex			"[""male"", ""female"", ""pooled male and female"", ""neuter"", ""hermaphrodite"", ""intersex"", ""not determined""]"		false	Gender or physical sex of the host	宿主の性別
+host_shape	host_shape	host shape				false	morphological shape of host	宿主の形態学的形状
+host_specificity	host_specificity					false	Level of specificity of symbiont-host interaction, e.g., family-specific, generalist, genus-specific, species-specific	
+host_specimen_voucher	host_specimen_voucher					false	Identifier for the physical specimen. Include a URI (Uniform Resource Identifier) in the form of a URL providing a direct link to the physical host specimen. If the specimen was destroyed in the process of analysis, electronic images (e-vouchers) are an adequate substitute for a physical host voucher specimen. If a URI is not available, a museum-provided globally unique identifier (GUID) can be used. URI example: http://portal.vertnet.org/o/fmnh/mammals?id=33e55cfe-330b-40d9-aaae-8d042cba7542; INSDC triplet example: UAM:Mamm:52179	
+host_subject_id	host_subject_id	host subject id				false	a unique identifier by which each subject can be referred to, de-identified, e.g. #131	宿主の匿名化されたユニーク ID
+host_subspecf_genlin	host_subspecf_genlin					false	Information about the genetic distinctness of the host organism below the subspecies level e.g., serovar, serotype, biotype, ecotype, variety, cultivar, or any relevant genetic typing schemes like Group I plasmid. Subspecies should not be recorded in this term, but in the NCBI taxonomy. Supply both the lineage name and the lineage rank separated by a colon, e.g., biovar:abc123	
+host_substrate	host_substrate					false	the growth substrate of the host	
+host_symbiont	host_symbiont					false	The taxonomic name of the organism(s) found living in mutualistic, commensalistic, or parasitic symbiosis with the specific host	
+host_taxid	host_taxid	host taxid	integer			false	NCBI taxon id of the host, e.g. 9606	宿主の NCBI Taxonomy identifier
+host_tissue_sampled	host_tissue_sampled					false	name of body site where the sample was obtained from, such as a specific organ or tissue, e.g., tongue, lung. For foundational model of anatomy ontology (fma) (v 4.11.0) or Uber-anatomy ontology (UBERON) (v releases/2014-06-15) terms, please see http://purl.bioontology.org/ontology/FMA or http://purl.bioontology.org/ontology/UBERON	
+host_tot_mass	host_tot_mass					false	total mass of the host at collection, the unit depends on host	
+host_wet_mass	host_wet_mass					false	measurement of wet mass	
+hrt	hrt		timestamp			false	whether subject had hormone replacement theraphy, and if yes start date	
+humidity	humidity	humidity				false	amount of water vapour in the air, at the time of sampling	
+humidity_regm	humidity_regm	humidity regimen				false	information about treatment involving an exposure to varying degree of humidity; information about treatment involving use of growth hormones; should include amount of humidity administered, treatment duration, interval and total experimental duration; can include multiple regimens	
+hygienic_area	hygienic_area					false	The subdivision of areas within a food production facility according to hygienic requirements. This field accepts terms listed under hygienic food production area (http://purl.obolibrary.org/obo/ENVO). Please add a term that most accurately indicates the hygienic area your sample was taken from according to the definitions provided	
+hysterectomy	hysterectomy	hysterectomy				false	specification of whether hysterectomy was performed	
+identified_by	identified_by					false	name of the taxonomist who identified the specimen	"標本個体の分類学的な同定を行った専門家の名前
+フルネーム記載を強く推奨"
+ifsac_category	ifsac_category					false	The IFSAC food categorization scheme has five distinct levels to which foods can be assigned, depending upon the type of food. First, foods are assigned to one of four food groups (aquatic animals, land animals, plants, and other). Food groups include increasingly specific food categories; dairy, eggs, meat and poultry, and game are in the land animal food group, and the category meat and poultry is further subdivided into more specific categories of meat (beef, pork, other meat) and poultry (chicken, turkey, other poultry). Finally, foods are differentiated by differences in food processing (such as pasteurized fluid dairy products, unpasteurized fluid dairy products, pasteurized solid and semi-solid dairy products, and unpasteurized solid and semi-solid dairy products. An IFSAC food category chart is available from https://www.cdc.gov/foodsafety/ifsac/projects/food-categorization-scheme.html PMID: 28926300, e.g., Plants:Produce:Vegetables:Herbs:Dried Herbs	
+ihmc_medication_code	ihmc_medication_code	ihmc medication code				false	can include multiple medication codes	
+indoor_surf	indoor_surf			"[""counter top"", ""window"", ""wall"", ""cabinet"", ""ceiling"", ""door"", ""shelving"", ""vent cover""]"		false	"Type of indoor surface. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+indust_eff_percent	indust_eff_percent	industrial effluent percent				false	percentage of industrial effluents received by wastewater treatment plant	
+infection	infection					false	infection	
+infra_specific_name	infra_specific_name	infra_specific_name				false	taxonomic information about the host below subspecies level	
+infra_specific_rank	infra_specific_rank	infra_specific_rank				false	taxonomic rank information about the host below subspecies level, such as variety, form, rank etc.	
+inorg_particles	inorg_particles	inorganic particles				false	concentration of particles such as sand, grit, metal particles, ceramics, etc.; can include multiple particles	
+inside_lux	inside_lux					false	The recorded value at sampling time (power density)	
+int_wall_cond	int_wall_cond					false	The physical condition of the wall at the time of sampling, e.g., new, visible wear, needs repair, damaged, rupture	
+intended_consumer	intended_consumer					false	Food consumer type, human or animal, for which the food product is produced and marketed, e.g., human	
+investigation_type	investigation_type			"[""eukaryote"", ""bacteria_archaea"", ""plasmid"", ""virus"", ""organelle"", ""metagenome"", ""miens-survey"", ""miens-culture""]"		false	"Nucleic Acid Sequence Report is the root element of all MIGS/MIMS compliant reports as standardized by Genomic Standards Consortium. This field is either eukaryote,bacteria,virus,plasmid,organelle, metagenome, miens-survey or miens-culture Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+is_tumor	is_tumor					false	is tumor	
+isolate_name_alias	isolate_name_alias					false	isolate name alias	
+iw_bt_date_well	iw_bt_date_well					false	Injection water breakthrough date per well following a secondary and/or tertiary recovery	
+iwf	iwf					false	Proportion of the produced fluids derived from injected water at the time of sampling, e.g., 87%	
+karyotype	karyotype					false	karyotype	
+kidney_disord	kidney_disord	urine/kidney disorder				false	history of kidney disorders; can include multiple disorders	
+label	label					false	A label for sample, or name of an individual animal (e.g., Clint)	単離されたサンプルのラベル名，もしくは個々の動物の名前 (例: Clint)。
+last_clean	last_clean					false	The last time the floor was cleaned (swept, mopped, vacuumed)	
+last_meal	last_meal	last meal				false	content of last meal and time since feeding; can include multiple values	
+life_stage	life_stage	life stage				false	description of life stage of host	
+light_intensity	light_intensity	light intensity				false	measurement of light intensity	
+light_regm	light_regm					false	Information about treatment(s) involving exposure to light, including both light intensity and quality	
+link_addit_analys	link_addit_analys	links to additional analysis	reference			false	links to additional analysis	
+link_class_info	link_class_info	link to classification information	reference			false	link to digitized soil maps or other soil classification information	
+link_climate_info	link_climate_info	link to climate information	reference			false	link to climate resource	
+lithology	lithology					false	Hydrocarbon resource main lithology, e.g., basement, chalk, chert, coal, conglomerate, diatomite, dolomite, limestone, sandstone, shale, siltstone, volcanic	
+liver_disord	liver_disord	liver disorder				false	history of liver disorders; can include multiple disorders	
+local_class	local_class	soil_taxonomic/local classification				false	soil classification based on local soil classification system	
+local_class_meth	local_class_meth	soil_taxonomic/local classification method	reference			false	reference or method used in determining the local soil classification	
+lot_number	lot_number					false	A distinctive alpha-numeric identification code assigned by the manufacturer or distributor to a specific quantity of manufactured material or product within a batch. The submitter should provide lot number of the item followed by the item name for which the lot number was provided	
+magnesium	magnesium	magnesium				false	concentration of magnesium	
+maternal_health_stat	maternal_health_stat	amniotic fluid/maternal health status				false	specification of the maternal health status	
+mating_type	mating_type					false	mating type	
+max_occup	max_occup					false	The maximum amount of people allowed in the indoor environment	
+mean_frict_vel	mean_frict_vel	mean friction velocity				false	measurement of mean friction velocity	
+mean_peak_frict_vel	mean_peak_frict_vel	mean peak friction velocity				false	measurement of mean peak friction velocity	
+mech_struc	mech_struc					false	Mechanical structure: a moving structure, e.g., subway, coach, carriage, elevator, escalator, boat, train, car, bus	
+mechanical_damage	mechanical_damage	mechanical damage				false	information about any mechanical damage exerted on the plant; can include multiple damages and sites	
+medic_hist_perform	medic_hist_perform	medical history performed				false	whether full medical history was collected	
+menarche	menarche	menarche	timestamp			false	date of most recent menstruation	
+menopause	menopause	menopause	timestamp			false	date of onset of menopause	
+methane	methane	methane				false	methane (gas) amount or concentration at the time of sampling	
+microb_cult_med	microb_cult_med					false	A culture medium used to select for, grow, and maintain prokaryotic microorganisms. Can be in either liquid (broth) or solidified (e.g. with agar) forms. This field accepts terms listed under microbiological culture medium. If the proper descriptor is not listed please use text to describe the culture medium	
+microb_start	microb_start					false	Any type of microorganisms used in food production. This field accepts terms listed under live organisms for food production (http://purl.obolibrary.org/obo/FOODON_0344453)	
+microb_start_count	microb_start_count					false	Total cell count of starter culture per gram, volume or area of sample and the method that was used for the enumeration (e.g. qPCR, atp, mpn, etc.) should also be provided, e.g., total prokaryotes; 3.5e7 cells per ml; qPCR	
+microb_start_inoc	microb_start_inoc					false	The amount of starter culture used to inoculate a new batch	
+microb_start_prep	microb_start_prep					false	Information about the protocol or method used to prepare the starter inoculum	
+microb_start_source	microb_start_source					false	The source from which the microbial starter culture was sourced. If commercially supplied, list supplier	
+microb_start_taxid	microb_start_taxid					false	Please include Genus species and strain ID, if known of microorganisms used in food production. For complex communities, pipes can be used to separate two or more microbes	
+microbial_biomass	microbial_biomass	microbial biomass				false	the part of the organic matter in the soil that constitutes living microorganisms smaller than 5-10 micrometers. IF you keep this, you would need to have correction factors used for conversion to the final units, which should be mg C (or N)/kg soil).	
+microbial_biomass_meth	microbial_biomass_meth	microbial biomass method	reference			false	reference or method used in determining microbial biomass	
+mineral_nutr_regm	mineral_nutr_regm	mineral nutrient regimen				false	information about treatment involving the use of mineral supplements; should include the name of mineral nutrient, amount administered, treatment duration, interval and total experimental duration; can include multiple mineral nutrient regimens	
+misc_param	misc_param	miscellaneous parameter				false	any other measurement performed or parameter collected, that is not listed here	
+mode_transmission	mode_transmission					false	The process through which the symbiotic host organism entered the host from which it was sampled, e.g., horizontal:castrator, horizontal:directly transmitted, horizontal:micropredator, horizontal:parasitoid, horizontal:trophically transmitted, horizontal:vector transmitted, vertical	
+molecular_data_type	molecular_data_type					false	Type of molecular (omics) data tied to this sample	
+morphology	morphology					false	morphology	
+n_alkanes	n_alkanes	n-alkanes				false	concentration of n-alkanes; can include multiple n-alkanes	
+narms_isolate_number	narms_isolate_number					false	isolate identifier for the collection of isolates in the National Antimicrobial Resistance Monitoring System, authority http://www.cdc.gov/narms/about/index.html, e.g., CVM N6429	
+neg_cont_type	neg_cont_type					false	The substance or equipment used as a negative control in an investigation, e.g., distilled water, phosphate buffer, empty collection device, empty collection tube, DNA-free PCR mix, sterile swab, sterile syringe	
+nitrate	nitrate	nitrate				false	concentration of nitrate	
+nitrite	nitrite	nitrite				false	concentration of nitrite	
+nitro	nitro	nitrogen				false	concentration of nitrogen (total)	
+non_mineral_nutr_regm	non_mineral_nutr_regm	non-mineral nutrient regimen				false	information about treatment involving the exposure of plant to non-mineral nutrient such as oxygen, hydrogen or carbon; should include the name of non-mineral nutrient, amount administered, treatment duration, interval and total experimental duration; can include multiple non-mineral nutrient regimens	
+nose_mouth_teeth_throat_disord	nose_mouth_teeth_throat_disord	nose/mouth/teeth/throat disorder				false	history of nose/mouth/teeth/throat disorders; can include multiple disorders	
+nose_throat_disord	nose_throat_disord	lung/nose-throat disorder				false	history of nose-throat disorders; can include multiple disorders	
+num_samp_collect	num_samp_collect					false	The number of samples collected during the current sampling event	
+number_pets	number_pets					false	The number of pets residing in the sampled space	
+number_plants	number_plants					false	The number of plant(s) in the sampling space	
+number_resident	number_resident					false	The number of individuals currently occupying in the sampling location	
+occup_document	occup_document					false	The type of documentation of occupancy, e.g., automated count, estimate, manual count, videos	
+occupation	occupation	occupation				false	most frequent job performed by subject	
+omics_observ_id	omics_observ_id					false	A unique identifier of the omics-enabled observatory (or comparable time series) your data derives from. This identifier should be provided by the OMICON ontology; if you require a new identifier for your time series, contact the ontology's developers. Information is available here: https://github.com/GLOMICON/omicon. This field is only applicable to records which derive from an omics time-series or observatory.	
+org_carb	org_carb	organic carbon				false	concentration of organic carbon	
+org_count_qpcr_info	org_count_qpcr_info					false	If qpcr was used for the cell count, the target gene name, the primer sequence and the cycling conditions should also be provided, e.g., 16S rrna; FWD:ACGTAGCTATGACGT REV:GTGCTAGTCGAGTAC; initial denaturation:90C_5min; denaturation:90C_2min; annealing:52C_30 sec; elongation:72C_30 sec; 90 C for 1 min; final elongation:72C_5min; 30 cycles	
+org_matter	org_matter	organic matter				false	concentration of organic matter	
+org_nitro	org_nitro	organic nitrogen				false	concentration of organic nitrogen	
+org_particles	org_particles	organic particles				false	concentration of particles such as faeces, hairs, food, vomit, paper fibers, plant material, humus, etc.	
+orgmod_note	orgmod_note					false	organism modifier note	
+outbreak	outbreak					false	Submitter designated name for an occurrence of more cases of disease than expected in a given area or among a specific group of people over a particular period of time.	
+owc_tvdss	owc_tvdss					false	Depth of the original oil water contact (OWC) zone (average) (m TVDSS)	
+oxy_stat_samp	oxy_stat_samp	oxygenation status of sample		"[""aerobic"", ""anaerobic""]"		false	oxygenation status of sample	
+oxygen	oxygen	oxygen				false	oxygen (gas) amount or concentration at the time of sampling	
+part_org_carb	part_org_carb	particulate organic carbon				false	concentration of particulate organic carbon	
+part_org_nitro	part_org_nitro	particulate organic nitrogen				false	concentration of particulate organic nitrogen	
+part_plant_animal	part_plant_animal					false	The anatomical part of the organism being involved in food production or consumption; e.g., a carrot is the root of the plant (root vegetable). This field accepts terms listed under part of plant or animal (http://purl.obolibrary.org/obo/FOODON_03420116)	
+particle_class	particle_class	particle classification				false	particles are classified, based on their size, into six general categories: clay, silt, sand, gravel, cobbles, and boulders; should include amount of particle preceded by the name of the particle type; can include multiple values	
+passage_history	passage_history					false	Number of passages and passage method	
+passage_method	passage_method					false	"Description of how the organism was passaged. Provide a short description, e.g., AVL buffer+30%EtOH lysate received from Respiratory Lab. P3 passage in Vero-1 via bioreactor large-scale batch passage. P3 batch derived from the SP-2/reference lab strain. If not passaged, put """"not applicable""""."	
+passage_number	passage_number					false	"The number of known passages, e.g., 3. If not passaged, put """"not applicable""""."	
+pathogenicity	pathogenicity	known pathogenicity				false	To what is the entity pathogenic	
+pathotype	pathotype	pathotype, pathotype				false	Some bacterial specific pathotypes (example Eschericia coli - STEC, UPEC)	
+pathovar	pathovar					false	Taxonomy below subspecies; a variety (in bacteria, fungi or virus) usually based on its pathogenic properties. Sometimes used as equivalent to subspecies.	
+permeability	permeability					false	Measure of the ability of a hydrocarbon resource to allow fluids to pass through it. Additional information: https://en.wikipedia.org/wiki/Permeability_(earth_sciences)	
+perturbation	perturbation	perturbation				false	type of perturbation, e.g. chemical administration, physical disturbance, etc., coupled with time that perturbation occurred; can include multiple perturbation types	
+pesticide_regm	pesticide_regm	pesticide regimen				false	information about treatment involving use of insecticides; should include the name of pesticide, amount administered, treatment duration, interval and total experimental duration; can include multiple pesticide regimens	
+pet_farm_animal	pet_farm_animal	presence of pets or farm animals				false	specification of presence of pets or farm animals in the environment of subject, if yes the animals should be specified; can include multiple animals present	
+petroleum_hydrocarb	petroleum_hydrocarb	petroleum hydrocarbon				false	concentration of petroleum hydrocarbon	
+ph	ph					false	pH measurement	
+ph_meth	ph_meth	pH method	reference			false	reference or method used in determining pH	
+ph_regm	ph_regm	pH regimen				false	information about treatment involving exposure of plants to varying levels of pH of the growth media; can include multiple regimen	
+phaeopigments	phaeopigments	phaeopigments				false	concentration of phaeopigments; can include multiple phaeopigments	
+phenotype	phenotype	phenotype				false	Phenotype of sampled organism. For Phenotypic quality Ontology (PATO) (v1.269) terms.	サンプル生物の表現型。Phenotypic quality Ontology (PATO) (v1.269)。
+phosphate	phosphate	phosphate				false	concentration of phosphate	
+phosplipid_fatt_acid	phosplipid_fatt_acid	phospholipid fatty acid				false	concentration of phospholipid fatty acids; can include multiple values	
+photon_flux	photon_flux	photon flux				false	measurement of photon flux	
+photosynt_activ	photosynt_activ					false	Measurement of photosythetic activity (i.e. leaf gas exchange / chlorophyll fluorescence emissions / reflectance / transpiration) Please also include the term method term detailing the method of activity measurement	
+photosynt_activ_meth	photosynt_activ_meth					false	Reference or method used in measurement of photosythetic activity	
+plant_body_site	plant_body_site	plant body site				false	Name of body site that the sample was obtained from. For PO (v819) terms.	
+plant_growth_med	plant_growth_med					false	Type of the media used for growing sampled plants, e.g., soil [ENVO:00001998]	
+plant_part_maturity	plant_part_maturity					false	A description of the stage of development of a plant or plant part based on maturity or ripeness. This field accepts terms listed under degree of plant maturity (http://purl.obolibrary.org/obo/FOODON_03530050)	
+plant_product	plant_product	plant product				false	substance produced by the plant, where the sample was obtained from	
+plant_reprod_crop	plant_reprod_crop					false	Plant reproductive part used in the field during planting to start the crop, e.g., plant cutting, pregerminated seed, ratoon, seed, seedling, whole mature plant	
+plant_sex	plant_sex					false	Sex of the reproductive parts on the whole plant, e.g., androdioecious, androecious, androgynous, androgynomonoecious, andromonoecious, bisexual, dichogamous, diclinous, dioecious, gynodioecious, gynoecious, gynomonoecious, hermaphroditic, imperfect, monoclinous, monoecious, perfect, polygamodioecious, polygamomonoecious, polygamous, protandrous, protogynous, subandroecious, subdioecious, subgynoecious, synoecious, trimonoecious, trioecious, unisexual	
+plant_struc	plant_struc					false	Name of plant structure the sample was obtained from; for Plant Ontology (PO) (v releases/2017-12-14) terms, see http://purl.bioontology.org/ontology/PO, e.g., petiole epidermis (PO_0000051). If an individual flower is sampled, the sex of it can be recorded here	
+plant_water_method	plant_water_method					false	Description of the equipment or method used to distribute water to crops. This field encourages terms listed under irrigation process (http://purl.obolibrary.org/obo/AGRO_00000006). Multiple terms can be separated by pipes, e.g., drip irrigation process [AGRO:00000056]	
+ploidy	ploidy	ploidy				false	The ploidy level of the genome (e.g. allopolyploid, haploid, diploid, triploid, tetraploid).	ゲノムの倍数性レベル (例: allopolyploid, haploid, diploid, triploid, tetraploid)
+pollutants	pollutants	pollutants				false	pollutant types and, amount or concentrations measured at the time of sampling; can report multiple pollutants by entering numeric values preceded by name of pollutant	
+pool_dna_extracts	pool_dna_extracts	pooling of DNA extracts (if done)				false	were multiple DNA extractions mixed? how many?	
+population	population					false	for human: ; for plants: filial generation, number of progeny, genetic structure	
+population_description	population_description					false	The full, unabbreviated population descriptor from the Coriell Institute	
+porosity	porosity	porosity				false	porosity of deposited sediment is volume of voids divided by the total volume of sample	
+pos_cont_type	pos_cont_type					false	The substance, mixture, product, or apparatus used to verify that a process which is part of an investigation delivers a true positive	
+potassium	potassium	potassium				false	concentration of potassium	
+pour_point	pour_point					false	Temperature at which a liquid becomes semi solid and loses its flow characteristics. In crude oil a high pour point is generally associated with a high paraffin content, typically found in crude deriving from a larger proportion of plant material (source: https://en.wikipedia.org/wiki/pour_point)	
+pre_treatment	pre_treatment	pre-treatment				false	the process of pre-treatment removes materials that can be easily collected from the raw wastewater	
+pregnancy	pregnancy	pregnancy	timestamp			false	date due of pregnancy	
+pres_animal_insect	pres_animal_insect					false	The type and number of animals or insects present in the sampling space, e.g., cat 10, dog 2, rodent 100, snake 1	
+pressure	pressure	pressure				false	pressure to which the sample is subject, in atmospheres	
+previous_land_use	previous_land_use	history/previous land use				false	previous land use and dates	
+previous_land_use_meth	previous_land_use_meth	history/previous land use method	reference			false	reference or method used in determining previous land use and dates	
+primary_prod	primary_prod	primary production				false	measurement of primary production	
+primary_treatment	primary_treatment	primary treatment				false	the process to produce both a generally homogeneous liquid capable of being treated biologically and a sludge that can be separately treated or processed	
+prior_sars_cov_2_antiviral_treat	prior_sars_cov_2_antiviral_treat					false	Has the host received SARS-CoV-2 antiviral treatment?	
+prior_sars_cov_2_infection	prior_sars_cov_2_infection					false	Did the host have a prior SARS-CoV-2 infection?	
+prior_sars_cov_2_vaccination	prior_sars_cov_2_vaccination					false	Has the host received a SARS-CoV-2 vaccination?	
+prod_label_claims	prod_label_claims					false	Labeling claims containing descriptors such as wild caught, free-range, organic, free-range, industrial, hormone-free, antibiotic free, cage free	
+prod_rate	prod_rate					false	Oil and/or gas production rates per well, e.g., 524 m3/day	
+prod_start_date	prod_start_date					false	Date of field's first production	
+profile_position	profile_position	profile position		"[""summit"", ""shoulder"", ""backslope"", ""footslope"", ""toeslope""]"		false	"Cross-sectional position in the hillslope where sample was collected, sample area position in relation to surrounding areas. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+project_name	project_name	project name				false	"A concise name that describes the overall project, for example ""Analysis of sequences collected from Antarctic soil"""	全体のプロジェクトを記載した簡潔な名称。(例： Analysis of sequences collected from Antarctic soil)
+pulmonary_disord	pulmonary_disord	lung/pulmonary disorder				false	history of pulmonary disorders; can include multiple disorders	
+pulse	pulse	pulse				false	resting pulse, measured as beats per minute	
+purpose_of_sampling	purpose_of_sampling					false	The reason the sample was collected, e.g., diagnostic testing	
+purpose_of_sequencing	purpose_of_sequencing					false	The reason the sample was sequenced, e.g., baseline surveillance (random sampling)	
+purpose_of_ww_sampling	purpose_of_ww_sampling					false	The reason the sample was collected	
+purpose_of_ww_sequencing	purpose_of_ww_sequencing					false	The reason the sample was sequenced, e.g., identification of mutations within a specific region, presence of clinically known mutations, or diversity of mutations across entire genome	
+quad_pos	quad_pos					false	The quadrant position of the sampling room within the building, e.g., north side, west side, south side, east side	
+race	race					false	race	
+radiation_regm	radiation_regm	radiation regimen				false	information about treatment involving exposure of plant or a plant part to a particular radiation regimen; should include the radiation type, amount or intensity administered, treatment duration, interval and total experimental duration; can include multiple radiation regimens	
+rainfall_regm	rainfall_regm	rainfall regimen				false	information about treatment involving an exposure to a given amount of rainfall; can include multiple regimens	
+reactor_type	reactor_type	reactor type				false	anaerobic digesters can be designed and engineered to operate using a number of different process configurations, as batch or continuous, mesophilic, high solid or low solid, and single stage or multistage	
+redox_potential	redox_potential	redox potential				false	redox potential, measured relative to a hydrogen cell, indicating oxidation or reduction potential	
+reference_material	reference_material					false	Indicates that a standards body or external group asserts this sample is reference material, eg, 'NIST reference material for genome sequencing validation'.	
+rel_humidity_out	rel_humidity_out					false	The recorded outside relative humidity value at the time of sampling	
+rel_location	rel_location					false	Location of sample to other parts of the farm, e.g. under crop plant, near irrigation ditch, from the dirt road, from air above crops, nearby river, e.g., furrow	
+rel_samp_loc	rel_samp_loc					false	The sampling location within the train car, e.g., edge of car, center of car, under a seat	
+rel_to_oxygen	rel_to_oxygen	relationship to oxygen		"[""aerobe"", ""anaerobe"", ""facultative"", ""microaerophilic"", ""microanaerobe"", ""obligate aerobe"", ""obligate anaerobe""]"		false	"Aerobic or anaerobic. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+repository	repository					false	repository	
+reservoir_name	reservoir_name					false	Name of the reservoir, e.g., Carapebus	
+resins_pc	resins_pc					false	Saturate, Aromatic, Resin and Asphaltene (SARA) is an analysis method that divides crude oil components according to their polarizability and polarity. There are three main methods to obtain SARA results. The most popular one is known as the Iatroscan TLC-FID and is referred to as IP-143 (source: https://en.wikipedia.org/wiki/Saturate,_aromatic,_resin_and_asphaltene)	
+resp_part_matter	resp_part_matter	respirable particulate matter				false	concentration of substances that remain suspended in the air, and comprise mixtures of organic and inorganic substances (PM10 and PM2.5); can report multiple PM's by entering numeric values preceded by name of PM	
+risk_group	risk_group					false	risk group	
+room_air_exch_rate	room_air_exch_rate					false	The rate at which outside air replaces indoor air in a given space	
+room_architec_elem	room_architec_elem					false	The unique details and component parts that, together, form the architecture of a distinguisahable space within a built structure	
+room_condt	room_condt					false	The condition of the room at the time of sampling, e.g., new, visible wear, needs repair, damaged, rupture, visible signs of mold/mildew	
+room_connected	room_connected					false	List of rooms connected to the sampling room by a doorway, e.g., attic, bathroom, closet, conference room, elevator, examining room, hallway, kitchen, mail room, office, stairwell	
+room_count	room_count					false	The total count of rooms in the built structure including all room types	
+room_dim	room_dim					false	The length, width and height of sampling room	
+room_door_dist	room_door_dist					false	Distance between doors (meters) in the hallway between the sampling room and adjacent rooms	
+room_door_share	room_door_share					false	List of room(s) (room number, room name) sharing a door with the sampling room	
+room_hallway	room_hallway					false	List of room(s) (room number, room name) located in the same hallway as sampling room	
+room_loc	room_loc					false	The position of the room within the building, e.g., corner room, interior room, exterior wall	
+room_moist_dam_hist	room_moist_dam_hist					false	The history of moisture damage or mold in the past 12 months. Number of events of moisture damage or mold observed	
+room_net_area	room_net_area					false	The net floor area of sampling room. Net area excludes wall thicknesses	
+room_occup	room_occup					false	Count of room occupancy at time of sampling	
+room_samp_pos	room_samp_pos					false	The horizontal sampling position in the room relative to architectural elements, e.g., north corner, south corner, west corner, east corner, northeast corner, northwest corner, southeast corner, southwest corner, center	
+room_type	room_type					false	The main purpose or activity of the sampling room. A room is any distinguishable space within a structure, e.g., attic, bathroom, closet, conference room, elevator, examining room, hallway, kitchen, mail room, private office, open office, stairwell,restroom, lobby, vestibule, mechanical or electrical room, data center, laboratory_wet, laboratory_dry, gymnasium, natatorium, auditorium, lockers, cafe, warehouse	
+room_vol	room_vol					false	Volume of sampling room	
+room_wall_share	room_wall_share					false	List of room(s) (room number, room name) sharing a wall with the sampling room	
+room_window_count	room_window_count					false	Number of windows in the room	
+root_cond	root_cond					false	Relevant rooting conditions such as field plot size, sowing density, container dimensions, number of plants per container	
+root_med_carbon	root_med_carbon					false	Source of organic carbon in the culture rooting medium, e.g., sucrose	
+root_med_macronutr	root_med_macronutr					false	Measurement of the culture rooting medium macronutrients (N,P, K, Ca, Mg, S), e.g., KH2PO4 (170mg/L)	
+root_med_micronutr	root_med_micronutr					false	Measurement of the culture rooting medium micronutrients (Fe, Mn, Zn, B, Cu, Mo), e.g., H3BO3 (6.2mg/L)	
+root_med_ph	root_med_ph					false	pH measurement of the culture rooting medium, e.g., 5.5	
+root_med_regl	root_med_regl					false	Growth regulators in the culture rooting medium such as cytokinins, auxins, gybberellins, abscisic acid, e.g., 0.5 mg/L NAA	
+root_med_solid	root_med_solid					false	Specification of the solidifying agent in the culture rooting medium, e.g., agar	
+root_med_suppl	root_med_suppl					false	Organic supplements of the culture rooting medium, such as vitamins, amino acids, organic acids, antibiotics activated charcoal, e.g., nicotinic acid (0.5 mg/L)	
+route_transmission	route_transmission					false	Description of path taken by the symbiotic host organism being sampled in order to establish a symbiotic relationship with the host (with which it was observed at the time of sampling) via a mode of transmission (specified in mode_transmission), e.g., environmental:faecal-oral, transplacental, vector-borne:vector penetration	
+salinity	salinity	salinity				false	salinity measurement	
+salinity_meth	salinity_meth	extreme_unusual_properties/salinity method	reference			false	reference or method used in determining salinity	
+salt_regm	salt_regm	salt regimen				false	information about treatment involving use of salts as supplement to liquid and soil growth media; should include the name of salt, amount administered, treatment duration, interval and total experimental duration; can include multiple salt regimens	
+same_as	same_as					false	indicates that the same physical sample has multiple BioSample records	
+samp_capt_status	samp_capt_status					false	Reason for the sample, e.g., active surveillance in response to an outbreak, active surveillance not initiated by an outbreak, farm sample, market sample	
+samp_collect_device	samp_collect_device	sample collection device or method				false	Method or device employed for collecting sample	
+samp_collect_method	samp_collect_method					false	The method employed for collecting the sample	
+samp_collect_point	samp_collect_point					false	Sampling point on the asset where sample was collected, e.g., well, test well, drilling rig, wellhead, separator, storage tank	
+samp_dis_stage	samp_dis_stage					false	Stage of the disease at the time of sample collection, e.g., dissemination, growth and reproduction, infection, inoculation, penetration	
+samp_floor	samp_floor					false	The floor of the building, where the sampling room is located, e.g., 1st floor, 2nd floor, basement, lobby	
+samp_loc_condition	samp_loc_condition					false	The condition of the sample location at the time of sampling, e.g., damaged, new, rupture, visible signs of mold-mildew, visible weariness repair	
+samp_loc_corr_rate	samp_loc_corr_rate					false	Metal corrosion rate is the speed of metal deterioration due to environmental conditions. As environmental conditions change corrosion rates change accordingly. Therefore, long term corrosion rates are generally more informative than short term rates and for that reason they are preferred during reporting. In the case of suspected MIC, corrosion rate measurements at the time of sampling might provide insights into the involvement of certain microbial community members in MIC as well as potential microbial interplays	
+samp_mat_process	samp_mat_process	sample material processing				false	Processing applied to the sample during or after isolation	
+samp_mat_type	samp_mat_type					false	The type of material from which the sample was obtained. For the Hydrocarbon package, samples include types like core, rock trimmings, drill cuttings, piping section, coupon, pigging debris, solid deposit, produced fluid, produced water, injected water, swabs, etc. For the Food Package, samples are usually categorized as food, body products or tissues, or environmental material. This field accepts terms listed under environmental specimen (http://purl.obolibrary.org/obo/GENEPIO_0001246)	
+samp_md	samp_md					false	"In non deviated well, measured depth is equal to the true vertical depth, TVD (TVD=TVDSS plus the reference or datum it refers to). In deviated wells, the MD is the length of trajectory of the borehole measured from the same reference or datum. Common datums used are ground level (GL), drilling rig floor (DF), rotary table (RT), kelly bushing (KB) and mean sea level (MSL). If ""other"" is specified, please propose entry in ""additional info"" field"	
+samp_pooling	samp_pooling					false	Physical combination of several instances of like material, e.g., RNA extracted from samples or dishes of cell cultures into one big aliquot of cells. Please provide a short description of the samples that were pooled	
+samp_preserv	samp_preserv					false	Preservative added to the sample, e.g. Rnalater, alcohol, formaldehyde. Where appropriate include volume added, e.g. Rnalater; 2 ml	
+samp_rep_biol	samp_rep_biol					false	Measurements of biologically distinct samples that show biological variation	
+samp_rep_tech	samp_rep_tech					false	Repeated measurements of the same sample that show independent measures of the noise associated with the equipment and the protocols	
+samp_room_id	samp_room_id					false	Sampling room number. This ID should be consistent with the designations on the building floor plans	
+samp_salinity	samp_salinity	sample salinity				false	salinity of sample, i.e. measure of total salt concentration	
+samp_size	samp_size					false	Amount or size of sample (volume, mass or area) that was collected	
+samp_sort_meth	samp_sort_meth					false	method by which samples are sorted	
+samp_source_mat_cat	samp_source_mat_cat					false	This is the scientific role or category that the subject organism or material has with respect to an investigation. This field accepts terms listed under specimen source material category (http://purl.obolibrary.org/obo/GENEPIO_0001237 or http://purl.obolibrary.org/obo/OBI_0100051)	
+samp_stor_device	samp_stor_device					false	The container used to store the sample. This field accepts terms listed under container. If the proper descriptor is not listed please use text to describe the storage device	
+samp_stor_media	samp_stor_media					false	The liquid that is added to the sample collection device prior to sampling. If the sample is pre-hydrated, indicate the liquid media the sample is pre-hydrated with for storage purposes. This field accepts terms listed under microbiological culture medium (http://purl.obolibrary.org/obo/MICRO_0000067). If the proper descriptor is not listed please use text to describe the sample storage media	
+samp_store_dur	samp_store_dur	sample storage duration				false	duration for which sample was stored	
+samp_store_loc	samp_store_loc	sample storage location				false	location at which sample was stored, usually name of a specific freezer/room	
+samp_store_sol	samp_store_sol					false	Solution within which sample was stored, if any	
+samp_store_temp	samp_store_temp	sample storage temperature				false	temperature at which sample was stored, e.g. -80	
+samp_subtype	samp_subtype					false	Name of sample sub-type, e.g., oil phase, water phase, biofilm, not applicable	
+samp_surf_moisture	samp_surf_moisture					false	Degree of water held on a sampled surface, e.g., intermittent moisture, not present, submerged	
+samp_time_out	samp_time_out					false	The recent and long term history of outside sampling	
+samp_transport_cond	samp_transport_cond					false	Sample transport duration (in days or hrs) and temperature the sample was exposed to (e.g., 5.5 days; 20C)	
+samp_transport_cont	samp_transport_cont					false	Container in which the sample was stored during transport. Indicate the location name, e.g., bottle, cooler, glass vial, plastic vial, vendor supplied container	
+samp_transport_dur	samp_transport_dur					false	The duration of time from when the sample was collected until processed. Indicate the duration for which the sample was stored written in ISO 8601 format	
+samp_transport_temp	samp_transport_temp					false	Temperature at which sample was transported, e.g., -20 or 4 degree Celsius	
+samp_tvdss	samp_tvdss					false	Depth of the sample i.e. The vertical distance between the sea level and the sampled position in the subsurface. Depth can be reported as an interval for subsurface samples e.g., 1325.75-1362.25 m	
+samp_vol_we_dna_ext	samp_vol_we_dna_ext	sample weight for DNA extraction				false	weight (g) of soil processed	
+samp_weather	samp_weather					false	The weather on the sampling day, e.g., clear sky, cloudy, foggy, hail, rain, snow, sleet, sunny, windy	
+samp_well_name	samp_well_name					false	Name of the well where sample was taken, e.g., BXA1123	
+sars_cov_2_diag_gene_name_1	sars_cov_2_diag_gene_name_1					false	The name of the gene used in the first diagnostic SARS-CoV-2 RT-PCR test.	
+sars_cov_2_diag_gene_name_2	sars_cov_2_diag_gene_name_2					false	The name of the gene used in the second diagnostic SARS-CoV-2 RT-PCR test.	
+sars_cov_2_diag_pcr_ct_value_1	sars_cov_2_diag_pcr_ct_value_1					false	The cycle threshold (CT) value result from the first diagnostic SARS-CoV-2 RT-PCR test, e.g., 21	
+sars_cov_2_diag_pcr_ct_value_2	sars_cov_2_diag_pcr_ct_value_2					false	The cycle threshold (CT) value result from the second diagnostic SARS-CoV-2 RT-PCR test, e.g., 36	
+saturates_pc	saturates_pc					false	Saturate, Aromatic, Resin and Asphaltene (SARA) is an analysis method that divides crude oil components according to their polarizability and polarity. There are three main methods to obtain SARA results. The most popular one is known as the Iatroscan TLC-FID and is referred to as IP-143 (source: https://en.wikipedia.org/wiki/Saturate,_aromatic,_resin_and_asphaltene)	
+season	season					false	The season when sampling occurred. Any of the four periods into which the year is divided by the equinoxes and solstices. This field accepts terms listed under season (http://purl.obolibrary.org/obo/NCIT_C94729)	
+season_environment	season_environment	seasonal environment				false	treatment involving an exposure to a particular season (e.g. winter, summer, rabi, rainy etc.)	
+season_humidity	season_humidity					false	Average humidity of the region throughout the growing season	
+season_precpt	season_precpt					false	The average of all seasonal precipitation values known, or an estimated equivalent value derived by such methods as regional indexes or Isohyetal maps	
+season_temp	season_temp					false	Mean seasonal temperature	
+season_use	season_use					false	The seasons the space is occupied, e.g., spring, summer, fall, winter	
+secondary_treatment	secondary_treatment	secondary treatment				false	the process for substantially degrading the biological content of the sewage	
+sediment_type	sediment_type	sediment type		"[""biogenous"", ""cosmogenous"", ""hydrogenous"", ""lithogenous""]"		false	information about the sediment type based on major constituents	
+sequenced_by	sequenced_by					false	The name of the agency that generated the sequence, e.g., Centers for Disease Control and Prevention	
+serogroup	serogroup					false	serogroup	
+serotype	serotype					false	"Taxonomy below subspecies; a variety (in bacteria, fungi or virus) usually based on its antigenic properties. Same as serovar and serogroup. e.g. serotype=""H1N1"" in Influenza A virus CY098518."	"subspecies 以下の分類。配列の得られた生物, ウイルスなどの血清学的タイプ。例: serotype=""H1N1"" (インフルエンザ A 型 の場合)"
+serovar	serovar					false	"Taxonomy below subspecies; a variety (in bacteria, fungi or virus) usually based on its antigenic properties. Same as serovar and serotype. Sometimes used as species identifier in bacteria with shaky taxonomy, e.g. <a href=""http://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Info&id=176&lvl=3&lin=f&srchmode=3&unlock"">Leptospira interrogans serovar Hardjo</a>"	"subspecies 以下の分類。(一般に原核生物で)抗原特性により分類される血清学的変種。例: serovar=""O157:H7"""
+serovar_or_serotype	serovar_or_serotype					false	A characterization of a cell or microorganism based on the antigenic properties of the molecules on its surface. Indicate the name of a serovar or serotype of interest. This field accepts terms under organism (http://purl.obolibrary.org/obo/NCIT_C14250). This field also accepts identification numbers from NCBI under https://www.ncbi.nlm.nih.gov/taxonomy	
+sewage_type	sewage_type	sewage type				false	type of wastewater treatment plant as municipial or industrial	
+sexual_act	sexual_act	sexual activity				false	current sexual partner and frequency of sex	
+shad_dev_water_mold	shad_dev_water_mold					false	Signs of the presence of mold or mildew on the shading device, e.g., presence of mold visible, no presence of mold visible	
+shading_device_cond	shading_device_cond					false	The physical condition of the shading device at the time of sampling, e.g., damaged, needs repair, new, rupture, visible wear	
+shading_device_loc	shading_device_loc					false	The location of the shading device in relation to the built structure, e.g., exterior, interior	
+shading_device_mat	shading_device_mat					false	The material the shading device is composed of	
+shading_device_type	shading_device_type					false	The type of shading device, e.g., bahama shutters, exterior roll blind, gambrel awning, hood awning, porchroller awning, sarasota shutters, slatted aluminum, solid aluminum awning, sun screen, tree, trellis, venetian awning	
+sieving	sieving	composite design/sieving (if any)				false	collection design of pooled samples and/or sieve size and amount of sample sieved	
+silicate	silicate	silicate				false	concentration of silicate	
+size_frac	size_frac					false	Filtering pore size used in sample preparation, e.g., 0-0.22 micrometer	
+size_frac_low	size_frac_low					false	Refers to the mesh/pore size used to pre-filter/pre-sort the sample. Materials larger than the size threshold are excluded from the sample	
+size_frac_up	size_frac_up					false	Refers to the mesh/pore size used to retain the sample. Materials smaller than the size threshold are excluded from the sample	
+slope_aspect	slope_aspect	slope aspect				false	the direction a slope faces. While looking down a slope use a compass to record the direction you are facing (direction or degrees); e.g., NW or 315&deg;. This measure provides an indication of sun and wind exposure that will influence soil temperature and evapotranspiration.	
+slope_gradient	slope_gradient	slope gradient				false	"commonly called ""slope"". The angle between ground surface and a horizontal line (in percent). This is the direction that overland water would flow. This measure is usually taken with a hand level meter or clinometer."	
+sludge_retent_time	sludge_retent_time	sludge retention time				false	the time activated sludge remains in reactor	
+smoker	smoker	smoker				false	specification of smoking status	
+sodium	sodium	sodium				false	sodium concentration	
+soil_conductivity	soil_conductivity					false	Conductivity of soil at time of sampling	
+soil_cover	soil_cover					false	Description of the material covering the sampled soil. This field accepts terms under ENVO:00010483, environmental material	
+soil_depth	soil_depth					false	The vertical distance below local surface, e.g., for sediment or soil samples depth is measured from sediment or soil surface, respectively. Depth can be reported as an interval for subsurface samples	
+soil_horizon	soil_horizon					false	specific layer in the land area which measures parallel to the soil surface and possesses physical characteristics which differ from the layers above and beneath	
+soil_ph	soil_ph					false	The pH of soil at time of sampling	
+soil_porosity	soil_porosity					false	Porosity of soil or deposited sediment is volume of voids divided by the total volume of sample	
+soil_temp	soil_temp					false	Temperature of soil at the time of sampling	
+soil_text_measure	soil_text_measure					false	the relative proportion of different grain sizes of mineral particles in a soil, as described using a standard system; express as % sand (50 um to 2 mm), silt (2 um to 50 um), and clay (<2 um) with textural name (e.g., silty clay loam) optional.	
+soil_texture_class	soil_texture_class					false	One of the 12 soil texture classes use to describe soil texture based on the relative proportion of different grain sizes of mineral particles [sand (50 um to 2 mm), silt (2 um to 50 um), and clay (<2 um)] in a soil, e.g., clay, clay loam, loam, loamy sand, sand, sandy clay, sandy clay loam, sandy loam, silt, silty clay, silty clay loam, silt loam	
+soil_texture_meth	soil_texture_meth					false	reference or method used in determining soil texture	
+soil_type	soil_type	soil type				false	soil series name or other lower-level classification	
+soil_type_meth	soil_type_meth	soil type method	reference			false	reference or method used in determining soil series name or other lower-level classification	
+solar_irradiance	solar_irradiance	solar irradiance				false	the amount of solar energy that arrives at a specific area of a surface during a specific time interval	
+soluble_inorg_mat	soluble_inorg_mat	soluble inorganic material				false	concentration of substances such as ammonia, road-salt, sea-salt, cyanide, hydrogen sulfide, thiocyanates, thiosulfates, etc.	
+soluble_org_mat	soluble_org_mat	soluble organic material				false	concentration of substances such as urea, fruit sugars, soluble proteins, drugs, pharmaceuticals, etc.	
+soluble_react_phosp	soluble_react_phosp	soluble reactive phosphorus				false	concentration of soluble reactive phosphorus	
+source_material_id	source_material_id	source material identifiers				false	unique identifier assigned to a material sample used for extracting nucleic acids, and subsequent sequencing. The identifier can refer either to the original material collected or to any derived sub-samples.	
+source_name	source_name					false	Sample source name or description	
+special_diet	special_diet	special diet		"[""low carb"", ""reduced calorie"", ""vegetarian"", ""other(to be specified)""]"		false	"Specification of special diet; can include multiple special diets. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+specific	specific					false	The building specifications, e.g., operation, as built, construction, bid, design, photos	
+specific_humidity	specific_humidity					false	The mass of water vapour in a unit mass of moist air, usually expressed as grams of vapour per kilogram of air, or, in air conditioning, as grains per pound	
+specimen_voucher	specimen_voucher	specimen voucher				true	"Identifier for the physical specimen. Use format: ""[&lt;institution-code&gt;:[&lt;collection-code&gt;:]]&lt;specimen_id&gt;"", eg, ""UAM:Mamm:52179"". Intended as a reference to the physical specimen that remains after it was analyzed. If the specimen was destroyed in the process of analysis, electronic images (e-vouchers) are an adequate substitute for a physical voucher specimen. Ideally the specimens will be deposited in a curated museum, herbarium, or frozen tissue collection, but often they will remain in a personal or laboratory collection for some time before they are deposited in a curated collection. There are three forms of specimen_voucher qualifiers. If the text of the qualifier includes one or more colons it is a 'structured voucher'. Structured vouchers include institution-codes (and optional collection-codes) taken from a controlled vocabulary maintained by the INSDC that denotes the museum or herbarium collection where the specimen resides, please visit <a href=""http://www.insdc.org/controlled-vocabulary-specimenvoucher-qualifier"">the INSDC website</a>."	"配列の得られた標本(動植物個体の一部 または 全体)が維持管理されている管理団体とＩＤ。(書式：[&lt;institution_code&gt;:[&lt;collection_code&gt;:]]&lt;specimen_id&gt;)(例：UAM:Mamm:52179) &lt;collection_code&gt; が存在しない場合は記載不要です。&lt;institution_code&gt; は<a href=""http://www.insdc.org/controlled-vocabulary-specimenvoucher-qualifier"">こちら</a>を参照してください。"
+spikein_amr	spikein_amr					false	Qualitative description of a microbial response to antimicrobial agents. Bacteria may be susceptible or resistant to a broad range of antibiotic drugs or drug classes, with several intermediate states or phases. This field accepts terms under antimicrobial phenotype (http://purl.obolibrary.org/obo/ARO_3004299)	
+spikein_antibiotic	spikein_antibiotic					false	Antimicrobials used in research study to assess effects of exposure on microbiome of a specific site. Please list antimicrobial, common name and/or class and concentration used for spike-in	
+spikein_count	spikein_count					false	Total cell count of any organism (or group of organisms) per gram, volume or area of sample, should include name of organism followed by count. The method that was used for the enumeration (e.g., qPCR, atp, mpn, etc.) should also be provided, e.g., total prokaryotes; 3.5e7 cells per ml; qPCR	
+spikein_growth_med	spikein_growth_med					false	A liquid or gel containing nutrients, salts, and other factors formulated to support the growth of microorganisms, cells, or plants (National Cancer Institute Thesaurus). A growth medium is a culture medium which has the disposition to encourage growth of particular bacteria to the exclusion of others in the same growth environment. In this case, list the culture medium used to propagate the spike-in bacteria during preparation of spike-in inoculum. This field accepts terms listed under microbiological culture medium. If the proper descriptor is not listed please use text to describe the spike in growth media	
+spikein_metal	spikein_metal					false	Heavy metals used in research study to assess effects of exposure on microbiome of a specific site. Please list heavy metals and concentration used for spike-in	
+spikein_org	spikein_org					false	Taxonomic information about the spike-in organism(s). This field accepts terms under organism (http://purl.obolibrary.org/obo/NCIT_C14250). This field also accepts identification numbers from NCBI under https://www.ncbi.nlm.nih.gov/taxonomy. Multiple terms can be separated by pipes	
+spikein_serovar	spikein_serovar					false	Taxonomic information about the spike-in organism(s) at the serovar or serotype level. This field accepts terms under organism (http://purl.obolibrary.org/obo/NCIT_C14250). This field also accepts identification numbers from NCBI under https://www.ncbi.nlm.nih.gov/taxonomy. Multiple terms can be separated by pipes	
+spikein_strain	spikein_strain					false	Taxonomic information about the spike-in organism(s) at the strain level. This field accepts terms under organism (http://purl.obolibrary.org/obo/NCIT_C14250). This field also accepts identification numbers from NCBI under https://www.ncbi.nlm.nih.gov/taxonomy. Multiple terms can be separated by pipes	
+sr_dep_env	sr_dep_env					false	Source rock depositional environment (https://en.wikipedia.org/wiki/Source_rock), e.g., lacustine, fluvioldeltaic, fluviomarine, marine	
+sr_geol_age	sr_geol_age					false	Geological age of source rock (Additional info: https://en.wikipedia.org/wiki/Period_(geology)), e.g., archean, cambrian, carboniferous, cenozoic, cretaceous, devonian, jurassic, mesozoic, neogene, ordovician, paleogene, paleozoic, permian, precambrian, proterozoic, silurian, triassic	
+sr_kerog_type	sr_kerog_type					false	Origin of kerogen. Type I: Algal (aquatic), Type II: planktonic and soft plant material (aquatic or terrestrial), Type III: terrestrial woody/ fibrous plant material (terrestrial), Type IV: oxidized recycled woody debris (terrestrial) (additional information: https://en.wikipedia.org/wiki/Kerogen), e.g., type I, type II, type III, type IV	
+sr_lithology	sr_lithology					false	Lithology of source rock (https://en.wikipedia.org/wiki/Source_rock), e.g., clastic, carbonate, coal, biosilicieous	
+standing_water_regm	standing_water_regm	standing water regimen				false	treatment involving an exposure to standing water during a plant's life span, types can be flood water or standing water; can include multiple regimens	
+ster_meth_samp_room	ster_meth_samp_room					false	The method used to sterilize the sampling room. This field accepts terms listed under electromagnetic radiation (http://purl.obolibrary.org/obo/ENVO_01001026). If the proper descriptor is not listed, please use text to describe the sampling room sterilization method. Multiple terms can be separated by pipes	
+store_cond	store_cond	storage conditions (fresh/frozen/other)				false	explain how and for how long the soil sample was stored before DNA extraction.	
+stress	stress					false	stress	
+stud_book_number	stud_book_number					false	stud book number	
+study_complt_stat	study_complt_stat	study completion status				false	specification of study completion status, if no the reason should be specified	
+study_design	study_design					false	Epidemiological or omics reseach design context that this biosample was used in.	
+study_inc_dur	study_inc_dur					false	Sample incubation duration if unpublished or unvalidated method is used. Indicate the timepoint written in ISO 8601 format	
+study_inc_temp	study_inc_temp					false	Sample incubation temperature if unpublished or unvalidated method is used	
+study_timecourse	study_timecourse					false	For time-course research studies involving samples of the food commodity, indicate the total duration of the time-course study	
+study_tmnt	study_tmnt					false	A process in which the act is intended to modify or alter some other material entity. From the study design, each treatment is comprised of one level of one or multiple factors. This field accepts terms listed under treatment (http://purl.obolibrary.org/obo/MCO_0000866). If the proper descriptor is not listed please use text to describe the study treatment. Multiple terms can be separated by one or more pipes	
+sub_species	sub_species					false	sub species	
+subclone	subclone					false	Name for the derived clone or subculture from which the sample was taken.	
+subgroup	subgroup					false	Taxonomy below subspecies; sometimes used in viruses to denote subgroups taken from a single isolate.	
+subject_is_affected	subject_is_affected					false	Case vs control status for the subject of this sample, for case-control studies	
+subspecf_gen_lin	subspecf_gen_lin	subspecific genetic lineage				false	Information about the genetic distinctness of the lineage (eg., biovar, serovar)	
+subsrc_note	subsrc_note					false	subsource note	
+substrain	substrain					false	One level below strain.	遺伝学的あるいは他の方法で改変された sub-strain の名称
+substrate	substrate	substrate				false	the growth substrate of the host	
+substructure_type	substructure_type			"[""crawlspace"", ""slab on grade"", ""basement""]"		false	"Substructure or under building is that largely hidden section of the building which is built off the foundations to the ground floor level. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+subtype	subtype					false	Used as classifier in viruses (e.g. HIV type 1, Group M, Subtype A).	
+sulfate	sulfate	sulfate				false	concentration of sulfate	
+sulfate_fw	sulfate_fw					false	Original sulfate concentration in the hydrocarbon resource	
+sulfide	sulfide	sulfide				false	concentration of sulfide	
+super_population_code	super_population_code			"[""AFR"", ""AMR"", ""EAS"", ""EUR"", ""SAS""]"		false	"The 3 letter super population abbreviation from the Coriell Institute indicating ancestry. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+super_population_description	super_population_description			"[""African"", ""Ad Mixed American"", ""East Asian"", ""European"", ""South Asian""]"		false	"The full, unabbreviated super population descriptor from the Coriell Institute. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+surf_air_cont	surf_air_cont			"[""dust"", ""organic matter"", ""particulate matter"", ""volatile organic compounds"", ""biological contaminants"", ""radon"", ""nutrients"", ""biocides""]"		false	"Contaminant identified on surface. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+surf_humidity	surf_humidity					false	surfaces: water activity as a function of air and material moisture	
+surf_material	surf_material			"[""concrete"", ""wood"", ""stone"", ""tile"", ""plastic"", ""glass"", ""vinyl"", ""metal"", ""carpet"", ""stainless steel"", ""paint"", ""cinder blocks"", ""hay bales"", ""stucco"", ""adobe""]"		false	"Surface materials at the point of sampling. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+surf_moisture	surf_moisture					false	water held on a surface	
+surf_moisture_ph	surf_moisture_ph					false	pH measurement of surface	
+surf_temp	surf_temp					false	temperature of the surface at the time of sampling	
+suspend_part_matter	suspend_part_matter	suspended particulate matter				false	concentration of suspended particulate matter	
+suspend_solids	suspend_solids	suspended solids				false	concentration of substances including a wide variety of material, such as silt, decaying plant and animal matter, etc,; can include multiple substances	
+sym_life_cycle_type	sym_life_cycle_type					false	Type of life cycle of the symbiotic host species (the thing being sampled). Simple life cycles occur within a single host, complex ones within multiple different hosts over the course of their normal life cycle, e.g., complex life cycle, simple life cycle	
+symbiont_host_role	symbiont_host_role					false	Role of the host in the life cycle of the symbiotic organism, e.g., accidental, dead-end, definitive, intermediate, paratenic, reservoir, single host	
+tan	tan					false	Total Acid Number (TAN) is a measurement of acidity that is determined by the amount of potassium hydroxide in milligrams that is needed to neutralize the acids in one gram of oil. It is an important quality measurement of crude oil. (source: https://en.wikipedia.org/wiki/Total_acid_number)	
+teleomorph	teleomorph					false	Genus and species of the sexual (fruiting) form of fungi - note that anamorph and teleomorph forms of the same taxon may have used taxonomic different names.	
+temp	temp	temperature				false	temperature of the sample at time of sampling	サンプリング時のサンプルの温度
+temp_out	temp_out					false	The recorded temperature value at sampling time outside	
+tertiary_treatment	tertiary_treatment	tertiary treatment				false	the process providing a final treatment stage to raise the effluent quality before it is discharged to the receiving environment	
+tidal_stage	tidal_stage	tidal stage		"[""low"", ""high""]"		false	"Stage of tide. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+tillage	tillage	history/tillage		"[""drill"", ""cutting disc"", ""ridge till"", ""strip tillage"", ""zonal tillage"", ""chisel"", ""tined"", ""mouldboard"", ""disc plough""]"		false	"Note method(s) used for tilling. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+time	time					false	time	
+time_last_toothbrush	time_last_toothbrush	time since last toothbrushing				false	specification of the time since last toothbrushing	
+time_since_last_wash	time_since_last_wash	time since last wash				false	specification of the time since last wash	
+timepoint	timepoint					false	Time point at which a sample or observation is made or taken from a biomaterial as measured from some reference point. Indicate the timepoint written in ISO 8601 format	
+tiss_cult_growth_med	tiss_cult_growth_med	tissue culture growth media	reference			false	description of plant tissue culture growth media used	
+tissue_lib	tissue_lib					false	Formal identifier that points to source institute and tissue library identifier.	
+toluene	toluene					false	Concentration of toluene in the sample	
+tot_carb	tot_carb	total carbon				false	total carbon content	
+tot_depth_water_col	tot_depth_water_col	total depth of water column				false	measurement of total depth of water column	
+tot_diss_nitro	tot_diss_nitro	total dissolved nitrogen				false	"total dissolved nitrogen concentration, reported as nitrogen, measured by: total dissolved nitrogen = NH<span class=""sub"">4</span> + NO<span class=""sub"">3</span>NO<span class=""sub"">2</span> + dissolved organic nitrogen"	
+tot_inorg_nitro	tot_inorg_nitro	total inorganic nitrogen				false	total inorganic nitrogen content	
+tot_iron	tot_iron					false	Concentration of total iron in the sample	
+tot_mass	tot_mass	total mass				false	total mass of the host at collection, the unit depends on host	
+tot_n_meth	tot_n_meth	total N method	reference			false	reference or method used in determining the total N	
+tot_nitro	tot_nitro	total nitrogen				false	total nitrogen concentration, calculated by: total nitrogen = total dissolved nitrogen + particulate nitrogen. Can also be measured without filtering, reported as nitrogen	
+tot_nitro_cont_meth	tot_nitro_cont_meth					false	Reference or method used in determining the total nitrogen	
+tot_org_c_meth	tot_org_c_meth	total organic C method	reference			false	reference or method used in determining total organic C	
+tot_org_carb	tot_org_carb	total organic carbon				false	Definition for soil: total organic C content of the soil units of g C/kg soil. Definition otherwise: total organic carbon content	
+tot_part_carb	tot_part_carb	total particulate carbon				false	total particulate carbon content	
+tot_phosp	tot_phosp	total phosphorus				false	total phosphorus concentration, calculated by: total phosphorus = total dissolved phosphorus + particulate phosphorus. Can also be measured without filtering, reported as phosphorus	
+tot_phosphate	tot_phosphate	total phosphate				false	total amount or concentration of phosphate	
+tot_sulfur	tot_sulfur					false	Concentration of total sulfur in the sample	
+train_line	train_line					false	The subway line name, e.g., red, green, orange	
+train_stat_loc	train_stat_loc					false	The train station collection location, e.g., south station above ground, south station underground, south station amtrak, forest hills, riverside	
+train_stop_loc	train_stop_loc					false	The train stop collection location, e.g., end, mid, downtown	
+travel_out_six_month	travel_out_six_month	travel outside the country in last six months				false	specification of the countries travelled in the last six months; can include multiple travels	
+treatment	treatment					false	treatment, treatment protocol	
+trophic_level	trophic_level	trophic level		"[""autotroph"", ""carboxydotroph"", ""chemoautotroph"", ""chemoheterotroph"", ""chemolithoautotroph"", ""chemolithotroph"", ""chemoorganoheterotroph"", ""chemoorganotroph"", ""chemosynthetic"", ""chemotroph"", ""copiotroph"", ""diazotroph"", ""facultative"", ""heterotroph"", ""lithoautotroph"", ""lithoheterotroph"", ""lithotroph"", ""methanotroph"", ""methylotroph"", ""mixotroph"", ""obligate"", ""chemoautolithotroph"", ""oligotroph"", ""organoheterotroph"", ""organotroph"", ""photoautotroph"", ""photoheterotroph"", ""photolithoautotroph"", ""photolithotroph"", ""photosynthetic"", ""phototroph""]"		false	"Feeding position in food chain (eg., chemolithotroph). Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+turbidity	turbidity	turbidity				false	turbidity measurement	
+tvdss_of_hcr_press	tvdss_of_hcr_press					false	True vertical depth subsea (TVDSS) of the hydrocarbon resource where the original pressure was measured, e.g., 1578 m	
+tvdss_of_hcr_temp	tvdss_of_hcr_temp					false	True vertical depth subsea (TVDSS) of the hydrocarbon resource where the original temperature was measured, e.g., 1345 m	
+twin_sibling	twin_sibling	twin sibling presence				false	specification of twin sibling presence	
+type_of_symbiosis	type_of_symbiosis					false	Type of biological interaction established between the symbiotic host organism being sampled and its respective host, e.g., commensalistic, mutualistic, parasitic	
+type_status	type_status					false	type status	
+type_strain	type_strain					false	type strain	
+urine_collect_meth	urine_collect_meth	urine/collection method		"[""clean catch"", ""catheter""]"		false	"Specification of urine collection method. Enter one of the <a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled terms</a>."	"<a href=""https://docs.google.com/spreadsheets/d/1kh9vRllab7t7PBftd0nEBi-YbIWvFVRAiYS6F6RRBNU/edit#gid=1287828562"">controlled term</a> から一つを選んで入力してください。"
+urogenit_disord	urogenit_disord	urogenital disorder				false	history of urogenital disorders, can include multiple disorders	
+urogenit_tract_disor	urogenit_tract_disor	urine/urogenital tract disorder				false	history of urogenitaltract disorders; can include multiple disorders	
+vaccine_received	vaccine_received					false	Which vaccine did the host receive, e.g., Pfizer-BioNTech COVID-19 vaccine	
+variety	variety					false	variety	
+ventilation_rate	ventilation_rate	ventilation rate				false	ventilation rate of the system in the sampled premises	
+vfa	vfa					false	Concentration of Volatile Fatty Acids in the sample	
+vfa_fw	vfa_fw					false	Original volatile fatty acid concentration in the hydrocarbon resource	
+virus_isolate_of_prior_infection	virus_isolate_of_prior_infection					false	Specific isolate of SARS-CoV-2 in prior infection (if known), e.g., SARS-CoV-2/human/USA/CA-CDPH-001/2020	
+vis_media	vis_media					false	The building visual media, e.g., photos, videos, commonly of the building, site context (adjacent buildings, vegetation, terrain, streets), interiors, equipment, 3D scans	
+viscosity	viscosity					false	A measure of oil's resistance to gradual deformation by shear stress or tensile stress (e.g., 3.5 cp; 100C)	
+volatile_org_comp	volatile_org_comp	volatile organic compounds				false	concentration of carbon-based chemicals that easily evaporate at room temperature; can report multiple volatile organic compounds by entering numeric values preceded by name of compound	
+wall_area	wall_area					false	The total area of the sampled room's walls	
+wall_const_type	wall_const_type					false	The building class of the wall defined by the composition of the building elements and fire-resistance rating, e.g., frame construction, joisted masonry, light noncombustible, masonry noncombustible, modified fire resistive, fire resistive	
+wall_finish_mat	wall_finish_mat					false	The material utilized to finish the outer most layer of the wall, e.g., plaster, gypsum plaster, veneer plaster, gypsum board, tile, terrazzo, stone facing, acoustical treatment, wood, metal, masonry	
+wall_height	wall_height					false	The average height of the walls in the sampled room	
+wall_loc	wall_loc					false	The relative location of the wall within the room, e.g., north, south, east, west	
+wall_surf_treatment	wall_surf_treatment					false	The surface treatment of interior wall, e.g., painted, wall paper, no treatment, paneling, stucco, fabric	
+wall_texture	wall_texture					false	The feel, appearance, or consistency of a wall surface, e.g., crows feet, crows-foot stomp, double skip, hawk and trowel, knockdown, popcorn, orange peel, rosebud stomp, Santa-Fe texture, skip trowel, smooth, stomp knockdown, swirl	
+wall_thermal_mass	wall_thermal_mass					false	The ability of the wall to provide inertia against temperature fluctuations. Generally this means concrete or concrete block that is either exposed or covered only with paint	
+wall_water_mold	wall_water_mold					false	Signs of the presence of mold or mildew on a wall, e.g., presence of mold visible, no presence of mold visible	
+wastewater_type	wastewater_type	wastewater type				false	the origin of wastewater such as human waste, rainfall, storm drains, etc.	
+water_content	water_content	water content				false	water content measurement	
+water_content_soil	water_content_soil	water content of soil				false	water content (g/g or cm3/cm3)	
+water_content_soil_meth	water_content_soil_meth	water content of soil method	reference			false	reference or method used in determining the water content of soil	
+water_current	water_current					false	measurement of magnitude and direction of flow within a fluid	
+water_cut	water_cut					false	Current amount of water (%) in a produced fluid stream; or the average of the combined streams	
+water_feat_size	water_feat_size					false	The size of the water feature	
+water_feat_type	water_feat_type					false	The type of water feature present within the building being sampled, e.g., fountain, pool, standing feature, stream, waterfall	
+water_frequency	water_frequency					false	Number of water delivery events within a given period of time	
+water_ph	water_ph					false	The pH measurement of the sample, or liquid portion of sample, or aqueous phase of the fluid	
+water_prod_rate	water_prod_rate					false	Water production rates per well, e.g., 987 m3/day	
+water_source_adjac	water_source_adjac					false	Description of the environmental features that are adjacent to the farm water source. This field accepts terms under ecosystem (http://purl.obolibrary.org/obo/ENVO_01001110) and human construction (http://purl.obolibrary.org/obo/ENVO_00000070). Multiple terms can be separated by pipes	
+water_source_shared	water_source_shared					false	Other users sharing access to the same water source, e.g., multiple users, agricutural, multiple users, no sharing	
+water_temp_regm	water_temp_regm	water temperature regimen				false	information about treatment involving an exposure to water with varying degree of temperature; can include multiple regimens	
+watering_regm	watering_regm	watering regimen				false	information about treatment involving an exposure to watering frequencies; can include multiple regimens	
+weekday	weekday					false	The day of the week when sampling occurred, e.g., monday, tuesday, wednesday, thursday, friday, saturday, sunday	
+weight_loss_3_month	weight_loss_3_month	weight loss in last three months				false	specification of weight loss in the last three months, if yes should be further specified to include amount of weight loss	
+wet_mass	wet_mass	wet mass				false	measurement of wet mass	
+win	win					false	A unique identifier of a well or wellbore. This is part of the Global Framework for Well Identification initiative which is compiled by the Professional Petroleum Data Management Association (PPDM) in an effort to improve well identification systems. (Supporting information: https://ppdm.org/ and http://dl.ppdm.org/dl/690)	
+wind_direction	wind_direction	wind direction				false	wind direction is the direction from which a wind originates	
+wind_speed	wind_speed	wind speed				false	speed of wind measured at the time of sampling	
+window_cond	window_cond					false	The physical condition of the window at the time of sampling, e.g., damaged, needs repair, new, rupture, visible wear	
+window_cover	window_cover					false	The type of window covering, e.g., blinds, curtains, none	
+window_horiz_pos	window_horiz_pos					false	The horizontal position of the window on the wall, e.g., left, middle, right	
+window_loc	window_loc					false	The relative location of the window within the room, e.g., north, south, east, west	
+window_mat	window_mat					false	The type of material used to finish a window, e.g., clad, fiberglass, metal, vinyl, wood	
+window_open_freq	window_open_freq					false	The number of times windows are opened per week	
+window_size	window_size					false	The window's length and width	
+window_status	window_status					false	Defines whether the windows were open or closed during environmental testing, e.g., closed, open	
+window_type	window_type					false	The type of windows, e.g., single-hung sash window, horizontal sash window, fixed window	
+window_vert_pos	window_vert_pos					false	The vertical position of the window on the wall, e.g., bottom, middle, top, low, middle, high	
+window_water_mold	window_water_mold					false	Signs of the presence of mold or mildew on the window, e.g., presence of mold visible, no presence of mold visible	
+ww_endog_control_1	ww_endog_control_1					false	The name of an organism, gene, or compound used as an endogenous wastewater control, e.g., pepper mild mottle virus	
+ww_endog_control_1_conc	ww_endog_control_1_conc					false	The concentration of the endogenous control specified in 'ww_endog_control_1' on a per wastewater unit basis, e.g., 700000000	
+ww_endog_control_1_protocol	ww_endog_control_1_protocol					false	The protocol used to quantify 'ww_endog_control_1'. Specify a reference, website, or brief description.	
+ww_endog_control_1_units	ww_endog_control_1_units					false	The units of the value specified in 'ww_endog_control_1_conc', e.g., copies/L wastewater	
+ww_endog_control_2	ww_endog_control_2					false	The name of an organism, gene, or compound used as an endogenous wastewater control, e.g., crassphage	
+ww_endog_control_2_conc	ww_endog_control_2_conc					false	The concentration of the endogenous control specified in 'ww_endog_control_2' on a per wastewater unit basis, e.g., 140000000	
+ww_endog_control_2_protocol	ww_endog_control_2_protocol					false	The protocol used to quantify 'ww_endog_control_2'. Specify a reference, website, or brief description.	
+ww_endog_control_2_units	ww_endog_control_2_units					false	The units of the value specified in 'ww_endog_control_2_conc', e.g., copies/L wastewater	
+ww_flow	ww_flow					false	Daily volumetric flow through collection site, in units of liters per day, e.g., 110000000.	
+ww_industrial_effluent_percent	ww_industrial_effluent_percent					false	Percentage of industrial effluents received by wastewater treatment plant, e.g., 10	
+ww_ph	ww_ph					false	pH measurement of the sample, or liquid portion of sample, or aqueous phase of the fluid, e.g., 7.2	
+ww_population_source	ww_population_source					false	Source of value specified in 'ww_population', e.g., wastewater utility billing records, population of jurisdiction encompassing the wastewater service area, census blocks clipped to wastewater service area polygon	
+ww_pre_treatment	ww_pre_treatment					false	Describe any process of pre-treatment that removes materials that can be easily collected from the raw wastewater, e.g., flow equilibration basin promotes settling of some solids	
+ww_primary_sludge_retention_time	ww_primary_sludge_retention_time					false	The time primary sludge remains in tank, in hours, e.g., 4.	
+ww_processing_protocol	ww_processing_protocol					false	The protocol used to process the wastewater sample. Processing includes laboratory procedures prior to and including nucleic acid purification (e.g., pasteurization, concentration, extraction, etc). Specify a reference, website, or brief description.	
+ww_sample_salinity	ww_sample_salinity					false	Salinity is the total concentration of all dissolved salts in a liquid or solid (in the form of an extract obtained by centrifugation) sample or derived from the conductivity measurement (practical salinity) in milligrams per liter, e.g., 100.	
+ww_sample_site	ww_sample_site					false	The type of site where the wastewater sample was collected	
+ww_surv_jurisdiction	ww_surv_jurisdiction					false	A jurisdiction identifer that can be used to support linking the sample to a public health surveillance system, e.g., va	
+ww_surv_system_sample_id	ww_surv_system_sample_id					false	The sample ID used for submission to a public health surveillance system (e.g., CDC's National Wastewater Surveillance System), e.g., s123456	
+ww_surv_target_1_conc	ww_surv_target_1_conc					false	The concentration of the wastewater surveillance target specified in 'ww_surv_target_1' on a per wastewater unit basis, e.g., 200000	
+ww_surv_target_1_conc_unit	ww_surv_target_1_conc_unit					false	The units of the value specified in 'ww_surv_target_1_conc', e.g., copies/L wastewater	
+ww_surv_target_1_extract	ww_surv_target_1_extract					false	Measured amount of surveillance target in the nucleic acid extract that was sequenced; on a per extract unit basis, rather than on a per wastewater sample unit basis, e.g., 100000	
+ww_surv_target_1_extract_unit	ww_surv_target_1_extract_unit					false	The units of the value specified in 'ww_surv_target_1_extract', e.g., copies/microliter extract	
+ww_surv_target_1_gene	ww_surv_target_1_gene					false	The name of the gene quantified for the surveillance target specified in 'ww_surv_target_1', e.g., N gene	
+ww_surv_target_1_protocol	ww_surv_target_1_protocol					false	The protocol used to quantify 'ww_surv_target_1'. Specify a reference, website, or brief description.	
+ww_surv_target_2	ww_surv_target_2					false	Taxonomic name of the surveillance target, eg, Norovirus	
+ww_surv_target_2_conc	ww_surv_target_2_conc					false	The concentration of the wastewater surveillance target specified in 'ww_surv_target_2' on a per wastewater unit basis, e.g., 24000	
+ww_surv_target_2_conc_unit	ww_surv_target_2_conc_unit					false	The units of the value specified in 'ww_surv_target_2_conc', e.g., copies/L wastewater	
+ww_surv_target_2_extract	ww_surv_target_2_extract					false	Measured amount of surveillance target in the nucleic acid extract that was sequenced; on a per extract unit basis, rather than on a per wastewater sample unit basis, e.g., 12000	
+ww_surv_target_2_extract_unit	ww_surv_target_2_extract_unit					false	The units of the value specified in 'ww_surv_target_2_extract', e.g., copies/microliter extract	
+ww_surv_target_2_gene	ww_surv_target_2_gene					false	The name of the gene quantified for the the surveillance target specified in 'ww_surv_target_2', e.g., ORF1-ORF2 junction	
+ww_surv_target_2_known_present	ww_surv_target_2_known_present					false	Is genetic material of the surveillance target(s) known to the submitter to be present in this wastewater sample? Presence defined as microbiological evidence of the target organism in the wastewater sample, such as genetic- or culture-based detection.	
+ww_surv_target_2_protocol	ww_surv_target_2_protocol					false	The protocol used to quantify 'ww_surv_target_2'. Specify a reference, website, or brief description.	
+ww_temperature	ww_temperature					false	Temperature of the wastewater sample at the time of sampling in Celsius, e.g., 25.	
+ww_total_suspended_solids	ww_total_suspended_solids					false	Total concentration of solids in raw wastewater influent sample including a wide variety of material, such as silt, decaying plant and animal matter in milligrams per liter, e.g., 500.	
+xylene	xylene					false	Concentration of xylene in the sample	

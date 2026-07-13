@@ -1,0 +1,230 @@
+Package name	Version	DisplayName	ShortName	EnvPackage	Description	Example	Group
+Generic	1.1	Generic; version 1.1	Generic				Standard
+SARS-CoV-2.cl	1.0	SARS-CoV-2: clinical or host-associated; version 1.0	SARS-CoV-2: clinical or host-associated		Use for SARS-CoV-2 samples that are relevant to public health. Required attributes include those considered useful for the rapid analysis and trace back of SARS-CoV-2 cases.		Standard
+SARS-CoV-2.wwsurv	1.0	SARS-CoV-2: wastewater surveillance; version 1.0	SARS-CoV-2: wastewater surveillance		Use for SARS-CoV-2 wastewater surveillance samples that are relevant to public health. Required attributes include those considered useful for the rapid analysis and trace back of SARS-CoV-2 cases.		Standard
+Microbe	1.0	Microbe; version 1.0	Microbe		Use for bacteria or other unicellular microbes when it is not appropriate or advantageous to use MIxS, Pathogen or Virus packages.		Standard
+Model.organism.animal	1.0	Model organism or animal; version 1.0	Model organism or animal		Use for multicellular samples or cell lines derived from common laboratory model organisms, e.g., mouse, rat, Drosophila, worm, fish, frog, or large mammals including zoo and farm animals.		Standard
+Metagenome.environmental	1.0	Metagenome or environmental; version 1.0	Metagenome or environmental		Use for metagenomic and environmental samples when it is not appropriate or advantageous to use MIxS packages.		Standard
+Invertebrate	1.0	Invertebrate; version 1.0	Invertebrate		Use for any invertebrate sample.		Standard
+Human	1.0	Human; version 1.0	Human		"WARNING: Only use for human samples or cell lines that have no privacy concerns. For all studies involving human subjects, it is the submitter's responsibility to ensure that the information supplied protects participant privacy in accordance with all applicable laws, regulations and institutional policies. Make sure to remove any direct personal identifiers from your submission. If there are patient privacy concerns regarding making data fully public, please submit samples and data to Japanese Genotype-phenotype Archive (JGA) database. <a href=""https://www.ddbj.nig.ac.jp/jga/index-e.html"">JGA</a> has controlled access mechanisms and is an appropriate resource for hosting sensitive patient data. 
+For samples isolated from humans use the Pathogen, Microbe or appropriate MIxS package."		Standard
+Plant	1.0	Plant; version 1.0	Plant		Use for any plant sample or cell line.		Standard
+Virus	1.0	Virus; version 1.0	Viral		Use for all virus samples not directly associated with disease. Viral pathogens should be submitted using the Pathogen: Clinical or host-associated pathogen package.		Standard
+Beta-lactamase	1.0	Beta-lactamase; version 1.0	Beta-lactamase		Use for beta-lactamase gene transformants that have antibiotic resistance data.		Standard
+Omics	1.1	Omics; version 1.1	Omics		Use for submission of functional genomics data to Genomic Expression Archive (GEA) and metabolomics data to MetaboBank.		Standard
+Pathogen.cl	1.0	Pathogen: clinical or host-associated; version 1.0	Pathogen: clinical or host-associated				Pathogen
+Pathogen.env	1.0	Pathogen: environmental/food/other; version 1.0	Pathogen: environmental/food/other				Pathogen
+MIGS.ba	6.0	MIGS: cultured bacteria/archaea; version 6.0	MIGS Cultured Bacterial/Archaeal	No environmental package			MIGS.ba
+MIGS.ba.agriculture	6.0	MIGS: cultured bacteria/archaea, agriculture; version 6.0	MIGS Cultured Bacterial/Archaeal	agriculture			MIGS.ba
+MIGS.ba.air	6.0	MIGS: cultured bacteria/archaea, air; version 6.0	MIGS Cultured Bacterial/Archaeal	air			MIGS.ba
+MIGS.ba.built	6.0	MIGS: cultured bacteria/archaea, built; version 6.0	MIGS Cultured Bacterial/Archaeal	built			MIGS.ba
+MIGS.ba.food-animal	6.0	MIGS: cultured bacteria/archaea, food-animal and animal feed; version 6.0	MIGS Cultured Bacterial/Archaeal	food-animal			MIGS.ba
+MIGS.ba.food-farm_env	6.0	MIGS: cultured bacteria/archaea, food-farm environment; version 6.0	MIGS Cultured Bacterial/Archaeal	food-farm_env			MIGS.ba
+MIGS.ba.food-human_foods	6.0	MIGS: cultured bacteria/archaea, food-human foods; version 6.0	MIGS Cultured Bacterial/Archaeal	food-human_foods			MIGS.ba
+MIGS.ba.food-prod_facility	6.0	MIGS: cultured bacteria/archaea, food-food production facility; version 6.0	MIGS Cultured Bacterial/Archaeal	food-prod_facility			MIGS.ba
+MIGS.ba.host-associated	6.0	MIGS: cultured bacteria/archaea, host-associated; version 6.0	MIGS Cultured Bacterial/Archaeal	host-associated			MIGS.ba
+MIGS.ba.human-associated	6.0	MIGS: cultured bacteria/archaea, human-associated; version 6.0	MIGS Cultured Bacterial/Archaeal	human-associated			MIGS.ba
+MIGS.ba.human-gut	6.0	MIGS: cultured bacteria/archaea, human-gut; version 6.0	MIGS Cultured Bacterial/Archaeal	human-gut			MIGS.ba
+MIGS.ba.human-oral	6.0	MIGS: cultured bacteria/archaea, human-oral; version 6.0	MIGS Cultured Bacterial/Archaeal	human-oral			MIGS.ba
+MIGS.ba.human-skin	6.0	MIGS: cultured bacteria/archaea, human-skin; version 6.0	MIGS Cultured Bacterial/Archaeal	human-skin			MIGS.ba
+MIGS.ba.human-vaginal	6.0	MIGS: cultured bacteria/archaea, human-vaginal; version 6.0	MIGS Cultured Bacterial/Archaeal	human-vaginal			MIGS.ba
+MIGS.ba.hydrocarbon-cores	6.0	MIGS: cultured bacteria/archaea, hydrocarbon resources-cores; version 6.0	MIGS Cultured Bacterial/Archaeal	hydrocarbon-cores			MIGS.ba
+MIGS.ba.hydrocarbon-fluids_swabs	6.0	MIGS: cultured bacteria/archaea, hydrocarbon resources-fluids/swabs; version 6.0	MIGS Cultured Bacterial/Archaeal	hydrocarbon-fluids_swabs			MIGS.ba
+MIGS.ba.microbial	6.0	MIGS: cultured bacteria/archaea, microbial; version 6.0	MIGS Cultured Bacterial/Archaeal	microbial			MIGS.ba
+MIGS.ba.miscellaneous	6.0	MIGS: cultured bacteria/archaea, miscellaneous; version 6.0	MIGS Cultured Bacterial/Archaeal	miscellaneous			MIGS.ba
+MIGS.ba.plant-associated	6.0	MIGS: cultured bacteria/archaea, plant-associated; version 6.0	MIGS Cultured Bacterial/Archaeal	plant-associated			MIGS.ba
+MIGS.ba.sediment	6.0	MIGS: cultured bacteria/archaea, sediment; version 6.0	MIGS Cultured Bacterial/Archaeal	sediment			MIGS.ba
+MIGS.ba.soil	6.0	MIGS: cultured bacteria/archaea, soil; version 6.0	MIGS Cultured Bacterial/Archaeal	soil			MIGS.ba
+MIGS.ba.symbiont-associated	6.0	MIGS: cultured bacteria/archaea, symbiont-associated; version 6.0	MIGS Cultured Bacterial/Archaeal	symbiont-associated			MIGS.ba
+MIGS.ba.wastewater	6.0	MIGS: cultured bacteria/archaea, wastewater; version 6.0	MIGS Cultured Bacterial/Archaeal	wastewater			MIGS.ba
+MIGS.ba.water	6.0	MIGS: cultured bacteria/archaea, water; version 6.0	MIGS Cultured Bacterial/Archaeal	water			MIGS.ba
+MIGS.eu	6.0	MIGS: eukaryote; version 6.0	MIGS Eukaryotic	No environmental package			MIGS.eu
+MIGS.eu.agriculture	6.0	MIGS: eukaryote, agriculture; version 6.0	MIGS Eukaryotic	agriculture			MIGS.eu
+MIGS.eu.air	6.0	MIGS: eukaryote, air; version 6.0	MIGS Eukaryotic	air			MIGS.eu
+MIGS.eu.built	6.0	MIGS: eukaryote, built; version 6.0	MIGS Eukaryotic	built			MIGS.eu
+MIGS.eu.food-animal	6.0	MIGS: eukaryote, food-animal and animal feed; version 6.0	MIGS Eukaryotic	food-animal			MIGS.eu
+MIGS.eu.food-farm_env	6.0	MIGS: eukaryote, food-farm environment; version 6.0	MIGS Eukaryotic	food-farm_env			MIGS.eu
+MIGS.eu.food-human_foods	6.0	MIGS: eukaryote, food-human foods; version 6.0	MIGS Eukaryotic	food-human_foods			MIGS.eu
+MIGS.eu.food-prod_facility	6.0	MIGS: eukaryote, food-food production facility; version 6.0	MIGS Eukaryotic	food-prod_facility			MIGS.eu
+MIGS.eu.host-associated	6.0	MIGS: eukaryote, host-associated; version 6.0	MIGS Eukaryotic	host-associated			MIGS.eu
+MIGS.eu.human-associated	6.0	MIGS: eukaryote, human-associated; version 6.0	MIGS Eukaryotic	human-associated			MIGS.eu
+MIGS.eu.human-gut	6.0	MIGS: eukaryote, human-gut; version 6.0	MIGS Eukaryotic	human-gut			MIGS.eu
+MIGS.eu.human-oral	6.0	MIGS: eukaryote, human-oral; version 6.0	MIGS Eukaryotic	human-oral			MIGS.eu
+MIGS.eu.human-skin	6.0	MIGS: eukaryote, human-skin; version 6.0	MIGS Eukaryotic	human-skin			MIGS.eu
+MIGS.eu.human-vaginal	6.0	MIGS: eukaryote, human-vaginal; version 6.0	MIGS Eukaryotic	human-vaginal			MIGS.eu
+MIGS.eu.hydrocarbon-cores	6.0	MIGS: eukaryote, hydrocarbon resources-cores; version 6.0	MIGS Eukaryotic	hydrocarbon-cores			MIGS.eu
+MIGS.eu.hydrocarbon-fluids_swabs	6.0	MIGS: eukaryote, hydrocarbon resources-fluids/swabs; version 6.0	MIGS Eukaryotic	hydrocarbon-fluids_swabs			MIGS.eu
+MIGS.eu.microbial	6.0	MIGS: eukaryote, microbial; version 6.0	MIGS Eukaryotic	microbial			MIGS.eu
+MIGS.eu.miscellaneous	6.0	MIGS: eukaryote, miscellaneous; version 6.0	MIGS Eukaryotic	miscellaneous			MIGS.eu
+MIGS.eu.plant-associated	6.0	MIGS: eukaryote, plant-associated; version 6.0	MIGS Eukaryotic	plant-associated			MIGS.eu
+MIGS.eu.sediment	6.0	MIGS: eukaryote, sediment; version 6.0	MIGS Eukaryotic	sediment			MIGS.eu
+MIGS.eu.soil	6.0	MIGS: eukaryote, soil; version 6.0	MIGS Eukaryotic	soil			MIGS.eu
+MIGS.eu.symbiont-associated	6.0	MIGS: eukaryote, symbiont-associated; version 6.0	MIGS Eukaryotic	symbiont-associated			MIGS.eu
+MIGS.eu.wastewater	6.0	MIGS: eukaryote, wastewater; version 6.0	MIGS Eukaryotic	wastewater			MIGS.eu
+MIGS.eu.water	6.0	MIGS: eukaryote, water; version 6.0	MIGS Eukaryotic	water			MIGS.eu
+MIGS.vi	6.0	MIGS: virus; version 6.0	MIGS Viral	No environmental package			MIGS.vi
+MIGS.vi.agriculture	6.0	MIGS: virus, agriculture; version 6.0	MIGS Viral	agriculture			MIGS.vi
+MIGS.vi.air	6.0	MIGS: virus, air; version 6.0	MIGS Viral	air			MIGS.vi
+MIGS.vi.built	6.0	MIGS: virus, built; version 6.0	MIGS Viral	built			MIGS.vi
+MIGS.vi.food-animal	6.0	MIGS: virus, food-animal and animal feed; version 6.0	MIGS Viral	food-animal			MIGS.vi
+MIGS.vi.food-farm_env	6.0	MIGS: virus, food-farm environment; version 6.0	MIGS Viral	food-farm_env			MIGS.vi
+MIGS.vi.food-human_foods	6.0	MIGS: virus, food-human foods; version 6.0	MIGS Viral	food-human_foods			MIGS.vi
+MIGS.vi.food-prod_facility	6.0	MIGS: virus, food-food production facility; version 6.0	MIGS Viral	food-prod_facility			MIGS.vi
+MIGS.vi.host-associated	6.0	MIGS: virus, host-associated; version 6.0	MIGS Viral	host-associated			MIGS.vi
+MIGS.vi.human-associated	6.0	MIGS: virus, human-associated; version 6.0	MIGS Viral	human-associated			MIGS.vi
+MIGS.vi.human-gut	6.0	MIGS: virus, human-gut; version 6.0	MIGS Viral	human-gut			MIGS.vi
+MIGS.vi.human-oral	6.0	MIGS: virus, human-oral; version 6.0	MIGS Viral	human-oral			MIGS.vi
+MIGS.vi.human-skin	6.0	MIGS: virus, human-skin; version 6.0	MIGS Viral	human-skin			MIGS.vi
+MIGS.vi.human-vaginal	6.0	MIGS: virus, human-vaginal; version 6.0	MIGS Viral	human-vaginal			MIGS.vi
+MIGS.vi.hydrocarbon-cores	6.0	MIGS: virus, hydrocarbon resources-cores; version 6.0	MIGS Viral	hydrocarbon-cores			MIGS.vi
+MIGS.vi.hydrocarbon-fluids_swabs	6.0	MIGS: virus, hydrocarbon resources-fluids/swabs; version 6.0	MIGS Viral	hydrocarbon-fluids_swabs			MIGS.vi
+MIGS.vi.microbial	6.0	MIGS: virus, microbial; version 6.0	MIGS Viral	microbial			MIGS.vi
+MIGS.vi.miscellaneous	6.0	MIGS: virus, miscellaneous; version 6.0	MIGS Viral	miscellaneous			MIGS.vi
+MIGS.vi.plant-associated	6.0	MIGS: virus, plant-associated; version 6.0	MIGS Viral	plant-associated			MIGS.vi
+MIGS.vi.sediment	6.0	MIGS: virus, sediment; version 6.0	MIGS Viral	sediment			MIGS.vi
+MIGS.vi.soil	6.0	MIGS: virus, soil; version 6.0	MIGS Viral	soil			MIGS.vi
+MIGS.vi.symbiont-associated	6.0	MIGS: virus, symbiont-associated; version 6.0	MIGS Viral	symbiont-associated			MIGS.vi
+MIGS.vi.wastewater	6.0	MIGS: virus, wastewater; version 6.0	MIGS Viral	wastewater			MIGS.vi
+MIGS.vi.water	6.0	MIGS: virus, water; version 6.0	MIGS Viral	water			MIGS.vi
+MIMS.me.agriculture	6.0	MIMS: metagenome/environmental, agriculture; version 6.0	MIMS Environmental/Metagenome	agriculture			MIMS.me
+MIMS.me.air	6.0	MIMS: metagenome/environmental, air; version 6.0	MIMS Environmental/Metagenome	air			MIMS.me
+MIMS.me.built	6.0	MIMS: metagenome/environmental, built; version 6.0	MIMS Environmental/Metagenome	built			MIMS.me
+MIMS.me.food-animal	6.0	MIMS: metagenome/environmental, food-animal and animal feed; version 6.0	MIMS Environmental/Metagenome	food-animal			MIMS.me
+MIMS.me.food-farm_env	6.0	MIMS: metagenome/environmental, food-farm environment; version 6.0	MIMS Environmental/Metagenome	food-farm_env			MIMS.me
+MIMS.me.food-human_foods	6.0	MIMS: metagenome/environmental, food-human foods; version 6.0	MIMS Environmental/Metagenome	food-human_foods			MIMS.me
+MIMS.me.food-prod_facility	6.0	MIMS: metagenome/environmental, food-food production facility; version 6.0	MIMS Environmental/Metagenome	food-prod_facility			MIMS.me
+MIMS.me.host-associated	6.0	MIMS: metagenome/environmental, host-associated; version 6.0	MIMS Environmental/Metagenome	host-associated			MIMS.me
+MIMS.me.human-associated	6.0	MIMS: metagenome/environmental, human-associated; version 6.0	MIMS Environmental/Metagenome	human-associated			MIMS.me
+MIMS.me.human-gut	6.0	MIMS: metagenome/environmental, human-gut; version 6.0	MIMS Environmental/Metagenome	human-gut			MIMS.me
+MIMS.me.human-oral	6.0	MIMS: metagenome/environmental, human-oral; version 6.0	MIMS Environmental/Metagenome	human-oral			MIMS.me
+MIMS.me.human-skin	6.0	MIMS: metagenome/environmental, human-skin; version 6.0	MIMS Environmental/Metagenome	human-skin			MIMS.me
+MIMS.me.human-vaginal	6.0	MIMS: metagenome/environmental, human-vaginal; version 6.0	MIMS Environmental/Metagenome	human-vaginal			MIMS.me
+MIMS.me.hydrocarbon-cores	6.0	MIMS: metagenome/environmental, hydrocarbon resources-cores; version 6.0	MIMS Environmental/Metagenome	hydrocarbon-cores			MIMS.me
+MIMS.me.hydrocarbon-fluids_swabs	6.0	MIMS: metagenome/environmental, hydrocarbon resources-fluids/swabs; version 6.0	MIMS Environmental/Metagenome	hydrocarbon-fluids_swabs			MIMS.me
+MIMS.me.microbial	6.0	MIMS: metagenome/environmental, microbial; version 6.0	MIMS Environmental/Metagenome	microbial			MIMS.me
+MIMS.me.miscellaneous	6.0	MIMS: metagenome/environmental, miscellaneous; version 6.0	MIMS Environmental/Metagenome	miscellaneous			MIMS.me
+MIMS.me.plant-associated	6.0	MIMS: metagenome/environmental, plant-associated; version 6.0	MIMS Environmental/Metagenome	plant-associated			MIMS.me
+MIMS.me.sediment	6.0	MIMS: metagenome/environmental, sediment; version 6.0	MIMS Environmental/Metagenome	sediment			MIMS.me
+MIMS.me.soil	6.0	MIMS: metagenome/environmental, soil; version 6.0	MIMS Environmental/Metagenome	soil			MIMS.me
+MIMS.me.symbiont-associated	6.0	MIMS: metagenome/environmental, symbiont-associated; version 6.0	MIMS Environmental/Metagenome	symbiont-associated			MIMS.me
+MIMS.me.wastewater	6.0	MIMS: metagenome/environmental, wastewater; version 6.0	MIMS Environmental/Metagenome	wastewater			MIMS.me
+MIMS.me.water	6.0	MIMS: metagenome/environmental, water; version 6.0	MIMS Environmental/Metagenome	water			MIMS.me
+MIMAG	6.0	MIMAG: metagenome-assembled genome; version 6.0	MIMAG Metagenome-assembled Genome	No environmental package			MIMAG
+MIMAG.agriculture	6.0	MIMAG: metagenome-assembled genome, agriculture; version 6.0	MIMAG Metagenome-assembled Genome	agriculture			MIMAG
+MIMAG.air	6.0	MIMAG: metagenome-assembled genome, air; version 6.0	MIMAG Metagenome-assembled Genome	air			MIMAG
+MIMAG.built	6.0	MIMAG: metagenome-assembled genome, built; version 6.0	MIMAG Metagenome-assembled Genome	built			MIMAG
+MIMAG.food-animal	6.0	MIMAG: metagenome-assembled genome, food-animal and animal feed; version 6.0	MIMAG Metagenome-assembled Genome	food-animal			MIMAG
+MIMAG.food-farm_env	6.0	MIMAG: metagenome-assembled genome, food-farm environment; version 6.0	MIMAG Metagenome-assembled Genome	food-farm_env			MIMAG
+MIMAG.food-human_foods	6.0	MIMAG: metagenome-assembled genome, food-human foods; version 6.0	MIMAG Metagenome-assembled Genome	food-human_foods			MIMAG
+MIMAG.food-prod_facility	6.0	MIMAG: metagenome-assembled genome, food-food production facility; version 6.0	MIMAG Metagenome-assembled Genome	food-prod_facility			MIMAG
+MIMAG.host-associated	6.0	MIMAG: metagenome-assembled genome, host-associated; version 6.0	MIMAG Metagenome-assembled Genome	host-associated			MIMAG
+MIMAG.human-associated	6.0	MIMAG: metagenome-assembled genome, human-associated; version 6.0	MIMAG Metagenome-assembled Genome	human-associated			MIMAG
+MIMAG.human-gut	6.0	MIMAG: metagenome-assembled genome, human-gut; version 6.0	MIMAG Metagenome-assembled Genome	human-gut			MIMAG
+MIMAG.human-oral	6.0	MIMAG: metagenome-assembled genome, human-oral; version 6.0	MIMAG Metagenome-assembled Genome	human-oral			MIMAG
+MIMAG.human-skin	6.0	MIMAG: metagenome-assembled genome, human-skin; version 6.0	MIMAG Metagenome-assembled Genome	human-skin			MIMAG
+MIMAG.human-vaginal	6.0	MIMAG: metagenome-assembled genome, human-vaginal; version 6.0	MIMAG Metagenome-assembled Genome	human-vaginal			MIMAG
+MIMAG.hydrocarbon-cores	6.0	MIMAG: metagenome-assembled genome, hydrocarbon resources-cores; version 6.0	MIMAG Metagenome-assembled Genome	hydrocarbon-cores			MIMAG
+MIMAG.hydrocarbon-fluids_swabs	6.0	MIMAG: metagenome-assembled genome, hydrocarbon resources-fluids/swabs; version 6.0	MIMAG Metagenome-assembled Genome	hydrocarbon-fluids_swabs			MIMAG
+MIMAG.microbial	6.0	MIMAG: metagenome-assembled genome, microbial; version 6.0	MIMAG Metagenome-assembled Genome	microbial			MIMAG
+MIMAG.miscellaneous	6.0	MIMAG: metagenome-assembled genome, miscellaneous; version 6.0	MIMAG Metagenome-assembled Genome	miscellaneous			MIMAG
+MIMAG.plant-associated	6.0	MIMAG: metagenome-assembled genome, plant-associated; version 6.0	MIMAG Metagenome-assembled Genome	plant-associated			MIMAG
+MIMAG.sediment	6.0	MIMAG: metagenome-assembled genome, sediment; version 6.0	MIMAG Metagenome-assembled Genome	sediment			MIMAG
+MIMAG.soil	6.0	MIMAG: metagenome-assembled genome, soil; version 6.0	MIMAG Metagenome-assembled Genome	soil			MIMAG
+MIMAG.symbiont-associated	6.0	MIMAG: metagenome-assembled genome, symbiont-associated; version 6.0	MIMAG Metagenome-assembled Genome	symbiont-associated			MIMAG
+MIMAG.wastewater	6.0	MIMAG: metagenome-assembled genome, wastewater; version 6.0	MIMAG Metagenome-assembled Genome	wastewater			MIMAG
+MIMAG.water	6.0	MIMAG: metagenome-assembled genome, water; version 6.0	MIMAG Metagenome-assembled Genome	water			MIMAG
+MISAG	6.0	MISAG: single amplified genome; version 6.0	MISAG Single Amplified Genome	No environmental package			MISAG
+MISAG.agriculture	6.0	MISAG: single amplified genome, agriculture; version 6.0	MISAG Single Amplified Genome	agriculture			MISAG
+MISAG.air	6.0	MISAG: single amplified genome, air; version 6.0	MISAG Single Amplified Genome	air			MISAG
+MISAG.built	6.0	MISAG: single amplified genome, built; version 6.0	MISAG Single Amplified Genome	built			MISAG
+MISAG.food-animal	6.0	MISAG: single amplified genome, food-animal and animal feed; version 6.0	MISAG Single Amplified Genome	food-animal			MISAG
+MISAG.food-farm_env	6.0	MISAG: single amplified genome, food-farm environment; version 6.0	MISAG Single Amplified Genome	food-farm_env			MISAG
+MISAG.food-human_foods	6.0	MISAG: single amplified genome, food-human foods; version 6.0	MISAG Single Amplified Genome	food-human_foods			MISAG
+MISAG.food-prod_facility	6.0	MISAG: single amplified genome, food-food production facility; version 6.0	MISAG Single Amplified Genome	food-prod_facility			MISAG
+MISAG.host-associated	6.0	MISAG: single amplified genome, host-associated; version 6.0	MISAG Single Amplified Genome	host-associated			MISAG
+MISAG.human-associated	6.0	MISAG: single amplified genome, human-associated; version 6.0	MISAG Single Amplified Genome	human-associated			MISAG
+MISAG.human-gut	6.0	MISAG: single amplified genome, human-gut; version 6.0	MISAG Single Amplified Genome	human-gut			MISAG
+MISAG.human-oral	6.0	MISAG: single amplified genome, human-oral; version 6.0	MISAG Single Amplified Genome	human-oral			MISAG
+MISAG.human-skin	6.0	MISAG: single amplified genome, human-skin; version 6.0	MISAG Single Amplified Genome	human-skin			MISAG
+MISAG.human-vaginal	6.0	MISAG: single amplified genome, human-vaginal; version 6.0	MISAG Single Amplified Genome	human-vaginal			MISAG
+MISAG.hydrocarbon-cores	6.0	MISAG: single amplified genome, hydrocarbon resources-cores; version 6.0	MISAG Single Amplified Genome	hydrocarbon-cores			MISAG
+MISAG.hydrocarbon-fluids_swabs	6.0	MISAG: single amplified genome, hydrocarbon resources-fluids/swabs; version 6.0	MISAG Single Amplified Genome	hydrocarbon-fluids_swabs			MISAG
+MISAG.microbial	6.0	MISAG: single amplified genome, microbial; version 6.0	MISAG Single Amplified Genome	microbial			MISAG
+MISAG.miscellaneous	6.0	MISAG: single amplified genome, miscellaneous; version 6.0	MISAG Single Amplified Genome	miscellaneous			MISAG
+MISAG.plant-associated	6.0	MISAG: single amplified genome, plant-associated; version 6.0	MISAG Single Amplified Genome	plant-associated			MISAG
+MISAG.sediment	6.0	MISAG: single amplified genome, sediment; version 6.0	MISAG Single Amplified Genome	sediment			MISAG
+MISAG.soil	6.0	MISAG: single amplified genome, soil; version 6.0	MISAG Single Amplified Genome	soil			MISAG
+MISAG.symbiont-associated	6.0	MISAG: single amplified genome, symbiont-associated; version 6.0	MISAG Single Amplified Genome	symbiont-associated			MISAG
+MISAG.wastewater	6.0	MISAG: single amplified genome, wastewater; version 6.0	MISAG Single Amplified Genome	wastewater			MISAG
+MISAG.water	6.0	MISAG: single amplified genome, water; version 6.0	MISAG Single Amplified Genome	water			MISAG
+MIMARKS.specimen	6.0	MIMARKS: specimen; version 6.0	MIMARKS Specimen	No environmental package			MIMARKS.specimen
+MIMARKS.specimen.agriculture	6.0	MIMARKS: specimen, agriculture; version 6.0	MIMARKS Specimen	agriculture			MIMARKS.specimen
+MIMARKS.specimen.air	6.0	MIMARKS: specimen, air; version 6.0	MIMARKS Specimen	air			MIMARKS.specimen
+MIMARKS.specimen.built	6.0	MIMARKS: specimen, built; version 6.0	MIMARKS Specimen	built			MIMARKS.specimen
+MIMARKS.specimen.food-animal	6.0	MIMARKS: specimen, food-animal and animal feed; version 6.0	MIMARKS Specimen	food-animal			MIMARKS.specimen
+MIMARKS.specimen.food-farm_env	6.0	MIMARKS: specimen, food-farm environment; version 6.0	MIMARKS Specimen	food-farm_env			MIMARKS.specimen
+MIMARKS.specimen.food-human_foods	6.0	MIMARKS: specimen, food-human foods; version 6.0	MIMARKS Specimen	food-human_foods			MIMARKS.specimen
+MIMARKS.specimen.food-prod_facility	6.0	MIMARKS: specimen, food-food production facility; version 6.0	MIMARKS Specimen	food-prod_facility			MIMARKS.specimen
+MIMARKS.specimen.host-associated	6.0	MIMARKS: specimen, host-associated; version 6.0	MIMARKS Specimen	host-associated			MIMARKS.specimen
+MIMARKS.specimen.human-associated	6.0	MIMARKS: specimen, human-associated; version 6.0	MIMARKS Specimen	human-associated			MIMARKS.specimen
+MIMARKS.specimen.human-gut	6.0	MIMARKS: specimen, human-gut; version 6.0	MIMARKS Specimen	human-gut			MIMARKS.specimen
+MIMARKS.specimen.human-oral	6.0	MIMARKS: specimen, human-oral; version 6.0	MIMARKS Specimen	human-oral			MIMARKS.specimen
+MIMARKS.specimen.human-skin	6.0	MIMARKS: specimen, human-skin; version 6.0	MIMARKS Specimen	human-skin			MIMARKS.specimen
+MIMARKS.specimen.human-vaginal	6.0	MIMARKS: specimen, human-vaginal; version 6.0	MIMARKS Specimen	human-vaginal			MIMARKS.specimen
+MIMARKS.specimen.hydrocarbon-cores	6.0	MIMARKS: specimen, hydrocarbon resources-cores; version 6.0	MIMARKS Specimen	hydrocarbon-cores			MIMARKS.specimen
+MIMARKS.specimen.hydrocarbon-fluids_swabs	6.0	MIMARKS: specimen, hydrocarbon resources-fluids/swabs; version 6.0	MIMARKS Specimen	hydrocarbon-fluids_swabs			MIMARKS.specimen
+MIMARKS.specimen.microbial	6.0	MIMARKS: specimen, microbial; version 6.0	MIMARKS Specimen	microbial			MIMARKS.specimen
+MIMARKS.specimen.miscellaneous	6.0	MIMARKS: specimen, miscellaneous; version 6.0	MIMARKS Specimen	miscellaneous			MIMARKS.specimen
+MIMARKS.specimen.plant-associated	6.0	MIMARKS: specimen, plant-associated; version 6.0	MIMARKS Specimen	plant-associated			MIMARKS.specimen
+MIMARKS.specimen.sediment	6.0	MIMARKS: specimen, sediment; version 6.0	MIMARKS Specimen	sediment			MIMARKS.specimen
+MIMARKS.specimen.soil	6.0	MIMARKS: specimen, soil; version 6.0	MIMARKS Specimen	soil			MIMARKS.specimen
+MIMARKS.specimen.symbiont-associated	6.0	MIMARKS: specimen, symbiont-associated; version 6.0	MIMARKS Specimen	symbiont-associated			MIMARKS.specimen
+MIMARKS.specimen.wastewater	6.0	MIMARKS: specimen, wastewater; version 6.0	MIMARKS Specimen	wastewater			MIMARKS.specimen
+MIMARKS.specimen.water	6.0	MIMARKS: specimen, water; version 6.0	MIMARKS Specimen	water			MIMARKS.specimen
+MIMARKS.survey.agriculture	6.0	MIMARKS: survey, agriculture; version 6.0	MIMARKS Survey related	agriculture			MIMARKS.survey
+MIMARKS.survey.air	6.0	MIMARKS: survey, air; version 6.0	MIMARKS Survey related	air			MIMARKS.survey
+MIMARKS.survey.built	6.0	MIMARKS: survey, built; version 6.0	MIMARKS Survey related	built			MIMARKS.survey
+MIMARKS.survey.food-animal	6.0	MIMARKS: survey, food-animal and animal feed; version 6.0	MIMARKS Survey related	food-animal			MIMARKS.survey
+MIMARKS.survey.food-farm_env	6.0	MIMARKS: survey, food-farm environment; version 6.0	MIMARKS Survey related	food-farm_env			MIMARKS.survey
+MIMARKS.survey.food-human_foods	6.0	MIMARKS: survey, food-human foods; version 6.0	MIMARKS Survey related	food-human_foods			MIMARKS.survey
+MIMARKS.survey.food-prod_facility	6.0	MIMARKS: survey, food-food production facility; version 6.0	MIMARKS Survey related	food-prod_facility			MIMARKS.survey
+MIMARKS.survey.host-associated	6.0	MIMARKS: survey, host-associated; version 6.0	MIMARKS Survey related	host-associated			MIMARKS.survey
+MIMARKS.survey.human-associated	6.0	MIMARKS: survey, human-associated; version 6.0	MIMARKS Survey related	human-associated			MIMARKS.survey
+MIMARKS.survey.human-gut	6.0	MIMARKS: survey, human-gut; version 6.0	MIMARKS Survey related	human-gut			MIMARKS.survey
+MIMARKS.survey.human-oral	6.0	MIMARKS: survey, human-oral; version 6.0	MIMARKS Survey related	human-oral			MIMARKS.survey
+MIMARKS.survey.human-skin	6.0	MIMARKS: survey, human-skin; version 6.0	MIMARKS Survey related	human-skin			MIMARKS.survey
+MIMARKS.survey.human-vaginal	6.0	MIMARKS: survey, human-vaginal; version 6.0	MIMARKS Survey related	human-vaginal			MIMARKS.survey
+MIMARKS.survey.hydrocarbon-cores	6.0	MIMARKS: survey, hydrocarbon resources-cores; version 6.0	MIMARKS Survey related	hydrocarbon-cores			MIMARKS.survey
+MIMARKS.survey.hydrocarbon-fluids_swabs	6.0	MIMARKS: survey, hydrocarbon resources-fluids/swabs; version 6.0	MIMARKS Survey related	hydrocarbon-fluids_swabs			MIMARKS.survey
+MIMARKS.survey.microbial	6.0	MIMARKS: survey, microbial; version 6.0	MIMARKS Survey related	microbial			MIMARKS.survey
+MIMARKS.survey.miscellaneous	6.0	MIMARKS: survey, miscellaneous; version 6.0	MIMARKS Survey related	miscellaneous			MIMARKS.survey
+MIMARKS.survey.plant-associated	6.0	MIMARKS: survey, plant-associated; version 6.0	MIMARKS Survey related	plant-associated			MIMARKS.survey
+MIMARKS.survey.sediment	6.0	MIMARKS: survey, sediment; version 6.0	MIMARKS Survey related	sediment			MIMARKS.survey
+MIMARKS.survey.soil	6.0	MIMARKS: survey, soil; version 6.0	MIMARKS Survey related	soil			MIMARKS.survey
+MIMARKS.survey.symbiont-associated	6.0	MIMARKS: survey, symbiont-associated; version 6.0	MIMARKS Survey related	symbiont-associated			MIMARKS.survey
+MIMARKS.survey.wastewater	6.0	MIMARKS: survey, wastewater; version 6.0	MIMARKS Survey related	wastewater			MIMARKS.survey
+MIMARKS.survey.water	6.0	MIMARKS: survey, water; version 6.0	MIMARKS Survey related	water			MIMARKS.survey
+MIUVIG	6.0	MIUVIG: uncultivated virus genome; version 6.0	MIUVIG Uncultivated Virus Genome	No environmental package			MIUVIG
+MIUVIG.agriculture	6.0	MIUVIG: uncultivated virus genome, agriculture; version 6.0	MIUVIG Uncultivated Virus Genome	agriculture			MIUVIG
+MIUVIG.air	6.0	MIUVIG: uncultivated virus genome, air; version 6.0	MIUVIG Uncultivated Virus Genome	air			MIUVIG
+MIUVIG.built	6.0	MIUVIG: uncultivated virus genome, built; version 6.0	MIUVIG Uncultivated Virus Genome	built			MIUVIG
+MIUVIG.food-animal	6.0	MIUVIG: uncultivated virus genome, food-animal and animal feed; version 6.0	MIUVIG Uncultivated Virus Genome	food-animal			MIUVIG
+MIUVIG.food-farm_env	6.0	MIUVIG: uncultivated virus genome, food-farm environment; version 6.0	MIUVIG Uncultivated Virus Genome	food-farm_env			MIUVIG
+MIUVIG.food-human_foods	6.0	MIUVIG: uncultivated virus genome, food-human foods; version 6.0	MIUVIG Uncultivated Virus Genome	food-human_foods			MIUVIG
+MIUVIG.food-prod_facility	6.0	MIUVIG: uncultivated virus genome, food-food production facility; version 6.0	MIUVIG Uncultivated Virus Genome	food-prod_facility			MIUVIG
+MIUVIG.host-associated	6.0	MIUVIG: uncultivated virus genome, host-associated; version 6.0	MIUVIG Uncultivated Virus Genome	host-associated			MIUVIG
+MIUVIG.human-associated	6.0	MIUVIG: uncultivated virus genome, human-associated; version 6.0	MIUVIG Uncultivated Virus Genome	human-associated			MIUVIG
+MIUVIG.human-gut	6.0	MIUVIG: uncultivated virus genome, human-gut; version 6.0	MIUVIG Uncultivated Virus Genome	human-gut			MIUVIG
+MIUVIG.human-oral	6.0	MIUVIG: uncultivated virus genome, human-oral; version 6.0	MIUVIG Uncultivated Virus Genome	human-oral			MIUVIG
+MIUVIG.human-skin	6.0	MIUVIG: uncultivated virus genome, human-skin; version 6.0	MIUVIG Uncultivated Virus Genome	human-skin			MIUVIG
+MIUVIG.human-vaginal	6.0	MIUVIG: uncultivated virus genome, human-vaginal; version 6.0	MIUVIG Uncultivated Virus Genome	human-vaginal			MIUVIG
+MIUVIG.hydrocarbon-cores	6.0	MIUVIG: uncultivated virus genome, hydrocarbon resources-cores; version 6.0	MIUVIG Uncultivated Virus Genome	hydrocarbon-cores			MIUVIG
+MIUVIG.hydrocarbon-fluids_swabs	6.0	MIUVIG: uncultivated virus genome, hydrocarbon resources-fluids/swabs; version 6.0	MIUVIG Uncultivated Virus Genome	hydrocarbon-fluids_swabs			MIUVIG
+MIUVIG.microbial	6.0	MIUVIG: uncultivated virus genome, microbial; version 6.0	MIUVIG Uncultivated Virus Genome	microbial			MIUVIG
+MIUVIG.miscellaneous	6.0	MIUVIG: uncultivated virus genome, miscellaneous; version 6.0	MIUVIG Uncultivated Virus Genome	miscellaneous			MIUVIG
+MIUVIG.plant-associated	6.0	MIUVIG: uncultivated virus genome, plant-associated; version 6.0	MIUVIG Uncultivated Virus Genome	plant-associated			MIUVIG
+MIUVIG.sediment	6.0	MIUVIG: uncultivated virus genome, sediment; version 6.0	MIUVIG Uncultivated Virus Genome	sediment			MIUVIG
+MIUVIG.soil	6.0	MIUVIG: uncultivated virus genome, soil; version 6.0	MIUVIG Uncultivated Virus Genome	soil			MIUVIG
+MIUVIG.symbiont-associated	6.0	MIUVIG: uncultivated virus genome, symbiont-associated; version 6.0	MIUVIG Uncultivated Virus Genome	symbiont-associated			MIUVIG
+MIUVIG.wastewater	6.0	MIUVIG: uncultivated virus genome, wastewater; version 6.0	MIUVIG Uncultivated Virus Genome	wastewater			MIUVIG
+MIUVIG.water	6.0	MIUVIG: uncultivated virus genome, water; version 6.0	MIUVIG Uncultivated Virus Genome	water			MIUVIG
