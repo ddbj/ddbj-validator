@@ -6062,7 +6062,6 @@
       "required_tagset_id": "Assembly-Data",
       "required_st_comments": [
         "Sequencing Technology",
-        "Coverage",
         "Assembly Method"
       ],
       "required_qualifiers": [

@@ -8,9 +8,14 @@ _counts = _r.counts
 write_text_reports = _r.write_text_reports
 
 
-def build_summary(results, n_projects, fname, version, when, elapsed):
+def build_summary(results, n_projects, fname, version, when, elapsed, submission_id=None, account=None):
+    extra = [f"Projects: {n_projects}"]
+    if submission_id:
+        extra.append(f"Submission ID: {submission_id}")
+    if account:
+        extra.append(f"Account: {account}")
     return _r.build_summary(_TITLE, results, fname, version, when, elapsed,
-                            input_label="File", extra_lines=[f"Projects: {n_projects}"])
+                            input_label="File", extra_lines=extra)
 
 
 def build_details(results, fname, version, when, elapsed):

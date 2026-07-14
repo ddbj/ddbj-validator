@@ -35,3 +35,35 @@ def tool_version(package):
         return getattr(importlib.import_module(package), "__version__", "unknown")
     except Exception:
         return "unknown"
+
+
+# --- 内部 DB アクセスの表示（ddbj と同体裁。access した DB だけ表示）---
+_db_header_shown = {"v": False}
+
+
+def reset_db_access_log():
+    """1 回の実行の先頭で呼ぶ（"Checking Internal DB..." ヘッダを 1 度だけ出すため）。"""
+    _db_header_shown["v"] = False
+
+
+def db_checking(label, n, singular, plural=None):
+    """`[Label] Checking N noun...` を表示（n==0 は非表示）。初回に "Checking Internal DB..." を出す。"""
+    if not n:
+        return
+    if not _db_header_shown["v"]:
+        print("\nChecking Internal DB...")
+        _db_header_shown["v"] = True
+    plural = plural or f"{singular}s"
+    print(f"[{label}] Checking {n} {singular if n == 1 else plural}...")
+
+
+def print_found(n, unit="file set"):
+    """ddbj 風の先頭行 'Found N file set(s) in 1 directory.'（標準出力）。"""
+    noun = unit if n == 1 else unit + "s"
+    print(f"Found {n} {noun} in 1 directory.")
+
+
+def stdout_summary(summary):
+    """summary を標準出力用に整形（'=== ... ===' タイトル行を除き、前後に空行）。ファイル出力は元のまま。"""
+    body = "\n".join(l for l in summary.splitlines() if not l.startswith("=== "))
+    return "\n" + body.strip("\n") + "\n"

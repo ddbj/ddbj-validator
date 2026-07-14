@@ -85,3 +85,4 @@ class DraSubmission:
     analyses: list = field(default_factory=list)
     account: Optional[str] = None
     role_files: dict = field(default_factory=dict)  # role('submission'/'experiment'/'run'/'analysis') -> [filename]
+    submission_id: Optional[str] = None             # submission alias 由来（例 amr_ddbj-0104_Submission → amr_ddbj-0104）

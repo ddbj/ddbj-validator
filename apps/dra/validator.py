@@ -30,7 +30,10 @@ class Validator:
             DRA_R0002(),   # 必須コンテナの構造チェック
             DRA_R0039(),   # cv_terms（LIBRARY_* / INSTRUMENT_MODEL）
             # --- content ---
-            DRA_R0010(), DRA_R0011(), DRA_R0012(), DRA_R0013(), DRA_R0014(),
+            DRA_R0010(), DRA_R0011(), DRA_R0012(), DRA_R0014(),
+            # DRA_R0013()=Experiment description（DESIGN_DESCRIPTION）必須。現行 D-way は description 入力欄を
+            # 省略しており通常空のため、呼び出しをコメントアウト（クラス・import は残置。bs/ddbj と同方針）。
+            # DRA_R0013(),
             DRA_R0018(), DRA_R0019(), DRA_R0020(),
             # --- file ---
             DRA_R0021(), DRA_R0022(), DRA_R0023(), DRA_R0024(), DRA_R0025(), DRA_R0026(),

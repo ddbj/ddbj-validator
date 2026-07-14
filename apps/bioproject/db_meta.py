@@ -104,3 +104,15 @@ def fetch_account_project_names(bp_conn, submitter_id):
             acc = (arch.get("accession") if arch is not None else "") or ""
             out.append((t, d, acc.strip(), (str(sub_id).strip() if sub_id else "")))
     return out
+
+
+def fetch_submitter_by_submission(bp_conn, submission_id):
+    """submission_id（PSUB…）から submitter_id（account）を引く。account 自動導出用。
+    見つからなければ None。"""
+    if not bp_conn or not submission_id:
+        return None
+    with bp_conn.cursor() as cur:
+        cur.execute("SELECT submitter_id FROM mass.submission WHERE upper(submission_id) = %s",
+                    (submission_id.strip().upper(),))
+        row = cur.fetchone()
+    return (str(row[0]).strip() if row and row[0] else None)

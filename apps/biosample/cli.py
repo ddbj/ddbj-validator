@@ -14,6 +14,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+from common import cli_modes
 from apps.biosample.context import ValidationContext
 from apps.biosample import xml_reader, tsv_to_xml, autofix
 from apps.biosample.validator import Validator
@@ -116,14 +117,14 @@ def _finalize(args, results, records, in_path, out_dir, submission_id, package, 
     # 標準出力（-j 以外は summary 本文を先頭に。以降 [Auto-Fix] → saved → reports は共通で stdout のみ）
     parts = []
     if not args.json:
-        parts.append(summary_text.rstrip("\n"))
+        parts.append(cli_modes.stdout_summary(summary_text).strip("\n"))   # === タイトル行は出さない
     if autofix_lines:
         parts.append("[ Auto-Fix ]\n" + "\n".join(autofix_lines))
         if fixed_path:
             parts.append(f"=> Auto-fixed XML saved to: {fixed_path}")
     parts.append(f"[ All reports successfully generated to {reports_dir} ]\n"
                  + "\n".join(f"  {f}" for f in report_files))
-    print("\n\n".join(parts))
+    print("\n" + "\n\n".join(parts))   # DB チェック/Found 行との間に空行
 
     return {"error": sum(1 for r in results if r.get("level") == "error")}
 
@@ -151,6 +152,9 @@ def run(args):
               file=sys.stderr)
         return 2
     context = ValidationContext(account=args.account, skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
+
+    if not args.json:
+        cli_modes.print_found(1, "file")   # BioSample は TSV/XML 1 ファイル
 
     # TSV は XML へ変換してから検証（検証パスは XML 一本）
     submission_id = None
@@ -180,7 +184,11 @@ def run(args):
     # account が --account 未指定でも XML ルートの submitter_id から解決できていれば採用（互換）
     if not context.account and submission.account:
         context.account = submission.account
+    # account を特定できない場合は認証系ルール（requires_auth）をスキップ（誤検出防止。ddbj/dra と同方針）
+    if not context.account:
+        context.skip_auth = True
 
+    cli_modes.reset_db_access_log()
     # taxonomy 取得（local では skip。default=内部DB、-n=NCBI API）
     # organism に加え、R0105 用に component_organism も解決対象に含める。
     if not context.skip_ncbi:
@@ -228,6 +236,7 @@ def _fetch_taxonomy(context, organisms, taxids=None):
         if not context.skip_db:
             from common.db_manager import DatabaseManager
             from common.db_taxonomy import fetch_taxonomy_data, fetch_taxid_info
+            cli_modes.db_checking("Taxonomy DB", len(organisms), "organism")
             conn = DatabaseManager().get_tax_conn()
             context.tax_data = fetch_taxonomy_data(conn, organisms)
             if taxids:
@@ -269,6 +278,8 @@ def _fetch_account(context, submission):
         if not ref_bps and not ref_samds:
             return
 
+        cli_modes.db_checking("BioProject DB", len(ref_bps), "project")
+        cli_modes.db_checking("BioSample DB", len(ref_samds), "sample")
         dm = DatabaseManager()
         bp_conn = dm.get_bp_conn()
         bs_conn = dm.get_bs_conn()
@@ -302,6 +313,7 @@ def _fetch_registered_prefixes(context):
     try:
         from common.db_manager import DatabaseManager
         from apps.biosample.db_meta import fetch_registered_locus_tag_prefixes
+        cli_modes.db_checking("BioSample DB", 1, "locus_tag_prefix set")
         bs_conn = DatabaseManager().get_bs_conn()
         context.registered_locus_tag_prefixes = fetch_registered_locus_tag_prefixes(bs_conn) or {}
     except Exception as e:

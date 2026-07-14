@@ -8,6 +8,7 @@
 """
 import argparse
 import datetime
+import re
 import sys
 
 from common import cli_modes
@@ -47,6 +48,24 @@ def _env_internal_db():
 
 def _resolve_modes(args):
     return cli_modes.resolve_modes(args)
+
+
+def _submission_id(submission):
+    """submission alias から submission id を得る（例 'amr_ddbj-0104_Submission' → 'amr_ddbj-0104'）。"""
+    sm = submission.submission
+    if not sm or not sm.alias:
+        return None
+    a = sm.alias.strip()
+    return a.split("_Submission")[0] if "_Submission" in a else a
+
+
+def _account_from_submission_id(submission_id):
+    """submission id から account を導出（末尾の '-<連番>' を除く。例 'amr_ddbj-0104' → 'amr_ddbj'）。
+    アカウント名はハイフンを含むため、後方の -\\d{4,} だけを除外する。"""
+    if not submission_id:
+        return None
+    acc = re.sub(r"-\d{4,}$", "", submission_id)
+    return acc or None
 
 
 def _collect_paths(args):
@@ -91,6 +110,9 @@ def _fetch_db_meta(context, submission, account):
         ref_bs.update(s.strip() for s in a.sample_refs)
     ref_drr = {d.strip() for a in submission.analyses for d in a.run_refs if d}
 
+    cli_modes.db_checking("BioProject DB", len(ref_bp), "project")
+    cli_modes.db_checking("BioSample DB", len(ref_bs), "sample")
+    cli_modes.db_checking("DRA DB", len(ref_drr), "DRA Run")
     context.account_org_name = _try("org", lambda: db_meta.fetch_submitter_center_name(dm.get_submitter_conn(), account))
     context.account_bioprojects = _try("bp", lambda: db_meta.fetch_account_bioprojects(dm.get_bp_conn(), dra_conn, account, ref_bp))
     context.account_biosamples = _try("bs", lambda: db_meta.fetch_account_biosamples(dm.get_bs_conn(), dra_conn, account, ref_bs))
@@ -110,12 +132,21 @@ def run(args):
         return 2
 
     skip_db, skip_ncbi, skip_auth = _resolve_modes(args)
-    context = ValidationContext(account=args.account, skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
-
     submission, pre_errors = xml_reader.parse_files(paths, account=args.account)
+
+    # submission alias から submission id / account を導出。
+    # DDBJ 以外の DRA 等は必ずアカウントに紐づくため、--account 未指定なら alias から自動取得する。
+    submission.submission_id = _submission_id(submission)
+    account = args.account or _account_from_submission_id(submission.submission_id)
+    submission.account = account
+
+    context = ValidationContext(account=account, skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
     out_dir = args.out_dir or str(Path(paths[0]).parent)
+    if not args.json:
+        cli_modes.print_found(1, "file set")   # sub/exp/run/ana = 1 set
     if not context.skip_db:   # 内部 DB モードのみ: account/DB 依存ルール用メタを取得
-        _fetch_db_meta(context, submission, args.account)
+        cli_modes.reset_db_access_log()
+        _fetch_db_meta(context, submission, account)
     results = pre_errors + Validator(context).run(submission)
 
     now = datetime.datetime.now(_JST)
@@ -131,7 +162,7 @@ def run(args):
         details = build_details(results, submission, version, when, elapsed)
         write_text_reports(summary, details, out_dir)
         report_files = ["validation_report_summary.txt", "validation_report_details.txt"]
-        print(summary.rstrip("\n"))
+        print(cli_modes.stdout_summary(summary))   # === タイトル行は出さず前後に空行
     print(f"[ All reports successfully generated to {Path(out_dir)/'reports'} ]\n"
           + "\n".join(f"  {f}" for f in report_files))
     return 1 if any(r.get("level") == "error" for r in results) else 0
