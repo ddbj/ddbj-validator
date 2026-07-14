@@ -77,7 +77,7 @@ def review(proposals, force_fix=False, biosample_apply="bs2sdrf", biosample_mode
             first = rep.get("assay") or "-"
             assay_disp = f"{first} etc" if len(ps) > 1 else first
             k = input(f"\n  {len(ps)} lines:{assay_disp}\n"
-                      f"  {attr} SDRF '{rep['sdrf_value']}' / BioSample '{rep['bs_value']}'\n"
+                      f"  {attr} SDRF:'{rep['sdrf_value']}', BioSample:'{rep['bs_value']}'\n"
                       f"  {item_prompt}").strip().lower()
             d = keymap.get(k, "skip")
             for p in ps:
@@ -100,7 +100,7 @@ def write_confirmation(proposals, out_dir, title):
         lines.append(
             f"{p.get('rule_id', '')}:{p.get('target', 'SDRF')}:"
             f"line {p['line']}:{p['assay'] or '-'}:{p['attr']}: "
-            f"SDRF '{p['sdrf_value']}' / BioSample {p['samd']} '{p['bs_value']}', "
+            f"SDRF:'{p['sdrf_value']}', BioSample {p['samd']}:'{p['bs_value']}', "
             f"autofix: {_ARROW[p['direction']]}")
     (reports / "autofix_confirmation_summary.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
 

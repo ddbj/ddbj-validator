@@ -65,16 +65,15 @@ def assay_name(sub, row_index):
 
 
 def iter_missing_attrs(sub, context, attrs, cols):
-    """Characteristics にあるが参照 BioSample に無い属性。yield (samd, attr, row_index)。"""
-    cc = char_columns(sub, context)
-    for ri, row in enumerate(sub.sdrf.rows):
-        samd = row_samd(sub, row, cols)
-        if not samd or samd not in attrs:
-            continue
-        bs = attrs[samd]
-        for attr in cc:
-            if attr not in bs:
-                yield samd, attr, ri
+    """「SDRF Characteristics にあるが参照 BioSample に無い属性」の検出。yield (samd, attr, row_index)。
+
+    「値が空」と「属性そのものが無い」は、BS 属性・SDRF Characteristics のどちらも **無い（not present）** ものとして扱う。
+    - SDRF 値あり × BS 空/不在 → 値不一致（autofix 対象）として iter_value_mismatches が拾う。
+    - SDRF 空 × BS 空/不在 → 両方 not present ＝ 報告しない。
+    → 結果としてこの関数が報告するケースは残らない（何も yield しない）。SR0021 / GEA_BS0001 は発火しない。
+    """
+    return
+    yield  # pragma: no cover  （ジェネレータ化のためのダミー。実際には yield されない）
 
 
 def iter_unknown_biosamples(sub, attrs, cols):
@@ -98,8 +97,9 @@ def iter_value_mismatches(sub, context, attrs, cols):
         bs = attrs[samd]
         for attr, idx in cc.items():
             sdrf_v = (row[idx] if idx < len(row) else "").strip()
-            bs_v = str(bs.get(attr, "")).strip()
-            if attr in bs and sdrf_v and bs_v and sdrf_v != bs_v:
+            bs_v = str(bs.get(attr, "")).strip()   # BS 側が不在なら空文字扱い
+            # 片方が空でも、値が異なり かつ少なくとも一方に値があれば不一致（autofix 対象）
+            if sdrf_v != bs_v and (sdrf_v or bs_v):
                 yield samd, attr, sdrf_v, bs_v, ri
 
 
