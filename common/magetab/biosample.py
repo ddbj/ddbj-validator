@@ -76,13 +76,21 @@ def iter_missing_attrs(sub, context, attrs, cols):
     yield  # pragma: no cover  （ジェネレータ化のためのダミー。実際には yield されない）
 
 
-def iter_unknown_biosamples(sub, attrs, cols):
-    """account/DB に無い（属性ゼロ含む）参照 BioSample。yield (samd, row_index)（重複なし・初出行）。"""
+def iter_unknown_biosamples(sub, attrs, cols, allowed=None):
+    """account/DB に無い（属性ゼロ含む）参照 BioSample。yield (samd, row_index)（重複なし・初出行）。
+
+    allowed（account 所有 ∪ permit の SAMD 集合）が指定された場合、account 外（allowed に無い）SAMD は
+    「承認されていないデータの参照」として内容チェック対象外＝報告しない（ddbj の unauthorized_accs と同方針）。
+    allowed が None のときはゲートしない（account 未確定＝従来どおり全参照 SAMD を対象）。
+    """
+    allowed_u = {a.upper() for a in allowed} if allowed is not None else None
     seen = set()
     for ri, row in enumerate(sub.sdrf.rows):
         samd = row_samd(sub, row, cols)
         if samd and samd not in seen:
             seen.add(samd)
+            if allowed_u is not None and samd.upper() not in allowed_u:
+                continue   # account 外の SAMD はチェックしない
             if samd not in attrs or not attrs[samd]:
                 yield samd, ri
 
@@ -103,10 +111,34 @@ def iter_value_mismatches(sub, context, attrs, cols):
                 yield samd, attr, sdrf_v, bs_v, ri
 
 
-def fetch_biosample_attrs(sub, cols):
+def fetch_allowed_samds(account, referenced):
+    """account が参照可能な SAMD 集合（所有 ∪ ext_permit）を返す。account 無しなら None（＝ゲートしない）。
+
+    account 外の SAMD は「承認されていないデータ」として内容一致チェック（値突合/autofix）から除外するための
+    ゲート集合（ddbj の authorized accessions と同方針）。DB 例外時は None で graceful degrade（従来どおり全参照）。
+    referenced は SDRF が参照する SAMD 集合。owned∪permit の解決は DRA db_meta を再利用する。
+    """
+    if not account or not referenced:
+        return None
+    try:
+        from common.db_manager import DatabaseManager
+        from apps.dra import db_meta
+        dm = DatabaseManager()
+        try:
+            dra_conn = dm.get_dra_conn()
+        except Exception:
+            dra_conn = None
+        return db_meta.fetch_account_biosamples(dm.get_bs_conn(), dra_conn, account, referenced)
+    except Exception:
+        return None
+
+
+def fetch_biosample_attrs(sub, cols, allowed=None):
     """参照 SAMD の BioSample 属性を内部 DB から取得。{SAMD: {attr: value}} を返す。
 
     参照 SAMD が無ければ {}。DB 例外は呼び出し側で捕捉する（ここでは投げる）。
+    allowed（account 所有 ∪ permit）が指定された場合、account 外の SAMD の属性は取得しない
+    （承認されていないデータを読まない）。allowed が None のときは全参照 SAMD を取得（従来どおり）。
     """
     from common.db_manager import DatabaseManager
     samds = set()
@@ -117,6 +149,9 @@ def fetch_biosample_attrs(sub, cols):
                     v = (row[i] if i < len(row) else "").strip()
                     if _SAMD.match(v):
                         samds.add(v)
+    if allowed is not None:
+        allowed_u = {a.upper() for a in allowed}
+        samds = {s for s in samds if s.upper() in allowed_u}
     if not samds:
         return {}
     conn = DatabaseManager().get_bs_conn()

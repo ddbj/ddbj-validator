@@ -65,11 +65,46 @@ def _resolve_inputs(args):
     return idf, sdrf
 
 
-def _fetch_biosample_attrs(context, sub, account):
-    """参照 SAMD の BioSample 属性を内部 DB から取得（GEA_BS0001/0002/0003 用）。core は common/magetab/biosample。"""
-    from common.magetab import biosample as _bs
+def _gea_accession(sub, path):
+    """ESUB/E-GEAD を IDF Comment[GEAAccession] 優先、無ければファイル名から取得（account 自動導出用）。"""
+    if sub is not None and sub.idf:
+        for v in sub.idf.get("Comment[GEAAccession]"):
+            if v and v.strip():
+                return v.strip()
+    m = re.search(r"(E-GEAD-\d+|ESUB\d+)", Path(path or "").name, re.IGNORECASE)
+    return m.group(1) if m else None
+
+
+def _account_from_gea_accession(egead):
+    """ESUB/E-GEAD から submitter_id（account）を内部 GEA DB(dordb) で解決。失敗時 None。"""
+    if not egead:
+        return None
     try:
-        context.biosample_attrs = _bs.fetch_biosample_attrs(sub, _bs.ref_columns(context))
+        from common.db_manager import DatabaseManager
+        from apps.gea import db_meta as gea_db
+        return gea_db.fetch_submitter_by_accession(DatabaseManager().get_gea_conn(), egead)
+    except Exception as e:
+        print(f"[WARN] gea account auto-derivation from {egead} failed: {e}", file=sys.stderr)
+        return None
+
+
+def _fetch_biosample_attrs(context, sub, account):
+    """参照 SAMD の BioSample 属性を内部 DB から取得（GEA_BS0001/0002/0003 用）。core は common/magetab/biosample。
+
+    account が確定していれば、account 所有 ∪ permit の SAMD だけを内容一致チェック対象にする（allowed ゲート）。
+    account 外の SAMD は「承認されていないデータ」として突合/autofix しない（ddbj と同方針）。
+    """
+    from common.magetab import biosample as _bs
+    cols = _bs.ref_columns(context)
+    referenced = _bs.referenced_samds(sub, cols)
+    cli_modes.db_checking("BioSample DB", len(referenced), "sample")
+    # allowed = 参照可能な SAMD（account 無しなら None＝ゲートしない）。GEA_REF0002 用の account_biosamples と共有。
+    allowed = _bs.fetch_allowed_samds(account, referenced)
+    context.allowed_biosamples = allowed
+    if allowed is not None:
+        context.account_biosamples = allowed
+    try:
+        context.biosample_attrs = _bs.fetch_biosample_attrs(sub, cols, allowed=allowed)
     except Exception as e:
         print(f"[WARN] gea BioSample fetch failed: {e}", file=sys.stderr)
         context.biosample_attrs = None
@@ -105,14 +140,19 @@ def _fetch_account_refs(context, sub, account):
     ref_bp = {v.strip() for v in (sub.idf.get("Comment[BioProject]") if sub.idf else []) if v.strip()}
     ref_bs = _sdrf_vals("Comment[BioSample]")
     ref_drr = _sdrf_vals("Comment[SRA_RUN]")
+    cli_modes.db_checking("BioProject DB", len(ref_bp), "project")
+    cli_modes.db_checking("DRA DB", len(ref_drr), "DRA Run")
     dra_conn = _try("dra_conn", dm.get_dra_conn)
     context.account_bioprojects = _try("bp", lambda: db_meta.fetch_account_bioprojects(dm.get_bp_conn(), dra_conn, account, ref_bp))
-    context.account_biosamples = _try("bs", lambda: db_meta.fetch_account_biosamples(dm.get_bs_conn(), dra_conn, account, ref_bs))
+    # account_biosamples は _fetch_biosample_attrs が allowed ゲート用に既に解決済みなら再利用（重複クエリ回避）。
+    if getattr(context, "account_biosamples", None) is None:
+        context.account_biosamples = _try("bs", lambda: db_meta.fetch_account_biosamples(dm.get_bs_conn(), dra_conn, account, ref_bs))
     context.account_runs = _try("runs", lambda: db_meta.fetch_account_runs(dra_conn, account, ref_drr))
 
     # GEA 固有 DB メタ（REF0005 ADF / REF0003・0004 DRA linkage）。GEA DB は .env の GEA_DB_NAME から。
     from apps.gea import db_meta as gea_db
 
+    cli_modes.db_checking("GEA DB", 1, "submission account")
     gea_conn = _try("gea_conn", dm.get_gea_conn)
     if gea_conn is not None:
         context.array_designs_registered = _try("adf", lambda: gea_db.fetch_array_designs(gea_conn, account))
@@ -178,7 +218,6 @@ def run(args):
             return 2
 
     skip_db, skip_ncbi, skip_auth = _resolve_modes(args)
-    context = ValidationContext(account=args.account, skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
     sub, pre = reader.parse(idf_path, sdrf_path, account=args.account)
     reason = reader.wrong_db_reason(sub)
     if reason:
@@ -186,9 +225,21 @@ def run(args):
         return 2
     out_dir = args.out_dir or str(Path(idf_path or sdrf_path).parent)
 
+    # account 未指定なら ESUB/E-GEAD（IDF Comment[GEAAccession] 優先、無ければファイル名）から自動導出
+    gea_accession = _gea_accession(sub, idf_path or sdrf_path)
+    account = args.account or (_account_from_gea_accession(gea_accession) if not skip_db else None)
+    # account 未確定なら認証系ルール（GEA_REF0002-0004）をスキップ（誤検出防止。ddbj/dra と同方針）
+    if not account:
+        skip_auth = True
+    context = ValidationContext(account=account, skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
+
+    if not args.json:
+        cli_modes.print_found(1, "file set")   # idf+sdrf = 1 set
     if not context.skip_db:
-        _fetch_biosample_attrs(context, sub, args.account)
-        _fetch_account_refs(context, sub, args.account)
+        cli_modes.reset_db_access_log()
+        _fetch_biosample_attrs(context, sub, account)            # BS 突合（requires_rdb）
+        if not context.skip_auth:                                # 認証系 REF は auth 有効時のみ
+            _fetch_account_refs(context, sub, account)
     results = pre + Validator(context).run(sub)
 
     now = datetime.datetime.now(_JST)
@@ -208,7 +259,7 @@ def run(args):
         details = build_details(results, label, version, when, elapsed, sample_count, sub_type)
         write_text_reports(summary, details, out_dir)
         report_files = ["validation_report_summary.txt", "validation_report_details.txt"]
-        print(summary.rstrip("\n"))
+        print(cli_modes.stdout_summary(summary))   # === タイトル行は出さず前後に空行
 
     # BioSample <-> SDRF 双方向 autofix（GEA_BS0003）。mb と同一仕様。内部 DB モードのみ提案が出る。
     from apps.gea import autofix

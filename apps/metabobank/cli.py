@@ -67,11 +67,19 @@ def _resolve_inputs(args):
 
 
 def _fetch_biosample_attrs(context, sub, account):
-    """参照 SAMD の BioSample 属性を内部 DB から取得（MB_SR0021/0022/0023 用）。core は common/magetab/biosample。"""
+    """参照 SAMD の BioSample 属性を内部 DB から取得（MB_SR0021/0022/0023 用）。core は common/magetab/biosample。
+
+    account が確定していれば、account 所有 ∪ permit の SAMD だけを内容一致チェック対象にする（allowed ゲート）。
+    account 外の SAMD は「承認されていないデータ」として突合しない（ddbj と同方針。account 無しは全参照が対象）。
+    """
     from common.magetab import biosample as _bs
     cols = _bs.ref_columns(context, default=("Comment[BioSample]", "Characteristics[biosample_accession]"))
+    referenced = _bs.referenced_samds(sub, cols)
+    cli_modes.db_checking("BioSample DB", len(referenced), "sample")
+    allowed = _bs.fetch_allowed_samds(account, referenced)   # None なら（account 無し）ゲートしない
+    context.allowed_biosamples = allowed
     try:
-        context.biosample_attrs = _bs.fetch_biosample_attrs(sub, cols)
+        context.biosample_attrs = _bs.fetch_biosample_attrs(sub, cols, allowed=allowed)
     except Exception as e:
         print(f"[WARN] metabobank BioSample fetch failed: {e}", file=sys.stderr)
         context.biosample_attrs = None
@@ -130,6 +138,10 @@ def run(args):
             return 2
 
     skip_db, skip_ncbi, skip_auth = _resolve_modes(args)
+    # account 未指定なら認証系ルールをスキップ（誤検出防止。ddbj/dra と同方針。
+    # mb の BS 突合 MB_SR0021-0023 は SAMD 参照で account 非依存＝requires_rdb のため影響なし）
+    if not args.account:
+        skip_auth = True
     context = ValidationContext(account=args.account, skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
     sub, pre = reader.parse(idf_path, sdrf_path, account=args.account)
     reason = reader.wrong_db_reason(sub)
@@ -138,7 +150,10 @@ def run(args):
         return 2
     out_dir = args.out_dir or str(Path(idf_path or sdrf_path).parent)
 
+    if not args.json:
+        cli_modes.print_found(1, "file set")   # idf+sdrf = 1 set
     if not context.skip_db:
+        cli_modes.reset_db_access_log()
         _fetch_biosample_attrs(context, sub, args.account)
     results = pre + Validator(context).run(sub)
 
@@ -160,7 +175,7 @@ def run(args):
         details = build_details(results, label, version, when, elapsed, sample_count, sub_type)
         write_text_reports(summary, details, out_dir)
         report_files = ["validation_report_summary.txt", "validation_report_details.txt"]
-        print(summary.rstrip("\n"))
+        print(cli_modes.stdout_summary(summary))   # === タイトル行は出さず前後に空行
 
     # BioSample <-> SDRF 双方向 autofix（MB_SR0023）。内部 DB モードのみ提案が出る。
     from apps.metabobank import autofix

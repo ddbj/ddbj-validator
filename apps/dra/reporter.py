@@ -42,6 +42,11 @@ def _header_lines(submission):
         if cnt == 0 and not files:
             continue
         out.append(f"{label}: {', '.join(files) if files else '-'} ({cnt})")
+    # submission id / account（alias 由来で自動取得したもの）を明示
+    if getattr(submission, "submission_id", None):
+        out.append(f"Submission ID: {submission.submission_id}")
+    if getattr(submission, "account", None):
+        out.append(f"Account: {submission.account}")
     return out
 
 

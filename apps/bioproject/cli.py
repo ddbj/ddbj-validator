@@ -6,6 +6,7 @@
 """
 import argparse
 import datetime
+import re
 import sys
 
 from common import cli_modes
@@ -51,6 +52,7 @@ def _fetch_taxonomy(context, organisms, taxids):
         if not context.skip_db:
             from common.db_manager import DatabaseManager
             from common.db_taxonomy import fetch_taxonomy_data, fetch_taxid_info
+            cli_modes.db_checking("Taxonomy DB", len(organisms), "organism")
             conn = DatabaseManager().get_tax_conn()
             context.tax_data = fetch_taxonomy_data(conn, organisms)
             if taxids:
@@ -72,6 +74,8 @@ def _fetch_db_meta(context, submission, account):
         umbrella_refs = {a for r in submission.records for a in r.umbrella_member_ids if a}
         samds = {(lt.get("biosample_id") or "").strip()
                  for r in submission.records for lt in r.locus_tags if lt.get("biosample_id")}
+        cli_modes.db_checking("BioProject DB", len(umbrella_refs), "umbrella project")
+        cli_modes.db_checking("BioSample DB", len(samds), "sample")
         context.umbrella_ok = (db_meta.fetch_umbrella_accessions(dm.get_bp_conn(), umbrella_refs)
                                if umbrella_refs else set())
         context.bs_locus_prefix = (db_meta.fetch_biosample_locus_prefix(dm.get_bs_conn(), samds)
@@ -82,6 +86,25 @@ def _fetch_db_meta(context, submission, account):
         print(f"[WARN] bioproject DB meta fetch failed: {e}", file=sys.stderr)
 
 
+def _psub_from_path(in_path):
+    """入力ファイル名から PSUB submission id を抽出（例 PSUB008052.xml → PSUB008052）。"""
+    m = re.search(r"PSUB\d+", Path(in_path).name, re.IGNORECASE)
+    return m.group(0).upper() if m else None
+
+
+def _account_from_psub(psub):
+    """PSUB から submitter_id（account）を内部 BioProject DB で解決。失敗時 None。"""
+    if not psub:
+        return None
+    try:
+        from common.db_manager import DatabaseManager
+        from apps.bioproject import db_meta
+        return db_meta.fetch_submitter_by_submission(DatabaseManager().get_bp_conn(), psub)
+    except Exception as e:
+        print(f"[WARN] account auto-derivation from {psub} failed: {e}", file=sys.stderr)
+        return None
+
+
 def run(args):
     started = datetime.datetime.now(_JST)
     in_path = Path(args.xml)
@@ -89,14 +112,23 @@ def run(args):
         print(f"[ERROR] Input not found: {in_path}", file=sys.stderr)
         return 2
     skip_db, skip_ncbi, skip_auth = _resolve_modes(args)
-    context = ValidationContext(account=args.account, skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
+    # account 未指定なら PSUB（ファイル名）から自動導出（内部 DB モードのみ）。導出できなければ認証系スキップ。
+    submission_id = _psub_from_path(in_path)
+    account = args.account or (_account_from_psub(submission_id) if not skip_db else None)
+    if not account:
+        skip_auth = True
+    context = ValidationContext(account=account, skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
+    context.self_submission_id = submission_id   # BP_R0004 の自己除外にも使う
 
-    submission, pre_errors = xml_reader.parse_xml(str(in_path), account=args.account)
+    submission, pre_errors = xml_reader.parse_xml(str(in_path), account=account)
     out_dir = args.out_dir or str(in_path.parent)
 
+    if not args.json:
+        cli_modes.print_found(1, "file")   # BioProject は XML 1 ファイル
     if submission is None:  # BP_R0001（well-formed でない）
         results = pre_errors
     else:
+        cli_modes.reset_db_access_log()
         if not context.skip_ncbi:
             organisms = sorted({r.organism_name for r in submission.records if r.organism_name})
             taxids = {str(r.tax_id).strip() for r in submission.records
@@ -104,7 +136,7 @@ def run(args):
             if organisms:
                 _fetch_taxonomy(context, organisms, taxids)
         if not context.skip_db:   # 内部 DB モードのみ: umbrella/locus_tag/重複 用メタ
-            _fetch_db_meta(context, submission, args.account)
+            _fetch_db_meta(context, submission, account)
         results = pre_errors + Validator(context).run(submission)
 
     n_proj = len(submission.records) if submission else 0
@@ -112,7 +144,8 @@ def run(args):
     when = started.strftime("%Y-%m-%d %H:%M:%S JST")
     elapsed = str(datetime.timedelta(seconds=int((now - started).total_seconds())))
     version = _tool_version()
-    summary = build_summary(results, n_proj, in_path.name, version, when, elapsed)
+    summary = build_summary(results, n_proj, in_path.name, version, when, elapsed,
+                            submission_id=submission_id, account=account)
     if args.json:
         write_json_report(results, out_dir, in_path.name, version)
         report_files = ["validation_report.json"]
@@ -121,7 +154,7 @@ def run(args):
         write_text_reports(summary, details, out_dir)
         report_files = ["validation_report_summary.txt", "validation_report_details.txt"]
     if not args.json:
-        print(summary.rstrip("\n"))
+        print(cli_modes.stdout_summary(summary))   # === タイトル行は出さず前後に空行
     print(f"[ All reports successfully generated to {Path(out_dir)/'reports'} ]\n"
           + "\n".join(f"  {f}" for f in report_files))
     return 1 if any(r.get("level") == "error" for r in results) else 0

@@ -184,3 +184,19 @@ def fetch_experiment_metadata(gea_conn, esub_or_egead):
             elif mt == 2:
                 sdrf = md
         return idf, sdrf
+
+
+def fetch_submitter_by_accession(gea_conn, esub_or_egead):
+    """ESUB/E-GEAD（Experiment）から submitter_id（account）を dordb で解決。account 自動導出用。失敗時 None。"""
+    if not gea_conn or not esub_or_egead:
+        return None
+    v = esub_or_egead.strip()
+    with gea_conn.cursor() as cur:
+        if v.upper().startswith("ESUB"):
+            cur.execute("SELECT submitter_id FROM mass.accession "
+                        "WHERE alias=%s AND accession_type=1 LIMIT 1", (v + "_Experiment_1",))
+        else:
+            cur.execute("SELECT submitter_id FROM mass.accession "
+                        "WHERE accession=%s AND accession_type=1 LIMIT 1", (v,))
+        row = cur.fetchone()
+    return str(row[0]).strip() if row and row[0] else None

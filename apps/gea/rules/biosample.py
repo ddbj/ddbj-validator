@@ -9,20 +9,21 @@ from common.magetab import biosample as _bs
 
 
 class GEA_BS0002(GeaRule):
-    rule_id = "GEA_BS0002"; level = "warning"; target = "SDRF"; requires_rdb = True; requires_auth = True
+    rule_id = "GEA_BS0002"; level = "warning"; target = "SDRF"; requires_rdb = True
     description = "Referenced BioSample is not found in the account/DB."
 
     def validate(self, sub, context):
         attrs = getattr(context, "biosample_attrs", None)
         if attrs is None or not sub.sdrf:
             return []
+        allowed = getattr(context, "allowed_biosamples", None)   # account 外の SAMD はチェック対象外
         return [self.result(message=f"{self.description} ({samd})",
                             line=ri + 1, assay=_bs.assay_name(sub, ri))
-                for samd, ri in _bs.iter_unknown_biosamples(sub, attrs, _bs.ref_columns(context))]
+                for samd, ri in _bs.iter_unknown_biosamples(sub, attrs, _bs.ref_columns(context), allowed=allowed)]
 
 
 class GEA_BS0001(GeaRule):
-    rule_id = "GEA_BS0001"; level = "warning"; target = "SDRF"; requires_rdb = True; requires_auth = True
+    rule_id = "GEA_BS0001"; level = "warning"; target = "SDRF"; requires_rdb = True
     description = "BioSample attribute referenced in Characteristics is missing in the BioSample."
 
     def validate(self, sub, context):
@@ -35,7 +36,7 @@ class GEA_BS0001(GeaRule):
 
 
 class GEA_BS0003(GeaRule):
-    rule_id = "GEA_BS0003"; level = "error"; target = "SDRF"; requires_rdb = True; requires_auth = True
+    rule_id = "GEA_BS0003"; level = "error"; target = "SDRF"; requires_rdb = True
     description = "Characteristics value and BioSample attribute value do not match."
 
     def validate(self, sub, context):
@@ -46,7 +47,7 @@ class GEA_BS0003(GeaRule):
         for samd, attr, sdrf_v, bs_v, ri in _bs.iter_value_mismatches(sub, context, attrs, _bs.ref_columns(context)):
             # 双方向 autofix 用の構造化フィールド（sdrf_value/bs_value）も付与
             out.append(self.result(
-                message=f"{self.description} ({samd} {attr}: SDRF '{sdrf_v}', BioSample '{bs_v}')",
+                message=f"{self.description} ({samd} {attr}: SDRF:'{sdrf_v}', BioSample:'{bs_v}')",
                 autofix=True, samd=samd, attr=attr, new_value=bs_v,
                 sdrf_value=sdrf_v, bs_value=bs_v, line=ri + 1, assay=_bs.assay_name(sub, ri)))
         return out
