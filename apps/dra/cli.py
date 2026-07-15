@@ -97,11 +97,7 @@ def _fetch_db_meta(context, submission, account):
     dm = DatabaseManager()
 
     def _try(label, fn):
-        try:
-            return fn()
-        except Exception as e:
-            print(f"[WARN] dra DB meta fetch failed ({label}): {e}", file=sys.stderr)
-            return None
+        return cli_modes.warn_none(label, fn, "dra DB meta fetch failed")
 
     dra_conn = _try("dra_conn", dm.get_dra_conn)
     ref_bp = {(o.study_ref or "").strip() for o in submission.experiments + submission.analyses if o.study_ref}

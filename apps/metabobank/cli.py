@@ -69,20 +69,12 @@ def _resolve_inputs(args):
 def _fetch_biosample_attrs(context, sub, account):
     """参照 SAMD の BioSample 属性を内部 DB から取得（MB_SR0021/0022/0023 用）。core は common/magetab/biosample。
 
-    account が確定していれば、account 所有 ∪ permit の SAMD だけを内容一致チェック対象にする（allowed ゲート）。
-    account 外の SAMD は「承認されていないデータ」として突合しない（ddbj と同方針。account 無しは全参照が対象）。
+    account が確定していれば allowed（account 所有∪permit）でゲートし、account 外の SAMD は突合しない
+    （account 無しは全参照が対象）。
     """
     from common.magetab import biosample as _bs
     cols = _bs.ref_columns(context, default=("Comment[BioSample]", "Characteristics[biosample_accession]"))
-    referenced = _bs.referenced_samds(sub, cols)
-    cli_modes.db_checking("BioSample DB", len(referenced), "sample")
-    allowed = _bs.fetch_allowed_samds(account, referenced)   # None なら（account 無し）ゲートしない
-    context.allowed_biosamples = allowed
-    try:
-        context.biosample_attrs = _bs.fetch_biosample_attrs(sub, cols, allowed=allowed)
-    except Exception as e:
-        print(f"[WARN] metabobank BioSample fetch failed: {e}", file=sys.stderr)
-        context.biosample_attrs = None
+    _bs.fetch_attrs_gated(context, sub, account, cols, warn_prefix="metabobank BioSample fetch failed")
 
 
 def _write_fixed(sub, out_dir):

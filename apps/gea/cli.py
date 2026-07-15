@@ -91,23 +91,12 @@ def _account_from_gea_accession(egead):
 def _fetch_biosample_attrs(context, sub, account):
     """参照 SAMD の BioSample 属性を内部 DB から取得（GEA_BS0001/0002/0003 用）。core は common/magetab/biosample。
 
-    account が確定していれば、account 所有 ∪ permit の SAMD だけを内容一致チェック対象にする（allowed ゲート）。
-    account 外の SAMD は「承認されていないデータ」として突合/autofix しない（ddbj と同方針）。
+    account が確定していれば allowed（account 所有∪permit）でゲートし、account 外の SAMD は突合/autofix しない。
+    allowed は GEA_REF0002 用の account_biosamples とも共有する（同一参照集合・再クエリ回避）。
     """
     from common.magetab import biosample as _bs
-    cols = _bs.ref_columns(context)
-    referenced = _bs.referenced_samds(sub, cols)
-    cli_modes.db_checking("BioSample DB", len(referenced), "sample")
-    # allowed = 参照可能な SAMD（account 無しなら None＝ゲートしない）。GEA_REF0002 用の account_biosamples と共有。
-    allowed = _bs.fetch_allowed_samds(account, referenced)
-    context.allowed_biosamples = allowed
-    if allowed is not None:
-        context.account_biosamples = allowed
-    try:
-        context.biosample_attrs = _bs.fetch_biosample_attrs(sub, cols, allowed=allowed)
-    except Exception as e:
-        print(f"[WARN] gea BioSample fetch failed: {e}", file=sys.stderr)
-        context.biosample_attrs = None
+    _bs.fetch_attrs_gated(context, sub, account, _bs.ref_columns(context),
+                          warn_prefix="gea BioSample fetch failed", share_account_biosamples=True)
 
 
 def _fetch_account_refs(context, sub, account):
@@ -121,11 +110,7 @@ def _fetch_account_refs(context, sub, account):
     dm = DatabaseManager()
 
     def _try(label, fn):
-        try:
-            return fn()
-        except Exception as e:
-            print(f"[WARN] gea account ref fetch failed ({label}): {e}", file=sys.stderr)
-            return None
+        return cli_modes.warn_none(label, fn, "gea account ref fetch failed")
 
     def _sdrf_vals(col):
         out = set()
