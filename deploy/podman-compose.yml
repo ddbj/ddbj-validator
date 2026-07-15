@@ -2,11 +2,11 @@
 # 起動: podman compose --env-file .env up -d --build
 #   a011（本番） / a012（ステージング）で同一ファイル、.env のみ差し替え。
 #
-# web と validator は別サービス。共有ボリューム DATA_DIR を両者でマウントする。
-# 既定では web が自コンテナ内の validator を子プロセス起動する（DDBJ_VALIDATOR_CMD 未設定）。
-# validator を完全に別コンテナで実行する場合は web の DDBJ_VALIDATOR_CMD を
-#   "podman exec ddbj-validator ddbj-validator"
-# のように設定し、validator サービスを常駐させる。
+# 推奨（本番）: web と validator を別コンテナで常駐させる。validator は頻繁に更新されるため、
+#   validator コンテナだけを入れ替えれば web を止めずにルール更新を反映できる（無停止）。
+#   web は DDBJ_VALIDATOR_CMD="podman exec ddbj-validator ddbj-validator" で validator を呼ぶ。
+#   このとき web に podman クライアント＋ host の rootless podman socket のマウントが必要（README 参照）。
+# 簡易/開発: DDBJ_VALIDATOR_CMD を空にすると web が自コンテナ内で validator を子プロセス起動する（単一コンテナ）。
 version: "3"
 
 services:
@@ -15,11 +15,12 @@ services:
       context: ..
       dockerfile: deploy/Containerfile.web
     image: ddbj-validator-web:${DDBJ_ENV:-development}
+    restart: unless-stopped
     environment:
       DDBJ_ENV: ${DDBJ_ENV:-development}
       DDBJ_DATA_DIR: /data
       DDBJ_DEFAULT_MODE: ${DDBJ_DEFAULT_MODE:-db}
-      # 別コンテナ validator を使う場合のみ設定（未設定なら web 内で子プロセス実行）
+      # 別コンテナ validator を使う場合に設定（空なら web 内で子プロセス実行＝単一コンテナ）
       DDBJ_VALIDATOR_CMD: ${DDBJ_VALIDATOR_CMD:-}
     env_file:
       - .env
@@ -27,17 +28,22 @@ services:
       - "${DDBJ_WEB_PORT:-8000}:8000"
     volumes:
       - ${DDBJ_DATA_DIR_HOST:-./data}:/data:z
+      # 別コンテナ運用時: host の rootless podman socket を web にマウント（podman exec 用）。
+      # 下記コメントを外し、.env の DDBJ_PODMAN_SOCK に `podman info --format '{{.Host.RemoteSocket.Path}}'` の値を設定。
+      # - ${DDBJ_PODMAN_SOCK}:/run/podman/podman.sock:z
+    # environment に CONTAINER_HOST=unix:///run/podman/podman.sock を足すと podman client が上記 socket を使う。
 
-  # validator を別コンテナ常駐させたい場合に有効化（web の DDBJ_VALIDATOR_CMD と対で使う）。
+  # validator（検証エンジン）を別コンテナで常駐させる。web から podman exec で呼ぶ。
+  # 更新時はこのコンテナだけ再ビルド＋入れ替え（web 無停止）。単一コンテナ運用なら `up web` で起動しなければよい。
   validator:
     build:
       context: ..
       dockerfile: deploy/Containerfile.validator
     image: ddbj-validator:${DDBJ_ENV:-development}
+    restart: unless-stopped
     env_file:
       - .env
     volumes:
       - ${DDBJ_DATA_DIR_HOST:-./data}:/data:z
-    # 常駐用（web から podman exec で呼ぶ運用時）。単一コンテナ運用なら不要。
+    # 常駐用（web から podman exec で呼ぶ）。CLI は exec 時に起動される。
     entrypoint: ["sleep", "infinity"]
-    profiles: ["separate-validator"]
