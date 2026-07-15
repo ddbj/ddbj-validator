@@ -5,6 +5,7 @@ core を提供する。ルール ID / level / autofix の付け方は各 app の
 比較対象は definitions.biosample_sync（biosample_ref_columns / sync_characteristics）。
 """
 import re
+import sys
 
 _SAMD = re.compile(r"^SAMD\d+$")
 
@@ -164,3 +165,29 @@ def fetch_biosample_attrs(sub, cols, allowed=None):
         for acc_id, name, value in cur.fetchall():
             attrs.setdefault(str(acc_id).strip(), {})[str(name).strip()] = value
     return attrs
+
+
+def fetch_attrs_gated(context, sub, account, cols, warn_prefix, share_account_biosamples=False):
+    """参照 SAMD の BioSample 属性取得 ＋ account/permit ゲートの共通処理（gea/mb 共有）。
+
+    手順:
+    - `[BioSample DB] Checking N samples...` を表示（参照 SAMD 数）
+    - `fetch_allowed_samds` で allowed（account 所有∪permit。account 無しは None＝ゲート無し）を解決し
+      `context.allowed_biosamples` に格納
+    - `fetch_biosample_attrs` を allowed ゲートで取得し `context.biosample_attrs` に格納（例外は WARN で吸収）
+
+    share_account_biosamples=True のとき、allowed を `context.account_biosamples` にも共有する
+    （gea の GEA_REF0002 用。同一の参照 SAMD 集合なので再クエリを避ける）。
+    """
+    from common import cli_modes
+    referenced = referenced_samds(sub, cols)
+    cli_modes.db_checking("BioSample DB", len(referenced), "sample")
+    allowed = fetch_allowed_samds(account, referenced)
+    context.allowed_biosamples = allowed
+    if share_account_biosamples and allowed is not None:
+        context.account_biosamples = allowed
+    try:
+        context.biosample_attrs = fetch_biosample_attrs(sub, cols, allowed=allowed)
+    except Exception as e:
+        print(f"[WARN] {warn_prefix}: {e}", file=sys.stderr)
+        context.biosample_attrs = None

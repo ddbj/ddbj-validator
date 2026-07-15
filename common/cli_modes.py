@@ -5,6 +5,7 @@ skip_auth は skip_db に従う（DB がなければ権限検証不可）。
 """
 import importlib
 import os
+import sys
 
 
 def env_internal_db():
@@ -24,6 +25,18 @@ def resolve_modes(args):
     else:
         skip_db, skip_ncbi = True, False
     return skip_db, skip_ncbi, skip_db
+
+
+def warn_none(label, fn, prefix):
+    """fn() を実行し、例外時は `[WARN] {prefix} ({label}): {e}` を stderr に出して None を返す。
+
+    DB/接続の取得を独立に失敗吸収するための共通ヘルパ（1 つの失敗が他ルール用メタ取得を巻き込まない）。
+    各 app は `_try = lambda ...` 等で prefix を束ねて使う。"""
+    try:
+        return fn()
+    except Exception as e:
+        print(f"[WARN] {prefix} ({label}): {e}", file=sys.stderr)
+        return None
 
 
 def tool_version(package):

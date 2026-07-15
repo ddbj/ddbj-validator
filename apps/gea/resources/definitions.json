@@ -320,7 +320,7 @@
     }
   },
   "value_formats": {
-    "Comment[GEAAccession]": "E-GEAD-\\d+",
+    "Comment[GEAAccession]": "(E-GEAD-\\d+|ESUB\\d{6,}_Experiment_1)",
     "Comment[BioProject]": "(PRJDB\\d+|PSUB\\d{6,})",
     "Comment[SecondaryAccession]": "[A-Za-z0-9:_.-]+",
     "Comment[BioSample]": "(SAMD\\d{8}|SSUB\\d{6,})",
