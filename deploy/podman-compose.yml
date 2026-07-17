@@ -1,12 +1,5 @@
 # DDBJ validator Web API（podman compose）。docker は不可（root デーモン・セキュリティ）。
 # 起動: podman compose --env-file .env up -d --build
-#   a011（本番） / a012（ステージング）で同一ファイル、.env のみ差し替え。
-#
-# 推奨（本番）: web と validator を別コンテナで常駐させる。validator は頻繁に更新されるため、
-#   validator コンテナだけを入れ替えれば web を止めずにルール更新を反映できる（無停止）。
-#   web は DDBJ_VALIDATOR_CMD="podman exec ddbj-validator ddbj-validator" で validator を呼ぶ。
-#   このとき web に podman クライアント＋ host の rootless podman socket のマウントが必要（README 参照）。
-# 簡易/開発: DDBJ_VALIDATOR_CMD を空にすると web が自コンテナ内で validator を子プロセス起動する（単一コンテナ）。
 version: "3"
 
 services:
