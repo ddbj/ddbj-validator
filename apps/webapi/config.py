@@ -17,9 +17,9 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 _DEFAULT_CMD = f"{sys.executable} {_REPO_ROOT / 'main.py'}"
 VALIDATOR_CMD = shlex.split(os.environ.get("DDBJ_VALIDATOR_CMD", _DEFAULT_CMD))
 
-# 検証モード → CLI フラグ。web 既定は内部 DB（curator / D-way 連携）。
-MODE_FLAG = {"local": "-l", "ncbi": "-n", "db": "-d"}
-DEFAULT_MODE = os.environ.get("DDBJ_DEFAULT_MODE", "db")
+# 検証モードは **内部 DB（-d）固定**。D-way 連携の web api では db 以外あり得ない
+# （local/ncbi は使わない。DB 接続情報はリポジトリ直下の .env を validator が読む）。
+MODE_FLAG_DB = "-d"
 
 # サブプロセスのタイムアウト秒
 RUN_TIMEOUT = int(os.environ.get("DDBJ_RUN_TIMEOUT", "3600"))
