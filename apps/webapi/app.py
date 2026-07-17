@@ -154,12 +154,5 @@ def get_file(uuid: str = FPath(pattern=_UUID_RE), filetype: str = FPath(pattern=
         return _err("Validation file not found", 404)
     return FileResponse(str(files[0]), filename=files[0].name)
 
-
-@app.delete("/validation/{uuid}")
-def delete_validation(uuid: str = FPath(pattern=_UUID_RE)):
-    import shutil
-    rdir = run_event.run_dir(config.DATA_DIR, uuid)
-    if not rdir.exists():
-        return _err("Validation not found", 404)
-    shutil.rmtree(rdir, ignore_errors=True)
-    return {"uuid": uuid, "status": "deleted"}
+# 注: run dir 削除の DELETE エンドポイントは意図的に廃止（誤削除防止）。UUID は使い捨てで、
+# 古い run dir は /data1 のクリーンアップ運用（定期削除）で回収する方針。
