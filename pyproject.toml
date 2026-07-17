@@ -52,6 +52,7 @@ include = ["common*", "apps*"]
 "apps.dra.resources" = ["*.json", "xsd/*.xsd"]
 "apps.metabobank.resources" = ["*.json"]
 "apps.gea.resources" = ["*.json"]
+"apps.webapi.resources" = ["*.xml"]
 "common.resources" = ["*.txt", "*.json"]
 "common.resources.geo" = ["*.parquet", "*.json"]
 

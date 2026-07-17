@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- /monitoring 用の合成テスト BioSample（deep health check）。実登録データではない。
+     検証パイプライン（validator 子プロセス＋レポート生成）が最後まで走るかの確認用。 -->
+<BioSampleSet submission_id="SSUB000000" submitter_id="dradev">
+  <BioSample access="public">
+    <Ids><Id namespace="BioSample" is_primary="1">SAMD00000001</Id></Ids>
+    <Description>
+      <SampleName>monitoring healthcheck sample</SampleName>
+      <Title>monitoring healthcheck sample</Title>
+      <Organism taxonomy_id="562"><OrganismName>Escherichia coli</OrganismName></Organism>
+    </Description>
+    <Owner><Name>DDBJ</Name><Contacts><Contact email="test1@ddbj.nig.ac.jp"><Name><First>Taro</First><Last>Test</Last></Name></Contact></Contacts></Owner>
+    <Models><Model>Microbe</Model></Models>
+    <Attributes>
+      <Attribute attribute_name="sample_name">monitoring healthcheck sample</Attribute>
+      <Attribute attribute_name="strain">K-12</Attribute>
+      <Attribute attribute_name="collection_date">2020-06-30</Attribute>
+      <Attribute attribute_name="geo_loc_name">Japan:Tsukuba</Attribute>
+      <Attribute attribute_name="isolation_source">soil</Attribute>
+      <Attribute attribute_name="rel_to_oxygen">aerobe</Attribute>
+    </Attributes>
+  </BioSample>
+</BioSampleSet>
