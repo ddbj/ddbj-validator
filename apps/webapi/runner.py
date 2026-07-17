@@ -87,9 +87,8 @@ def run_validation(rdir, saved, params):
             if base_args is None:
                 raise ValueError("有効な入力がありません（対応ロールのファイルが無い）")
 
-            mode = params.get("mode") or config.DEFAULT_MODE
             args = list(base_args)
-            args += [config.MODE_FLAG.get(mode, "-d"), "-j", "-o", str(rdir)]
+            args += [config.MODE_FLAG_DB, "-j", "-o", str(rdir)]   # web api は内部 DB モード固定（-d）
             if params.get("account"):
                 args += ["--account", params["account"]]
 

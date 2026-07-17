@@ -12,11 +12,11 @@ services:
     environment:
       DDBJ_ENV: ${DDBJ_ENV:-development}
       DDBJ_DATA_DIR: /data
-      DDBJ_DEFAULT_MODE: ${DDBJ_DEFAULT_MODE:-db}
       # 別コンテナ validator を使う場合に設定（空なら web 内で子プロセス実行＝単一コンテナ）
       DDBJ_VALIDATOR_CMD: ${DDBJ_VALIDATOR_CMD:-}
     env_file:
       - .env
+      - ../.env   # 内部 DB 接続情報（PGHOST 等）はリポジトリ直下 .env から（単一コンテナ運用時に validator が参照）
     ports:
       - "${DDBJ_WEB_PORT:-8000}:8000"
     volumes:
@@ -36,6 +36,7 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+      - ../.env   # 内部 DB 接続情報（PGHOST/PGPORT/PGDATABASE 等）はリポジトリ直下 .env から
     volumes:
       - ${DDBJ_DATA_DIR_HOST:-./data}:/data:z
     # 常駐用（web から podman exec で呼ぶ）。CLI は exec 時に起動される。

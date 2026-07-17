@@ -52,7 +52,7 @@ def monitoring():
     try:
         dest = runner.save_upload(rdir, "biosample", "monitoring.xml", _MONITORING_XML.read_bytes())
         final = runner.run_validation(rdir, {"biosample": dest},
-                                      {"mode": config.DEFAULT_MODE, "start_time": run_event.timestamp()})
+                                      {"start_time": run_event.timestamp()})
         if final == run_event.FINISHED:
             return {"status": "OK", "message": "Validation processing has finished successfully.",
                     "env": config.DDBJ_ENV}
@@ -82,7 +82,6 @@ async def create_validation(
     submitter_id: str = Form(None),
     submission_id: str = Form(None),
     package: str = Form(None),
-    mode: str = Form(None),
 ):
     uploads = {
         "biosample": biosample, "bioproject": bioproject,
@@ -105,7 +104,7 @@ async def create_validation(
         saved[role] = runner.save_upload(rdir, role, up.filename, await up.read())
 
     params = {"account": submitter_id, "submission_id": submission_id,
-              "package": package, "mode": mode, "start_time": start}
+              "package": package, "start_time": start}   # mode は db 固定（引数で受けない）
     background.add_task(runner.run_validation, rdir, saved, params)
 
     return {"uuid": uuid, "status": run_event.ACCEPTED, "start_time": start}
