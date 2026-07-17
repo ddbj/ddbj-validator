@@ -23,10 +23,13 @@ UPLOAD_ROLES = (
 
 
 def save_upload(rdir, role, filename, data):
-    """アップロードを run_dir/<role>/<filename> に保存してパスを返す。"""
-    safe = Path(filename or role).name
-    dest_dir = Path(rdir) / role
+    """アップロードを run_dir 直下に元ファイル名で保存してパスを返す（例 biosample=SSUB000000.xml）。
+
+    D-way は biosample の SSUB XML を SSUB id 名（例 SSUB000000.xml）で送る想定。run_dir 直下に置くことで
+    autofix 出力（validator が `<out>/fixed/<同名>` に書く）とレイアウトが揃う。ファイル名が空なら role 名で代替。"""
+    dest_dir = Path(rdir)
     dest_dir.mkdir(parents=True, exist_ok=True)
+    safe = Path(filename or f"{role}.xml").name
     dest = dest_dir / safe
     dest.write_bytes(data)
     return dest

@@ -1,8 +1,8 @@
 """検証イベント（run）の管理: UUID 採番・run ディレクトリ・status.json・per-run ログ。
 
 Web API 専用の下回り（通常の CLW 実行では使わない）。現行 ruby validator の
-ファイルベースのイベント機構（data_dir/<uuid[:2]>/<uuid>/ に status.json / result.json）を
-踏襲しつつ、UUID は **ダッシュ無し 32 桁 hex**（`uuid4().hex`）にして現行（8-4-4-4-12）と区別する。
+ファイルベースのイベント機構（data_dir/<uuid[:2]>/<uuid>/ に status.json / result.json）を踏襲する。
+UUID は標準の **ハイフンあり uuid4（8-4-4-4-12）**（現行 ruby と同形式）。
 """
 import contextlib
 import json
@@ -24,13 +24,16 @@ _LOG_NAME = "validation.log"
 
 
 def new_uuid():
-    """ダッシュ無し 32 桁 hex の UUID（現行 ruby の 8-4-4-4-12 と区別するため）。"""
-    return _uuid.uuid4().hex
+    """標準のハイフンあり uuid4（8-4-4-4-12）。現行 ruby と同形式。"""
+    return str(_uuid.uuid4())
 
 
-def is_python_uuid(value):
-    """本ツール発行（32hex・ダッシュ無し）かどうか。"""
-    return isinstance(value, str) and len(value) == 32 and all(c in "0123456789abcdef" for c in value)
+def is_valid_uuid(value):
+    """標準 uuid 文字列（ハイフンあり）かどうか。"""
+    try:
+        return isinstance(value, str) and str(_uuid.UUID(value)) == value.lower()
+    except Exception:
+        return False
 
 
 def run_dir(data_dir, uuid):
