@@ -1,12 +1,21 @@
 # web コンテナ（FastAPI + uvicorn）。UUID 発行・run dir 作成・status/log 管理・validator 呼び出し。
 FROM python:3.11-slim
 
+# 別コンテナ運用: web が validator コンテナへ `podman exec` するための podman クライアント。
+# CONTAINER_HOST（compose で設定）経由でホストの rootless podman socket をリモート操作する。
+# コード変更でキャッシュが無効化されないよう COPY より前の層で入れる。
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends podman \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 COPY . /app
 
-# web extra（fastapi / uvicorn / python-multipart）込みでインストール
+# web extra（fastapi / uvicorn / python-multipart）込みでインストール。
+# web を group 0(root) に入れる: 転送された rootless podman socket は
+# コンテナ内で root:root 0660 に見えるため、非 root の web が group 権限で読み書きするため。
 RUN pip install --no-cache-dir ".[web]" \
-    && useradd -m web
+    && useradd -m -G root web
 USER web
 
 EXPOSE 8000
