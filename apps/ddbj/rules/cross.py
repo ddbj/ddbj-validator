@@ -660,10 +660,14 @@ class CDS_TRANSL_EXCEPT_VALIDATOR(BaseRule):
             if not loc:
                 continue
 
+            # 5' complete 判定はフィーチャー全体の座標（loc.end/loc.start）で行う。
+            # minus 鎖の compound location は BioPython が parts を 5'→3' 順に並べるため、
+            # parts[-1].end を見ると 3' 側 part の内部境界を掴んで誤判定する（多エクソン minus で顕在化）。
+            # 同ファイル CDS_TRANSLATION_VALIDATOR と同方式に揃える（ANN6090 誤検出の修正）。
             if loc.strand == -1:
-                is_5_complete = not isinstance(loc.parts[-1].end, AfterPosition)
+                is_5_complete = not isinstance(loc.end, AfterPosition)
             else:
-                is_5_complete = not isinstance(loc.parts[0].start, BeforePosition)
+                is_5_complete = not isinstance(loc.start, BeforePosition)
 
             codon_start = 1
             if "codon_start" in feature.qualifiers:
