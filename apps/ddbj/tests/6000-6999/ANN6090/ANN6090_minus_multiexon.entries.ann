@@ -1,0 +1,32 @@
+COMMON	SUBMITTER		ab_name	Mishima,H.
+			ab_name	Robertson,G.R.
+			contact	Hanako Mishima
+			email	mishima@ddbj.nig.ac.jp
+			institute	National Institute of Genetics
+			department	DNA Data Bank of Japan
+			country	Japan
+			state	Shizuoka
+			city	Mishima
+			street	Yata 1111
+			zip	411-8540
+	REFERENCE		title	Nicotiana benthamiana genome
+			ab_name	Robertson,G.R.
+			ab_name	Mishima,H.
+			year	2026
+			status	Unpublished
+Nbe.v1.1.s16500	source	1..2000	organism	Nicotiana benthamiana
+			mol_type	genomic DNA
+			collection_date	2024-01-01
+			geo_loc_name	Japan
+	CDS	complement(join(<122..323,690..>788))	transl_table	1
+			codon_start	3
+			product	hypothetical protein
+			note	ANN6090 pass (minus-strand multi-exon 5'-partial: the '>' 5' marker sits on the HIGH coordinate; codon_start=3 is the only clean frame. Currently a FALSE-POSITIVE ANN6090 error.)
+Nbe.v1.1.s99999	source	1..2000	organism	Nicotiana benthamiana
+			mol_type	genomic DNA
+			collection_date	2024-01-01
+			geo_loc_name	Japan
+	CDS	complement(join(122..323,690..788))	transl_table	1
+			codon_start	2
+			product	hypothetical protein
+			note	ANN6090 fail (genuinely 5'-complete minus-strand CDS with codon_start!=1; the fix MUST keep flagging this true positive. Extra AXS6050/AXS6060 translation errors here are expected and unrelated.)
