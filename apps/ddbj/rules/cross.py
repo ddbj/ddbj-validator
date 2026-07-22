@@ -37,6 +37,10 @@ _PLATFORM_REGEX_RULES = [
     (r'onso|revio', re.IGNORECASE, "PACBIO_SMRT"),
     (r'bgiseq|mgiseq|cycloneseq', re.IGNORECASE, "BGISEQ"),
     (r'dnbseq', re.IGNORECASE, "DNBSEQ"),
+    # 「Nanopore …」表記は model の綴りに依らず OXFORD_NANOPORE と判定する。
+    # （後段の case-sensitive な r'ION' は MinION/GridION/PromethION のみ拾い、
+    #  "MinINO" のような綴り違いを取りこぼすため、語そのものを補完する。）
+    (r'nanopore', re.IGNORECASE, "OXFORD_NANOPORE"),
     (r'AB 5500', 0, "ABI_SOLID"),
     (r'Ion', 0, "ION_TORRENT"),
     (r'Sequel', 0, "PACBIO_SMRT"),
@@ -466,26 +470,47 @@ class ANN0560(BaseRule):
         if not ann_platforms:
             return results
 
+        tech_str = "; ".join(seq_techs_raw)
+
         for entry_id, record in records.items():
             for feature in self.get_features(record, "DBLINK"):
                 drrs = [d.strip().upper() for d in feature.qualifiers.get("sequence read archive", []) if d.strip().upper().startswith("DRR")]
-                
+
                 if not drrs:
                     continue
-                    
+
+                # この DBLINK が参照する SRA experiment の platform 集合と instrument 文字列
+                sra_platforms = set()
+                sra_instruments = []
                 for drr_upper in drrs:
                     if drr_upper in dra_lib_meta:
-                        meta = dra_lib_meta[drr_upper]
-                        instrument = meta.get("instrument_model", "")
-                        
+                        instrument = dra_lib_meta[drr_upper].get("instrument_model", "")
                         if instrument:
-                            sra_platform = self._determine_platform(instrument)
-                            
-                            if sra_platform != "UNKNOWN" and sra_platform not in ann_platforms:
-                                tech_str = "; ".join(seq_techs_raw)
-                                msg = f"{self.description} (ST_COMMENT: '{tech_str}', SRA: '{instrument}')"
-                                res = self.feature_result(record, feature, msg, level="warning", qualifier="sequence read archive")
-                                results.append(res)
+                            sra_instruments.append(instrument)
+                            sp = self._determine_platform(instrument)
+                            if sp != "UNKNOWN":
+                                sra_platforms.add(sp)
+
+                if not sra_instruments:
+                    continue
+
+                sra_str = "; ".join(sra_instruments)
+
+                # forward: SRA experiment の platform が ann の Sequencing Technology に無い
+                #   （experiment で使った技術が ann に申告漏れ）
+                for sp in sorted(sra_platforms):
+                    if sp not in ann_platforms:
+                        msg = f"{self.description} (ST_COMMENT: '{tech_str}', SRA: '{sra_str}')"
+                        results.append(self.feature_result(record, feature, msg, level="warning", qualifier="sequence read archive"))
+                        break
+
+                # reverse: ann の platform が SRA experiment に無い
+                #   （対応する experiment が無い余計な technology を ann に記載）
+                for sp in sorted(ann_platforms):
+                    if sp not in sra_platforms:
+                        msg = f"{self.description} (ST_COMMENT: '{tech_str}', SRA: '{sra_str}')"
+                        results.append(self.feature_result(record, feature, msg, level="warning", qualifier="sequence read archive"))
+                        break
         return results
         
     def _determine_platform(self, model: str) -> str:

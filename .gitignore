@@ -58,6 +58,7 @@ wheels/
 .installed.cfg
 *.egg
 build-push-docker-image.sh
+release.sh
 
 # =========================
 # テスト・カバレッジ
