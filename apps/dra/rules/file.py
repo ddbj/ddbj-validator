@@ -8,6 +8,8 @@
 - DRA_R0029: bam alignment 系列（bam/tab/reference_fasta のうち 2 種以上混在）。
 - DRA_R0030: filetype が受理値でない（cv_terms run_filetype/analysis_filetype）。
 - DRA_R0031: Run 内で filetype が混在（系列許容の companion type を除いて 2 種以上）。
+- DRA_R0040: submission 内で同一 filename が複数回登録（min spec: deposited more than once）。
+- DRA_R0049: submission 内で別名だが md5 が同一（＝同一内容ファイルの二重登録）。
 """
 from apps.dra.rules.base import DraRule
 from apps.dra.defs import compiled
@@ -222,32 +224,53 @@ class DRA_R0030(DraRule):
 
 
 class DRA_R0040(DraRule):
-    """submission 内で同一ファイル（filename または md5）が重複（min spec: deposited more than once）。"""
+    """submission 内で同一 filename が複数回登録（min spec: deposited more than once）。"""
     rule_id = "DRA_R0040"
     level = "error"
     target = "FILE"
     description = "File must not be deposited more than once in a submission."
 
     def validate(self, submission, context):
-        by_name, by_md5 = {}, {}
+        by_name = {}
         for obj in submission.runs + submission.analyses:
             for f in getattr(obj, "files", []):
                 fn = (f.filename or "").strip()
-                cs = (f.checksum or "").strip().lower()
                 if fn:
                     by_name.setdefault(fn, []).append(obj.label)
-                if cs:
-                    by_md5.setdefault(cs, []).append((obj.label, fn))
         out = []
         for fn, labels in by_name.items():
             if len(labels) > 1:
                 out.append(self.result(sample=None,
                                        message=f"Duplicate filename in submission: '{fn}' ({', '.join(labels)})"))
+        return out
+
+
+class DRA_R0049(DraRule):
+    """submission 内で別名（filename が異なる）だが md5 が同一 = 同一内容ファイルの二重登録。
+
+    filename 重複（DRA_R0040）とは別事象。名前が違うため R0040 では捕捉できない、
+    「内容が同一のファイルを別名で二重に登録している」ケースを検知する。
+    """
+    rule_id = "DRA_R0049"
+    level = "error"
+    # target は Run/Analysis の FILE 横断チェック。特定 object に帰属しないためレポート上は OTHER。
+    target = "FILE"
+    description = "Duplicate file content (same md5) in submission"
+
+    def validate(self, submission, context):
+        by_md5 = {}
+        for obj in submission.runs + submission.analyses:
+            for f in getattr(obj, "files", []):
+                cs = (f.checksum or "").strip().lower()
+                fn = (f.filename or "").strip()
+                if cs:
+                    by_md5.setdefault(cs, []).append((obj.label, fn))
+        out = []
         for cs, items in by_md5.items():
+            # md5 が同一かつ filename が 2 種以上（＝別名で同一内容）。同名重複は DRA_R0040 の管轄。
             if len({fn for _, fn in items}) > 1 and len(items) > 1:
                 names = ", ".join(sorted({fn for _, fn in items}))
-                out.append(self.result(sample=None,
-                                       message=f"Duplicate file content (same md5) in submission: {names}"))
+                out.append(self.result(sample=None, message=f"{self.description}: {names}"))
         return out
 
 

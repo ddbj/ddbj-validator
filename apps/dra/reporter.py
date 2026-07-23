@@ -1,8 +1,8 @@
 """DRA validator のレポート出力（MetaboBank / GEA と同様の見せ方）。
 
 - ヘッダは object type ごとにファイル名＋オブジェクト件数（Submission/Experiment/Run、Analysis はある時だけ）。
-- ERROR / WARNING セクションに分割。各セクション内は SUBMISSION→EXPERIMENT→RUN→ANALYSIS の順に object type で
-  グルーピング。
+- ERROR / WARNING セクションに分割。各セクション内は SUBMISSION→EXPERIMENT→RUN→ANALYSIS→FILE→OTHER の順に
+  object type でグルーピング。
 - 各行は `{rule_id}:{OBJECT}:{accession or alias}:{message}`（object は accession/alias/target から導出）。
 - summary は (rule_id, object) ごとに件数集約（`{first} etc ({N})`、メッセージが行ごとに違えば末尾に ' etc'）。
   details は全件展開。
@@ -23,8 +23,8 @@ write_text_reports = _r.write_text_reports
 _ROLE_ROWS = [("submission", "Submission"), ("experiment", "Experiment"),
               ("run", "Run"), ("analysis", "Analysis")]
 _ROLE_ATTR = {"experiment": "experiments", "run": "runs", "analysis": "analyses"}
-# object type のグルーピング順
-_OBJ_ORDER = ["SUBMISSION", "EXPERIMENT", "RUN", "ANALYSIS", "OTHER"]
+# object type のグルーピング順（FILE = Run/Analysis の FILE 横断チェック。OTHER はそれ以外の非オブジェクト）
+_OBJ_ORDER = ["SUBMISSION", "EXPERIMENT", "RUN", "ANALYSIS", "FILE", "OTHER"]
 
 
 def _obj_count(submission, role):
@@ -68,7 +68,7 @@ def _obj_type(r):
         if key in sl:
             return obj
     t = (r.get("target") or "").upper()
-    for o in ("SUBMISSION", "EXPERIMENT", "RUN", "ANALYSIS"):
+    for o in ("SUBMISSION", "EXPERIMENT", "RUN", "ANALYSIS", "FILE"):
         if t.startswith(o):
             return o
     return "OTHER"
