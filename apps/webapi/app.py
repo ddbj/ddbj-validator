@@ -8,10 +8,10 @@ import shutil
 import tempfile
 from pathlib import Path as FsPath
 
-from fastapi import BackgroundTasks, FastAPI, File, Form, Path as FPath, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import BackgroundTasks, FastAPI, File, Form, Path as FPath, Query, UploadFile
+from fastapi.responses import FileResponse, JSONResponse, Response
 
-from apps.webapi import config, runner
+from apps.webapi import config, packages, runner
 from common import run_event
 
 logger = logging.getLogger(__name__)
@@ -64,6 +64,40 @@ def monitoring():
                             status_code=503)
     finally:
         shutil.rmtree(rdir, ignore_errors=True)
+
+
+# ---- package / attribute 定義提供（現行 ruby validator の packages API 相当）----
+# データ源は SPARQL ではなく同梱 JSON（apps/biosample/resources/attributes_packages.json）。
+
+@app.get("/package_list")
+def package_list():
+    """全 BioSample パッケージ一覧（メタ情報付き）。"""
+    return {"status": "success", "version": packages.version(), "packages": packages.package_list()}
+
+
+@app.get("/attribute_list")
+def attribute_list(package: str = Query(None)):
+    """指定パッケージの属性一覧（定義順・use・format・CV）。"""
+    if not package:
+        return _err("'package' parameter is required", 400)
+    if not packages.has_package(package):
+        return _err(f"Unknown package: '{package}'", 400)
+    return {"status": "success", "version": packages.version(), "package": package,
+            "attributes": packages.attribute_list(package)}
+
+
+@app.get("/attribute_template_file")
+def attribute_template_file(package: str = Query(None)):
+    """登録システムと同一のヘッダ 1 行 TSV テンプレートをダウンロード（必須は '*' 接頭辞）。"""
+    if not package:
+        return _err("'package' parameter is required", 400)
+    if not packages.has_package(package):
+        return _err(f"Unknown package: '{package}'", 400)
+    return Response(
+        content=packages.template_tsv(package),
+        media_type="text/tab-separated-values",
+        headers={"Content-Disposition": 'attachment; filename="template.tsv"'},
+    )
 
 
 @app.post("/validation")
