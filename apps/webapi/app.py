@@ -174,7 +174,13 @@ def get_file(uuid: str = FPath(pattern=_UUID_RE), filetype: str = FPath(pattern=
     if not rdir.exists():
         return _err("Validation not found", 404)
     if filetype == "input":
-        files = [p for p in sorted(rdir.glob("*.xml"))]        # run_dir 直下の入力 XML
+        files = [p for p in sorted(rdir.glob("*.xml"))]        # run_dir 直下の入力 XML（<SSUB>.xml 等）
+        if not files:
+            # D-way が拡張子なしのフォールバック名 "biosample" で送った入力も拾う（fixed を fixed/* で
+            # 緩めているのと同様）。今後 D-way は <SSUB>.xml で送る想定だが、拡張子なし時の後方互換。
+            cand = rdir / "biosample"
+            if cand.is_file():
+                files = [cand]
     elif filetype == "fixed":
         files = sorted((rdir / "fixed").glob("*")) if (rdir / "fixed").is_dir() else []
     elif filetype in ("result", "status"):
