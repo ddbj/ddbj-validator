@@ -40,7 +40,9 @@ def plan(saved, params):
     どの validator かはアップロードされたロールの有無で判定する（ruby と同様）。"""
     if "biosample" in saved:
         f = saved["biosample"]
-        flag = "-x" if f.suffix.lower() == ".xml" else "-t"
+        # 拡張子 .xml、または D-way 由来の拡張子なしフォールバック名 "biosample" は XML と決め打ち。
+        # （D-way は今後 <SSUB>.xml で送る。TSV はファイル名 SSUBxxxx.<Package>.txt を期待する。）
+        flag = "-x" if (f.suffix.lower() == ".xml" or f.name == "biosample") else "-t"
         args = ["biosample", flag, str(f)]
         if params.get("submission_id"):
             args += ["-s", params["submission_id"]]

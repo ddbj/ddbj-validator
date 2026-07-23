@@ -8,8 +8,13 @@ import contextlib
 import json
 import logging
 import os
+import time
 import uuid as _uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+
+# 日本標準時（tzdata 非依存の固定オフセット）。status.json / result.json / validation.log の
+# 時刻表示に用いる。コンテナの TZ が UTC でも JST(+09:00) で出す。
+_JST = timezone(timedelta(hours=9))
 from pathlib import Path
 
 # status.json の status 値
@@ -42,7 +47,7 @@ def run_dir(data_dir, uuid):
 
 
 def _now_iso():
-    return datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
+    return datetime.now(_JST).isoformat(timespec="seconds")
 
 
 def write_status(rdir, **fields):
@@ -85,7 +90,10 @@ def run_logger(rdir, level=logging.INFO):
     rdir.mkdir(parents=True, exist_ok=True)
     handler = logging.FileHandler(rdir / _LOG_NAME, encoding="utf-8")
     handler.setLevel(level)
-    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s [%(name)s] %(message)s"))
+    formatter = logging.Formatter("%(asctime)s %(levelname)s [%(name)s] %(message)s")
+    # asctime を JST 表示に固定（コンテナ TZ が UTC でも +9h した壁時計で出す。tzdata 非依存）。
+    formatter.converter = lambda secs: time.gmtime((secs if secs is not None else time.time()) + 9 * 3600)
+    handler.setFormatter(formatter)
     root = logging.getLogger()
     prev_level = root.level
     if root.level > level:

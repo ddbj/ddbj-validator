@@ -15,7 +15,7 @@ from apps.dra.rules.content import (
 )
 from apps.dra.rules.file import (
     DRA_R0021, DRA_R0022, DRA_R0023, DRA_R0024, DRA_R0025, DRA_R0026,
-    DRA_R0027, DRA_R0028, DRA_R0029, DRA_R0030, DRA_R0031, DRA_R0040,
+    DRA_R0027, DRA_R0028, DRA_R0029, DRA_R0030, DRA_R0031, DRA_R0040, DRA_R0049,
 )
 from apps.dra.rules.account import (
     DRA_R0004, DRA_R0006, DRA_R0009, DRA_R0015, DRA_R0016,
@@ -37,7 +37,9 @@ class Validator:
             DRA_R0018(), DRA_R0019(), DRA_R0020(),
             # --- file ---
             DRA_R0021(), DRA_R0022(), DRA_R0023(), DRA_R0024(), DRA_R0025(), DRA_R0026(),
-            DRA_R0027(), DRA_R0028(), DRA_R0029(), DRA_R0030(), DRA_R0031(), DRA_R0040(),
+            DRA_R0027(), DRA_R0028(), DRA_R0029(), DRA_R0030(), DRA_R0031(),
+            DRA_R0040(),   # 同一 filename の重複
+            DRA_R0049(),   # 別名だが md5 同一（同一内容の二重登録）
             # --- 参照整合 ---
             DRA_R0003(), DRA_R0017(), DRA_R0034(), DRA_R0033(),
             DRA_R0035(), DRA_R0036(), DRA_R0037(), DRA_R0038(),
