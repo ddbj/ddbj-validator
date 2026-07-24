@@ -9,12 +9,40 @@
 """
 import json
 from collections import OrderedDict
+from functools import lru_cache
 from pathlib import Path
 
 _LEVEL_ORDER = {"error": 0, "warning": 1, "info": 2}
 _LEVEL_SECTIONS = ["info", "warning", "error"]  # 表示順（info→warning→error）
 # ルール解説ページ（現行 validator の reference と同じアンカー規約）
 _DOC_BASE = "https://www.ddbj.nig.ac.jp/biosample/validation-e.html#"
+
+# ruby v の rule_class（biosample の全ルールが "BioSample"）。result.json の method / object に使う。
+_RULE_CLASS = "BioSample"
+
+# D-way 本番(ruby) の result.json は全 filetype の autocorrect フラグを持つ。ここに合わせる（biosample のみ算出）。
+_AUTOCORRECT_FILETYPES = [
+    "all_db", "biosample", "bioproject", "submission", "experiment", "run",
+    "analysis", "jvar", "trad_anno", "trad_seq", "trad_agp", "metabobank_idf", "metabobank_sdrf",
+]
+
+
+@lru_cache(maxsize=1)
+def _official_messages():
+    """ルール別の公式メッセージ（rule_id -> message）。D-way 本番と同一文言にするための正典。
+
+    出所は docs/docs/biosample/rules-official.txt の Message 列（＝ruby rule_config と一致）を
+    オフラインで焼き込んだ apps/biosample/resources/rule_messages.json。"""
+    path = Path(__file__).resolve().parent / "resources" / "rule_messages.json"
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def _official_message(rule_id, fallback=""):
+    """rule_id の公式メッセージ。無ければ fallback（従来の動的メッセージ）を使う。"""
+    return _official_messages().get(rule_id) or fallback
 
 
 def _sorted(results):
@@ -59,7 +87,7 @@ def build_summary(results, sample_count, input_name, submission_id, package, ver
         lines.append(f"[ {lv.upper()} ]")
         seen = set()
         for r in rs:
-            line = f"{r['rule_id']}:{r['message']}"
+            line = f"{r['rule_id']}:{_official_message(r['rule_id'], r['message'])}"
             if line in seen:
                 continue
             seen.add(line)
@@ -85,7 +113,8 @@ def build_details(results, records, sample_count, input_name, submission_id, pac
             sid = r.get("sample")
             acc, name = idmap.get(sid, (None, sid))
             ident = acc or name or sid or "-"  # SAMD 優先（両方あれば SAMD のみ）
-            lines.append(f"{r['rule_id']}:{ident}:{r['message'].replace(chr(10), ' ')}")
+            msg = _official_message(r["rule_id"], r["message"]).replace(chr(10), " ")
+            lines.append(f"{r['rule_id']}:{ident}:{msg}")
         lines.append("")
     return "\n".join(lines).rstrip("\n") + "\n"
 
@@ -158,12 +187,12 @@ def _error_obj(r, source):
     """result dict を web validator 互換の error_obj へ写像。"""
     return {
         "id": r["rule_id"],
-        "message": r["message"],
+        "message": _official_message(r["rule_id"], r["message"]),   # D-way 本番と同一の公式文言
         "reference": _DOC_BASE + r["rule_id"],
         "level": r["level"],
         "external": bool(r.get("external", False)),
-        "method": "biosample",
-        "object": "BioSample",
+        "method": _RULE_CLASS,          # ruby result の method は rule_class（"BioSample"）
+        "object": [_RULE_CLASS],        # ruby 互換で配列（["BioSample"]）
         "source": source,
         "annotation": _annotation(r),
     }
@@ -183,8 +212,9 @@ def _stats(results):
             "external_error": ext_err,
             "external_warning": ext_warn,
         },
-        # biosample 単一 filetype。autofix 提案が1件でもあれば自動補正可
-        "autocorrect": {"biosample": any(r.get("autofix") for r in results)},
+        # D-way 本番(ruby) 互換で全 filetype キーを出力（biosample のみ算出、他は false）。
+        "autocorrect": {ft: (any(r.get("autofix") for r in results) if ft == "biosample" else False)
+                        for ft in _AUTOCORRECT_FILETYPES},
     }
 
 
