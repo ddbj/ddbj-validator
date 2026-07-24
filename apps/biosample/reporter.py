@@ -20,12 +20,6 @@ _DOC_BASE = "https://www.ddbj.nig.ac.jp/biosample/validation-e.html#"
 # ruby v の rule_class（biosample の全ルールが "BioSample"）。result.json の method / object に使う。
 _RULE_CLASS = "BioSample"
 
-# D-way 本番(ruby) の result.json は全 filetype の autocorrect フラグを持つ。ここに合わせる（biosample のみ算出）。
-_AUTOCORRECT_FILETYPES = [
-    "all_db", "biosample", "bioproject", "submission", "experiment", "run",
-    "analysis", "jvar", "trad_anno", "trad_seq", "trad_agp", "metabobank_idf", "metabobank_sdrf",
-]
-
 
 @lru_cache(maxsize=1)
 def _official_messages():
@@ -212,9 +206,10 @@ def _stats(results):
             "external_error": ext_err,
             "external_warning": ext_warn,
         },
-        # D-way 本番(ruby) 互換で全 filetype キーを出力（biosample のみ算出、他は false）。
-        "autocorrect": {ft: (any(r.get("autofix") for r in results) if ft == "biosample" else False)
-                        for ft in _AUTOCORRECT_FILETYPES},
+        # biosample 単一 filetype のみ出力。D-way staging の AutoCorrectDataType enum に無いキーを送ると
+        # Jackson デシリアライズが Duplicate key null 例外 → result_json=null → 画面が空になるため、
+        # 全 db キー（all_db/bioproject/... 計13）は出さず biosample のみに戻した（enum の安全な部分集合）。
+        "autocorrect": {"biosample": any(r.get("autofix") for r in results)},
     }
 
 
