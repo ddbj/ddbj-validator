@@ -185,8 +185,8 @@ def _error_obj(r, source):
         "reference": _DOC_BASE + r["rule_id"],
         "level": r["level"],
         "external": bool(r.get("external", False)),
-        "method": _RULE_CLASS,          # ruby result の method は rule_class（"BioSample"）
-        "object": [_RULE_CLASS],        # ruby 互換で配列（["BioSample"]）
+        "method": "biosample",          # D-way は db 名(小文字)を期待。配列/大文字化は Jackson デシリアライズ失敗→画面空
+        "object": _RULE_CLASS,          # 文字列 "BioSample"（配列にしない。同上）
         "source": source,
         "annotation": _annotation(r),
     }
