@@ -31,12 +31,12 @@ services:
       - ${DDBJ_PODMAN_SOCK}:/run/podman/podman.sock:z
 
   # validator（検証エンジン）を別コンテナで常駐させる。web から podman exec で呼ぶ。
-  # 更新時はこのコンテナだけ再ビルド＋入れ替え（web 無停止）。単一コンテナ運用なら `up web` で起動しなければよい。
+  # イメージはリリース済みの ghcr から取得する（ローカル build しない）。タグは compose.sh が
+  # pyproject.toml の version を DDBJ_VALIDATOR_TAG に入れて渡すので、git pull した版に自動追従する
+  # （固定しない）。compose.sh を介さず直接叩いた場合のみ latest にフォールバック。
+  # 更新時はこのコンテナだけ pull＋入れ替え（web 無停止）。単一コンテナ運用なら `up web` で起動しなければよい。
   validator:
-    build:
-      context: ..
-      dockerfile: deploy/Containerfile.validator
-    image: ddbj-validator:${DDBJ_ENV:-development}
+    image: ghcr.io/ddbj/ddbj-validator:${DDBJ_VALIDATOR_TAG:-latest}
     # web の DDBJ_VALIDATOR_CMD が `podman exec ddbj-validator ...` でこの名前を参照するため固定。
     container_name: ddbj-validator
     restart: unless-stopped
