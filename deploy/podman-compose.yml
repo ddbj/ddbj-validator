@@ -1,5 +1,6 @@
 # DDBJ validator Web API（podman compose）。docker は不可（root デーモン・セキュリティ）。
-# 起動: podman compose --env-file .env up -d --build
+# 起動: podman-compose --env-file .env up -d --build
+# （`podman compose` は外部 docker-compose に委譲され podman-compose.yml を見つけられないため native の podman-compose を使う）
 version: "3"
 
 services:
@@ -14,30 +15,35 @@ services:
       DDBJ_DATA_DIR: /data
       # 別コンテナ validator を使う場合に設定（空なら web 内で子プロセス実行＝単一コンテナ）
       DDBJ_VALIDATOR_CMD: ${DDBJ_VALIDATOR_CMD:-}
+      # 下記 socket をマウントした podman client がこの socket 経由で host podman を操作する。
+      CONTAINER_HOST: unix:///run/podman/podman.sock
     env_file:
       - .env
       - ../.env   # 内部 DB 接続情報（PGHOST 等）はリポジトリ直下 .env から（単一コンテナ運用時に validator が参照）
     ports:
-      - "${DDBJ_WEB_PORT:-8000}:8000"
+      # DDBJ_BIND_HOST で公開 IF を限定（D-way すぱこん区画のみ）。未設定なら全IF(0.0.0.0)。
+      - "${DDBJ_BIND_HOST:-0.0.0.0}:${DDBJ_WEB_PORT:-8000}:8000"
     volumes:
-      - ${DDBJ_DATA_DIR_HOST:-./data}:/data:z
+      # :U = podman が volume を非 root のコンテナユーザ(web/uid1000)に chown（rootless で書き込み可にする）。
+      - ${DDBJ_DATA_DIR_HOST:-./data}:/data:z,U
       # 別コンテナ運用時: host の rootless podman socket を web にマウント（podman exec 用）。
-      # 下記コメントを外し、.env の DDBJ_PODMAN_SOCK に `podman info --format '{{.Host.RemoteSocket.Path}}'` の値を設定。
-      # - ${DDBJ_PODMAN_SOCK}:/run/podman/podman.sock:z
-    # environment に CONTAINER_HOST=unix:///run/podman/podman.sock を足すと podman client が上記 socket を使う。
+      # .env の DDBJ_PODMAN_SOCK に `podman info --format '{{.Host.RemoteSocket.Path}}'` の値を設定。
+      - ${DDBJ_PODMAN_SOCK}:/run/podman/podman.sock:z
 
   # validator（検証エンジン）を別コンテナで常駐させる。web から podman exec で呼ぶ。
-  # 更新時はこのコンテナだけ再ビルド＋入れ替え（web 無停止）。単一コンテナ運用なら `up web` で起動しなければよい。
+  # イメージはリリース済みの ghcr から取得する（ローカル build しない）。タグは compose.sh が
+  # pyproject.toml の version を DDBJ_VALIDATOR_TAG に入れて渡すので、git pull した版に自動追従する
+  # （固定しない）。compose.sh を介さず直接叩いた場合のみ latest にフォールバック。
+  # 更新時はこのコンテナだけ pull＋入れ替え（web 無停止）。単一コンテナ運用なら `up web` で起動しなければよい。
   validator:
-    build:
-      context: ..
-      dockerfile: deploy/Containerfile.validator
-    image: ddbj-validator:${DDBJ_ENV:-development}
+    image: ghcr.io/ddbj/ddbj-validator:${DDBJ_VALIDATOR_TAG:-latest}
+    # web の DDBJ_VALIDATOR_CMD が `podman exec ddbj-validator ...` でこの名前を参照するため固定。
+    container_name: ddbj-validator
     restart: unless-stopped
     env_file:
       - .env
       - ../.env   # 内部 DB 接続情報（PGHOST/PGPORT/PGDATABASE 等）はリポジトリ直下 .env から
     volumes:
-      - ${DDBJ_DATA_DIR_HOST:-./data}:/data:z
+      - ${DDBJ_DATA_DIR_HOST:-./data}:/data:z,U
     # 常駐用（web から podman exec で呼ぶ）。CLI は exec 時に起動される。
     entrypoint: ["sleep", "infinity"]
