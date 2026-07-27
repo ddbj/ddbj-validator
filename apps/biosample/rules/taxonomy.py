@@ -300,6 +300,7 @@ class BS_R0105(BsRule):
                         sample=rec.sample_id,
                         message=f"Taxonomy warning. component_organism will be corrected to the scientific name. (Found: '{v}', Suggested: '{sci}')",
                         anno_cols=[{"key": "component_organism", "value": v}],
+                        attribute="component_organism", old_value=v,
                         new_value=sci, target_key="component_organism"))
         return out
 
@@ -334,6 +335,7 @@ class BS_R0015(BsRule):
                     sample=rec.sample_id,
                     message=f"Invalid host organism name. (host: '{host}', Suggested: '{sci}')",
                     anno_cols=[{"key": "host", "value": host}],
+                    attribute="host", old_value=host,
                     new_value=sci, target_key="host"))
         return out
 
