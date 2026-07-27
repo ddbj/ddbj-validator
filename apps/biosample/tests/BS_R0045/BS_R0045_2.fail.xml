@@ -5,7 +5,7 @@
     <Description>
       <SampleName>S1</SampleName>
       <Title>S1</Title>
-      <Organism taxonomy_id="1423850"><OrganismName>1423850</OrganismName></Organism>
+      <Organism><OrganismName>1423850</OrganismName></Organism>
     </Description>
     <Owner><Name>BSI</Name><Contacts><Contact email="test1@ddbj.nig.ac.jp"><Name><First>Hanako</First><Last>Mishima</Last></Name></Contact></Contacts></Owner>
     <Models><Model>Microbe</Model></Models>

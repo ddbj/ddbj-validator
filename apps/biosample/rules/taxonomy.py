@@ -226,6 +226,10 @@ class BS_R0045(BsRule):
         for rec in submission.records:
             if is_empty(rec.organism) or is_missing_value(rec.organism):
                 continue
+            # taxonomy_id が非 null かつ整数のときは R0004（organism↔taxid 不一致検査）の管轄。
+            # ruby driver は taxonomy_id 記載時に R0004 のみ・R0045 を呼ばないため、ここで skip して合わせる。
+            if not is_empty(rec.taxonomy_id) and str(rec.taxonomy_id).strip().isdigit():
+                continue
             # 数値のみの organism＝taxid 記載とみなす（旧 BS_R0142 を内包。production は R0045 に含める）。
             # taxid→学名が引ければ organism を学名へ、その数値を taxonomy_id へ移す autofix。引けなければ warning。
             if rec.organism.strip().isdigit():
@@ -242,6 +246,7 @@ class BS_R0045(BsRule):
                 else:
                     out.append(self.result(
                         sample=rec.sample_id,
+                        anno_cols=[{"key": "organism", "value": rec.organism or ""}],
                         message=("Taxonomy error warning. Organism is not found in the Taxonomy database. "
                                  f"(organism: '{rec.organism}')")))
                 continue
@@ -249,6 +254,7 @@ class BS_R0045(BsRule):
             if not _resolved(info):
                 out.append(self.result(
                     sample=rec.sample_id,
+                    anno_cols=[{"key": "organism", "value": rec.organism or ""}],
                     message=("Taxonomy error warning. Organism is not found in the Taxonomy database. "
                              "If novel, enter the proposed name and leave taxonomy_id empty; "
                              f"otherwise correct the name. (organism: '{rec.organism}')")))
