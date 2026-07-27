@@ -73,7 +73,7 @@ class BS_R0138(BsRule):
                 # 大文字小文字違いは R0002（autofix）の担当なので R0138 は発火させない。
                 if val not in cv_attr[name] and _cv_correction(name, val, cv_attr[name]) is None:
                     out.append(self.result(
-                        sample=rec.sample_id,
+                        sample=rec.sample_id, attribute=name, old_value=val,
                         message=(f"Attribute value is not in controlled terms. "
                                  f"({name}: '{val}')")))
         return out

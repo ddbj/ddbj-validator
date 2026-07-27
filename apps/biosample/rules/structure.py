@@ -33,6 +33,7 @@ class BS_R0061(BsRule):
             multi = [name for name, vals in rec.attributes.items() if len(vals) > 1]
             for name in sorted(multi):
                 out.append(self.result(sample=rec.sample_id, target=name,
+                                       attribute=name, old_value=", ".join(rec.attributes.get(name, [])),
                                        message=f"Multiple values detected for '{name}'. Only one value is allowed."))
         return out
 
@@ -50,6 +51,7 @@ class BS_R0003(BsRule):
         for rec in submission.records:
             if rec.title in dup:
                 out.append(self.result(sample=rec.sample_id,
+                                       anno_cols=[{"key": "Title", "value": rec.title or ""}],
                                        message=f"Sample title is duplicated in the submission. (title: '{rec.title}')"))
         return out
 

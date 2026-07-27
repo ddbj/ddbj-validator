@@ -150,8 +150,40 @@ def write_autofix_confirmation(autofix_lines, out_dir):
 
 
 def _annotation(r):
-    """result dict から表示用 annotation 配列を構築（Sample name ＋ autofix 提案）。"""
-    anno = [{"key": "Sample name", "value": r.get("sample") or ""}]
+    """result dict から表示用 annotation 配列を構築（D-way 本番 ruby の表示パターンに合わせる）。
+
+    annotation パターン（rule 表のコード。詳細は docs 参照）:
+      GRP   group_no あり … Sample name ＋ "Sample group without distinguishing attribute"（BS_R0024）
+      TAX   kind=organism ＋ old_taxid あり … organism/Suggested value (organism)/taxonomy_id/Suggested value (taxonomy_id)（BS_R0045）
+      A1/A1F attribute あり … Attribute / Attribute value （＋autofix なら Suggested value）
+    """
+    sample = {"key": "Sample name", "value": r.get("sample") or ""}
+    # GRP: 重複グループ番号（BS_R0024）
+    if r.get("group_no") is not None:
+        return [sample, {"key": "Sample group without distinguishing attribute", "value": str(r["group_no"])}]
+    # TAX: organism/taxonomy 二重補正（BS_R0045）
+    if r.get("kind") == "organism" and r.get("old_taxid") is not None:
+        anno = [sample, {"key": "organism", "value": r.get("old_value") or ""}]
+        if r.get("autofix") and r.get("new_value") is not None:
+            anno.append({"key": "Suggested value (organism)", "suggested_value": [r.get("new_value")],
+                         "target_key": "organism", "is_auto_annotation": True})
+        anno.append({"key": "taxonomy_id", "value": r.get("old_taxid") or ""})
+        if r.get("new_taxid"):
+            anno.append({"key": "Suggested value (taxonomy_id)", "suggested_value": [str(r.get("new_taxid"))],
+                         "target_key": "taxonomy_id", "is_auto_annotation": True})
+        return anno
+    # A2/A2F/MSG/NAMES/MULTI: rule が列を明示供給（anno_cols=[{key, value}, ...]）。
+    # 名前付き属性列（現在値）や Attributes/Values・Message 等の固有列をそのまま並べる。
+    cols = r.get("anno_cols")
+    if cols:
+        anno = [sample] + [{"key": c["key"], "value": c.get("value", "") or ""} for c in cols]
+        # A2F: autofix があれば末尾に Suggested value（列見出しは "Suggested value"）。
+        if r.get("autofix") and r.get("new_value") is not None:
+            anno.append({"key": "Suggested value", "suggested_value": [r.get("new_value")],
+                         "target_key": r.get("target_key") or "value", "is_auto_annotation": True})
+        return anno
+    # A1/A1F: 属性値系（Attribute / Attribute value ＋ autofix なら Suggested value）
+    anno = [sample]
     attr = r.get("attribute")
     if attr:
         anno.append({"key": "Attribute", "value": attr})
@@ -161,7 +193,7 @@ def _annotation(r):
     if r.get("autofix") and r.get("new_value") is not None:
         target_key = "Attribute value" if attr else ("organism" if r.get("kind") == "organism" else "value")
         anno.append({
-            "key": "Suggested value",
+            "key": r.get("suggest_key") or "Suggested value",   # ruby の綴り差（例 R0012="Suggestion"）に対応
             "suggested_value": [r.get("new_value")],
             "target_key": target_key,
             "is_auto_annotation": True,
@@ -177,11 +209,26 @@ def _annotation(r):
     return anno
 
 
+_AUTO_ANNOTATION_MSG = "An automatically-generated correction will be applied."
+
+# ruby が message 末尾に AUTO_ANNOTATION_MSG を付与する rule（add_error(auto_annotation: true)）。
+# ruby staging API を全 fixture で実測して確定。annotation の is_auto_annotation とは独立で、
+# 例えば R0045（organism/taxonomy 補正）は autofix だが接尾辞は付かない。
+_AUTO_SUFFIX_RULES = frozenset({
+    "BS_R0001", "BS_R0002", "BS_R0009", "BS_R0013", "BS_R0015",
+    "BS_R0094", "BS_R0095", "BS_R0105", "BS_R0136",
+})
+
+
 def _error_obj(r, source):
     """result dict を web validator 互換の error_obj へ写像。"""
+    msg = _official_message(r["rule_id"], r["message"])
+    # ruby と同様、対象 rule のみ公式文言の末尾に補正告知を付与する。
+    if r["rule_id"] in _AUTO_SUFFIX_RULES:
+        msg = f"{msg} {_AUTO_ANNOTATION_MSG}"
     return {
         "id": r["rule_id"],
-        "message": _official_message(r["rule_id"], r["message"]),   # D-way 本番と同一の公式文言
+        "message": msg,
         "reference": _DOC_BASE + r["rule_id"],
         "level": r["level"],
         "external": bool(r.get("external", False)),

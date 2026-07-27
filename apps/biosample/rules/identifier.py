@@ -37,6 +37,7 @@ class BS_R0005(BsRule):
                 continue
             if not _BP_RE.match(v.strip()):
                 out.append(self.result(sample=rec.sample_id,
+                                       attribute="bioproject_id", old_value=v,
                                        message=f"Invalid BioProject accession. (Found: '{v}')"))
         return out
 
@@ -55,6 +56,7 @@ class BS_R0099(BsRule):
                 continue
             if not _PREFIX_RE.match(v.strip()):
                 out.append(self.result(sample=rec.sample_id,
+                                       attribute="locus_tag_prefix", old_value=v,
                                        message=f"Invalid locus tag prefix format. (Found: '{v}')"))
         return out
 
@@ -120,6 +122,7 @@ class BS_R0122(BsRule):
                 continue
             if not _GISAID_RE.match(v.strip()):
                 out.append(self.result(sample=rec.sample_id,
+                                       attribute="gisaid_accession", old_value=v,
                                        message=f"Invalid GISAID accession number. (Found: '{v}')"))
         return out
 

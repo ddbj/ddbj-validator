@@ -22,7 +22,9 @@ class BS_R0018(BsRule):
         out = []
         for rec in submission.records:
             if is_empty(rec.sample_name):
-                out.append(self.result(sample=rec.accession, message=self.description))
+                out.append(self.result(sample=rec.accession,
+                                       anno_cols=[{"key": "sample_title", "value": rec.attr("sample_title") or rec.title or ""}],
+                                       message=self.description))
         return out
 
 
@@ -36,7 +38,9 @@ class BS_R0020(BsRule):
         out = []
         for rec in submission.records:
             if is_empty(rec.organism):
-                out.append(self.result(sample=rec.sample_id, message=self.description))
+                out.append(self.result(sample=rec.sample_id,
+                                       anno_cols=[{"key": "organism", "value": rec.organism or ""}],
+                                       message=self.description))
         return out
 
 
@@ -50,7 +54,9 @@ class BS_R0025(BsRule):
         out = []
         for rec in submission.records:
             if is_empty(rec.package):
-                out.append(self.result(sample=rec.sample_id, message=self.description))
+                out.append(self.result(sample=rec.sample_id,
+                                       anno_cols=[{"key": "package", "value": rec.package or ""}],
+                                       message=self.description))
         return out
 
 
@@ -105,5 +111,6 @@ class BS_R0027(BsRule):
             if missing:
                 out.append(self.result(
                     sample=rec.sample_id,
+                    anno_cols=[{"key": "Attribute names", "value": ", ".join(missing)}],
                     message=f"Sample has missing mandatory attribute(s): {', '.join(missing)}"))
         return out

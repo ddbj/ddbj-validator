@@ -38,6 +38,8 @@ class BS_R0006(BsRule):
                 continue
             if v.strip().upper() not in {p.upper() for p in context.authorized_projects}:
                 out.append(self.result(sample=rec.sample_id,
+                                       anno_cols=[{"key": "Submitter ID", "value": context.account or ""},
+                                                  {"key": "bioproject_id", "value": v}],
                                        message=f"BioProject accession not registered in your account. (Found: '{v}')"))
         return out
 
@@ -125,5 +127,8 @@ class BS_R0128(BsRule):
         for rec in submission.records:
             if not is_empty(rec.attr("locus_tag_prefix")) and is_empty(rec.attr("bioproject_id")):
                 out.append(self.result(sample=rec.sample_id,
+                                       anno_cols=[{"key": "Attribute", "value": "locus_tag_prefix, bioproject_id"},
+                                                  {"key": "Attribute value(locus_tag_prefix)", "value": rec.attr("locus_tag_prefix") or ""},
+                                                  {"key": "Attribute value(bioproject_id)", "value": rec.attr("bioproject_id") or ""}],
                                        message="Provide a BioProject ID for a locus tag prefix."))
         return out

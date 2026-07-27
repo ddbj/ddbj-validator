@@ -78,6 +78,7 @@ class BS_R0007(BsRule):
             if _date_fixable(v):
                 continue  # 補正可能 → R0136 が扱う
             out.append(self.result(sample=rec.sample_id,
+                                   attribute="collection_date", old_value=v,
                                    message=f"Invalid datetime. (Found: '{v}')"))
         return out
 
@@ -138,6 +139,7 @@ class BS_R0040(BsRule):
                 future = (dt.year, dt.month, dt.day) > (today.year, today.month, today.day)
             if future:
                 out.append(self.result(sample=rec.sample_id,
+                                       attribute="collection_date", old_value=v,
                                        message=f"Sample collection date is a future date. (Found: '{v}')"))
         return out
 
@@ -186,6 +188,7 @@ class BS_R0139(BsRule):
             if not (fixed and latlon_in_range(fixed)):
                 # 形式不正、または範囲外（緯度>90/経度>180 の "200 N 400 E" 等）で補正不能 → error
                 out.append(self.result(sample=rec.sample_id,
+                                       attribute="lat_lon", old_value=v,
                                        message=f"Invalid lat_lon. (Found: '{v}')"))
         return out
 
@@ -210,6 +213,7 @@ class BS_R0011(BsRule):
                     continue
                 if not _PUB_RE.match(v.strip()):
                     out.append(self.result(sample=rec.sample_id, target=name,
+                                           attribute=name, old_value=v,
                                            message=f"Invalid publication identifier. ({name}: '{v}')"))
         return out
 
@@ -230,5 +234,6 @@ class BS_R0093(BsRule):
                     continue
                 if not str(v).strip().isdigit():
                     out.append(self.result(sample=rec.sample_id, target=name,
+                                           attribute=name, old_value=v,
                                            message=f"Attribute value must be integer. ({name}: '{v}')"))
         return out

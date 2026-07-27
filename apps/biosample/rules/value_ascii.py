@@ -60,7 +60,11 @@ class BS_R0058(BsRule):
             for name in sorted(checked):
                 for v in checked[name]:
                     if v and _non_ascii(v):
+                        pos = "".join("[### Non-ASCII character ###]" if ord(c) > 127 else c for c in v)
                         out.append(self.result(sample=rec.sample_id, target=name,
+                                               anno_cols=[{"key": "Attribute", "value": name},
+                                                          {"key": "Attribute value", "value": v},
+                                                          {"key": "Position", "value": pos}],
                                                message=f"Non-ASCII characters detected in '{name}'. (Found: '{v}')"))
                         break
         return out
@@ -126,6 +130,9 @@ class BS_R0100(BsRule):
                 for v in vals:
                     if v and _is_null(v):
                         out.append(self.result(sample=rec.sample_id, target=name,
+                                               anno_cols=[{"key": "Attribute name", "value": name},
+                                                          {"key": "Attribute value", "value": v},
+                                                          {"key": "Suggested value", "value": ""}],
                                                message=f"Missing value is unnecessary for optional attribute '{name}'."))
                         break
         return out
@@ -156,5 +163,5 @@ class BS_R0012(BsRule):
                         out.append(self.autofix_result(
                             sample=rec.sample_id, target=name,
                             message=f"Special character is included. ({name}: '{v}', Suggested: '{fixed}')",
-                            attribute=name, old_value=v, new_value=fixed))
+                            attribute=name, old_value=v, new_value=fixed, suggest_key="Suggestion"))
         return out

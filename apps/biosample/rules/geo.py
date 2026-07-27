@@ -35,6 +35,7 @@ class BS_R0008(BsRule):
             if (country and country not in countries and country.lower() not in lower
                     and country.lower() not in _COUNTRY_HARDCODE):
                 out.append(self.result(sample=rec.sample_id,
+                                       attribute="geo_loc_name", old_value=v,
                                        message=f"Entered country is not in controlled terms. (Found: '{country}')"))
         return out
 

@@ -42,22 +42,24 @@ class _VoucherBase(BsRule):
             # 形式チェック
             if self.require_institution and ":" not in val:
                 out.append(self._res(rec, self.format_rule, self.level,
-                                     f"Invalid {self.attr_name} format. (Found: '{val}')"))
+                                     f"Invalid {self.attr_name} format. (Found: '{val}')", val))
                 continue
             if _malformed(val):
                 out.append(self._res(rec, self.format_rule, self.level,
-                                     f"Invalid {self.attr_name} format. (Found: '{val}')"))
+                                     f"Invalid {self.attr_name} format. (Found: '{val}')", val))
                 continue
             # 機関コード登録チェック
             code = _institution_code(val)
             if code and code.lower() not in context.institution_codes:
                 out.append(self._res(rec, self.inst_rule, self.inst_level,
-                                     f"Institution code '{code}' is not registered in NCBI BioCollections."))
+                                     f"Institution code '{code}' is not registered in NCBI BioCollections.", val))
         return out
 
-    def _res(self, rec, rule_id, level, message):
+    def _res(self, rec, rule_id, level, message, value=None):
+        # annotation A1 形状（Attribute/Attribute value）用に対象属性名・値も持たせる。
         return {"rule_id": rule_id, "level": level, "target": self.attr_name,
-                "sample": (rec.sample_id), "message": message}
+                "sample": (rec.sample_id), "message": message,
+                "attribute": self.attr_name, "old_value": value}
 
 
 class CultureCollectionValidator(_VoucherBase):
