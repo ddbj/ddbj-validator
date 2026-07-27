@@ -56,6 +56,9 @@ class BS_R0004(BsRule):
                 if name_of_taxid != rec.organism.strip():
                     out.append(self.result(
                         sample=rec.sample_id,
+                        anno_cols=[{"key": "organism", "value": rec.organism or ""},
+                                   {"key": "taxonomy_id", "value": taxid},
+                                   {"key": "Message", "value": f"Organism name of this taxonomy_id: {name_of_taxid}"}],
                         message=(f"Organism and taxonomy id do not match. (organism: '{rec.organism}', "
                                  f"taxonomy_id: '{taxid}', Organism name of this taxonomy_id: '{name_of_taxid}')")))
                 continue
@@ -67,6 +70,9 @@ class BS_R0004(BsRule):
             if db_taxid and taxid != str(db_taxid).strip():
                 out.append(self.result(
                     sample=rec.sample_id,
+                    anno_cols=[{"key": "organism", "value": rec.organism or ""},
+                               {"key": "taxonomy_id", "value": str(rec.taxonomy_id).strip()},
+                               {"key": "Message", "value": f"Expected taxonomy_id for this organism: {db_taxid}"}],
                     message=f"Organism and taxonomy id do not match. (organism: '{rec.organism}', taxonomy_id: '{rec.taxonomy_id}', expected: '{db_taxid}')"))
         return out
 
@@ -93,12 +99,16 @@ class BS_R0096(BsRule):
                 if tinfo.get("is_species_or_below") is False:
                     out.append(self.result(
                         sample=rec.sample_id,
+                        anno_cols=[{"key": "taxonomy_id", "value": taxid or ""},
+                                   {"key": "organism", "value": rec.organism or ""}],
                         message=f"Taxonomy should be species or infraspecific level. (taxonomy_id: '{taxid}', rank: '{tinfo.get('rank')}')"))
                 continue
             info = context.tax_data.get(rec.organism)
             if tax_rank_invalid(info):
                 out.append(self.result(
                     sample=rec.sample_id,
+                    anno_cols=[{"key": "taxonomy_id", "value": ("" if is_empty(rec.taxonomy_id) else str(rec.taxonomy_id).strip())},
+                               {"key": "organism", "value": rec.organism or ""}],
                     message=f"Taxonomy should be species or infraspecific level. (organism: '{rec.organism}', rank: '{info.get('rank')}')"))
         return out
 
@@ -124,6 +134,10 @@ class BS_R0059(BsRule):
                 continue
             if tax_has_lineage(info, ["Bacteria", "Archaea"]):
                 out.append(self.result(sample=rec.sample_id,
+                                       anno_cols=[{"key": "taxonomy_id", "value": ("" if is_empty(rec.taxonomy_id) else str(rec.taxonomy_id).strip())},
+                                                  {"key": "organism", "value": rec.organism or ""},
+                                                  {"key": "sex", "value": rec.attr("sex") or ""},
+                                                  {"key": "Message", "value": "bacterial or viral organisms; did you mean 'host sex'?"}],
                                        message="Attribute 'sex' is not appropriate for bacteria/archaea."))
         return out
 
@@ -147,6 +161,7 @@ class BS_R0115(BsRule):
             is_bacteria = tax_has_lineage(info, ["Bacteria"]) and not tax_has_lineage(info, ["Cyanobacteria"])
             if is_bacteria or tax_has_lineage(info, ["unclassified sequences"]):
                 out.append(self.result(sample=rec.sample_id,
+                                       attribute="specimen_voucher", old_value=rec.attr("specimen_voucher"),
                                        message="Attribute 'specimen_voucher' is not appropriate for bacteria/unclassified sequences."))
         return out
 
@@ -172,6 +187,8 @@ class BS_R0106(BsRule):
                 is_meta = (t.get("scientific_name") or "").lower().endswith("metagenome")
                 if not (is_sci and is_meta):
                     out.append(self.result(sample=rec.sample_id,
+                                           anno_cols=[{"key": "metagenome_source", "value": v},
+                                                      {"key": "message", "value": "This metagenome_source name is not in the taxonomy database."}],
                                            message=f"Invalid metagenome source. (Found: '{v}')"))
         return out
 
@@ -189,6 +206,7 @@ class BS_R0141(BsRule):
                 continue
             if rec.organism and "uncultured" in rec.organism.lower():
                 out.append(self.result(sample=rec.sample_id,
+                                       attribute="organism", old_value=rec.organism,
                                        message=f"Organism containing 'uncultured' cannot be used for MIMAG. (organism: '{rec.organism}')"))
         return out
 
@@ -219,7 +237,8 @@ class BS_R0045(BsRule):
                         message=("Taxonomy error warning. Organism is a taxonomy id; the taxonomy id will be "
                                  "automatically filled and the organism corrected to the scientific name. "
                                  f"(organism: '{rec.organism}', Suggested: '{sci}', taxonomy_id: '{taxid}')"),
-                        old_value=rec.organism, new_value=sci, new_taxid=taxid))
+                        old_value=rec.organism, new_value=sci, new_taxid=taxid,
+                        old_taxid=("" if is_empty(rec.taxonomy_id) else str(rec.taxonomy_id).strip())))
                 else:
                     out.append(self.result(
                         sample=rec.sample_id,
@@ -253,7 +272,8 @@ class BS_R0045(BsRule):
                 kind="organism",
                 old_value=rec.organism,
                 new_value=(sci if need_name else None),
-                new_taxid=(str(taxid) if need_taxid else None)))
+                new_taxid=(str(taxid) if need_taxid else None),
+                old_taxid=("" if is_empty(rec.taxonomy_id) else str(rec.taxonomy_id).strip())))
         return out
 
 
@@ -279,7 +299,9 @@ class BS_R0105(BsRule):
                     out.append(self.autofix_result(
                         sample=rec.sample_id,
                         message=f"Taxonomy warning. component_organism will be corrected to the scientific name. (Found: '{v}', Suggested: '{sci}')",
-                        attribute="component_organism", old_value=v, new_value=sci))
+                        anno_cols=[{"key": "component_organism", "value": v}],
+                        attribute="component_organism", old_value=v,
+                        new_value=sci, target_key="component_organism"))
         return out
 
 
@@ -304,6 +326,7 @@ class BS_R0015(BsRule):
             if not _resolved(info):
                 # taxonomy 未解決＝学名でない → warning（autofix しない）
                 out.append(self.result(sample=rec.sample_id,
+                                       anno_cols=[{"key": "host", "value": host}],
                                        message=f"Invalid host organism name. Use a scientific name. (host: '{host}')"))
                 continue
             sci = info.get("scientific_name")
@@ -311,7 +334,9 @@ class BS_R0015(BsRule):
                 out.append(self.autofix_result(
                     sample=rec.sample_id,
                     message=f"Invalid host organism name. (host: '{host}', Suggested: '{sci}')",
-                    attribute="host", old_value=host, new_value=sci))
+                    anno_cols=[{"key": "host", "value": host}],
+                    attribute="host", old_value=host,
+                    new_value=sci, target_key="host"))
         return out
 
 
@@ -348,6 +373,9 @@ class BS_R0134(BsRule):
                 continue
             out.append(self.result(
                 sample=rec.sample_id,
+                anno_cols=[{"key": "organism", "value": org},
+                           {"key": "strain", "value": strain or ""},
+                           {"key": "isolate", "value": isolate or ""}],
                 message=(f"Non-identical identifiers among organism/strain/isolate. "
                          f"(organism: '{org}', strain: '{strain or ''}', isolate: '{isolate or ''}')")))
         return out
@@ -372,7 +400,7 @@ class BS_R0140(BsRule):
                 continue
             if _SP_END.search(org):
                 out.append(self.result(
-                    sample=rec.sample_id,
+                    sample=rec.sample_id, attribute="organism", old_value=org,
                     message=f"Invalid taxonomy for genome sample. (organism: '{org}')"))
         return out
 
@@ -408,5 +436,7 @@ class BS_R0104(BsRule):
             if fire:
                 out.append(self.result(
                     sample=rec.sample_id,
+                    anno_cols=[{"key": "Attribute name", "value": "organism"},
+                               {"key": "Attribute value", "value": org}],
                     message=f"Invalid taxonomy for genome sample. (organism: '{org}')"))
         return out

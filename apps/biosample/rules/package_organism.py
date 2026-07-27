@@ -179,5 +179,9 @@ class PackageOrganismValidator(BsRule):
             if not pred(info, rec):
                 out.append(self.result(
                     sample=rec.sample_id,
+                    anno_cols=[{"key": "organism", "value": rec.organism or ""},
+                               {"key": "taxonomy_id", "value": ("" if not rec.taxonomy_id else str(rec.taxonomy_id).strip())},
+                               {"key": "package", "value": rec.package or ""},
+                               {"key": "Message", "value": f"Organism is inappropriate for package '{rec.package}'."}],
                     message=f"Organism is inappropriate for package '{rec.package}'. (organism: '{rec.organism}')"))
         return out

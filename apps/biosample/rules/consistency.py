@@ -43,6 +43,7 @@ class BS_R0036(BsRule):
                 if not any(not is_empty(rec.attr(n)) for n in members):
                     out.append(self.result(
                         sample=rec.sample_id,
+                        anno_cols=[{"key": "Attribute names", "value": ", ".join(sorted(members))}],
                         message=f"At least one of the following attributes is required: {', '.join(sorted(members))}"))
         return out
 
@@ -70,6 +71,9 @@ class BS_R0073(BsRule):
                 seen[v] = k
             if redundant:
                 out.append(self.result(sample=rec.sample_id,
+                                       anno_cols=[{"key": "organism", "value": rec.organism or ""},
+                                                  {"key": "host", "value": rec.attr("host") or ""},
+                                                  {"key": "isolation_source", "value": rec.attr("isolation_source") or ""}],
                                        message="Redundant values detected among organism/host/isolation_source."))
         return out
 
@@ -92,6 +96,7 @@ class BS_R0135(BsRule):
                 bad = True  # 生物名で始まる strain は不可
             if bad:
                 out.append(self.result(sample=rec.sample_id,
+                                       attribute="strain", old_value=v,
                                        message=f"Invalid strain value. (Found: '{v}')"))
         return out
 
@@ -118,11 +123,17 @@ class BS_R0024(BsRule):
 
         from collections import Counter
         keys = [key(r) for r in submission.records]
-        dup = {k for k, c in Counter(keys).items() if c > 1 and k}
+        cnt = Counter(keys)
+        # 重複キーを初出順に 1 始まりで採番（ruby group_by 順。annotation の
+        # "Sample group without distinguishing attribute" 列に出す）。
+        group_no = {}
+        for k in keys:
+            if k and cnt[k] > 1 and k not in group_no:
+                group_no[k] = len(group_no) + 1
         out = []
         for rec, k in zip(submission.records, keys):
-            if k in dup:
-                out.append(self.result(sample=rec.sample_id,
+            if k in group_no:
+                out.append(self.result(sample=rec.sample_id, group_no=group_no[k],
                                        message="BioSample has no differentiating information from another sample in this submission."))
         return out
 
@@ -151,6 +162,8 @@ class BS_R0062(BsRule):
             for code, names in inst.items():
                 if len(names) > 1:
                     out.append(self.result(sample=rec.sample_id,
+                                           anno_cols=[{"key": "Attributes", "value": ", ".join(names)},
+                                                      {"key": "Values", "value": ", ".join(f"[{n} : {rec.attr(n)}]" for n in names)}],
                                            message=f"Multiple voucher attributes with the same institution code '{code}': {', '.join(names)}"))
         return out
 
@@ -176,6 +189,7 @@ class BS_R0137(BsRule):
                     continue  # 未入力（欠落）は R0027（必須属性欠落）が担当
                 if is_missing_value(v) and not is_valid_reporting_term(v):
                     out.append(self.result(sample=rec.sample_id, target=name,
+                                           anno_cols=[{"key": "Attribute names", "value": name}],
                                            message=f"Missing reporting level term for '{name}'. (Found: '{v}')"))
         return out
 
@@ -249,6 +263,8 @@ class BS_R0132(BsRule):
                 if rec.package.startswith(pfx) and _no_meaningful_identifier(rec, attrs):
                     out.append(self.result(
                         sample=rec.sample_id,
+                        anno_cols=[{"key": "package", "value": rec.package or ""},
+                                   {"key": "attibutes", "value": "/".join(attrs)}],
                         message=f"Null value for infraspecific identifier. (package: {rec.package}, attributes: {'/'.join(attrs)})"))
         return out
 
@@ -270,5 +286,7 @@ class BS_R0133(BsRule):
                 if rec.package.startswith(pfx) and _no_meaningful_identifier(rec, attrs):
                     out.append(self.result(
                         sample=rec.sample_id,
+                        anno_cols=[{"key": "package", "value": rec.package or ""},
+                                   {"key": "attibutes", "value": "/".join(attrs)}],
                         message=f"Null value for infraspecific identifier. (package: {rec.package}, attributes: {'/'.join(attrs)})"))
         return out
