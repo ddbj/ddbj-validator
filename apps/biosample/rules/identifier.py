@@ -76,6 +76,7 @@ class BS_R0102(BsRule):
             v = rec.attr("locus_tag_prefix")
             if not _skip_ltp(v) and v.strip() in dup:
                 out.append(self.result(sample=rec.sample_id,
+                                       anno_cols=[{"key": "locus_tag_prefix", "value": v}],
                                        message=f"Locus tag prefix is duplicated in the submission. (prefix: '{v}')"))
         return out
 
@@ -97,14 +98,21 @@ class BS_R0069(BsRule):
                 continue
             m = self._NUM_RE.match(v.strip())
             if m:
-                by_prefix.setdefault(m.group(1), set()).add(int(m.group(2)))
-        consecutive = False
-        for pfx, nums in by_prefix.items():
-            s = sorted(nums)
-            if any(b - a == 1 for a, b in zip(s, s[1:])):
-                consecutive = True
-        if consecutive:
-            return [self.result(message="Consecutive BioProjects are referenced in this submission. Please check your file.")]
+                by_prefix.setdefault(m.group(1), []).append((int(m.group(2)), v.strip()))
+        # 連番だった bioproject_id（元の表記）を初出順・重複排除で収集し annotation 列に出す（A2）。
+        consecutive_ids, seen = [], set()
+        for _pfx, items in by_prefix.items():
+            items = sorted(set(items))
+            for (a, sa), (b, sb) in zip(items, items[1:]):
+                if b - a == 1:
+                    for x in (sa, sb):
+                        if x not in seen:
+                            seen.add(x)
+                            consecutive_ids.append(x)
+        if consecutive_ids:
+            return [self.result(
+                anno_cols=[{"key": "bioproject_id", "value": ", ".join(consecutive_ids)}],
+                message="Consecutive BioProjects are referenced in this submission. Please check your file.")]
         return []
 
 
@@ -169,6 +177,7 @@ class BS_R0109(BsRule):
             if is_empty(rec.attr("locus_tag_prefix")):
                 out.append(self.result(
                     sample=rec.sample_id,
+                    anno_cols=[{"key": "locus_tag_prefix", "value": rec.attr("locus_tag_prefix") or ""}],
                     message="Locus tag prefix is required for annotated genome submission. "
                             "If you are submitting genome with annotation, please take locus tag prefix."))
         return out

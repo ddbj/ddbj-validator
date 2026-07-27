@@ -111,6 +111,8 @@ class BS_R0041(BsRule):
                 actual = ", ".join(hits) if hits else "Ocean/Unmapped area"
                 out.append(self.result(
                     sample=rec.sample_id,
+                    anno_cols=[{"key": "lat_lon", "value": lat_lon},
+                               {"key": "geo_loc_name", "value": geo}],
                     message=(f"Values provided for 'lat_lon' ({lat_lon}) and 'geo_loc_name' "
                              f"({country}) contradict each other. Coordinates point to: {actual}")))
         return out
