@@ -70,3 +70,17 @@ seq8	source	1..240	organism	Mus musculus
 	ncRNA	1..200	product	5S rRNA
 			ncRNA_class	lncRNA
 			note	ANN2625 fail
+seq9	source	1..3400	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	rRNA	1..3400	product	25S ribosomal RNA
+			gene	test1gene
+			note	ANN2600 pass 25S subtype must not match 5S
+seq10	source	1..110	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	rRNA	1..110	product	25S ribosomal RNA
+			gene	test1gene
+			note	ANN2600 fail 25S 110bp too short (was false negative as 5S)

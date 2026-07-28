@@ -2786,8 +2786,13 @@ class ANN2600(BaseRule):
 
             for rule in rules:
                 target_product = rule.get("product")
+                if not target_product:
+                    continue
+                # サブタイプ名は単語境界で照合する（部分文字列一致だと "25S" が "5S" に誤マッチするため）。
+                # 直前が数字・小数点でなく、直後が数字でないことを要求する（例: "25S"/"5.8S" は "5S" に一致しない）。
+                pattern = rf"(?<![0-9.]){re.escape(target_product)}(?![0-9])"
                 # product に "16S" などが含まれているか判定
-                if target_product and target_product in product_str:
+                if re.search(pattern, product_str):
                     bounds = rule.get("bounds", {})
                     min_len = bounds.get("min")
                     max_len = bounds.get("max")
