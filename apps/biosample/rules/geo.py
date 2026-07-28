@@ -108,11 +108,14 @@ class BS_R0041(BsRule):
                 continue  # 判定不能（geo 未導入 / 形式不正 / 未知国名）→ スキップ
             if not verdict["is_valid"]:
                 hits = sorted(set(verdict["hit_names"]))
+                # lat_lon から示唆される国／海洋名。宣言国と矛盾したときの「本当はどこか」。
                 actual = ", ".join(hits) if hits else "Ocean/Unmapped area"
                 out.append(self.result(
                     sample=rec.sample_id,
+                    # メッセージ表の列: lat_lon / geo_loc_name / Suggested country/area（示唆される国・海洋）
                     anno_cols=[{"key": "lat_lon", "value": lat_lon},
-                               {"key": "geo_loc_name", "value": geo}],
+                               {"key": "geo_loc_name", "value": geo},
+                               {"key": "Suggested country/area", "value": actual}],
                     message=(f"Values provided for 'lat_lon' ({lat_lon}) and 'geo_loc_name' "
                              f"({country}) contradict each other. Coordinates point to: {actual}")))
         return out
