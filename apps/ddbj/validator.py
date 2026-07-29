@@ -123,6 +123,7 @@ class Validator:
             ANN2544(), # [WARNING] Invalid locus_tag length or digit format
             ANN2545(), # [WARNING] DFAST-generated 'LOCUS' detected
             ANN2555(), # [WARNING] Invalid CDS:mRNA or CDS:misc_feature ratio
+            ANN2556(), # [WARNING] mRNA exon is not present in paired CDS
             ANN2560(), # [ERROR] Invalid chromosome name
             ANN2570(), # [ERROR] Invalid plasmid name
             ANN2580(), # [WARNING] Partial rRNA feature annotated by DFAST
