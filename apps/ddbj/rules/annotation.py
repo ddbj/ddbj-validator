@@ -2597,7 +2597,104 @@ class ANN2555(BaseRule):
                     entry_id=record.id, message=msg, level="warning", qualifier="locus_tag"
                 ))
         return results
-        
+
+
+class ANN2556(BaseRule):
+    rule_id = "ANN2556"
+    alternate_id = ""
+    target = "feature"
+    description = "mRNA exon is not present in paired CDS."
+    requires_rdb = False
+    is_file_level = False
+
+    @staticmethod
+    def _exons(location):
+        """location（join なら CompoundLocation）から (start, end) 半開区間のリストを昇順・マージして返す。
+        座標は絶対値（complement でも part.start < part.end）。<`/`>` の部分長は int() で座標のみ取得。"""
+        if not location:
+            return []
+        parts = getattr(location, "parts", [location])
+        ivs = sorted((int(p.start), int(p.end)) for p in parts)
+        merged = []
+        for s, e in ivs:
+            if merged and s <= merged[-1][1]:
+                merged[-1] = (merged[-1][0], max(merged[-1][1], e))
+            else:
+                merged.append((s, e))
+        return merged
+
+    @staticmethod
+    def _clip(intervals, lo, hi):
+        """各区間を [lo, hi) で切り取る（範囲外は捨てる）。"""
+        out = []
+        for s, e in intervals:
+            ns, ne = max(s, lo), min(e, hi)
+            if ns < ne:
+                out.append((ns, ne))
+        return out
+
+    @staticmethod
+    def _subtract(a, b):
+        """a - b（いずれも昇順・マージ済み半開区間）。a から b に覆われた部分を除いた区間を返す。"""
+        out = []
+        for s, e in a:
+            cur = s
+            for bs, be in b:
+                if be <= cur or bs >= e:
+                    continue
+                if bs > cur:
+                    out.append((cur, min(bs, e)))
+                cur = max(cur, be)
+                if cur >= e:
+                    break
+            if cur < e:
+                out.append((cur, e))
+        return out
+
+    def validate(self, record, context):
+        results = []
+        if record.id == "COMMON":
+            return results
+
+        # locus_tag ごとに mRNA / CDS を集める（1:1 のペアだけ対象にする）
+        mrna_by_lt = defaultdict(list)
+        cds_by_lt = defaultdict(list)
+        for feature in self.get_features(record, "mRNA"):
+            for lt in feature.qualifiers.get("locus_tag", []):
+                mrna_by_lt[lt].append(feature)
+        for feature in self.get_features(record, "CDS"):
+            for lt in feature.qualifiers.get("locus_tag", []):
+                cds_by_lt[lt].append(feature)
+
+        for lt, mrnas in mrna_by_lt.items():
+            cdss = cds_by_lt.get(lt, [])
+            # locus_tag で mRNA・CDS が「各1本」のときだけ判定（1:>1／片側のみ／複数はスキップ）
+            if len(mrnas) != 1 or len(cdss) != 1:
+                continue
+            mrna, cds = mrnas[0], cdss[0]
+            if not mrna.location or not cds.location:
+                continue
+
+            cds_ex = self._exons(cds.location)
+            mrna_ex = self._exons(mrna.location)
+            if not cds_ex or not mrna_ex:
+                continue
+
+            # CDS のコード範囲 [min, max] 内で、mRNA エクソンが CDS エクソンに覆われない部分を検出。
+            # UTR（コード範囲の外側）は clip で自然に除外される（mRNA > CDS の前提を満たす）。
+            lo, hi = cds_ex[0][0], cds_ex[-1][1]
+            uncovered = self._subtract(self._clip(mrna_ex, lo, hi), cds_ex)
+            if not uncovered:
+                continue
+
+            # 1-based 閉区間表記（例 29985799..29986026）で昇順列挙
+            regions = ", ".join(f"{s + 1}..{e}" for s, e in uncovered)
+            msg = f"{self.description[:-1]}: locus_tag:{lt} (Found: {regions})"
+            results.append(self.feature_result(record, mrna, msg, level="warning"))
+
+        return results
+
+
 class ANN2560(BaseRule):
     rule_id = "ANN2560"
     alternate_id = "BLP0102"

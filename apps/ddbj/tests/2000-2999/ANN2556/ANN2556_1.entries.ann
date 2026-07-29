@@ -1,0 +1,57 @@
+COMMON	SUBMITTER		ab_name	Mishima,H.
+			ab_name	Robertson,G.R.
+			contact	Hanako Mishima
+			email	mishima@ddbj.nig.ac.jp
+			institute	National Institute of Genetics
+			department	DNA Data Bank of Japan
+			country	Japan
+			state	Shizuoka
+			city	Mishima
+			street	Yata 1111
+			zip	411-8540
+	REFERENCE		title	Test
+			ab_name	Mishima,H.
+			year	2026
+			status	Unpublished
+seq1	source	1..900	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	join(101..200,301..400,501..600)	locus_tag	LT0001
+			note	ANN2556 pass mRNA==CDS in coding region, 5'UTR extension only
+	CDS	join(151..200,301..400,501..550)	locus_tag	LT0001
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+seq2	source	1..900	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	join(101..200,301..400,501..600,701..800)	locus_tag	LT0002
+			note	ANN2556 fail mRNA internal exon 501..600 not present in CDS
+	CDS	join(151..200,301..400,701..750)	locus_tag	LT0002
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+seq3	source	1..900	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	join(101..200,301..400,501..600)	locus_tag	LT0003
+			note	ANN2556 pass ambiguous 1:>1 pair must be skipped
+	mRNA	join(101..200,301..400)	locus_tag	LT0003
+			note	isoform b
+	CDS	join(151..200,301..400)	locus_tag	LT0003
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+	CDS	join(151..200,301..350)	locus_tag	LT0003
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+seq4	source	1..900	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	join(101..200,301..400)	locus_tag	LT0004
+			note	ANN2556 pass mRNA only, no paired CDS -> skip

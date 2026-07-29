@@ -158,6 +158,8 @@ class BS_R0091(BsRule):
             if subs and any(s != cur_sub for s in subs):
                 out.append(self.result(
                     sample=rec.sample_id,
+                    # メッセージ表に prefix 値も出す（R0102 と列を揃える。どの prefix が重複したか一目で分かる）
+                    anno_cols=[{"key": "locus_tag_prefix", "value": v}],
                     message=f"Locus tag prefix is duplicated. (Found: '{v}')"))
         return out
 
