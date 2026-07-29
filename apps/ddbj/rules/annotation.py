@@ -2651,12 +2651,33 @@ class ANN2556(BaseRule):
                 out.append((cur, e))
         return out
 
+    @staticmethod
+    def _cds_fits_mrna(cds_ex, mrna_ex):
+        """CDS が mRNA のスプライス構造に「収まる」か（CDS ⊆ mRNA を向き付きで判定）。
+        - 内部エクソン（先頭・末尾以外）: mRNA エクソンと境界が完全一致（同一スプライス）。
+        - 末端エクソン（先頭・末尾）: mRNA のいずれかのエクソンに包含（UTR/部分長で外側がはみ出す分は許容）。
+        アイソフォームが複数あるとき、CDS がどの mRNA に属すかを一意に選ぶための判定。
+        欠落エクソン（mRNA にあって CDS に無い分）は CDS 側のエクソンではないためここでは無関係
+        （検出は validate 側の mRNA−CDS で行う一方向チェック）。"""
+        if not mrna_ex:
+            return False
+        mset = set(mrna_ex)
+        last = len(cds_ex) - 1
+        for i, (cs, ce) in enumerate(cds_ex):
+            if 0 < i < last:
+                if (cs, ce) not in mset:
+                    return False
+            else:
+                if not any(ms <= cs and ce <= me for ms, me in mrna_ex):
+                    return False
+        return True
+
     def validate(self, record, context):
         results = []
         if record.id == "COMMON":
             return results
 
-        # locus_tag ごとに mRNA / CDS を集める（1:1 のペアだけ対象にする）
+        # locus_tag ごとに mRNA / CDS を集める
         mrna_by_lt = defaultdict(list)
         cds_by_lt = defaultdict(list)
         for feature in self.get_features(record, "mRNA"):
@@ -2666,31 +2687,39 @@ class ANN2556(BaseRule):
             for lt in feature.qualifiers.get("locus_tag", []):
                 cds_by_lt[lt].append(feature)
 
-        for lt, mrnas in mrna_by_lt.items():
-            cdss = cds_by_lt.get(lt, [])
-            # locus_tag で mRNA・CDS が「各1本」のときだけ判定（1:>1／片側のみ／複数はスキップ）
-            if len(mrnas) != 1 or len(cdss) != 1:
-                continue
-            mrna, cds = mrnas[0], cdss[0]
-            if not mrna.location or not cds.location:
-                continue
+        # CDS ごとに、エクソン構造から対応 mRNA を一意に決めてペア判定する。
+        # （単純な 1 mRNA + 1 CDS はもちろん、同一 locus_tag のアイソフォームでも
+        #   エクソン構造が一致する mRNA が1本に定まれば対象。曖昧・不一致はスキップ。）
+        for lt, cdss in cds_by_lt.items():
+            mrnas = mrna_by_lt.get(lt, [])
+            if not mrnas:
+                continue  # 片側（CDS のみ）はスキップ
+            for cds in cdss:
+                if not cds.location:
+                    continue
+                cds_ex = self._exons(cds.location)
+                if not cds_ex:
+                    continue
 
-            cds_ex = self._exons(cds.location)
-            mrna_ex = self._exons(mrna.location)
-            if not cds_ex or not mrna_ex:
-                continue
+                # エクソン構造で対応 mRNA の候補を求め、ちょうど1本のときだけペア確定
+                cands = [m for m in mrnas
+                         if m.location and self._cds_fits_mrna(cds_ex, self._exons(m.location))]
+                if len(cands) != 1:
+                    continue  # 0本（不一致）／複数（曖昧）はスキップ
+                mrna = cands[0]
+                mrna_ex = self._exons(mrna.location)
 
-            # CDS のコード範囲 [min, max] 内で、mRNA エクソンが CDS エクソンに覆われない部分を検出。
-            # UTR（コード範囲の外側）は clip で自然に除外される（mRNA > CDS の前提を満たす）。
-            lo, hi = cds_ex[0][0], cds_ex[-1][1]
-            uncovered = self._subtract(self._clip(mrna_ex, lo, hi), cds_ex)
-            if not uncovered:
-                continue
+                # CDS のコード範囲 [min, max] 内で、mRNA エクソンが CDS エクソンに覆われない部分を検出。
+                # UTR（コード範囲の外側）は clip で自然に除外される（mRNA > CDS の前提を満たす）。
+                lo, hi = cds_ex[0][0], cds_ex[-1][1]
+                uncovered = self._subtract(self._clip(mrna_ex, lo, hi), cds_ex)
+                if not uncovered:
+                    continue
 
-            # 1-based 閉区間表記（例 29985799..29986026）で昇順列挙
-            regions = ", ".join(f"{s + 1}..{e}" for s, e in uncovered)
-            msg = f"{self.description[:-1]}: locus_tag:{lt} (Found: {regions})"
-            results.append(self.feature_result(record, mrna, msg, level="warning"))
+                # 1-based 閉区間表記（例 29985799..29986026）で昇順列挙
+                regions = ", ".join(f"{s + 1}..{e}" for s, e in uncovered)
+                msg = f"{self.description[:-1]}: locus_tag:{lt} (Found: {regions})"
+                results.append(self.feature_result(record, mrna, msg, level="warning"))
 
         return results
 
