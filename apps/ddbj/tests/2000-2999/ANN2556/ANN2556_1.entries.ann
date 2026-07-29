@@ -55,3 +55,19 @@ seq4	source	1..900	organism	Mus musculus
 			geo_loc_name	Japan:Shizuoka, Mishima
 	mRNA	join(101..200,301..400)	locus_tag	LT0004
 			note	ANN2556 pass mRNA only, no paired CDS -> skip
+seq5	source	1..900	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	join(101..200,301..400,501..560,601..700,801..900)	locus_tag	LT0005
+			note	ANN2556 fail isoform t1: mRNA internal exon 501..560 missing in paired CDS
+	mRNA	join(101..200,301..380,601..700,801..900)	locus_tag	LT0005
+			note	isoform t2
+	CDS	join(151..200,301..400,601..700,801..850)	locus_tag	LT0005
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+	CDS	join(151..200,301..380,601..700,801..850)	locus_tag	LT0005
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
