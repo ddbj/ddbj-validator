@@ -2661,6 +2661,14 @@ class ANN2556(BaseRule):
 
     _TID_RE = re.compile(r"(?:submitter_)?transcript_id\s*[:=]\s*([^\s,;]+)")
 
+    # ribosomal_slippage / trans_splicing を持つ feature は本チェックの対象外。
+    # これらの生物学的イベントでは mRNA と CDS で exon が一致しないことがあるため。
+    _SKIP_QUALIFIERS = ("ribosomal_slippage", "trans_splicing")
+
+    def _has_splice_exception(self, feature):
+        """ribosomal_slippage / trans_splicing を持つなら True（ANN2556 の対象外）。"""
+        return any(q in feature.qualifiers for q in self._SKIP_QUALIFIERS)
+
     def _transcript_id(self, feature):
         """feature の transcript_id を返す（無ければ None）。
         - qualifier `transcript_id` があればそれを優先。
@@ -2737,9 +2745,14 @@ class ANN2556(BaseRule):
                 if len(cds_ex) < 2:
                     continue  # intron が無い（単一エクソン）CDS は対象外
 
+                if self._has_splice_exception(cds):
+                    continue  # CDS が ribosomal_slippage/trans_splicing → 対象外
+
                 mrna = self._pick_mrna(cds, mrnas)
                 if mrna is None:
                     continue
+                if self._has_splice_exception(mrna):
+                    continue  # ペア mRNA が ribosomal_slippage/trans_splicing → 対象外
                 mrna_ex = self._exons(mrna.location)
                 if len(mrna_ex) < 2:
                     continue

@@ -88,3 +88,25 @@ seqF	source	1..1500	organism	Mus musculus
 			transl_table	1
 			codon_start	1
 			product	hypothetical protein
+seqG	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	join(101..200,401..500,601..650,701..800,1001..1100)	locus_tag	LTG
+			note	ANN2556 pass ribosomal_slippage on CDS -> excluded
+	CDS	join(101..200,401..500,701..800,1001..1100)	locus_tag	LTG
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+			ribosomal_slippage	
+seqH	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	join(101..200,401..500,601..650,701..800,1001..1100)	locus_tag	LTH
+			note	ANN2556 pass trans_splicing on mRNA -> excluded
+			trans_splicing	
+	CDS	join(101..200,401..500,701..800,1001..1100)	locus_tag	LTH
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
