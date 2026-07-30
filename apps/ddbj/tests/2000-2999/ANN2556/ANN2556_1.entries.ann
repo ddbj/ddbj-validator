@@ -1,5 +1,4 @@
 COMMON	SUBMITTER		ab_name	Mishima,H.
-			ab_name	Robertson,G.R.
 			contact	Hanako Mishima
 			email	mishima@ddbj.nig.ac.jp
 			institute	National Institute of Genetics
@@ -13,61 +12,101 @@ COMMON	SUBMITTER		ab_name	Mishima,H.
 			ab_name	Mishima,H.
 			year	2026
 			status	Unpublished
-seq1	source	1..900	organism	Mus musculus
+seqA	source	1..1500	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
-	mRNA	join(101..200,301..400,501..600)	locus_tag	LT0001
-			note	ANN2556 pass mRNA==CDS in coding region, 5'UTR extension only
-	CDS	join(151..200,301..400,501..550)	locus_tag	LT0001
+	mRNA	join(101..200,401..500,701..800,1001..1200)	locus_tag	LTA
+			note	ANN2556 pass introns identical, only terminal UTR extension
+	CDS	join(151..200,401..500,701..800,1001..1100)	locus_tag	LTA
 			transl_table	1
 			codon_start	1
 			product	hypothetical protein
-seq2	source	1..900	organism	Mus musculus
+seqB	source	1..1500	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
-	mRNA	join(101..200,301..400,501..600,701..800)	locus_tag	LT0002
-			note	ANN2556 fail mRNA internal exon 501..600 not present in CDS
-	CDS	join(151..200,301..400,701..750)	locus_tag	LT0002
+	mRNA	join(101..200,401..500,601..650,701..800,1001..1100)	locus_tag	LTB
+			note	ANN2556 fail mRNA-only internal exon 601..650
+	CDS	join(101..200,401..500,701..800,1001..1100)	locus_tag	LTB
 			transl_table	1
 			codon_start	1
 			product	hypothetical protein
-seq3	source	1..900	organism	Mus musculus
+seqC	source	1..1500	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
-	mRNA	join(101..200,301..400,501..600)	locus_tag	LT0003
-			note	ANN2556 pass ambiguous 1:>1 pair must be skipped
-	mRNA	join(101..200,301..400)	locus_tag	LT0003
-			note	isoform b
-	CDS	join(151..200,301..400)	locus_tag	LT0003
+	mRNA	join(101..200,401..500,801..900,1101..1200)	locus_tag	LTC
+			note	ANN2556 fail CDS-only exon (mRNA-only intron), CDS reads through 501..800
+	CDS	join(101..200,401..900,1101..1200)	locus_tag	LTC
 			transl_table	1
 			codon_start	1
 			product	hypothetical protein
-	CDS	join(151..200,301..350)	locus_tag	LT0003
+seqD	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	join(101..200,401..500,701..800,1001..1100)	locus_tag	LTD
+			note	ANN2556 pass only first (terminal) exon inner boundary differs -> ignored
+	CDS	join(151..250,401..500,701..800,1001..1100)	locus_tag	LTD
 			transl_table	1
 			codon_start	1
 			product	hypothetical protein
-seq4	source	1..900	organism	Mus musculus
+seqE	source	1..1500	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
-	mRNA	join(101..200,301..400)	locus_tag	LT0004
-			note	ANN2556 pass mRNA only, no paired CDS -> skip
-seq5	source	1..900	organism	Mus musculus
-			mol_type	genomic DNA
-			collection_date	2020-01-01
-			geo_loc_name	Japan:Shizuoka, Mishima
-	mRNA	join(101..200,301..400,501..560,601..700,801..900)	locus_tag	LT0005
-			note	ANN2556 fail isoform t1: mRNA internal exon 501..560 missing in paired CDS
-	mRNA	join(101..200,301..380,601..700,801..900)	locus_tag	LT0005
+	mRNA	join(101..200,401..500,601..700,751..780,901..1000,1201..1300)	locus_tag	LTE
+			note	ANN2556 fail isoform t1: mRNA-only internal exon 751..780
+			note	submitter_transcript_id: LTE.t1
+	mRNA	join(101..200,401..500,601..700,901..1000,1201..1300)	locus_tag	LTE
 			note	isoform t2
-	CDS	join(151..200,301..400,601..700,801..850)	locus_tag	LT0005
+			note	submitter_transcript_id: LTE.t2
+	CDS	join(101..200,401..500,601..700,901..1000,1201..1300)	locus_tag	LTE
 			transl_table	1
 			codon_start	1
 			product	hypothetical protein
-	CDS	join(151..200,301..380,601..700,801..850)	locus_tag	LT0005
+			note	submitter_transcript_id: LTE.t1
+	CDS	join(101..200,401..500,601..700,901..1000,1201..1300)	locus_tag	LTE
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+			note	submitter_transcript_id: LTE.t2
+seqF	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	join(101..200,401..500,601..700,751..780,901..1000,1201..1300)	locus_tag	LTF
+			note	ANN2556 pass multiple mRNA/CDS without transcript_id -> skip
+	mRNA	join(101..200,401..500,601..700,901..1000,1201..1300)	locus_tag	LTF
+			note	isoform b
+	CDS	join(101..200,401..500,601..700,901..1000,1201..1300)	locus_tag	LTF
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+	CDS	join(101..200,401..500,901..1000,1201..1300)	locus_tag	LTF
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+seqG	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	join(101..200,401..500,601..650,701..800,1001..1100)	locus_tag	LTG
+			note	ANN2556 pass ribosomal_slippage on CDS -> excluded
+	CDS	join(101..200,401..500,701..800,1001..1100)	locus_tag	LTG
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+			ribosomal_slippage	
+seqH	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	join(101..200,401..500,601..650,701..800,1001..1100)	locus_tag	LTH
+			note	ANN2556 pass trans_splicing on mRNA -> excluded
+			trans_splicing	
+	CDS	join(101..200,401..500,701..800,1001..1100)	locus_tag	LTH
 			transl_table	1
 			codon_start	1
 			product	hypothetical protein
