@@ -2603,7 +2603,8 @@ class ANN2556(BaseRule):
     rule_id = "ANN2556"
     alternate_id = ""
     target = "feature"
-    description = "mRNA exon is not present in paired CDS."
+    # 双方向: mRNA/CDS のどちらか一方だけに存在するエクソン（＝他方が intron として読み飛ばす領域）を検出。
+    description = "An exon of the mRNA or CDS is not present in the paired feature."
     requires_rdb = False
     is_file_level = False
 
@@ -2652,25 +2653,61 @@ class ANN2556(BaseRule):
         return out
 
     @staticmethod
-    def _cds_fits_mrna(cds_ex, mrna_ex):
-        """CDS が mRNA のスプライス構造に「収まる」か（CDS ⊆ mRNA を向き付きで判定）。
-        - 内部エクソン（先頭・末尾以外）: mRNA エクソンと境界が完全一致（同一スプライス）。
-        - 末端エクソン（先頭・末尾）: mRNA のいずれかのエクソンに包含（UTR/部分長で外側がはみ出す分は許容）。
-        アイソフォームが複数あるとき、CDS がどの mRNA に属すかを一意に選ぶための判定。
-        欠落エクソン（mRNA にあって CDS に無い分）は CDS 側のエクソンではないためここでは無関係
-        （検出は validate 側の mRNA−CDS で行う一方向チェック）。"""
-        if not mrna_ex:
-            return False
-        mset = set(mrna_ex)
-        last = len(cds_ex) - 1
-        for i, (cs, ce) in enumerate(cds_ex):
-            if 0 < i < last:
-                if (cs, ce) not in mset:
-                    return False
-            else:
-                if not any(ms <= cs and ce <= me for ms, me in mrna_ex):
-                    return False
-        return True
+    def _introns(exs):
+        """エクソン（昇順・マージ済み半開区間）列から intron（隣接エクソン間の junction）を返す。
+        intron = (上流エクソンの end, 下流エクソンの start)。末端エクソンの外側境界（UTR/部分長）は
+        intron を作らないため、intron 集合の比較は末端差を自動的に無視する。"""
+        return [(exs[i][1], exs[i + 1][0]) for i in range(len(exs) - 1)]
+
+    _TID_RE = re.compile(r"(?:submitter_)?transcript_id\s*[:=]\s*([^\s,;]+)")
+
+    def _transcript_id(self, feature):
+        """feature の transcript_id を返す（無ければ None）。
+        - qualifier `transcript_id` があればそれを優先。
+        - 無ければ note の `submitter_transcript_id: X` / `transcript_id: X` を拾う
+          （note は "submitter_gene_id: g1, submitter_transcript_id: g1.t1" のように複合のこともある）。"""
+        tids = feature.qualifiers.get("transcript_id", [])
+        if tids:
+            return tids[0].strip()
+        for note in feature.qualifiers.get("note", []):
+            m = self._TID_RE.search(note)
+            if m:
+                return m.group(1)
+        return None
+
+    def _pair_diff(self, cds_ex, mrna_ex):
+        """mRNA と CDS を intron で突き合わせ、(mRNA-only 領域, CDS-only 領域) を返す。
+        - 共通 intron が無ければ ([], []) を返す（window を張れないため判定不能）。
+        - 比較 window = 「最初の共通 intron 〜 最後の共通 intron」の座標範囲 [lo, hi]。
+          範囲外（末端側）は無視（末端エクソンの外側境界差を誤検出しない）。
+        - window 内の exon coverage 差分を exon 領域として返す（判定は intron ベース／表示は exon ベース）:
+            mRNA-only = mRNA が覆い CDS が覆わない領域（CDS が intron として読み飛ばす mRNA エクソン）
+            CDS-only  = CDS が覆い mRNA が覆わない領域（mRNA が intron として読み飛ばす CDS エクソン）"""
+        ci = set(self._introns(cds_ex))
+        mi = set(self._introns(mrna_ex))
+        common = ci & mi
+        if not common:
+            return [], []
+        lo = min(d for d, a in common)   # 最初の共通 intron の donor
+        hi = max(a for d, a in common)   # 最後の共通 intron の acceptor
+        m_clip = self._clip(mrna_ex, lo, hi)
+        c_clip = self._clip(cds_ex, lo, hi)
+        mrna_only = self._subtract(m_clip, c_clip)
+        cds_only = self._subtract(c_clip, m_clip)
+        return mrna_only, cds_only
+
+    def _pick_mrna(self, cds, mrnas):
+        """CDS に対応する mRNA を1本返す（決まらなければ None）。
+        - mRNA が1本だけなら 1:1 とみなしそれを使う。
+        - 複数なら transcript_id（submitter_transcript_id/transcript_id）で一意に一致する mRNA のみ採用。
+          transcript_id が無い／一意に決まらない場合はスキップ（intron 一致度での推測はしない）。"""
+        if len(mrnas) == 1:
+            return mrnas[0]
+        tid = self._transcript_id(cds)
+        if not tid:
+            return None
+        matches = [m for m in mrnas if self._transcript_id(m) == tid]
+        return matches[0] if len(matches) == 1 else None
 
     def validate(self, record, context):
         results = []
@@ -2687,39 +2724,40 @@ class ANN2556(BaseRule):
             for lt in feature.qualifiers.get("locus_tag", []):
                 cds_by_lt[lt].append(feature)
 
-        # CDS ごとに、エクソン構造から対応 mRNA を一意に決めてペア判定する。
-        # （単純な 1 mRNA + 1 CDS はもちろん、同一 locus_tag のアイソフォームでも
-        #   エクソン構造が一致する mRNA が1本に定まれば対象。曖昧・不一致はスキップ。）
+        # CDS ごとに対応 mRNA を決めてペア判定する。
+        # 1:1 はそのまま。複数（選択的スプライシング）は transcript_id で一意に一致する mRNA のみ対象。
         for lt, cdss in cds_by_lt.items():
-            mrnas = mrna_by_lt.get(lt, [])
+            mrnas = [m for m in mrna_by_lt.get(lt, []) if m.location]
             if not mrnas:
                 continue  # 片側（CDS のみ）はスキップ
             for cds in cdss:
                 if not cds.location:
                     continue
                 cds_ex = self._exons(cds.location)
-                if not cds_ex:
-                    continue
+                if len(cds_ex) < 2:
+                    continue  # intron が無い（単一エクソン）CDS は対象外
 
-                # エクソン構造で対応 mRNA の候補を求め、ちょうど1本のときだけペア確定
-                cands = [m for m in mrnas
-                         if m.location and self._cds_fits_mrna(cds_ex, self._exons(m.location))]
-                if len(cands) != 1:
-                    continue  # 0本（不一致）／複数（曖昧）はスキップ
-                mrna = cands[0]
+                mrna = self._pick_mrna(cds, mrnas)
+                if mrna is None:
+                    continue
                 mrna_ex = self._exons(mrna.location)
-
-                # CDS のコード範囲 [min, max] 内で、mRNA エクソンが CDS エクソンに覆われない部分を検出。
-                # UTR（コード範囲の外側）は clip で自然に除外される（mRNA > CDS の前提を満たす）。
-                lo, hi = cds_ex[0][0], cds_ex[-1][1]
-                uncovered = self._subtract(self._clip(mrna_ex, lo, hi), cds_ex)
-                if not uncovered:
+                if len(mrna_ex) < 2:
                     continue
+                mrna_only, cds_only = self._pair_diff(cds_ex, mrna_ex)
 
-                # 1-based 閉区間表記（例 29985799..29986026）で昇順列挙
-                regions = ", ".join(f"{s + 1}..{e}" for s, e in uncovered)
-                msg = f"{self.description[:-1]}: locus_tag:{lt} (Found: {regions})"
-                results.append(self.feature_result(record, mrna, msg, level="warning"))
+                # 表示は exon ベース。1-based 閉区間表記（例 29985799..29986026）で昇順列挙。
+                if mrna_only:
+                    regions = ", ".join(f"{s + 1}..{e}" for s, e in mrna_only)
+                    results.append(self.feature_result(
+                        record, mrna,
+                        f"mRNA exon is not present in the paired CDS: locus_tag:{lt} (Found: {regions})",
+                        level="warning"))
+                if cds_only:
+                    regions = ", ".join(f"{s + 1}..{e}" for s, e in cds_only)
+                    results.append(self.feature_result(
+                        record, cds,
+                        f"CDS exon is not present in the paired mRNA: locus_tag:{lt} (Found: {regions})",
+                        level="warning"))
 
         return results
 
