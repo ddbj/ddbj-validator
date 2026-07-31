@@ -37,8 +37,10 @@ services:
   # 更新時はこのコンテナだけ pull＋入れ替え（web 無停止）。単一コンテナ運用なら `up web` で起動しなければよい。
   validator:
     image: ghcr.io/ddbj/ddbj-validator:${DDBJ_VALIDATOR_TAG:-latest}
-    # web の DDBJ_VALIDATOR_CMD が `podman exec ddbj-validator ...` でこの名前を参照するため固定。
-    container_name: ddbj-validator
+    # web の DDBJ_VALIDATOR_CMD が `podman exec <この名前> ...` で参照するため固定名にする。
+    # 環境ごとに .env の DDBJ_VALIDATOR_NAME で分ける（staging=ddbj-validator-staging /
+    # production=ddbj-validator-production）。共有FS上の取り違えでも両環境が衝突しないようにするため。
+    container_name: ${DDBJ_VALIDATOR_NAME:-ddbj-validator}
     restart: unless-stopped
     env_file:
       - .env

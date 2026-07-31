@@ -38,17 +38,25 @@ case "$mode" in
     ;;
 esac
 
-DATA_DIR_HOST="$(sed -n 's/^DDBJ_DATA_DIR_HOST=//p' "$here/.env" | tr -d '"' | head -1)"
+# .env から値を1つ取り出す（値の "" は除去）。
+env_val() { sed -n "s/^$1=//p" "$here/.env" | tr -d '"' | head -1; }
 
-# ddbj-validator に sleep infinity 以外のプロセスがあれば「検証中」。
+DATA_DIR_HOST="$(env_val DDBJ_DATA_DIR_HOST)"
+
+# コンテナ名は環境ごとに .env で決まる（compose.sh と同じ既定値にそろえる）。
+PROJECT="$(env_val DDBJ_COMPOSE_PROJECT)"; PROJECT="${PROJECT:-deploy}"
+VALIDATOR="$(env_val DDBJ_VALIDATOR_NAME)"; VALIDATOR="${VALIDATOR:-ddbj-validator}"
+WEB="${PROJECT}_web_1"          # podman-compose は <project>_<service>_<n> で命名する
+
+# validator に sleep infinity 以外のプロセスがあれば「検証中」。
 validator_busy() {
-  podman top ddbj-validator 2>/dev/null | tail -n +2 | grep -vq 'sleep infinity'
+  podman top "$VALIDATOR" 2>/dev/null | tail -n +2 | grep -vq 'sleep infinity'
 }
 
 abort_if_busy() {
   if validator_busy; then
     echo "" >&2
-    echo "!! 検証が実行中です（ddbj-validator に sleep infinity 以外のプロセス）。中止します。" >&2
+    echo "!! 検証が実行中です（${VALIDATOR} に sleep infinity 以外のプロセス）。中止します。" >&2
     echo "   完了を待って再実行してください。処理中の uuid:" >&2
     grep -rlE '"status": "(running|accepted)"' "$DATA_DIR_HOST"/*/*/status.json 2>/dev/null >&2 || true
     exit 1
@@ -72,7 +80,7 @@ swap_validator() {
   echo "==> validator を ${ver} に差し替え（ghcr から pull）"
   "$compose" pull validator
   abort_if_busy
-  podman rm -f ddbj-validator
+  podman rm -f "$VALIDATOR"
   "$compose" up -d validator
 }
 
@@ -81,7 +89,7 @@ swap_web() {
   echo "==> web を再ビルドして差し替え"
   "$compose" build web
   abort_if_busy          # web を落とすと処理中の検証（podman exec の親）も死ぬため確認
-  podman rm -f deploy_web_1
+  podman rm -f "$WEB"
   "$compose" up -d web
 }
 
@@ -95,12 +103,12 @@ esac
 echo ""
 echo "==> 稼働確認"
 sleep 1
-podman ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" | grep -E 'NAMES|ddbj-validator|deploy_web_1' || true
-podman inspect ddbj-validator --format 'validator image={{.ImageName}}' 2>/dev/null || true
-podman inspect deploy_web_1   --format 'web       image={{.ImageName}}' 2>/dev/null || true
+podman ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" | grep -E "NAMES|${VALIDATOR}|${WEB}" || true
+podman inspect "$VALIDATOR" --format 'validator image={{.ImageName}}' 2>/dev/null || true
+podman inspect "$WEB"       --format 'web       image={{.ImageName}}' 2>/dev/null || true
 
-bind="$(sed -n 's/^DDBJ_BIND_HOST=//p' "$here/.env" | tr -d '"' | head -1)"
-port="$(sed -n 's/^DDBJ_WEB_PORT=//p' "$here/.env" | tr -d '"' | head -1)"
+bind="$(env_val DDBJ_BIND_HOST)"
+port="$(env_val DDBJ_WEB_PORT)"
 if [ -n "$bind" ] && [ -n "$port" ]; then
   echo "==> health http://${bind}:${port}/health"
   curl -s "http://${bind}:${port}/health" || echo "(health 取得失敗)"
