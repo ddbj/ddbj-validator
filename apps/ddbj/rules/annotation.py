@@ -4292,6 +4292,81 @@ class ANN5270(BaseRule):
         return results
     
             
+class ANN5275(BaseRule):
+    rule_id = "ANN5275"
+    target = "CDS"
+    # CDS 塩基長のうち gap/assembly_gap と重複する割合が 50% 以上なら error。
+    # 重複長は「CDS location と gap location の交差長」（gap 全長ではない）。複数 gap は union してから測る。
+    description = "The CDS overlaps assembly_gap features by 50% or more of its length."
+    requires_rdb = False
+    is_file_level = False
+
+    @staticmethod
+    def _merge(intervals):
+        """(start, end) 半開区間のリストを昇順マージし、重なりを潰した区間リストを返す。"""
+        if not intervals:
+            return []
+        ivs = sorted(intervals)
+        merged = [list(ivs[0])]
+        for s, e in ivs[1:]:
+            if s <= merged[-1][1]:
+                merged[-1][1] = max(merged[-1][1], e)
+            else:
+                merged.append([s, e])
+        return merged
+
+    @staticmethod
+    def _overlap_len(a, b):
+        """マージ済み区間リスト a, b の重複塩基長の合計を返す。"""
+        i = j = 0
+        total = 0
+        while i < len(a) and j < len(b):
+            lo = max(a[i][0], b[j][0])
+            hi = min(a[i][1], b[j][1])
+            if lo < hi:
+                total += hi - lo
+            if a[i][1] < b[j][1]:
+                i += 1
+            else:
+                j += 1
+        return total
+
+    def validate(self, record, context):
+        results = []
+        if record.id == "COMMON":
+            return results
+
+        # gap と assembly_gap の両方を対象に座標を集める
+        gap_parts = []
+        for g_type in ("gap", "assembly_gap"):
+            for gap in self.get_features(record, g_type):
+                if not gap.location:
+                    continue
+                for p in getattr(gap.location, "parts", [gap.location]):
+                    gap_parts.append((int(p.start), int(p.end)))
+        if not gap_parts:
+            return results
+        gap_merged = self._merge(gap_parts)   # 複数 gap の二重計上を防ぐため union
+
+        for cds in self.get_features(record, "CDS"):
+            if not cds.location:
+                continue
+            cds_parts = [(int(p.start), int(p.end)) for p in getattr(cds.location, "parts", [cds.location])]
+            # 分母 = CDS 塩基長 = Σ(exon 長)（codon_start 補正はしない）
+            cds_len = sum(e - s for s, e in cds_parts)
+            if cds_len <= 0:
+                continue
+            # 分子 = CDS ∩ gap(union) の重複長
+            overlap_bp = self._overlap_len(self._merge(cds_parts), gap_merged)
+            if overlap_bp <= 0:
+                continue
+            if overlap_bp / cds_len >= 0.5:
+                pct = overlap_bp / cds_len * 100
+                msg = f"{self.description} (gap overlap: {overlap_bp}/{cds_len} bp = {pct:.1f}%)"
+                results.append(self.feature_result(record, cds, msg, level="error"))
+        return results
+
+
 class ANN5310(BaseRule):
     rule_id = "ANN5310"
     target = "feature"

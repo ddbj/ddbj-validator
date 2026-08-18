@@ -167,6 +167,7 @@ class Validator:
             ANN5244(), # [WARNING] Qualifier 'estimated_length=unknown' cannot be used in transcriptome entries
             ANN5250(), # [WARNING] Inconsistent gap_type and linkage_evidence (telomere)
             ANN5270(), # [WARNING] Overlap between CDS/mRNA and assembly_gap/gap features
+            ANN5275(), # [ERROR] CDS overlaps assembly_gap/gap by 50% or more of its length
             AXS5290(), # [WARNING] Consecutive 'N's must be annotated with a gap or assembly_gap feature
 
             # 【フェーズ10】フィーチャー間の依存・重複関係
