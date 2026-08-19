@@ -487,6 +487,38 @@ class ANN0345(BaseRule):
         return results
         
                                 
+class ANN0347(BaseRule):
+    rule_id = "ANN0347"
+    target = "SUBMITTER, REFERENCE"
+    description = "The metadata value should start with an upper-case letter."
+    requires_rdb = False
+    is_file_level = False
+
+    # 対象 (feature_type, qualifiers)。SUBMITTER: ab_name/contact、REFERENCE: ab_name/title。
+    _TARGETS = (("SUBMITTER", ("ab_name", "contact")), ("REFERENCE", ("ab_name", "title")))
+
+    def validate(self, record, context):
+        results = []
+        for feat_type, quals in self._TARGETS:
+            for feature in self.get_features(record, feat_type):
+                for qual in quals:
+                    for val in feature.qualifiers.get(qual, []):
+                        s = str(val)
+                        if not s:
+                            continue
+                        first = s[0]
+                        # 先頭が英小文字のときだけ warning＋autofix（先頭一文字のみ大文字化、語中は触らない）
+                        if first.isalpha() and first.islower():
+                            msg = f"The '{qual}' value should start with an upper-case letter. (Found: '{s}')"
+                            res = self.feature_result(record, feature, msg, level="warning", qualifier=qual)
+                            res["autofix"] = True
+                            res["fix_target"] = "qualifier"
+                            res["old_value"] = s
+                            res["new_value"] = first.upper() + s[1:]
+                            results.append(res)
+        return results
+
+
 class ANN0350(BaseRule):
     rule_id = "ANN0350"
     target = "qualifier"
@@ -1209,6 +1241,34 @@ class ANN1060(BaseRule):
                     if not (is_scientific_name and is_metagenome):
                         msg = f"{self.description} (Found: '{val_clean}')"
                         results.append(self.feature_result(record, feature, msg, level="error", qualifier="metagenome_source"))
+        return results
+
+
+class ANN1150(BaseRule):
+    rule_id = "ANN1150"
+    target = "source"
+    description = "The 'host/lab_host' qualifier value is not a scientific name in the NCBI Taxonomy database."
+    requires_rdb = True
+    is_file_level = False
+
+    def validate(self, record, context):
+        results = []
+        for feature in self.get_features(record, "source"):
+            for qual in ("host", "lab_host"):
+                for val in feature.qualifiers.get(qual, []):
+                    val_clean = str(val).strip()
+                    # 空・missing 系は対象外
+                    if not val_clean or val_clean.lower().startswith("missing"):
+                        continue
+                    t_data = context.tax_data.get(val_clean, {})
+                    # scientific name とみなす: status=valid、または case correction のみで直る fixable
+                    is_scientific_name = (
+                        t_data.get("status") == "valid"
+                        or (t_data.get("status") == "fixable" and t_data.get("type") == "case correction")
+                    )
+                    if not is_scientific_name:
+                        msg = f"The '{qual}' qualifier value is not a scientific name in the NCBI Taxonomy database. (Found: '{val_clean}')"
+                        results.append(self.feature_result(record, feature, msg, level="warning", qualifier=qual))
         return results
 
 
@@ -4292,6 +4352,34 @@ class ANN5270(BaseRule):
         return results
     
             
+class ANN3360(BaseRule):
+    rule_id = "ANN3360"
+    target = "feature"
+    description = "The 'replace' qualifier value is identical to the sequence at the feature location; the replacement has no effect."
+    requires_rdb = False
+    is_file_level = False
+
+    def validate(self, record, context):
+        results = []
+        if record.id == "COMMON":
+            return results
+        for feature in self.get_features(record):
+            if "replace" not in feature.qualifiers or not feature.location:
+                continue
+            try:
+                loc_seq = str(feature.extract(record.seq)).lower()
+            except Exception:
+                continue
+            for val in feature.qualifiers.get("replace", []):
+                v = str(val).strip().lower()
+                if v == "":
+                    continue  # 空値（deletion）は対象外。コード妥当性は ANN0185 が担当。
+                if v == loc_seq:
+                    msg = f"{self.description} (replace: '{val}')"
+                    results.append(self.feature_result(record, feature, msg, level="warning", qualifier="replace"))
+        return results
+
+
 class ANN5275(BaseRule):
     rule_id = "ANN5275"
     target = "CDS"

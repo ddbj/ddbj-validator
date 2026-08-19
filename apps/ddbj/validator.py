@@ -58,6 +58,7 @@ class Validator:
             ANN1020(), # [WARNING] The organism name is not found in the Taxonomy database
             ANN1040(), # [ERROR] Invalid taxonomic rank
             ANN1060(), # [ERROR] The metagenome_source qualifier value must be a valid scientific name
+            ANN1150(), # [WARNING] host/lab_host value is not a scientific name in the NCBI Taxonomy database
             ANN1050(), # [ERROR] The transl_table qualifier value mismatches with the Taxonomy database
             ANN1070(), # [INFO] Cyanobacteria(Cyanobacteriota phylum) は生物名に strain を含める必要がある
             ANN1100(), # [ERROR] strain not permitted for environmental samples
@@ -92,6 +93,7 @@ class Validator:
             ANN0270(), # [WARNING] No submitter ab_name shared with the associated BioSample
             ANN0300(), # [WARNING] Invalid reference information
             ANN0310(), # [WARNING] Invalid reference title
+            ANN0347(), # [WARNING] SUBMITTER/REFERENCE ab_name/contact/title should start with an upper-case letter (autofix)
             ANN0350(), # [WARNING] Trailing comma is detected
             ANN0640(), # [ERROR] Keyword requires specific DATATYPE/type
             ANN0800(), # [WARNING] Invalid Assembly Method version format
@@ -145,6 +147,7 @@ class Validator:
             ANN3240(), # [ERROR] The artificial_location qualifier is restricted
             ANN3260(), # [WARNING] Historical country name is used
             ANN3350(), # [WARNING] Set hold date at least 10 days from today
+            ANN3360(), # [WARNING] /replace value identical to the sequence at the feature location
             ANN4100(), # [WARNING] DDBJ, GenBank or ENA detected in the inference qualifier
             ANN4200(), # [ERROR] All WGS entries are annotated as 'circular'
             ANN4220(), # [WARNING] There is a pair of genes with the same span but on different strands
