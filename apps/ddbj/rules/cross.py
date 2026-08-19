@@ -899,3 +899,141 @@ class AXS6087(BaseRule):
                 results.append(res)
 
         return results
+
+
+# ---- peptide 系（親 CDS との整合）共通 ----
+_PEPTIDE_TYPES = ("mat_peptide", "sig_peptide", "propeptide", "transit_peptide")
+
+def _peptide_parent_cds(feature, cdss):
+    """peptide feature の親 CDS を /locus_tag → /gene で一意に特定する。
+    一意に決まらない（複数一致 or 手掛かり無し）場合は None（位置包含フォールバックはしない）。"""
+    for key in ("locus_tag", "gene"):
+        vals = feature.qualifiers.get(key, [])
+        if not vals:
+            continue
+        v = vals[0]
+        matches = [c for c in cdss if v in c.qualifiers.get(key, [])]
+        if len(matches) == 1:
+            return matches[0]
+        if len(matches) > 1:
+            return None  # 曖昧 → 推測しない
+    return None
+
+def _exon_intervals(location):
+    """location の (start, end) 半開区間を昇順で返す。"""
+    parts = getattr(location, "parts", [location])
+    return sorted((int(p.start), int(p.end)) for p in parts)
+
+
+class AXS4150(BaseRule):
+    rule_id = "AXS4150"
+    target = "mat_peptide, sig_peptide, propeptide, transit_peptide"
+    # peptide feature は親 CDS 内・同一リーディングフレーム・内部終止コドン無しであること（配列にまたがる整合チェック）。
+    description = "Peptide feature must be consistent with the parent CDS."
+    requires_rdb = False
+    is_file_level = False
+
+    def validate(self, record, context):
+        results = []
+        if record.id == "COMMON":
+            return results
+        cdss = [c for c in self.get_features(record, "CDS") if c.location]
+        if not cdss:
+            return results
+        default_table = get_expected_transl_table(record, context.tax_data)
+
+        for ptype in _PEPTIDE_TYPES:
+            for pep in self.get_features(record, ptype):
+                if not pep.location:
+                    continue
+                cds = _peptide_parent_cds(pep, cdss)
+                if cds is None:
+                    continue
+                pep_ex = _exon_intervals(pep.location)
+                cds_ex = _exon_intervals(cds.location)
+                pep_loc = getattr(pep, 'original_location', str(pep.location))
+                cds_loc = getattr(cds, 'original_location', str(cds.location))
+
+                # (a) 親 CDS 内に収まるか（peptide の各区間が CDS の exon いずれかに包含）
+                def _within(iv):
+                    s, e = iv
+                    return any(cs <= s and e <= ce for cs, ce in cds_ex)
+                if not all(_within(iv) for iv in pep_ex):
+                    results.append(self.feature_result(
+                        record, pep,
+                        f"The {ptype} feature must be located within the parent CDS. (Found: {ptype} at {pep_loc}, CDS at {cds_loc})",
+                        level="warning", qualifier=ptype))
+                    continue  # 座標が親と噛み合わないため以降の frame/stop 判定はスキップ
+
+                # 端の完全/部分（< >）判定
+                strand = getattr(pep.location, "strand", 1)
+                first, last = pep.location.parts[0], pep.location.parts[-1]
+                if strand == -1:
+                    p5_complete = not isinstance(first.end, AfterPosition)
+                    p3_complete = not isinstance(last.start, BeforePosition)
+                else:
+                    p5_complete = not isinstance(first.start, BeforePosition)
+                    p3_complete = not isinstance(last.end, AfterPosition)
+
+                pep_len = sum(e - s for s, e in pep_ex)
+
+                # (b) 同一リーディングフレーム：完全長 peptide は長さが 3 の倍数
+                if p5_complete and p3_complete and pep_len % 3 != 0:
+                    results.append(self.feature_result(
+                        record, pep,
+                        f"The {ptype} feature must share the same reading frame as the parent CDS (a complete peptide length must be a multiple of 3). (Found: {ptype} at {pep_loc}, length {pep_len})",
+                        level="warning", qualifier=ptype))
+
+                # (c) 内部終止コドン無し（5' 完全時のみ判定。親 CDS の transl_table を使用）
+                if p5_complete:
+                    table_id, _cs = get_cds_translation_params(cds, default_table)
+                    try:
+                        pep_seq = str(pep.extract(record.seq))
+                    except Exception:
+                        pep_seq = ""
+                    main = pep_seq[:len(pep_seq) - (len(pep_seq) % 3)]
+                    if main:
+                        try:
+                            aa = str(Seq(main).translate(table=table_id))
+                            internal = aa[:-1] if aa.endswith("*") else aa
+                            if "*" in internal:
+                                results.append(self.feature_result(
+                                    record, pep,
+                                    f"The {ptype} feature must not contain an internal stop codon. (Found: {ptype} at {pep_loc})",
+                                    level="warning", qualifier=ptype))
+                        except Exception as e:
+                            logger.debug(f"AXS4150 translate failed: {e}", exc_info=True)
+        return results
+
+
+class ANN4160(BaseRule):
+    rule_id = "ANN4160"
+    target = "mat_peptide"
+    description = "The 3' end of the mat_peptide coincides with the 3' end of the parent CDS; the mature peptide must not include the stop codon."
+    requires_rdb = False
+    is_file_level = False
+
+    def validate(self, record, context):
+        results = []
+        if record.id == "COMMON":
+            return results
+        cdss = [c for c in self.get_features(record, "CDS") if c.location]
+        if not cdss:
+            return results
+        for pep in self.get_features(record, "mat_peptide"):
+            if not pep.location:
+                continue
+            cds = _peptide_parent_cds(pep, cdss)
+            if cds is None:
+                continue
+            strand = getattr(pep.location, "strand", 1)
+            # 3' 末端座標（+鎖=location.end / −鎖=location.start）と、親 CDS の 3' が完全長か
+            if strand == -1:
+                pep3, cds3 = int(pep.location.start), int(cds.location.start)
+                cds3_complete = not isinstance(cds.location.parts[0].start, BeforePosition)
+            else:
+                pep3, cds3 = int(pep.location.end), int(cds.location.end)
+                cds3_complete = not isinstance(cds.location.parts[-1].end, AfterPosition)
+            if cds3_complete and pep3 == cds3:
+                results.append(self.feature_result(record, pep, self.description, level="warning", qualifier="mat_peptide"))
+        return results
