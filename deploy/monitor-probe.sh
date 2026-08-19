@@ -228,6 +228,7 @@ mkdir -p "$hb_dir" 2>/dev/null && : > "$hb_dir/heartbeat-${ENV_NAME:-unknown}" 2
 # --- JSON 出力（1行） --------------------------------------------------------
 OK="true"; [ "${#FAILURES[@]}" -eq 0 ] || OK="false"
 P_MODE="$MODE" P_ENV="$ENV_NAME" P_HOST="$(hostname)" P_OK="$OK" \
+P_CLIENT_IP="${SSH_CLIENT%% *}" \
 P_FAILURES="$(printf '%s\n' "${FAILURES[@]+"${FAILURES[@]}"}")" \
 P_PYVER="$PYPROJECT_VERSION" P_IMGTAG="$IMAGE_TAG" P_REPVER="$REPORT_VERSION" \
 P_VNAME="$VNAME" P_VUP="$VALIDATOR_UP" P_WNAME="$WNAME" P_WUP="$WEB_UP" \
@@ -260,6 +261,9 @@ failures = [l for l in os.environ.get("P_FAILURES", "").splitlines() if l.strip(
 out = {
     "ts": datetime.now(timezone(timedelta(hours=9))).isoformat(timespec="seconds"),
     "host": s("P_HOST"), "env": s("P_ENV"), "mode": s("P_MODE"),
+    # sshd が見た接続元 IP。authorized_keys の from= を書くときの実測値
+    # （NAT や踏み台を経由すると s1 のローカル IP とは異なるため）。
+    "client_ip": s("P_CLIENT_IP"),
     "ok": os.environ.get("P_OK") == "true",
     "failures": failures,
     "version": {"pyproject": s("P_PYVER"), "image_tag": s("P_IMGTAG"), "report": s("P_REPVER")},
