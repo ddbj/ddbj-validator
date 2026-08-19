@@ -1,0 +1,54 @@
+COMMON	SUBMITTER		ab_name	Mishima,H.
+			contact	Hanako Mishima
+			email	mishima@ddbj.nig.ac.jp
+			institute	National Institute of Genetics
+			department	DNA Data Bank of Japan
+			country	Japan
+			state	Shizuoka
+			city	Mishima
+			street	Yata 1111
+			zip	411-8540
+	REFERENCE		title	Test
+			ab_name	Mishima,H.
+			year	2026
+			status	Unpublished
+seq1	source	1..99	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	CDS	1..90	transl_table	1
+			codon_start	1
+			product	hypothetical protein
+			locus_tag	T1
+	mat_peptide	4..30	locus_tag	T1
+			note	AXS4150 pass (within, in-frame, no stop)
+seq2	source	1..99	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	CDS	1..90	transl_table	1
+			codon_start	1
+			product	hypothetical protein
+			locus_tag	T2
+	mat_peptide	85..99	locus_tag	T2
+			note	AXS4150 fail (extends beyond CDS)
+seq3	source	1..99	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	CDS	1..90	transl_table	1
+			codon_start	1
+			product	hypothetical protein
+			locus_tag	T3
+	mat_peptide	4..29	locus_tag	T3
+			note	AXS4150 fail (complete length 26 not multiple of 3)
+seq4	source	1..99	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	CDS	1..90	transl_table	1
+			codon_start	1
+			product	hypothetical protein
+			locus_tag	T4
+	mat_peptide	4..30	locus_tag	T4
+			note	AXS4150 fail (internal stop codon)

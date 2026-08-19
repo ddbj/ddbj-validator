@@ -149,6 +149,8 @@ class Validator:
             ANN3350(), # [WARNING] Set hold date at least 10 days from today
             ANN3360(), # [WARNING] /replace value identical to the sequence at the feature location
             ANN4100(), # [WARNING] DDBJ, GenBank or ENA detected in the inference qualifier
+            AXS4150(), # [WARNING] Peptide feature must be within parent CDS, in-frame, no internal stop
+            ANN4160(), # [WARNING] mat_peptide 3' end coincides with parent CDS 3' end (stop codon)
             ANN4200(), # [ERROR] All WGS entries are annotated as 'circular'
             ANN4220(), # [WARNING] There is a pair of genes with the same span but on different strands
             ANN4240(), # [ERROR] For prokaryote genomes, features can be partial...

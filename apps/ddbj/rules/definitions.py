@@ -247,7 +247,7 @@ class ANN_DICT_VALIDATOR(BaseRule):
             # =====================================================================
             # 1. 系統(Taxonomy)に基づく特例 Qualifier チェック (ANN1430, 1440, 1450, 1460)
             # =====================================================================
-            if f_type == "source" and q_name in ["dev_stage", "tissue_type", "germline", "rearranged", "proviral", "macronuclear"]:
+            if f_type == "source" and q_name in ["dev_stage", "tissue_type", "germline", "rearranged", "proviral", "macronuclear", "cell_type", "cultivar", "ecotype", "haplogroup", "haplotype", "map", "organelle", "plasmid", "sex", "submitter_seqid"]:
                 orgs = feature.qualifiers.get("organism", [])
                 org_name = orgs[0].strip() if orgs else None
                 
@@ -290,6 +290,13 @@ class ANN_DICT_VALIDATOR(BaseRule):
                         is_valid = False
                         rule_id = "ANN1460"
                         msg = f"The '{q_name}' qualifier is restricted to Ciliophora entries. (organism: '{org_name}')"
+
+                # VRL（ウイルス）で許容されない source qualifier 群
+                elif q_name in ["cell_type", "cultivar", "ecotype", "haplogroup", "haplotype", "map", "organelle", "plasmid", "sex", "submitter_seqid"]:
+                    if tax_group == "virus":
+                        is_valid = False
+                        rule_id = "ANN1480"
+                        msg = f"The '{q_name}' qualifier is not permitted for viral (VRL) entries. (organism: '{org_name}')"
 
                 if not is_valid:
                     res = self.feature_result(record, feature, msg, level="warning", qualifier=q_name, entry=getattr(feature, 'original_entry_id', entry_id), rule=rule_id, target=f_type)
