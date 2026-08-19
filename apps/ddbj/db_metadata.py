@@ -21,6 +21,8 @@ _SRA_PATTERN = re.compile(r'\tsequence read archive\t([SDE]RR\d+)')
 # 値にスペースが含まれる可能性がある項目は、行末または次のタブまでを取得
 _ORG_PATTERN = re.compile(r'\torganism\t([^\t\r\n]+)', re.IGNORECASE)
 _META_PATTERN = re.compile(r'\tmetagenome_source\t([^\t\r\n]+)')
+# host / lab_host も tax 照合（ANN1150）用に organism と同じバッチ取得へ載せる
+_HOST_PATTERN = re.compile(r'\t(?:host|lab_host)\t([^\t\r\n]+)', re.IGNORECASE)
 _JRN_PATTERN = re.compile(r'\tjournal\t([^\t\r\n]+)', re.IGNORECASE)
 
 def fast_extract_db_keys(ann_path, seq_path):
@@ -55,7 +57,10 @@ def fast_extract_db_keys(ann_path, seq_path):
                         organisms.add(m.group(1).strip())
                 elif '\tmetagenome_source\t' in line:
                     if m := _META_PATTERN.search(line):
-                        organisms.add(m.group(1).strip())                                               
+                        organisms.add(m.group(1).strip())
+                elif '\thost\t' in line or '\tlab_host\t' in line:
+                    if m := _HOST_PATTERN.search(line):
+                        organisms.add(m.group(1).strip())
                         
     except Exception as e:
         logger.warning(f"Failed to fast-scan {ann_path}: {e}")

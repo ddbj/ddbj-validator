@@ -5864,6 +5864,22 @@
         "message": "The 'pseudo' and 'codon_start' qualifiers cannot be used together in the same feature."
       },
       {
+        "qualifier_1": "pseudogene",
+        "qualifier_2": "translation",
+        "rule_id": "ANN3150",
+        "alternate_id": "JP0117, JP1036",
+        "level": "error",
+        "message": "The 'pseudogene' and 'translation' qualifiers cannot be used together in the same feature."
+      },
+      {
+        "qualifier_1": "pseudo",
+        "qualifier_2": "translation",
+        "rule_id": "ANN3150",
+        "alternate_id": "JP0117, JP1036",
+        "level": "error",
+        "message": "The 'pseudo' and 'translation' qualifiers cannot be used together in the same feature."
+      },
+      {
         "qualifier_1": "environmental_sample",
         "qualifier_2": "strain",
         "rule_id": "ANN3150",

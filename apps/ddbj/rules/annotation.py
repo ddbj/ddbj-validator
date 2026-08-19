@@ -487,6 +487,52 @@ class ANN0345(BaseRule):
         return results
         
                                 
+class ANN0347(BaseRule):
+    rule_id = "ANN0347"
+    target = "SUBMITTER, REFERENCE"
+    description = "The metadata value should start with an upper-case letter."
+    requires_rdb = False
+    is_file_level = False
+
+    # 対象 (feature_type, qualifiers)。SUBMITTER: ab_name/contact、REFERENCE: ab_name/title。
+    _TARGETS = (("SUBMITTER", ("ab_name", "contact")), ("REFERENCE", ("ab_name", "title")))
+
+    @staticmethod
+    def _cap_first(w):
+        # 先頭が英字なら一文字だけ大文字化（語中は触らない）
+        return (w[0].upper() + w[1:]) if (w and w[0].isalpha()) else w
+
+    def _fixed_value(self, qual, s):
+        # contact が空白区切りで2語なら middle name 無しと判断し両語を capitalize（DDBJ は日本人登録者が多い）。
+        # 例: 'kensuke igarashi' -> 'Kensuke Igarashi' / 'Hanako mishima' -> 'Hanako Mishima'
+        if qual == "contact":
+            words = s.split()
+            if len(words) == 2 and s == " ".join(words):
+                return " ".join(self._cap_first(w) for w in words)
+        # それ以外（ab_name/title、contact の1語・3語以上）は先頭一文字のみ大文字化。
+        return self._cap_first(s)
+
+    def validate(self, record, context):
+        results = []
+        for feat_type, quals in self._TARGETS:
+            for feature in self.get_features(record, feat_type):
+                for qual in quals:
+                    for val in feature.qualifiers.get(qual, []):
+                        s = str(val)
+                        if not s:
+                            continue
+                        fixed = self._fixed_value(qual, s)
+                        if fixed != s:
+                            msg = f"The '{qual}' value should start with an upper-case letter. (Found: '{s}')"
+                            res = self.feature_result(record, feature, msg, level="warning", qualifier=qual)
+                            res["autofix"] = True
+                            res["fix_target"] = "qualifier"
+                            res["old_value"] = s
+                            res["new_value"] = fixed
+                            results.append(res)
+        return results
+
+
 class ANN0350(BaseRule):
     rule_id = "ANN0350"
     target = "qualifier"
@@ -1209,6 +1255,34 @@ class ANN1060(BaseRule):
                     if not (is_scientific_name and is_metagenome):
                         msg = f"{self.description} (Found: '{val_clean}')"
                         results.append(self.feature_result(record, feature, msg, level="error", qualifier="metagenome_source"))
+        return results
+
+
+class ANN1150(BaseRule):
+    rule_id = "ANN1150"
+    target = "source"
+    description = "The 'host/lab_host' qualifier value is not a scientific name in the NCBI Taxonomy database."
+    requires_rdb = True
+    is_file_level = False
+
+    def validate(self, record, context):
+        results = []
+        for feature in self.get_features(record, "source"):
+            for qual in ("host", "lab_host"):
+                for val in feature.qualifiers.get(qual, []):
+                    val_clean = str(val).strip()
+                    # 空・missing 系は対象外
+                    if not val_clean or val_clean.lower().startswith("missing"):
+                        continue
+                    t_data = context.tax_data.get(val_clean, {})
+                    # scientific name とみなす: status=valid、または case correction のみで直る fixable
+                    is_scientific_name = (
+                        t_data.get("status") == "valid"
+                        or (t_data.get("status") == "fixable" and t_data.get("type") == "case correction")
+                    )
+                    if not is_scientific_name:
+                        msg = f"The '{qual}' qualifier value is not a scientific name in the NCBI Taxonomy database. (Found: '{val_clean}')"
+                        results.append(self.feature_result(record, feature, msg, level="warning", qualifier=qual))
         return results
 
 
@@ -2424,6 +2498,10 @@ class ANN2540(BaseRule):
                 )
                 if not is_valid_prefix:
                     errors.append(f"Prefix must be 3-12 alphanumeric characters starting with a letter. (Prefix: '{prefix}')")
+
+                # 最初の _ 以降（suffix）は英数字（大文字小文字可）のみ。2つ目以降の _ 等が含まれるとエラー。
+                if suffix and not suffix.isalnum():
+                    errors.append(f"The tag part after the prefix must be alphanumeric. (Found: '{tag_str}')")
 
                 for err_reason in errors:
                     msg = f"{self.description} {err_reason}"
@@ -4292,6 +4370,109 @@ class ANN5270(BaseRule):
         return results
     
             
+class ANN3360(BaseRule):
+    rule_id = "ANN3360"
+    target = "feature"
+    description = "The 'replace' qualifier value is identical to the sequence at the feature location; the replacement has no effect."
+    requires_rdb = False
+    is_file_level = False
+
+    def validate(self, record, context):
+        results = []
+        if record.id == "COMMON":
+            return results
+        for feature in self.get_features(record):
+            if "replace" not in feature.qualifiers or not feature.location:
+                continue
+            try:
+                loc_seq = str(feature.extract(record.seq)).lower()
+            except Exception:
+                continue
+            for val in feature.qualifiers.get("replace", []):
+                v = str(val).strip().lower()
+                if v == "":
+                    continue  # 空値（deletion）は対象外。コード妥当性は ANN0185 が担当。
+                if v == loc_seq:
+                    msg = f"{self.description} (replace: '{val}')"
+                    results.append(self.feature_result(record, feature, msg, level="warning", qualifier="replace"))
+        return results
+
+
+class ANN5275(BaseRule):
+    rule_id = "ANN5275"
+    target = "CDS"
+    # CDS 塩基長のうち gap/assembly_gap と重複する割合が 50% 以上なら error。
+    # 重複長は「CDS location と gap location の交差長」（gap 全長ではない）。複数 gap は union してから測る。
+    description = "The CDS overlaps assembly_gap features by 50% or more of its length."
+    requires_rdb = False
+    is_file_level = False
+
+    @staticmethod
+    def _merge(intervals):
+        """(start, end) 半開区間のリストを昇順マージし、重なりを潰した区間リストを返す。"""
+        if not intervals:
+            return []
+        ivs = sorted(intervals)
+        merged = [list(ivs[0])]
+        for s, e in ivs[1:]:
+            if s <= merged[-1][1]:
+                merged[-1][1] = max(merged[-1][1], e)
+            else:
+                merged.append([s, e])
+        return merged
+
+    @staticmethod
+    def _overlap_len(a, b):
+        """マージ済み区間リスト a, b の重複塩基長の合計を返す。"""
+        i = j = 0
+        total = 0
+        while i < len(a) and j < len(b):
+            lo = max(a[i][0], b[j][0])
+            hi = min(a[i][1], b[j][1])
+            if lo < hi:
+                total += hi - lo
+            if a[i][1] < b[j][1]:
+                i += 1
+            else:
+                j += 1
+        return total
+
+    def validate(self, record, context):
+        results = []
+        if record.id == "COMMON":
+            return results
+
+        # gap と assembly_gap の両方を対象に座標を集める
+        gap_parts = []
+        for g_type in ("gap", "assembly_gap"):
+            for gap in self.get_features(record, g_type):
+                if not gap.location:
+                    continue
+                for p in getattr(gap.location, "parts", [gap.location]):
+                    gap_parts.append((int(p.start), int(p.end)))
+        if not gap_parts:
+            return results
+        gap_merged = self._merge(gap_parts)   # 複数 gap の二重計上を防ぐため union
+
+        for cds in self.get_features(record, "CDS"):
+            if not cds.location:
+                continue
+            cds_parts = [(int(p.start), int(p.end)) for p in getattr(cds.location, "parts", [cds.location])]
+            # 分母 = CDS 塩基長 = Σ(exon 長)（codon_start 補正はしない）
+            cds_len = sum(e - s for s, e in cds_parts)
+            if cds_len <= 0:
+                continue
+            # 分子 = CDS ∩ gap(union) の重複長
+            overlap_bp = self._overlap_len(self._merge(cds_parts), gap_merged)
+            if overlap_bp <= 0:
+                continue
+            if overlap_bp / cds_len >= 0.5:
+                pct = overlap_bp / cds_len * 100
+                msg = f"{self.description} (gap overlap: {overlap_bp}/{cds_len} bp = {pct:.1f}%)"
+                results.append(self.feature_result(record, cds, msg, level="error"))
+        return results
+
+
 class ANN5310(BaseRule):
     rule_id = "ANN5310"
     target = "feature"
