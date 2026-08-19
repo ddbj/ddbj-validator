@@ -115,3 +115,62 @@ podman rm -f "$(sed -n 's/^DDBJ_COMPOSE_PROJECT=//p' .env | tr -d '"')_web_1"
 実行ごとに `~/.cache/ddbj-validator-monitor/heartbeat-<env>` を更新する。s1 が死んだ場合に
 気づくため、ホスト側の cron でこのファイルの鮮度を見る（s1 はすぱこん側から到達できないので、
 heartbeat は s1 が書き込み、ホストが自分で鮮度を判定する）。
+
+### 監視の実行側 — `monitor-s1.sh`（s1 に配置）/ `monitor-heartbeat-check.sh`（a011 の cron）
+
+監視本体はすぱこん外（構築チーム居室の s1）で動かす。停電・クラッシュで監視ごと道連れに
+ならないようにするため。s1 → gateway → a011/a012 の ssh で `monitor-probe.sh` を呼ぶ。
+
+**s1 側の準備**
+
+```shell
+scp w3const@a012:ddbj-validator-api-staging/deploy/monitor-s1.sh ~/bin/
+chmod +x ~/bin/monitor-s1.sh
+mkdir -p ~/.config/ddbj-validator-monitor
+printf '%s\n' '<Slack Incoming Webhook URL>' > ~/.config/ddbj-validator-monitor/webhook
+chmod 600 ~/.config/ddbj-validator-monitor/webhook
+```
+
+`~/.ssh/config`（gateway 経由。`User` は w3const、鍵は監視専用）:
+
+```
+Host a011-monitor
+    HostName a011
+    User w3const
+    ProxyCommand ssh -W %h:%p sc
+    IdentityFile ~/.ssh/ddbj_monitor
+    IdentitiesOnly yes
+    BatchMode yes
+    ConnectTimeout 10
+```
+
+**cron（s1）**
+
+```cron
+*/1  * * * * TARGETS="a011-monitor:production" ~/bin/monitor-s1.sh quick    >> ~/log/ddbj-monitor.log 2>&1
+*/5  * * * * TARGETS="a011-monitor:production" ~/bin/monitor-s1.sh deep     >> ~/log/ddbj-monitor.log 2>&1
+*/10 * * * * TARGETS="a011-monitor:production" ~/bin/monitor-s1.sh host     >> ~/log/ddbj-monitor.log 2>&1
+0 */6 * * *  TARGETS="a011-monitor:production" ~/bin/monitor-s1.sh contract >> ~/log/ddbj-monitor.log 2>&1
+*/10 * * * * TARGETS="a012-monitor:staging"    ~/bin/monitor-s1.sh quick    >> ~/log/ddbj-monitor.log 2>&1
+*/30 * * * * TARGETS="a012-monitor:staging"    ~/bin/monitor-s1.sh deep     >> ~/log/ddbj-monitor.log 2>&1
+0 3 * * *    TARGETS="a012-monitor:staging"    ~/bin/monitor-s1.sh contract >> ~/log/ddbj-monitor.log 2>&1
+30 7 * * *   TARGETS="a011-monitor:production a012-monitor:staging" ~/bin/monitor-s1.sh summary >> ~/log/ddbj-monitor.log 2>&1
+```
+
+判定は 4 状態（`OK` / `NG`＝サービス異常・ホストは生存 / `UNREACHABLE`＝ホストか経路の障害 /
+`CONFIG`＝監視設定の誤り）。**通知は状態が変わったときだけ**で、同じ異常が連続 N 回
+（quick は 3 回、他は 2 回）続いて初めて発報し、復旧時にも 1 通出す。全対象が同時に
+`UNREACHABLE` のときは 1 通に集約する（サイト障害を N 件に分裂させない）。
+
+**a011 側（s1 が落ちたときに気づくための dead-man）**
+
+```cron
+*/10 * * * * /home/w3const/ddbj-validator-api-production/deploy/monitor-heartbeat-check.sh >> ~/log/ddbj-heartbeat.log 2>&1
+```
+
+probe は実行ごとに `~/.cache/ddbj-validator-monitor/heartbeat-<env>` を更新する。この鮮度が
+30 分を超えたら「外部監視が止まっている可能性」として **すぱこん側から** Slack へ通知する
+（a011 から `hooks.slack.com` へ到達できることは実測済み）。`/home/w3const` は a011/a012 で
+共有なので、**この cron は a011 だけに置く**（1 本で両環境分を見る。両方に置くと二重通知）。
+
+Slack webhook はすぱこん側にも必要: `~/.config/ddbj-validator-monitor/webhook`（chmod 600、共有 home なので 1 つ置けば両ホストで使える）。
