@@ -23,9 +23,19 @@ services:
     ports:
       # DDBJ_BIND_HOST で公開 IF を限定（D-way すぱこん区画のみ）。未設定なら全IF(0.0.0.0)。
       - "${DDBJ_BIND_HOST:-0.0.0.0}:${DDBJ_WEB_PORT:-8000}:8000"
+    logging:
+      # 既定の journald だと `podman logs` / journalctl のどちらでも web の stdout が回収できず、
+      # 500 の traceback が一切残らなかった（原因調査が再現テスト頼みになる）。ファイルに残す。
+      driver: k8s-file
+      options:
+        max-size: 10m
     volumes:
-      # :U = podman が volume を非 root のコンテナユーザ(web/uid1000)に chown（rootless で書き込み可にする）。
-      - ${DDBJ_DATA_DIR_HOST:-./data}:/data:z,U
+      # :U は使わない。:U は起動ごとに volume を再帰 chown するため、web(uid1000→host subuid) と
+      # validator(container root→host w3const) で所有者を奪い合う。validator が後に起動して全体を
+      # w3const:755 に戻すと、非 root の web は既存 shard（DATA_DIR/<uuid 先頭2文字>）に run dir を
+      # 作れず POST /validation が確率的に 500 になる（2026-08 に発生。web を container root で
+      # 動かして uid を揃えたので :U 自体が不要）。
+      - ${DDBJ_DATA_DIR_HOST:-./data}:/data:z
       # 別コンテナ運用時: host の rootless podman socket を web にマウント（podman exec 用）。
       # .env の DDBJ_PODMAN_SOCK に `podman info --format '{{.Host.RemoteSocket.Path}}'` の値を設定。
       - ${DDBJ_PODMAN_SOCK}:/run/podman/podman.sock:z
@@ -43,7 +53,12 @@ services:
     env_file:
       - .env
       - ../.env   # 内部 DB 接続情報（PGHOST/PGPORT/PGDATABASE 等）はリポジトリ直下 .env から
+    logging:
+      driver: k8s-file
+      options:
+        max-size: 10m
     volumes:
-      - ${DDBJ_DATA_DIR_HOST:-./data}:/data:z,U
+      # web 側と同じ理由で :U は付けない（両コンテナの所有者の奪い合いを止める）。
+      - ${DDBJ_DATA_DIR_HOST:-./data}:/data:z
     # 常駐用（web から podman exec で呼ぶ）。CLI は exec 時に起動される。
     entrypoint: ["sleep", "infinity"]
