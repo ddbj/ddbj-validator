@@ -4,7 +4,6 @@ validator は別コンテナでも良い（config.VALIDATOR_CMD を `podman exec
 各 validator CLI は `-o <run_dir>`（出力先）と `-j`（result.json）に対応済み。
 """
 import logging
-import shutil
 import subprocess
 from pathlib import Path
 
@@ -105,10 +104,11 @@ def run_validation(rdir, saved, params):
             if proc.stderr:
                 logger.info("validator stderr:\n%s", proc.stderr)
 
-            # result.json を run_dir 直下へ（ruby の契約に合わせる）
+            # result.json を run_dir 直下へ（ruby の契約に合わせる）。
+            # 公開は原子的に行う（コピー途中を GET /validation/{uuid} に読ませない）。
             report = rdir / "reports" / "validation_report.json"
             if report.exists():
-                shutil.copyfile(report, run_event.result_path(rdir))
+                run_event.publish_result(rdir, report)
 
             result = run_event.read_result(rdir)
             # CLI 終了コード: 1 = error 級の検証結果あり（プロセス異常ではない）。2 = 入力エラー等。
