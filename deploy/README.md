@@ -36,8 +36,8 @@ cd deploy
 
 1. `git pull --ff-only` で最新コード＋version を取得（対象 version を表示）。
 2. 対象を差し替え。
-   - validator … `compose.sh pull validator`（版は `pyproject.toml` に自動追従）→ `rm -f ddbj-validator` → `up -d validator`。
-   - web … `compose.sh build web` → `rm -f deploy_web_1` → `up -d web`。
+   - validator … `compose.sh pull validator`（版は `pyproject.toml` に自動追従）→ `rm -f $DDBJ_VALIDATOR_NAME` → `up -d validator`。
+   - web … `compose.sh build web` → `rm -f ${DDBJ_COMPOSE_PROJECT}_web_1` → `up -d web`。
 3. `podman ps`・各コンテナの image・`/health` で稼働確認。
 
 内蔵の安全策:
@@ -71,6 +71,7 @@ cd deploy
 git -C .. pull
 ./compose.sh build web
 # running 確認（web を止めると受付も止まる）
-podman rm -f deploy_web_1
+# コンテナ名は <DDBJ_COMPOSE_PROJECT>_web_1（例 ddbj-validator-staging_web_1）
+podman rm -f "$(sed -n 's/^DDBJ_COMPOSE_PROJECT=//p' .env | tr -d '"')_web_1"
 ./compose.sh up -d web
 ```

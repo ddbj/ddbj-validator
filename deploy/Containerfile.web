@@ -12,11 +12,16 @@ WORKDIR /app
 COPY . /app
 
 # web extra（fastapi / uvicorn / python-multipart）込みでインストール。
-# web を group 0(root) に入れる: 転送された rootless podman socket は
-# コンテナ内で root:root 0660 に見えるため、非 root の web が group 権限で読み書きするため。
-RUN pip install --no-cache-dir ".[web]" \
-    && useradd -m -G root web
-USER web
+RUN pip install --no-cache-dir ".[web]"
+
+# 実行ユーザは container root のまま（USER は指定しない）。
+# rootless podman では container root = ホストの w3const（非特権）で、ホスト権限は増えない。
+# validator コンテナも container root で動くため、共有ボリューム /data 上のファイル所有者が
+# 両コンテナで一致する。以前は `USER web`(uid1000) にしていたが、host 上では subuid
+# （223300999 等）になり validator が作ったファイル（w3const 所有）を書けず、
+# run dir 作成が確率的に PermissionError → POST /validation が 500 になっていた。
+# 転送された rootless podman socket（コンテナ内では root:root 0660）も所有者一致で扱えるため、
+# 以前必要だった `useradd -G root web` の group 0 ハックも不要になった。
 
 EXPOSE 8000
 

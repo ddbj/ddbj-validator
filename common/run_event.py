@@ -8,6 +8,7 @@ import contextlib
 import json
 import logging
 import os
+import shutil
 import time
 import uuid as _uuid
 from datetime import datetime, timedelta, timezone
@@ -68,6 +69,21 @@ def read_status(rdir):
 
 def result_path(rdir):
     return Path(rdir) / _RESULT_NAME
+
+
+def publish_result(rdir, src):
+    """src（validator が出した validation_report.json）を result.json として原子的に公開する。
+
+    直接 copy すると、書き込み途中の result.json を GET /validation/{uuid} が読んで
+    json パースに失敗し 500 になり得る（read_result は厳格にパースする）。status.json と同じく
+    tmp + os.replace で、読み手からは「無い」か「完全」のどちらかにしか見えないようにする。
+    """
+    rdir = Path(rdir)
+    dst = result_path(rdir)
+    tmp = rdir / f"{_RESULT_NAME}.{os.getpid()}.{new_uuid()[:8]}.tmp"
+    shutil.copyfile(src, tmp)
+    os.replace(tmp, dst)
+    return dst
 
 
 def read_result(rdir):
