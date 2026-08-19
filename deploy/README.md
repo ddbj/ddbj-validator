@@ -162,6 +162,12 @@ MAILTO=""
 5 0 1            * *     : > /home/ykodama/monitor/monitor.log
 ```
 
+**異常時のみメンションする**（復旧通知と日次サマリには付けない）。既定は `NG` が `<!here>`、
+`UNREACHABLE`・同時不通・heartbeat 途切れが `<!channel>`。s1 の
+`~/.config/ddbj-validator-monitor/config` で変更でき、空文字にすればメンションしない。
+Webhook では `@name` は効かず、`<!here>` / `<!channel>` / `<@U012ABCDEF>`（member ID）/
+`<!subteam^S012ABCDEF>` のエスケープ記法を使う。
+
 判定は 4 状態（`OK` / `NG`＝サービス異常・ホストは生存 / `UNREACHABLE`＝ホストか経路の障害 /
 `CONFIG`＝監視設定の誤り）。**通知は状態が変わったときだけ**で、同じ異常が連続 N 回
 （quick は 3 回、他は 2 回）続いて初めて発報し、復旧時にも 1 通出す。全対象が同時に

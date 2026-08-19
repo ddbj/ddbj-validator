@@ -70,6 +70,16 @@ case "$MODE" in
   *)        SSH_TIMEOUT="${SSH_TIMEOUT:-30}" ;;
 esac
 
+# 異常時のメンション（Slack の webhook では @name ではなくエスケープ記法を使う）:
+#   <!here>                … チャンネルのオンライン中の人に通知
+#   <!channel>             … チャンネル全員に通知（オフラインも）
+#   <@U012ABCDEF>          … 特定の人（Slack プロフィールの member ID。@name は効かない）
+#   <!subteam^S012ABCDEF>  … ユーザーグループ
+#   ""（空）               … メンションしない
+# 復旧通知と日次サマリには付けない（異常時だけ目立たせる）。
+MENTION_ALERT="${MENTION_ALERT-<!here>}"        # NG（サービス異常・監視設定の誤り）
+MENTION_CRITICAL="${MENTION_CRITICAL-<!channel>}" # UNREACHABLE・全対象同時不通
+
 WEBHOOK="${WEBHOOK:-}"
 if [ -z "$WEBHOOK" ] && [ -f "$CONF_DIR/webhook" ]; then
     WEBHOOK="$(head -1 "$CONF_DIR/webhook")"
@@ -230,7 +240,7 @@ if [ "${#PENDING_ALERTS[@]}" -ge 2 ]; then
             IFS='|' read -r _ e n _ <<< "$a"
             names="${names}${names:+, }${e}(${n})"
         done
-        notify ":rotating_light: DDBJ Validator: ${names} が同時に到達不能（${MODE}）— 経路またはサイト全体の障害の可能性。s1 から ssh が通りません"
+        notify "${MENTION_CRITICAL:+${MENTION_CRITICAL} }:rotating_light: DDBJ Validator: ${names} が同時に到達不能（${MODE}）— 経路またはサイト全体の障害の可能性。s1 から ssh が通りません"
         PENDING_ALERTS=()
     fi
 fi
@@ -238,12 +248,12 @@ fi
 for a in "${PENDING_ALERTS[@]+"${PENDING_ALERTS[@]}"}"; do
     IFS='|' read -r st e n dt <<< "$a"
     case "$st" in
-        NG)          icon=":red_circle:";  head="サービス異常" ;;
-        UNREACHABLE) icon=":rotating_light:"; head="到達不能" ;;
-        CONFIG)      icon=":warning:";     head="監視設定の誤り" ;;
-        *)           icon=":warning:";     head="$st" ;;
+        NG)          icon=":red_circle:";     head="サービス異常";     mention="$MENTION_ALERT" ;;
+        UNREACHABLE) icon=":rotating_light:"; head="到達不能";         mention="$MENTION_CRITICAL" ;;
+        CONFIG)      icon=":warning:";        head="監視設定の誤り";   mention="$MENTION_ALERT" ;;
+        *)           icon=":warning:";        head="$st";              mention="$MENTION_ALERT" ;;
     esac
-    notify "${icon} DDBJ Validator ${head}: ${e} (${n}) ${MODE} — ${dt}"
+    notify "${mention:+${mention} }${icon} DDBJ Validator ${head}: ${e} (${n}) ${MODE} — ${dt}"
 done
 
 for r in "${RECOVERED[@]+"${RECOVERED[@]}"}"; do

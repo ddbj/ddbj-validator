@@ -25,6 +25,9 @@ STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/ddbj-validator-monitor"
 mkdir -p "$STATE_DIR"
 
 MAX_AGE_MIN="${MAX_AGE_MIN:-30}"
+# 異常時のメンション（記法は monitor-s1.sh と同じ。空ならメンションしない）。
+# 監視自体が止まっている状態なので既定は channel 全体。復旧通知には付けない。
+MENTION_CRITICAL="${MENTION_CRITICAL-<!channel>}"
 ENVS="${ENVS:-production staging}"
 
 WEBHOOK="${WEBHOOK:-}"
@@ -74,13 +77,13 @@ for env_name in $ENVS; do
             ;;
         STALE)
             if [ "$prev" != "STALE" ]; then
-                notify ":rotating_light: 外部監視が停止している可能性: ${env_name} の probe が ${age} 分間ありません（しきい値 ${MAX_AGE_MIN} 分）。s1 または居室の経路を確認してください。※この通知はすぱこん側（a011）から出しています"
+                notify "${MENTION_CRITICAL:+${MENTION_CRITICAL} }:rotating_light: 外部監視が停止している可能性: ${env_name} の probe が ${age} 分間ありません（しきい値 ${MAX_AGE_MIN} 分）。s1 または居室の経路を確認してください。※この通知はすぱこん側（a011）から出しています"
             fi
             echo "STALE" > "$state"
             ;;
         MISSING)
             if [ "$prev" != "MISSING" ]; then
-                notify ":warning: ${env_name} の heartbeat がまだありません（${hb}）。s1 側の cron 設定を確認してください"
+                notify "${MENTION_CRITICAL:+${MENTION_CRITICAL} }:warning: ${env_name} の heartbeat がまだありません（${hb}）。s1 側の cron 設定を確認してください"
             fi
             echo "MISSING" > "$state"
             ;;
