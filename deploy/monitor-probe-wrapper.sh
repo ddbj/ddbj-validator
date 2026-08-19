@@ -31,9 +31,30 @@ unset STUCK_MIN ERR_MAX LEAK_MAX WEBLOG_ERR_MAX DF_MAX CONTRACT_TIMEOUT
 
 mode="${SSH_ORIGINAL_COMMAND:-${1:-}}"
 
+# --- home 共有（lustre）への対応 ---------------------------------------------
+# /home/w3const は a011 と a012 で共有されている（同一 inode）。そのため
+# ~/.ssh/authorized_keys も両ホストで同じ 1 ファイルになり、監視鍵の forced command は
+# 1 行しか書けない（同じ公開鍵の行が複数あっても sshd は最初の一致だけを使う）。
+# そこで、その 1 行がどちらのクローンを指していても、**実行中のホストに対応するクローン**の
+# probe を実行する。クローンを間違えると別環境の .env を読んでしまい、存在しないコンテナを
+# 見て誤報になる（2026-08 に update.sh で同種の事故があった）。
+host_clone() {
+    case "$(hostname -s)" in
+        a011) echo "$HOME/ddbj-validator-api-production" ;;   # 本番
+        a012) echo "$HOME/ddbj-validator-api-staging" ;;      # ステージング
+        *)    echo "" ;;                                      # 未知のホストは自クローンにフォールバック
+    esac
+}
+
+probe="$here/monitor-probe.sh"
+clone="$(host_clone)"
+if [ -n "$clone" ] && [ -x "$clone/deploy/monitor-probe.sh" ]; then
+    probe="$clone/deploy/monitor-probe.sh"
+fi
+
 case "$mode" in
     quick|host|deep|contract)
-        exec "$here/monitor-probe.sh" "$mode"
+        exec "$probe" "$mode"
         ;;
     *)
         # 想定外の要求は実行しない。probe の JSON とは別物だと分かるよう exit 2 で返す
