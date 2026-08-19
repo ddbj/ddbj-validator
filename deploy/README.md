@@ -75,3 +75,43 @@ git -C .. pull
 podman rm -f "$(sed -n 's/^DDBJ_COMPOSE_PROJECT=//p' .env | tr -d '"')_web_1"
 ./compose.sh up -d web
 ```
+
+## 死活監視プローブ — `monitor-probe.sh`
+
+外部（構築チーム居室の s1）から ssh で呼ばれ、**事実を JSON 1 行で返す読み取り専用**スクリプト。
+判定に必要な期待値は同じクローンの `deploy/.env` と `pyproject.toml` から自分で導くので、
+呼び出し側に版番号や環境名を持たせない（リリースごとの設定更新が不要）。
+
+```shell
+./monitor-probe.sh quick      # /health のみ（数 ms。高頻度用）
+./monitor-probe.sh host       # コンテナ・版の3点照合・run 滞留・ログ・容量（HTTP パイプライン検証なし）
+./monitor-probe.sh deep       # host + /monitoring（実 XML がパイプライン全体を通る。約 3 秒）
+./monitor-probe.sh contract   # deep + 実 POST /validation → status → result 検証 → run dir 削除
+```
+
+**常に exit 0 で JSON を返す**。呼び出し側は次のように区別する:
+
+| 判定 | 条件 | 意味 |
+|---|---|---|
+| OK | JSON の `ok=true` | 正常 |
+| NG | JSON の `ok=false`（`failures[]` に理由） | サービス異常（ホストは生存） |
+| UNREACHABLE | ssh / 実行そのものが失敗 | ホストまたは経路の障害 |
+
+検査項目と、それが捕まえる障害:
+
+- **版の3点照合**（`pyproject.toml` / 稼働 validator の image tag / コンテナ内 `__version__`）
+  … 別クローンで `update.sh` を実行して本番が旧版のままになる事故（2026-08 に発生）
+- **迷子コンテナ**（この環境以外の名前で ddbj-validator が動いていないか）… 同上
+- `/health` の 200 と `env` が `.env` と一致 … プロセス死・監視先の取り違え
+- `/monitoring`（deep 以上）… パイプライン全体＋run dir 用 shard の書込可否（500 の原因クラス）
+- run の滞留（`running`/`accepted` が 30 分超）・直近 1h の `error` 件数
+- `.monitoring-*` 残骸数（所有権事故の再発カナリア）・`web.log` の ERROR・`df`
+- `contract` は D-way と同じ API 契約（multipart → uuid → status 遷移 → result）を通し、
+  `result.json` の version と BS_R0027 の発火を検証したうえで**自分が作った run dir を削除**する
+  （合成データを運用履歴に残さない。入力ファイル名 `SSUB000000.xml` で二重確認してから削除）
+
+しきい値は環境変数で上書き可: `STUCK_MIN`(30) `ERR_MAX`(5) `LEAK_MAX`(0) `WEBLOG_ERR_MAX`(0) `DF_MAX`(85) `CONTRACT_TIMEOUT`(120)。
+
+実行ごとに `~/.cache/ddbj-validator-monitor/heartbeat-<env>` を更新する。s1 が死んだ場合に
+気づくため、ホスト側の cron でこのファイルの鮮度を見る（s1 はすぱこん側から到達できないので、
+heartbeat は s1 が書き込み、ホストが自分で鮮度を判定する）。
