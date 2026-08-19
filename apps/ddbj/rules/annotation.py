@@ -497,6 +497,21 @@ class ANN0347(BaseRule):
     # 対象 (feature_type, qualifiers)。SUBMITTER: ab_name/contact、REFERENCE: ab_name/title。
     _TARGETS = (("SUBMITTER", ("ab_name", "contact")), ("REFERENCE", ("ab_name", "title")))
 
+    @staticmethod
+    def _cap_first(w):
+        # 先頭が英字なら一文字だけ大文字化（語中は触らない）
+        return (w[0].upper() + w[1:]) if (w and w[0].isalpha()) else w
+
+    def _fixed_value(self, qual, s):
+        # contact が空白区切りで2語なら middle name 無しと判断し両語を capitalize（DDBJ は日本人登録者が多い）。
+        # 例: 'kensuke igarashi' -> 'Kensuke Igarashi' / 'Hanako mishima' -> 'Hanako Mishima'
+        if qual == "contact":
+            words = s.split()
+            if len(words) == 2 and s == " ".join(words):
+                return " ".join(self._cap_first(w) for w in words)
+        # それ以外（ab_name/title、contact の1語・3語以上）は先頭一文字のみ大文字化。
+        return self._cap_first(s)
+
     def validate(self, record, context):
         results = []
         for feat_type, quals in self._TARGETS:
@@ -506,15 +521,14 @@ class ANN0347(BaseRule):
                         s = str(val)
                         if not s:
                             continue
-                        first = s[0]
-                        # 先頭が英小文字のときだけ warning＋autofix（先頭一文字のみ大文字化、語中は触らない）
-                        if first.isalpha() and first.islower():
+                        fixed = self._fixed_value(qual, s)
+                        if fixed != s:
                             msg = f"The '{qual}' value should start with an upper-case letter. (Found: '{s}')"
                             res = self.feature_result(record, feature, msg, level="warning", qualifier=qual)
                             res["autofix"] = True
                             res["fix_target"] = "qualifier"
                             res["old_value"] = s
-                            res["new_value"] = first.upper() + s[1:]
+                            res["new_value"] = fixed
                             results.append(res)
         return results
 
@@ -2484,6 +2498,10 @@ class ANN2540(BaseRule):
                 )
                 if not is_valid_prefix:
                     errors.append(f"Prefix must be 3-12 alphanumeric characters starting with a letter. (Prefix: '{prefix}')")
+
+                # 最初の _ 以降（suffix）は英数字（大文字小文字可）のみ。2つ目以降の _ 等が含まれるとエラー。
+                if suffix and not suffix.isalnum():
+                    errors.append(f"The tag part after the prefix must be alphanumeric. (Found: '{tag_str}')")
 
                 for err_reason in errors:
                     msg = f"{self.description} {err_reason}"
