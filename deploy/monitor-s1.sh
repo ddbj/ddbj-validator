@@ -22,7 +22,7 @@
 #   MAILTO=""
 #   */1          * * * * TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh quick    >> /home/ykodama/monitor/monitor.log 2>&1
 #   */5          * * * * TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh deep     >> /home/ykodama/monitor/monitor.log 2>&1
-#   5,15,25,35,45,55 * * * * TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh host >> /home/ykodama/monitor/monitor.log 2>&1
+#   3,13,23,33,43,53 * * * * TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh host >> /home/ykodama/monitor/monitor.log 2>&1
 #   17 */6       * * * TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh contract    >> /home/ykodama/monitor/monitor.log 2>&1
 #   */10         * * * * TARGETS="a012-monitor:staging"   /home/ykodama/monitor/monitor-s1.sh quick     >> /home/ykodama/monitor/monitor.log 2>&1
 #   */30         * * * * TARGETS="a012-monitor:staging"   /home/ykodama/monitor/monitor-s1.sh deep      >> /home/ykodama/monitor/monitor.log 2>&1

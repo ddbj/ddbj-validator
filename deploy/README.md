@@ -105,12 +105,12 @@ podman rm -f "$(sed -n 's/^DDBJ_COMPOSE_PROJECT=//p' .env | tr -d '"')_web_1"
 - `/health` の 200 と `env` が `.env` と一致 … プロセス死・監視先の取り違え
 - `/monitoring`（deep 以上）… パイプライン全体＋run dir 用 shard の書込可否（500 の原因クラス）
 - run の滞留（`running`/`accepted` が 30 分超）・直近 1h の `error` 件数
-- `.monitoring-*` 残骸数（所有権事故の再発カナリア）・`web.log` の ERROR・`df`
+- `.monitoring-*` 残骸数（所有権事故の再発カナリア。実行中の一時ディレクトリを誤検知しないよう 10 分より古いものだけ数える）・`web.log` の ERROR・`df`
 - `contract` は D-way と同じ API 契約（multipart → uuid → status 遷移 → result）を通し、
   `result.json` の version と BS_R0027 の発火を検証したうえで**自分が作った run dir を削除**する
   （合成データを運用履歴に残さない。入力ファイル名 `SSUB000000.xml` で二重確認してから削除）
 
-しきい値は環境変数で上書き可: `STUCK_MIN`(30) `ERR_MAX`(5) `LEAK_MAX`(0) `WEBLOG_ERR_MAX`(0) `DF_MAX`(85) `CONTRACT_TIMEOUT`(120)。
+しきい値は環境変数で上書き可: `STUCK_MIN`(30) `ERR_MAX`(5) `LEAK_MAX`(0) `LEAK_MIN_AGE`(10) `WEBLOG_ERR_MAX`(0) `DF_MAX`(85) `CONTRACT_TIMEOUT`(120)。
 
 実行ごとに `~/.cache/ddbj-validator-monitor/heartbeat-<env>` を更新する。s1 が死んだ場合に
 気づくため、ホスト側の cron でこのファイルの鮮度を見る（s1 はすぱこん側から到達できないので、
@@ -153,7 +153,7 @@ Host a011-monitor
 MAILTO=""
 */1              * * * * TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh quick    >> /home/ykodama/monitor/monitor.log 2>&1
 */5              * * * * TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh deep     >> /home/ykodama/monitor/monitor.log 2>&1
-5,15,25,35,45,55 * * * * TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh host     >> /home/ykodama/monitor/monitor.log 2>&1
+3,13,23,33,43,53 * * * * TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh host     >> /home/ykodama/monitor/monitor.log 2>&1
 17 */6           * * *   TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh contract >> /home/ykodama/monitor/monitor.log 2>&1
 */10             * * * * TARGETS="a012-monitor:staging"    /home/ykodama/monitor/monitor-s1.sh quick    >> /home/ykodama/monitor/monitor.log 2>&1
 */30             * * * * TARGETS="a012-monitor:staging"    /home/ykodama/monitor/monitor-s1.sh deep     >> /home/ykodama/monitor/monitor.log 2>&1

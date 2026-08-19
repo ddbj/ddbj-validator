@@ -24,7 +24,7 @@ set -uo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # クライアント由来の値を混ぜない（sshd の AcceptEnv 経由の注入対策）
-unset STUCK_MIN ERR_MAX LEAK_MAX WEBLOG_ERR_MAX DF_MAX CONTRACT_TIMEOUT
+unset STUCK_MIN ERR_MAX LEAK_MAX LEAK_MIN_AGE WEBLOG_ERR_MAX DF_MAX CONTRACT_TIMEOUT
 
 # ホスト固有にしきい値を変える場合はここで export する（例）:
 # export ERR_MAX=10

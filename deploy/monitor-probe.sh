@@ -23,7 +23,7 @@
 #   ./monitor-probe.sh contract   # deep + 実 POST /validation → status → result 検証 → run dir 削除
 #
 # しきい値は環境変数で上書きできる:
-#   STUCK_MIN(30) ERR_MAX(5) LEAK_MAX(0) WEBLOG_ERR_MAX(0) DF_MAX(85) CONTRACT_TIMEOUT(120)
+#   STUCK_MIN(30) ERR_MAX(5) LEAK_MAX(0) LEAK_MIN_AGE(10) WEBLOG_ERR_MAX(0) DF_MAX(85) CONTRACT_TIMEOUT(120)
 #
 # 副作用: 実行ごとに heartbeat ファイルを更新する（呼び出し側が生きている証跡。
 #         a011 側の dead-man 監視がこの鮮度を見る）。contract mode のみ、自分が
@@ -55,6 +55,7 @@ BASE="http://${BIND}:${PORT}"
 STUCK_MIN="${STUCK_MIN:-30}"
 ERR_MAX="${ERR_MAX:-5}"
 LEAK_MAX="${LEAK_MAX:-0}"
+LEAK_MIN_AGE="${LEAK_MIN_AGE:-10}"   # これより新しい .monitoring-* は実行中とみなして数えない（分）
 WEBLOG_ERR_MAX="${WEBLOG_ERR_MAX:-0}"
 DF_MAX="${DF_MAX:-85}"
 CONTRACT_TIMEOUT="${CONTRACT_TIMEOUT:-120}"
@@ -136,8 +137,11 @@ if [ "$MODE" != "quick" ]; then
             | xargs grep -l '"status": "error"' 2>/dev/null | wc -l | tr -d ' ')"
         [ "${RECENT_ERRORS:-0}" -le "$ERR_MAX" ] || fail "recent_errors:${RECENT_ERRORS}(>${ERR_MAX}/h)"
 
-        # /monitoring の一時ディレクトリ残骸 = 所有権事故の再発カナリア
-        LEAK_DIRS="$(ls -1d "$DATA"/.monitoring-* 2>/dev/null | wc -l | tr -d ' ')"
+        # /monitoring の一時ディレクトリ残骸 = 所有権事故の再発カナリア。
+        # 実行中の /monitoring も同じ名前で一時ディレクトリを作る（約 3 秒だけ存在する）ので、
+        # 新しいものは数えない。数えると deep と host が同時刻に走ったときに誤報になる
+        # （2026-08-19 23:25 に実際に発生）。本物の残骸は削除に失敗して残り続ける。
+        LEAK_DIRS="$(find "$DATA" -maxdepth 1 -name '.monitoring-*' -mmin "+${LEAK_MIN_AGE}" 2>/dev/null | wc -l | tr -d ' ')"
         [ "${LEAK_DIRS:-0}" -le "$LEAK_MAX" ] || fail "monitoring_leak:${LEAK_DIRS}(>${LEAK_MAX})"
 
         # web.log の ERROR（未捕捉例外・run dir 作成失敗などがここに出る）
