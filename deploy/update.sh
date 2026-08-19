@@ -48,6 +48,36 @@ PROJECT="$(env_val DDBJ_COMPOSE_PROJECT)"; PROJECT="${PROJECT:-deploy}"
 VALIDATOR="$(env_val DDBJ_VALIDATOR_NAME)"; VALIDATOR="${VALIDATOR:-ddbj-validator}"
 WEB="${PROJECT}_web_1"          # podman-compose は <project>_<service>_<n> で命名する
 
+# --- 実行中のクローンとホストの対応チェック -----------------------------------
+# /home/w3const は a011 と a012 で共有（lustre）なので、両ホストから両方のクローン
+# （~/ddbj-validator-api-production と ~/ddbj-validator-api-staging）が見える。
+# 別環境のクローンで実行すると、そのホストに「別環境名の validator コンテナ」が新しく
+# 作られ、web が実際に exec する本来の名前のコンテナは旧版のまま残る。つまり
+# 「版を上げたつもりで上がっていない」状態になる（2026-08 に実際に発生）。
+# compose.sh のガードは 1 つの .env 内の整合しか見ないためこれを検知できない。ここで止める。
+ENV_NAME="$(env_val DDBJ_ENV)"
+case "$(hostname -s)" in
+    a011) EXPECTED_ENV="production" ;;
+    a012) EXPECTED_ENV="staging" ;;
+    *)    EXPECTED_ENV="" ;;        # 未知のホストでは判定しない（警告のみ）
+esac
+if [ -z "$ENV_NAME" ]; then
+    echo "!! deploy/.env の DDBJ_ENV が読めません。環境の取り違えを検査できません。" >&2
+elif [ -z "$EXPECTED_ENV" ]; then
+    echo "[WARN] このホスト（$(hostname -s)）に対応する環境が未定義です。DDBJ_ENV=${ENV_NAME} として続行します。" >&2
+elif [ "$ENV_NAME" != "$EXPECTED_ENV" ]; then
+    echo "" >&2
+    echo "!! 環境の取り違えです。中止します。" >&2
+    echo "   ホスト $(hostname -s) は ${EXPECTED_ENV} 環境ですが、いま実行しているクローンは" >&2
+    echo "   DDBJ_ENV=${ENV_NAME}（$(cd "$here/.." && pwd)）です。" >&2
+    echo "   このまま実行すると ${ENV_NAME} 名のコンテナがこのホストに作られ、${EXPECTED_ENV} の" >&2
+    echo "   validator は旧版のまま残ります（版が上がったつもりで上がらない）。" >&2
+    echo "" >&2
+    echo "   正しい実行場所: ~/ddbj-validator-api-${EXPECTED_ENV}/deploy" >&2
+    echo "" >&2
+    exit 1
+fi
+
 # validator に sleep infinity 以外のプロセスがあれば「検証中」。
 validator_busy() {
   podman top "$VALIDATOR" 2>/dev/null | tail -n +2 | grep -vq 'sleep infinity'
@@ -106,6 +136,16 @@ sleep 1
 podman ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" | grep -E "NAMES|${VALIDATOR}|${WEB}" || true
 podman inspect "$VALIDATOR" --format 'validator image={{.ImageName}}' 2>/dev/null || true
 podman inspect "$WEB"       --format 'web       image={{.ImageName}}' 2>/dev/null || true
+
+# 別環境名の validator が動いていれば知らせる（過去の誤実行で作られた残骸の可能性）。
+stray="$(podman ps --format '{{.Names}} {{.Image}}' 2>/dev/null \
+    | grep 'ghcr.io/ddbj/ddbj-validator' | grep -v "^${VALIDATOR} " || true)"
+if [ -n "$stray" ]; then
+    echo "" >&2
+    echo "[WARN] このホストで別名の validator コンテナが動いています（誤実行の残骸の可能性）:" >&2
+    printf '       %s\n' "$stray" >&2
+    echo "       web が exec するのは ${VALIDATOR} です。不要なら podman rm -f <名前> で削除してください。" >&2
+fi
 
 bind="$(env_val DDBJ_BIND_HOST)"
 port="$(env_val DDBJ_WEB_PORT)"
