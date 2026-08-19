@@ -6,9 +6,9 @@
 # 状態が変化したときだけ Slack に通知する。すぱこんが停電・クラッシュで落ちても
 # 監視ごと道連れにならないよう、監視は構築チーム居室の s1 で動かす前提。
 #
-# 配置:
-#   scp w3const@a012:ddbj-validator-api-staging/deploy/monitor-s1.sh ~/bin/
-#   chmod +x ~/bin/monitor-s1.sh
+# 配置（s1 の ~/monitor に置く運用）:
+#   scp w3const@a012:ddbj-validator-api-staging/deploy/monitor-s1.sh ~/monitor/
+#   chmod +x ~/monitor/monitor-s1.sh
 #   mkdir -p ~/.config/ddbj-validator-monitor
 #   printf '%s\n' 'https://hooks.slack.com/services/XXX/YYY/ZZZ' > ~/.config/ddbj-validator-monitor/webhook
 #   chmod 600 ~/.config/ddbj-validator-monitor/webhook
@@ -17,14 +17,18 @@
 #   monitor-s1.sh quick|host|deep|contract   # 監視 1 巡
 #   monitor-s1.sh summary                    # 現在の状態を 1 通まとめて通知（日次の生存確認用）
 #
-# cron 例（本番は高頻度・ステージングは控えめ。TARGETS で対象を絞る）:
-#   */1  * * * * TARGETS="a011-monitor:production"                   ~/bin/monitor-s1.sh quick    >> ~/log/ddbj-monitor.log 2>&1
-#   */5  * * * * TARGETS="a011-monitor:production"                   ~/bin/monitor-s1.sh deep     >> ~/log/ddbj-monitor.log 2>&1
-#   */10 * * * * TARGETS="a011-monitor:production"                   ~/bin/monitor-s1.sh host     >> ~/log/ddbj-monitor.log 2>&1
-#   0 */6 * * *  TARGETS="a011-monitor:production"                   ~/bin/monitor-s1.sh contract >> ~/log/ddbj-monitor.log 2>&1
-#   */10 * * * * TARGETS="a012-monitor:staging"                      ~/bin/monitor-s1.sh quick    >> ~/log/ddbj-monitor.log 2>&1
-#   */30 * * * * TARGETS="a012-monitor:staging"                      ~/bin/monitor-s1.sh deep     >> ~/log/ddbj-monitor.log 2>&1
-#   30 7 * * *   TARGETS="a011-monitor:production a012-monitor:staging" ~/bin/monitor-s1.sh summary >> ~/log/ddbj-monitor.log 2>&1
+# cron 例（crontab では ~ を使わず絶対パスで書く。本番は高頻度・ステージングは控えめ。
+# 重いモードは分をずらす。mode ごとにロックを取るので重複起動は自動でスキップされる）:
+#   MAILTO=""
+#   */1          * * * * TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh quick    >> /home/ykodama/monitor/monitor.log 2>&1
+#   */5          * * * * TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh deep     >> /home/ykodama/monitor/monitor.log 2>&1
+#   5,15,25,35,45,55 * * * * TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh host >> /home/ykodama/monitor/monitor.log 2>&1
+#   17 */6       * * * TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh contract    >> /home/ykodama/monitor/monitor.log 2>&1
+#   */10         * * * * TARGETS="a012-monitor:staging"   /home/ykodama/monitor/monitor-s1.sh quick     >> /home/ykodama/monitor/monitor.log 2>&1
+#   */30         * * * * TARGETS="a012-monitor:staging"   /home/ykodama/monitor/monitor-s1.sh deep      >> /home/ykodama/monitor/monitor.log 2>&1
+#   23 3         * * *   TARGETS="a012-monitor:staging"   /home/ykodama/monitor/monitor-s1.sh contract  >> /home/ykodama/monitor/monitor.log 2>&1
+#   30 7         * * *   TARGETS="a011-monitor:production a012-monitor:staging" /home/ykodama/monitor/monitor-s1.sh summary >> /home/ykodama/monitor/monitor.log 2>&1
+#   5 0 1        * *     : > /home/ykodama/monitor/monitor.log      # 毎月 1 日にログを切り詰め
 #
 # 判定は 4 状態。probe は「チェックが失敗しても JSON を返して exit 0」なので、
 # サービス異常とホスト/経路障害を区別できる:
@@ -72,6 +76,18 @@ if [ -z "$WEBHOOK" ] && [ -f "$CONF_DIR/webhook" ]; then
 fi
 
 log() { printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"; }
+
+# --- 多重起動の防止 -----------------------------------------------------------
+# quick は 1 分間隔で回すため、gateway が詰まって ssh が待たされると次の実行が重なって
+# プロセスが積み上がる。mode ごとにロックを取り、前回が走っている間はスキップする
+# （cron 側に flock を書かなくても安全。summary は軽いので対象外）。
+if [ "$MODE" != "summary" ] && command -v flock >/dev/null 2>&1; then
+    exec 9>"$STATE_DIR/.lock.$MODE" || true
+    if ! flock -n 9; then
+        log "前回の ${MODE} がまだ実行中のためスキップします"
+        exit 0
+    fi
+fi
 
 # Slack へ 1 通送る（webhook 未設定ならログだけ）
 notify() {

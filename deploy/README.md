@@ -121,17 +121,19 @@ heartbeat は s1 が書き込み、ホストが自分で鮮度を判定する）
 監視本体はすぱこん外（構築チーム居室の s1）で動かす。停電・クラッシュで監視ごと道連れに
 ならないようにするため。s1 → gateway → a011/a012 の ssh で `monitor-probe.sh` を呼ぶ。
 
-**s1 側の準備**
+**s1 側の準備**（`~/monitor` に置く運用）
 
 ```shell
-scp w3const@a012:ddbj-validator-api-staging/deploy/monitor-s1.sh ~/bin/
-chmod +x ~/bin/monitor-s1.sh
+mkdir -p ~/monitor
+scp w3const@a012:ddbj-validator-api-staging/deploy/monitor-s1.sh ~/monitor/
+chmod +x ~/monitor/monitor-s1.sh
 mkdir -p ~/.config/ddbj-validator-monitor
 printf '%s\n' '<Slack Incoming Webhook URL>' > ~/.config/ddbj-validator-monitor/webhook
 chmod 600 ~/.config/ddbj-validator-monitor/webhook
 ```
 
-`~/.ssh/config`（gateway 経由。`User` は w3const、鍵は監視専用）:
+`~/.ssh/config`（gateway 経由。`User` は w3const、鍵は監視専用。`Host a011` の設定は
+継承されないので `ProxyCommand` をこのブロックにも書く）:
 
 ```
 Host a011-monitor
@@ -144,17 +146,20 @@ Host a011-monitor
     ConnectTimeout 10
 ```
 
-**cron（s1）**
+**cron（s1）** — crontab では `~` を使わず絶対パスで書く。重いモードは分をずらす
+（mode ごとにロックを取るので重複起動は自動スキップされる）。
 
 ```cron
-*/1  * * * * TARGETS="a011-monitor:production" ~/bin/monitor-s1.sh quick    >> ~/log/ddbj-monitor.log 2>&1
-*/5  * * * * TARGETS="a011-monitor:production" ~/bin/monitor-s1.sh deep     >> ~/log/ddbj-monitor.log 2>&1
-*/10 * * * * TARGETS="a011-monitor:production" ~/bin/monitor-s1.sh host     >> ~/log/ddbj-monitor.log 2>&1
-0 */6 * * *  TARGETS="a011-monitor:production" ~/bin/monitor-s1.sh contract >> ~/log/ddbj-monitor.log 2>&1
-*/10 * * * * TARGETS="a012-monitor:staging"    ~/bin/monitor-s1.sh quick    >> ~/log/ddbj-monitor.log 2>&1
-*/30 * * * * TARGETS="a012-monitor:staging"    ~/bin/monitor-s1.sh deep     >> ~/log/ddbj-monitor.log 2>&1
-0 3 * * *    TARGETS="a012-monitor:staging"    ~/bin/monitor-s1.sh contract >> ~/log/ddbj-monitor.log 2>&1
-30 7 * * *   TARGETS="a011-monitor:production a012-monitor:staging" ~/bin/monitor-s1.sh summary >> ~/log/ddbj-monitor.log 2>&1
+MAILTO=""
+*/1              * * * * TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh quick    >> /home/ykodama/monitor/monitor.log 2>&1
+*/5              * * * * TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh deep     >> /home/ykodama/monitor/monitor.log 2>&1
+5,15,25,35,45,55 * * * * TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh host     >> /home/ykodama/monitor/monitor.log 2>&1
+17 */6           * * *   TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh contract >> /home/ykodama/monitor/monitor.log 2>&1
+*/10             * * * * TARGETS="a012-monitor:staging"    /home/ykodama/monitor/monitor-s1.sh quick    >> /home/ykodama/monitor/monitor.log 2>&1
+*/30             * * * * TARGETS="a012-monitor:staging"    /home/ykodama/monitor/monitor-s1.sh deep     >> /home/ykodama/monitor/monitor.log 2>&1
+23 3             * * *   TARGETS="a012-monitor:staging"    /home/ykodama/monitor/monitor-s1.sh contract >> /home/ykodama/monitor/monitor.log 2>&1
+30 7             * * *   TARGETS="a011-monitor:production a012-monitor:staging" /home/ykodama/monitor/monitor-s1.sh summary >> /home/ykodama/monitor/monitor.log 2>&1
+5 0 1            * *     : > /home/ykodama/monitor/monitor.log
 ```
 
 判定は 4 状態（`OK` / `NG`＝サービス異常・ホストは生存 / `UNREACHABLE`＝ホストか経路の障害 /
