@@ -71,13 +71,13 @@ case "$MODE" in
 esac
 
 # 異常時のメンション（Slack の webhook では @name ではなくエスケープ記法を使う）:
+#   <!channel>             … チャンネル全員に通知（オフラインも）。現状の既定
 #   <!here>                … チャンネルのオンライン中の人に通知
-#   <!channel>             … チャンネル全員に通知（オフラインも）
 #   <@U012ABCDEF>          … 特定の人（Slack プロフィールの member ID。@name は効かない）
 #   <!subteam^S012ABCDEF>  … ユーザーグループ
 #   ""（空）               … メンションしない
 # 復旧通知と日次サマリには付けない（異常時だけ目立たせる）。
-MENTION_ALERT="${MENTION_ALERT-<!here>}"        # NG（サービス異常・監視設定の誤り）
+MENTION_ALERT="${MENTION_ALERT-<!channel>}"      # NG（サービス異常・監視設定の誤り）
 MENTION_CRITICAL="${MENTION_CRITICAL-<!channel>}" # UNREACHABLE・全対象同時不通
 
 WEBHOOK="${WEBHOOK:-}"

@@ -162,8 +162,8 @@ MAILTO=""
 5 0 1            * *     : > /home/ykodama/monitor/monitor.log
 ```
 
-**異常時のみメンションする**（復旧通知と日次サマリには付けない）。既定は `NG` が `<!here>`、
-`UNREACHABLE`・同時不通・heartbeat 途切れが `<!channel>`。s1 の
+**異常時のみメンションする**（復旧通知と日次サマリには付けない）。既定は異常の種類にかかわらず
+`<!channel>`（チャンネル全員に通知）。s1 の
 `~/.config/ddbj-validator-monitor/config` で変更でき、空文字にすればメンションしない。
 Webhook では `@name` は効かず、`<!here>` / `<!channel>` / `<@U012ABCDEF>`（member ID）/
 `<!subteam^S012ABCDEF>` のエスケープ記法を使う。
