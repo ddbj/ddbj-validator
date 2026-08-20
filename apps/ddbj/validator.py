@@ -116,6 +116,7 @@ class Validator:
             ANN1620(), # [ERROR] All source features must have the same 'mol_type' value.
             ANN1625(), # [ERROR] The rRNA and tRNA features are not permitted when mol_type is 'mRNA'
             ANN1626(), # [ERROR] The tRNA and CDS features are not permitted when the mol_type is 'rRNA'
+            ANN1628(), # [WARNING] rRNA/tRNA spans full length while mol_type is 'rRNA' -> autofix genomic DNA
             ANN1810(), # [ERROR] The clone qualifier value is not unique
             ANN1820(), # [ERROR] The submitter_seqid qualifier value must be unique
             ANN1830(), # [ERROR] Invalid submitter_seqid qualifier value format
@@ -131,6 +132,8 @@ class Validator:
             ANN2580(), # [WARNING] Partial rRNA feature annotated by DFAST
             ANN2590(), # [ERROR] Complement CDS/mRNA/tRNA/rRNA features in TSA
             ANN2594(), # [ERROR] Multiple CDS features are not permitted in TSA entries
+            ANN2596(), # [ERROR] The only annotated feature has a 'complement' location (5'->3' rule)
+            ANN2598(), # [WARNING] Single partial CDS does not span the full-length sequence
             ANN2600(), # [WARNING] Unexpected rRNA length
             ANN2610(), # [WARNING] Unexpected tRNA length
             ANN2620(), # [WARNING] Unexpected tmRNA length
@@ -148,6 +151,7 @@ class Validator:
             ANN3260(), # [WARNING] Historical country name is used
             ANN3350(), # [WARNING] Set hold date at least 10 days from today
             ANN3360(), # [WARNING] /replace value identical to the sequence at the feature location
+            AXS3346(), # [WARNING] rpt_unit_seq value does not match the sequence at the feature location
             ANN4100(), # [WARNING] DDBJ, GenBank or ENA detected in the inference qualifier
             AXS4150(), # [WARNING] Peptide feature must be within parent CDS, in-frame, no internal stop
             ANN4160(), # [WARNING] mat_peptide 3' end coincides with parent CDS 3' end (stop codon)

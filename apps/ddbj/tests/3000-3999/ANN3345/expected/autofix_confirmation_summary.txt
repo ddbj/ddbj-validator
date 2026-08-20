@@ -1,0 +1,5 @@
+=== Auto-Fix Confirmation ===
+
+[ Target: qualifier ]
+  ANN3345_1.fail
+    1 entry, 1 feature, 1 qualifier: 'AAGGGC' -> 'aagggc' [Rule: ANN3345]

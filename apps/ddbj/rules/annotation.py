@@ -2073,6 +2073,60 @@ class ANN1626(BaseRule):
         return results
 
 
+class ANN1628(BaseRule):
+    rule_id = "ANN1628"
+    alternate_id = None
+    target = "mol_type"
+    # rRNA/tRNA feature が配列全長を指し、かつ source の mol_type が 'rRNA' の場合、
+    # ゲノム断片上の遺伝子注釈と考えられるため mol_type を 'genomic DNA' へ autofix。
+    description = ("An rRNA/tRNA feature spans the full-length sequence while the source mol_type is "
+                  "'rRNA'; the mol_type is likely 'genomic DNA'.")
+    requires_rdb = False
+    is_file_level = False
+
+    def validate(self, record, context):
+        results = []
+        if record.id == "COMMON":
+            return results
+        seq_len = len(record.seq) if record.seq else 0
+        if seq_len == 0:
+            return results
+
+        # source の mol_type == 'rRNA' を確認
+        rrna_sources = [
+            f for f in self.get_features(record, "source")
+            if any(m == "rRNA" for m in f.qualifiers.get("mol_type", []))
+        ]
+        if not rrna_sources:
+            return results
+
+        # rRNA/tRNA feature が全長 location（1..seqlen）を持つか
+        has_full = False
+        for f_type in ("rRNA", "tRNA"):
+            for feature in self.get_features(record, f_type):
+                loc = feature.location
+                if loc and int(loc.start) == 0 and int(loc.end) == seq_len:
+                    has_full = True
+                    break
+            if has_full:
+                break
+        if not has_full:
+            return results
+
+        # source の mol_type を 'genomic DNA' へ autofix
+        for src in rrna_sources:
+            res = self.feature_result(
+                record, src,
+                f"{self.description} (mol_type auto-corrected to 'genomic DNA')",
+                level="warning", qualifier="mol_type")
+            res["autofix"] = True
+            res["fix_target"] = "qualifier"
+            res["old_value"] = "rRNA"
+            res["new_value"] = "genomic DNA"
+            results.append(res)
+        return results
+
+
 class ANN1810(BaseRule):
     rule_id = "ANN1810"
     alternate_id = "JK"

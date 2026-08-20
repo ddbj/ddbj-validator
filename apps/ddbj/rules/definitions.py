@@ -2,6 +2,10 @@ import re
 from common.rules.base import BaseRule
 from apps.ddbj.rules.division_datatype import get_active_divisions
 
+# ANN3345: rpt_unit_seq の許容形式（小文字 atgc）。リテラル（aagggc）と反復回数表記
+# （ag(5)tg(8) / (aaaga)6(aaaa)1(aaaga)12）を許容。大文字は小文字化してから照合する。
+_RPT_UNIT_SEQ_PATTERN = re.compile(r'^(?:[atgc]+(?:\([0-9]+\))?|\([atgc]+\)[0-9]+)+$')
+
 class ANN_DICT_VALIDATOR(BaseRule):
     """
     JSON辞書に基づくマスターバリデーター
@@ -413,6 +417,29 @@ class ANN_DICT_VALIDATOR(BaseRule):
                     if invalid_chars:
                         msg = f"Invalid nucleotide codes in the 'replace' qualifier. Only lower-case IUPAC nucleotide codes (or an empty value) are allowed. (Found: '{val_str}')"
                         res = self.feature_result(record, feature, msg, level="error", qualifier=q_name, entry=getattr(feature, 'original_entry_id', entry_id), rule="ANN0185", target=f_type)
+                        results.append(res)
+
+            # ANN3345: rpt_unit_seq は小文字 atgc のリテラル/反復回数表記のみ許容。
+            # 大文字塩基のみが原因なら小文字化で autofix、atgc 以外・構文不正は autofix 不可の error。
+            if q_name == "rpt_unit_seq":
+                for val in q_values:
+                    val_str = str(val)
+                    if val_str == "" or _RPT_UNIT_SEQ_PATTERN.match(val_str):
+                        continue
+                    lowered = val_str.lower()
+                    if _RPT_UNIT_SEQ_PATTERN.match(lowered):
+                        # 大文字塩基のみが原因 → 小文字化で修正可能
+                        msg = f"The 'rpt_unit_seq' value must use lower-case nucleotides; upper-case bases are auto-corrected to lower-case. (Found: '{val_str}')"
+                        res = self.feature_result(record, feature, msg, level="error", qualifier=q_name, entry=getattr(feature, 'original_entry_id', entry_id), rule="ANN3345", target=f_type)
+                        res["autofix"] = True
+                        res["fix_target"] = "qualifier"
+                        res["old_value"] = val_str
+                        res["new_value"] = lowered
+                        results.append(res)
+                    else:
+                        # atgc 以外の文字・反復回数表記の構文不正 → autofix しない
+                        msg = f"The 'rpt_unit_seq' value contains characters other than lower-case a/t/g/c or the repeat-count notation. (Found: '{val_str}')"
+                        res = self.feature_result(record, feature, msg, level="error", qualifier=q_name, entry=getattr(feature, 'original_entry_id', entry_id), rule="ANN3345", target=f_type)
                         results.append(res)
 
             pattern_str = q_def.get("format_pattern")

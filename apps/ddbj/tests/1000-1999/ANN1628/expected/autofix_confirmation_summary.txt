@@ -1,0 +1,5 @@
+=== Auto-Fix Confirmation ===
+
+[ Target: qualifier ]
+  ANN1628_1.fail
+    1 entry, 1 feature, 1 qualifier: 'rRNA' -> 'genomic DNA' [Rule: ANN1628]
