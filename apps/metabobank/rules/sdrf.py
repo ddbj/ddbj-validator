@@ -224,18 +224,35 @@ class MB_SR0033(MbRule):
 
 class MB_SR0030(MbRule):
     rule_id = "MB_SR0030"; level = "error"; target = "SDRF"
-    description = "Invalid (control) characters in a cell."
+    # SDRF 側の非 ASCII 検査（IDF の MB_IR0024 と同仕様）。reader で正規化済み。
+    # mapped は warning（autofix 報告）、残存非 ASCII と制御文字は error。
+    description = "Non-ASCII or control characters in an SDRF cell."
 
     def validate(self, sub, context):
+        from apps.metabobank.charnorm import fix_warning_message, residual_error_message
         if not sub.sdrf:
             return []
         out = []
-        for r, row in enumerate(sub.sdrf.rows):
-            for c, cell in enumerate(row):
-                if any(ord(ch) < 32 and ch not in "\t" for ch in cell):
-                    col = sub.sdrf.header[c] if c < len(sub.sdrf.header) else f"col{c}"
-                    out.append(self.result(message=f"{self.description} (row {r + 1}, {col})", assay=_assay(sub, row), line=r + 1))
-                    return out
+        rows = sub.sdrf.rows
+        # (1) 非 ASCII 正規化の報告（reader で適用済み。char_fixes 参照）
+        for fx in getattr(sub, "char_fixes", []):
+            if fx["target"] != "SDRF":
+                continue
+            line = fx["line"]
+            row = rows[line - 1] if line and line - 1 < len(rows) else []
+            where = f"{fx['where']}, row {line}"
+            if fx["mapped"]:
+                out.append(self.result(message=fix_warning_message(where, fx["mapped"]),
+                                       level="warning", assay=_assay(sub, row), line=line))
+            if fx["residual"]:
+                out.append(self.result(message=residual_error_message(where, fx["residual"]),
+                                       level="error", assay=_assay(sub, row), line=line))
+        # (2) 制御文字（ord<32・タブ除く）は残存非 ASCII と同様に error
+        for r, row in enumerate(rows):
+            ctrl = {ch for cell in row for ch in cell if ord(ch) < 32 and ch != "\t"}
+            if ctrl:
+                out.append(self.result(message=residual_error_message(f"row {r + 1}", ctrl),
+                                       level="error", assay=_assay(sub, row), line=r + 1))
         return out
 
 

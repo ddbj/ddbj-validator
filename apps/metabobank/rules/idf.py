@@ -3,7 +3,6 @@ import datetime
 import re
 from apps.metabobank.rules.base import MbRule, null_values
 
-_ALLOWED_NONASCII = re.compile(r"[\s°±μ℃×µ≦≧≓≠←→↑↓↔ÅΑ-Ωα-ω]")
 _DATE_OK = re.compile(r"^20\d{2}-\d{2}-\d{2}$")
 _DATE_FIELDS = ("Public Release Date", "Comment[Submission Date]", "Comment[Last Update Date]", "Date of Experiment")
 
@@ -328,4 +327,27 @@ class MB_IR0023(MbRule):
                 if v.strip() in nulls:
                     out.append(self.result(message=f"{self.description} ({f}: '{v}')"))
                     break
+        return out
+
+
+class MB_IR0024(MbRule):
+    rule_id = "MB_IR0024"; level = "warning"; target = "IDF"
+    # IDF フィールド値の非 ASCII 文字を ASCII へ強制正規化（reader で適用済み）。
+    # mapped は warning（autofix 報告）、正規化しきれず残った非 ASCII は error。
+    description = "Non-ASCII characters in an IDF field were normalized to ASCII."
+
+    def validate(self, sub, context):
+        from apps.metabobank.charnorm import fix_warning_message, residual_error_message
+        if not sub.idf:
+            return []
+        out = []
+        for fx in getattr(sub, "char_fixes", []):
+            if fx["target"] != "IDF":
+                continue
+            if fx["mapped"]:
+                out.append(self.result(
+                    message=fix_warning_message(fx["where"], fx["mapped"]), level="warning"))
+            if fx["residual"]:
+                out.append(self.result(
+                    message=residual_error_message(fx["where"], fx["residual"]), level="error"))
         return out

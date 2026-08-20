@@ -20,9 +20,12 @@ DATA = HERE / "data"
 
 # -l（DB 非依存）での期待発火 rule_id（ignore 含む）。conf 由来の既知発火。
 EXPECTED = {
-    "MTBKS210": {"MB_IR0037"},
-    "MTBKS230": {"MB_IR0018", "MB_IR0037", "MB_SR0005", "MB_SR0046"},
-    "MTBKS240": {"MB_IR0018", "MB_IR0037"},
+    # 実データ 3 studies は ° / µ / × 等を含むため MB_IR0024（正規化 warning）が発火する。
+    "MTBKS210": {"MB_IR0024", "MB_IR0037"},
+    "MTBKS230": {"MB_IR0018", "MB_IR0024", "MB_IR0037", "MB_SR0005", "MB_SR0046"},
+    "MTBKS240": {"MB_IR0018", "MB_IR0024", "MB_IR0037"},
+    # 非 ASCII 正規化 autofix ＋ 残存 error の合成ケース（IDF=MB_IR0024 / SDRF=MB_SR0030）。
+    "MTBKS_charnorm": {"MB_IR0024", "MB_SR0030", "MB_IR0037"},
 }
 
 

@@ -1037,3 +1037,130 @@ class ANN4160(BaseRule):
             if cds3_complete and pep3 == cds3:
                 results.append(self.feature_result(record, pep, self.description, level="warning", qualifier="mat_peptide"))
         return results
+
+
+# rpt_unit_seq の展開（フォーマットは ANN3345 が検証済み。ここでは実塩基列へ展開するのみ）。
+_RPT_UNIT_TOKEN = re.compile(r'([atgc]+)\((\d+)\)|\(([atgc]+)\)(\d+)|([atgc]+)')
+
+def _expand_rpt_unit_seq(value):
+    """rpt_unit_seq を実塩基列へ展開する。ag(5)→agの5回、(aaaga)6→aaagaの6回、
+    リテラルはそのまま。解析不能（構文不正）なら None を返す。"""
+    s = str(value).lower()
+    out = []
+    pos = 0
+    for m in _RPT_UNIT_TOKEN.finditer(s):
+        if m.start() != pos:
+            return None  # トークン間に解析できない文字がある
+        if m.group(1):
+            out.append(m.group(1) * int(m.group(2)))
+        elif m.group(3):
+            out.append(m.group(3) * int(m.group(4)))
+        else:
+            out.append(m.group(5))
+        pos = m.end()
+    if pos != len(s) or not out:
+        return None
+    return "".join(out)
+
+
+class AXS3346(BaseRule):
+    rule_id = "AXS3346"
+    target = "rpt_unit_seq"
+    description = "The 'rpt_unit_seq' value does not match the sequence at the feature location."
+    requires_rdb = False
+    is_file_level = False
+
+    def validate(self, record, context):
+        results = []
+        if record.id == "COMMON":
+            return results
+        for feature in record.features:
+            if feature.type == "source" or not feature.location:
+                continue
+            for val in feature.qualifiers.get("rpt_unit_seq", []):
+                expanded = _expand_rpt_unit_seq(val)
+                if not expanded:
+                    continue  # 形式不正は ANN3345 が担当（ここでは判定しない）
+                try:
+                    target = str(feature.extract(record.seq)).lower()
+                except Exception:
+                    continue
+                if not target:
+                    continue
+                # 反復単位を feature 長までタイル敷きし、実配列と一致するか照合
+                tiled = (expanded * (len(target) // len(expanded) + 1))[:len(target)]
+                if tiled != target:
+                    loc_str = getattr(feature, 'original_location', str(feature.location))
+                    results.append(self.feature_result(
+                        record, feature,
+                        f"{self.description} (rpt_unit_seq: '{val}', location: {loc_str})",
+                        level="warning", qualifier="rpt_unit_seq"))
+        return results
+
+
+class ANN2596(BaseRule):
+    rule_id = "ANN2596"
+    target = "feature"
+    # source/assembly_gap/gap/unsure を除いて feature が 1 個だけで、その location が
+    # complement の場合、5'->3' の向きルールに反するため登録不可（error）。
+    description = ("The only annotated feature has a 'complement' location. A single-feature entry "
+                  "must be submitted in the 5'->3' orientation (reverse-complement the sequence and "
+                  "annotate the feature on the plus strand).")
+    requires_rdb = False
+    is_file_level = False
+
+    _IGNORE = {"source", "assembly_gap", "gap", "unsure"}
+
+    def validate(self, record, context):
+        results = []
+        if record.id == "COMMON":
+            return results
+        feats = [f for f in record.features if f.type not in self._IGNORE]
+        if len(feats) != 1:
+            return results
+        feat = feats[0]
+        if not feat.location:
+            return results
+        if getattr(feat.location, "strand", None) == -1:
+            loc_str = getattr(feat, 'original_location', str(feat.location))
+            results.append(self.feature_result(
+                record, feat,
+                f"{self.description} (Found: {feat.type} at {loc_str})",
+                level="error", qualifier=feat.type))
+        return results
+
+
+class ANN2598(BaseRule):
+    rule_id = "ANN2598"
+    target = "CDS"
+    # source 1 個＋CDS 1 個のみのエントリで、CDS が両端 partial（<..>）なのに
+    # location が配列全長（1..seqlen）を覆っていない場合に warning。
+    description = "A single partial CDS is expected to span the entire sequence."
+    requires_rdb = False
+    is_file_level = False
+
+    def validate(self, record, context):
+        results = []
+        if record.id == "COMMON":
+            return results
+        sources = [f for f in record.features if f.type == "source"]
+        others = [f for f in record.features if f.type != "source"]
+        # 「source 1 個 ＋ CDS 1 個のみ」で構成されるエントリが対象
+        if len(sources) != 1 or len(others) != 1 or others[0].type != "CDS":
+            return results
+        cds = others[0]
+        if not cds.location:
+            return results
+        loc = cds.location
+        both_partial = isinstance(loc.start, BeforePosition) and isinstance(loc.end, AfterPosition)
+        if not both_partial:
+            return results
+        seq_len = len(record.seq) if record.seq else 0
+        if int(loc.start) != 0 or int(loc.end) != seq_len:
+            loc_str = getattr(cds, 'original_location', str(loc))
+            results.append(self.feature_result(
+                record, cds,
+                f"{self.description} The both-end partial CDS location does not cover the full length "
+                f"(1..{seq_len}). (Found: {loc_str})",
+                level="warning", qualifier="CDS"))
+        return results
