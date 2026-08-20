@@ -18,14 +18,14 @@
 #   monitor-s1.sh summary                    # 現在の状態を 1 通まとめて通知（日次の生存確認用）
 #
 # cron 例（crontab では ~ を使わず絶対パスで書く。本番は高頻度・ステージングは控えめ。
-# 重いモードは分をずらす。mode ごとにロックを取るので重複起動は自動でスキップされる）:
+# 重いモードは分をずらす。ロックは mode と対象の組ごとなので、環境をまたいで邪魔をしない）:
 #   MAILTO=""
 #   */1          * * * * TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh quick    >> /home/ykodama/monitor/monitor.log 2>&1
 #   */5          * * * * TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh deep     >> /home/ykodama/monitor/monitor.log 2>&1
 #   3,13,23,33,43,53 * * * * TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh host >> /home/ykodama/monitor/monitor.log 2>&1
 #   17 */6       * * * TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh contract    >> /home/ykodama/monitor/monitor.log 2>&1
-#   */10         * * * * TARGETS="a012-monitor:staging"   /home/ykodama/monitor/monitor-s1.sh quick     >> /home/ykodama/monitor/monitor.log 2>&1
-#   */30         * * * * TARGETS="a012-monitor:staging"   /home/ykodama/monitor/monitor-s1.sh deep      >> /home/ykodama/monitor/monitor.log 2>&1
+#   4,14,24,34,44,54 * * * * TARGETS="a012-monitor:staging" /home/ykodama/monitor/monitor-s1.sh quick    >> /home/ykodama/monitor/monitor.log 2>&1
+#   8,38         * * * * TARGETS="a012-monitor:staging"   /home/ykodama/monitor/monitor-s1.sh deep      >> /home/ykodama/monitor/monitor.log 2>&1
 #   23 3         * * *   TARGETS="a012-monitor:staging"   /home/ykodama/monitor/monitor-s1.sh contract  >> /home/ykodama/monitor/monitor.log 2>&1
 #   30 7         * * *   TARGETS="a011-monitor:production a012-monitor:staging" /home/ykodama/monitor/monitor-s1.sh summary >> /home/ykodama/monitor/monitor.log 2>&1
 #   5 0 1        * *     : > /home/ykodama/monitor/monitor.log      # 毎月 1 日にログを切り詰め
@@ -89,12 +89,18 @@ log() { printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"; }
 
 # --- 多重起動の防止 -----------------------------------------------------------
 # quick は 1 分間隔で回すため、gateway が詰まって ssh が待たされると次の実行が重なって
-# プロセスが積み上がる。mode ごとにロックを取り、前回が走っている間はスキップする
-# （cron 側に flock を書かなくても安全。summary は軽いので対象外）。
+# プロセスが積み上がる。前回が走っている間はスキップする（cron 側に flock を書かなくても安全。
+# summary は軽いので対象外）。
+#
+# ロックは **mode と対象（TARGETS）の組ごと**に取る。mode だけで取ると、production quick
+# （毎分）と staging quick（10 分毎）が同じ分に起動したときに staging が ssh を試す前に
+# 黙ってスキップされ、監視が事実上止まる（2026-08-20 に発生。staging の heartbeat が
+# 39 分途切れ、a011 の dead-man で検知）。
 if [ "$MODE" != "summary" ] && command -v flock >/dev/null 2>&1; then
-    exec 9>"$STATE_DIR/.lock.$MODE" || true
+    lock_id="$(printf '%s' "$TARGETS" | tr -c 'A-Za-z0-9' '_' | cut -c1-80)"
+    exec 9>"$STATE_DIR/.lock.${MODE}.${lock_id}" || true
     if ! flock -n 9; then
-        log "前回の ${MODE} がまだ実行中のためスキップします"
+        log "前回の ${MODE}（${TARGETS}）がまだ実行中のためスキップします"
         exit 0
     fi
 fi

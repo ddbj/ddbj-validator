@@ -155,8 +155,8 @@ MAILTO=""
 */5              * * * * TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh deep     >> /home/ykodama/monitor/monitor.log 2>&1
 3,13,23,33,43,53 * * * * TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh host     >> /home/ykodama/monitor/monitor.log 2>&1
 17 */6           * * *   TARGETS="a011-monitor:production" /home/ykodama/monitor/monitor-s1.sh contract >> /home/ykodama/monitor/monitor.log 2>&1
-*/10             * * * * TARGETS="a012-monitor:staging"    /home/ykodama/monitor/monitor-s1.sh quick    >> /home/ykodama/monitor/monitor.log 2>&1
-*/30             * * * * TARGETS="a012-monitor:staging"    /home/ykodama/monitor/monitor-s1.sh deep     >> /home/ykodama/monitor/monitor.log 2>&1
+4,14,24,34,44,54 * * * * TARGETS="a012-monitor:staging"    /home/ykodama/monitor/monitor-s1.sh quick    >> /home/ykodama/monitor/monitor.log 2>&1
+8,38             * * * * TARGETS="a012-monitor:staging"    /home/ykodama/monitor/monitor-s1.sh deep     >> /home/ykodama/monitor/monitor.log 2>&1
 23 3             * * *   TARGETS="a012-monitor:staging"    /home/ykodama/monitor/monitor-s1.sh contract >> /home/ykodama/monitor/monitor.log 2>&1
 30 7             * * *   TARGETS="a011-monitor:production a012-monitor:staging" /home/ykodama/monitor/monitor-s1.sh summary >> /home/ykodama/monitor/monitor.log 2>&1
 5 0 1            * *     : > /home/ykodama/monitor/monitor.log
