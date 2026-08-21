@@ -23,7 +23,8 @@
 #   ./monitor-probe.sh contract   # deep + 実 POST /validation → status → result 検証 → run dir 削除
 #
 # しきい値は環境変数で上書きできる:
-#   STUCK_MIN(30) ERR_MAX(5) LEAK_MAX(0) LEAK_MIN_AGE(10) WEBLOG_ERR_MAX(0) DF_MAX(85) CONTRACT_TIMEOUT(120)
+#   STUCK_MIN(30) ERR_MAX(5) LEAK_MAX(0) LEAK_MIN_AGE(10) STRAY_MIN_AGE(5)
+#   WEBLOG_ERR_MAX(0) DF_MAX(85) CONTRACT_TIMEOUT(120)
 #
 # 副作用: 実行ごとに heartbeat ファイルを更新する（呼び出し側が生きている証跡。
 #         a011 側の dead-man 監視がこの鮮度を見る）。contract mode のみ、自分が
@@ -56,6 +57,7 @@ STUCK_MIN="${STUCK_MIN:-30}"
 ERR_MAX="${ERR_MAX:-5}"
 LEAK_MAX="${LEAK_MAX:-0}"
 LEAK_MIN_AGE="${LEAK_MIN_AGE:-10}"   # これより新しい .monitoring-* は実行中とみなして数えない（分）
+STRAY_MIN_AGE="${STRAY_MIN_AGE:-5}"  # これより新しい迷子 validator は数えない（分）。理由は下の判定箇所参照。
 WEBLOG_ERR_MAX="${WEBLOG_ERR_MAX:-0}"
 DF_MAX="${DF_MAX:-85}"
 CONTRACT_TIMEOUT="${CONTRACT_TIMEOUT:-120}"
@@ -98,9 +100,21 @@ if [ "$MODE" != "quick" ]; then
 
     # 迷子コンテナ: この環境以外の名前で ddbj-validator イメージが動いていないか。
     # （別クローンの deploy/.env で update.sh を実行すると発生する。2026-08 に実際に発生）
-    STRAY_VALIDATORS="$(podman ps --format '{{.Names}} {{.Image}}' 2>/dev/null \
-        | grep 'ghcr.io/ddbj/ddbj-validator' | grep -v "^${VNAME} " | wc -l | tr -d ' ')"
-    [ "${STRAY_VALIDATORS:-0}" -eq 0 ] || fail "stray_validator:${STRAY_VALIDATORS}"
+    #
+    # ただし STRAY_MIN_AGE 分より新しいものは数えない。release.sh のテスト
+    # （run_tests.py）がテストケースごとに `podman run --rm`（--name 無し＝ランダム名）で
+    # 使い捨ての validator を秒単位に作るため、これを数えるとリリース中ずっと
+    # 誤検知になる（2026-08-21 に実際に発生）。本物の迷子はデプロイなので
+    # restart:unless-stopped で残り続け、STRAY_MIN_AGE 経過後に検出される。
+    # 時刻は .StartedAt（unix 秒）を使う。.Created の文字列は date -d が解釈できず、
+    # また消えかけのコンテナを inspect し直すと競合するため。
+    stray_list="$(podman ps --format '{{.Names}} {{.Image}} {{.StartedAt}}' 2>/dev/null \
+        | grep 'ghcr.io/ddbj/ddbj-validator' | grep -v "^${VNAME} " \
+        | awk -v now="$(date +%s)" -v min="$STRAY_MIN_AGE" '$3+0 > 0 && (now - $3) >= min*60 {print $1}')"
+    STRAY_VALIDATORS="$(printf '%s' "$stray_list" | grep -c . | tr -d ' ')"
+    if [ "${STRAY_VALIDATORS:-0}" -ne 0 ]; then
+        fail "stray_validator:${STRAY_VALIDATORS}($(printf '%s' "$stray_list" | paste -sd, -))"
+    fi
 
     # 走行中判定（sleep infinity 以外のプロセスがあれば検証中）。誤検知回避と差し替え可否の判断用。
     if [ "$VALIDATOR_UP" = "true" ]; then

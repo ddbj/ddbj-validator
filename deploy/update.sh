@@ -138,8 +138,13 @@ podman inspect "$VALIDATOR" --format 'validator image={{.ImageName}}' 2>/dev/nul
 podman inspect "$WEB"       --format 'web       image={{.ImageName}}' 2>/dev/null || true
 
 # 別環境名の validator が動いていれば知らせる（過去の誤実行で作られた残骸の可能性）。
-stray="$(podman ps --format '{{.Names}} {{.Image}}' 2>/dev/null \
-    | grep 'ghcr.io/ddbj/ddbj-validator' | grep -v "^${VALIDATOR} " || true)"
+# STRAY_MIN_AGE 分より新しいものは無視する。release.sh のテストが `podman run --rm`
+# （--name 無し＝ランダム名）で使い捨ての validator を秒単位に作るため、これを拾うと
+# リリース中は毎回この警告が出る（monitor-probe.sh の stray 判定と同じ理由）。
+STRAY_MIN_AGE="${STRAY_MIN_AGE:-5}"
+stray="$(podman ps --format '{{.Names}} {{.Image}} {{.StartedAt}}' 2>/dev/null \
+    | grep 'ghcr.io/ddbj/ddbj-validator' | grep -v "^${VALIDATOR} " \
+    | awk -v now="$(date +%s)" -v min="$STRAY_MIN_AGE" '$3+0 > 0 && (now - $3) >= min*60 {$3=""; print}' || true)"
 if [ -n "$stray" ]; then
     echo "" >&2
     echo "[WARN] このホストで別名の validator コンテナが動いています（誤実行の残骸の可能性）:" >&2
