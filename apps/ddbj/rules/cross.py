@@ -1066,7 +1066,7 @@ def _expand_rpt_unit_seq(value):
 class AXS3346(BaseRule):
     rule_id = "AXS3346"
     target = "rpt_unit_seq"
-    description = "The 'rpt_unit_seq' value does not match the sequence at the feature location."
+    description = "The 'rpt_unit_seq' value is not found in the sequence at the feature location."
     requires_rdb = False
     is_file_level = False
 
@@ -1087,9 +1087,9 @@ class AXS3346(BaseRule):
                     continue
                 if not target:
                     continue
-                # 反復単位を feature 長までタイル敷きし、実配列と一致するか照合
-                tiled = (expanded * (len(target) // len(expanded) + 1))[:len(target)]
-                if tiled != target:
+                # タイル完全一致は要求しない（CRISPR 等は unit 間に spacer が挟まる）。
+                # 展開した unit が領域配列に 1 回も出現しない場合のみ WAR。
+                if expanded not in target:
                     loc_str = getattr(feature, 'original_location', str(feature.location))
                     results.append(self.feature_result(
                         record, feature,
@@ -1114,6 +1114,10 @@ class ANN2596(BaseRule):
     def validate(self, record, context):
         results = []
         if record.id == "COMMON":
+            return results
+        # WGS / GNM（ゲノムアセンブリの contig/scaffold）は 5'->3' 単一断片の前提が当てはまらず
+        # 単一 CDS が complement でも正当なため適用除外（GNM は将来利用予定）。
+        if {"WGS", "GNM"}.intersection(context.active_datatypes):
             return results
         feats = [f for f in record.features if f.type not in self._IGNORE]
         if len(feats) != 1:

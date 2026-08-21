@@ -9,15 +9,18 @@ COMMON	SUBMITTER		ab_name	Mishima,H.
 			city	Mishima
 			street	Yata 1111
 			zip	411-8540
+	DATATYPE		type	WGS
 	REFERENCE		title	Mouse Genome Sequencing
 			ab_name	Robertson,G.R.
 			ab_name	Mishima,H.
 			year	2026
 			status	Unpublished
-seq1	source	1..120	organism	Mus musculus
+seq1	source	1..60	organism	Lymantria dispar multiple nucleopolyhedrovirus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
-	repeat_region	1..12	rpt_type	tandem
-			rpt_unit_seq	gg
-			note	AXS3346 fail
+	CDS	complement(<1..>60)	gene	lef-8
+			transl_table	1
+			codon_start	1
+			product	late expression factor 8
+			note	ANN2596 pass
