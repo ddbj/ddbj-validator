@@ -51,7 +51,7 @@ def normalize(text):
 # --- 報告メッセージ（MB_IR0024 / MB_SR0030 で共通利用） ---
 _WARN_MSG = ("Non-ASCII characters were normalized to ASCII "
              "(hyphen-like -> '-', space-like -> ' '; symbols and Greek letters spelled out, "
-             "e.g. degree Celsius -> 'degreeC', Greek mu -> 'micro', multiplication sign -> 'x').")
+             "e.g. degree Celsius -> 'degree C', Greek mu -> 'micro', multiplication sign -> 'x').")
 
 
 def _disp(c):

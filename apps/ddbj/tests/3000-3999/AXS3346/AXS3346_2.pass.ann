@@ -18,6 +18,6 @@ seq1	source	1..120	organism	Mus musculus
 			mol_type	genomic DNA
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
-	repeat_region	1..12	rpt_type	tandem
-			rpt_unit_seq	gg
-			note	AXS3346 fail
+	repeat_region	1..24	rpt_type	direct
+			rpt_unit_seq	acgtacgt
+			note	AXS3346 pass
