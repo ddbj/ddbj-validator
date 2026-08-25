@@ -281,6 +281,12 @@ XML と同じ内部モデルを組むため、ルールは入力形式を区別�
   `--account` も同様に record からは取れず、省略すると権限系ルール（`BS_R0006` 等）は動きません。
 - 値が typed slot（`organism` / `title` / …）と属性バッグのどちらに載っていても拾います。
   値は XML 入力と同じく全て strip します。
+- **`organism` / `taxonomy_id` は typed slot へ引き上げたあと属性バッグから外します。**
+  BioSample の XML はこの 2 つを `Description/Organism` に置き `<Attributes>` には残さないためで、
+  バッグにも残すと属性を総なめするルールが余分な行を見ます（`BS_R0024` が、organism だけが
+  違う 2 サンプルを「区別情報あり」と見なして警告を出さなくなります）。ルール側はこの 2 つを
+  属性としては読んでいないので、外して失われる判定はありません。typed slot と属性の値が
+  食い違う場合は typed slot を採り、その旨を stderr に警告します。
 - **`attributes[].unit` は見ていません。** BioSample の XML/TSV に単位の概念が無く、ルールも
   単位を見ないためです。単位付きの値をどう扱うかは未決で、現状は値だけを検証します。
 - スキーマ検証（`BS_R0098`）は `ddbj-record` パッケージを使います（`[record]` extra。

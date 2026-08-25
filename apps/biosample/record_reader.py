@@ -13,8 +13,8 @@ v3 → BioSampleRecord の対応:
     samples[].alias                  -> sample_name（無ければ属性 sample_name）
     samples[].title                  -> title（無ければ属性 sample_title）
     samples[].description            -> 属性 description
-    samples[].organism.name          -> organism（無ければ属性 organism）
-    samples[].organism.taxonomy_id   -> taxonomy_id（無ければ属性 taxonomy_id）
+    samples[].organism.name          -> organism（無ければ属性 organism。属性側は取り込まない）
+    samples[].organism.taxonomy_id   -> taxonomy_id（無ければ属性 taxonomy_id。同上）
     samples[].package                -> package
     samples[].attributes[]           -> attributes（同名は XML と同じくリストで保持）
 
@@ -27,6 +27,16 @@ typed slot を先に見るのは xml_reader と揃えるためで、`alias` は 
 値は全て strip する。xml_reader は `_text` で全ての値を strip しており、
 strip しないと " Microbe " が未知パッケージ（BS_R0026）になった上で、
 パッケージ定義に依存する BS_R0027/R0036/R0001/R0100 が丸ごと黙って飛ぶ。
+
+`organism` / `taxonomy_id` は typed slot へ引き上げたあと**属性バッグから外す**。
+BioSample の XML はこの 2 つを `Description/Organism` に置き、`<Attributes>` には
+残さない（D-way の実データで確認済み）。producer によっては v3 の両方に載せるが、
+バッグにも残すと属性を総なめするルールが余分な行を見る。実害があるのは BS_R0024 で、
+organism だけが違う 2 サンプルが「区別情報あり」と見なされ、本来出るはずの
+「区別情報が無い」警告が出なくなる。ルール側は `organism` / `taxonomy_id` を
+**属性としては一切読んでいない**（読むのは rec.organism / rec.taxonomy_id）ので、
+外して失われる判定は無い。`sample_title` / `description` は逆に xml_reader が
+バッグへ入れる側なので残す。
 
 v3 に無いもの / 見ていないもの:
 
@@ -185,6 +195,10 @@ def _attributes(sample):
     return out
 
 
+# typed slot へ引き上げたあと属性バッグから外す名前。理由はモジュール docstring 参照。
+_LIFTED_OUT_OF_BAG = ("organism", "taxonomy_id")
+
+
 def _build_record(sample):
     rec = BioSampleRecord(raw=sample)
     rec.attributes = _attributes(sample)
@@ -201,9 +215,13 @@ def _build_record(sample):
     # 属性由来の taxonomy_id は str、typed slot は int。ルールは str を前提にしている
     # （`is_missing_value` が値を strip するので、int が来ると AttributeError になる）。
     rec.taxonomy_id = str(tax_id).strip() if tax_id is not None else rec.attr("taxonomy_id")
+    dropped = {name: rec.attributes.pop(name) for name in _LIFTED_OUT_OF_BAG
+               if name in rec.attributes}
 
     # XML reader と同じ lift: typed slot の値も属性として見えるようにする
     # （sample_title/description が R0013 autocleanup 等の属性処理対象になる）。
+    _warn_if_disagreed(rec, dropped)
+
     if rec.title and "sample_title" not in rec.attributes:
         rec.attributes["sample_title"] = [rec.title]
     description = _text(sample.get("description"))
@@ -211,6 +229,27 @@ def _build_record(sample):
         rec.attributes["description"] = [description]
 
     return rec
+
+
+_disagreements = 0   # parse_record 1 回ごとにリセットする（ハーネスは同一プロセスで何度も呼ぶ）
+
+
+def _warn_if_disagreed(rec, dropped):
+    """バッグから外した organism / taxonomy_id が typed slot と食い違っていたら言う。
+
+    typed slot を採るのが本 reader の方針だが、食い違いは producer 側の不整合であって
+    黙って捨てるべきものではない。ルール ID を持たないので stderr に出す。
+    件数が出るので最初の 1 件だけ具体的に書き、以降は数える。
+    """
+    global _disagreements
+    for name, values in dropped.items():
+        current = rec.organism if name == "organism" else rec.taxonomy_id
+        if values and values[0] and current and values[0] != str(current):
+            _disagreements += 1
+            if _disagreements == 1:
+                print(f"[WARN] typed slot と属性で {name} が食い違っています。typed slot を"
+                      f"採用します (sample={rec.sample_id!r}: {current!r} / 属性={values[0]!r})。"
+                      f"以降の食い違いは件数のみ数えます。", file=sys.stderr)
 
 
 def parse_record(record_path, submission_id=None, account=None):
@@ -242,6 +281,9 @@ def parse_record(record_path, submission_id=None, account=None):
 
     errors = _schema_validate(record)
 
+    global _disagreements
+    _disagreements = 0
+
     sub = BioSampleSubmission(submission_id=submission_id, account=account)
     sub.records = [_build_record(s) for s in record.get("samples") or []]
 
@@ -251,5 +293,9 @@ def parse_record(record_path, submission_id=None, account=None):
         sub.package = next(iter(pkgs))
     elif pkgs:
         sub.package = sorted(pkgs)[0]
+
+    if _disagreements > 1:
+        print(f"[WARN] typed slot と属性の食い違いは全部で {_disagreements} 件でした。",
+              file=sys.stderr)
 
     return sub, errors
