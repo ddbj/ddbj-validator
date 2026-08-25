@@ -3,6 +3,7 @@
 validator は別コンテナでも良い（config.VALIDATOR_CMD を `podman exec ...` にする）。
 各 validator CLI は `-o <run_dir>`（出力先）と `-j`（result.json）に対応済み。
 """
+import json
 import logging
 import subprocess
 from pathlib import Path
@@ -18,7 +19,11 @@ UPLOAD_ROLES = (
     "dra_submission", "dra_experiment", "dra_run", "dra_analysis",
     "gea_idf", "gea_sdrf",
     "metabobank_idf", "metabobank_sdrf",
+    "ddbj_record",
 )
+
+# ロール既定の拡張子（アップロードがファイル名を持たないとき用）。ddbj_record 以外は XML。
+_ROLE_SUFFIX = {"ddbj_record": ".json"}
 
 
 def save_upload(rdir, role, filename, data):
@@ -28,7 +33,7 @@ def save_upload(rdir, role, filename, data):
     autofix 出力（validator が `<out>/fixed/<同名>` に書く）とレイアウトが揃う。ファイル名が空なら role 名で代替。"""
     dest_dir = Path(rdir)
     dest_dir.mkdir(parents=True, exist_ok=True)
-    safe = Path(filename or f"{role}.xml").name
+    safe = Path(filename or f"{role}{_ROLE_SUFFIX.get(role, '.xml')}").name
     dest = dest_dir / safe
     dest.write_bytes(data)
     return dest
@@ -37,6 +42,8 @@ def save_upload(rdir, role, filename, data):
 def plan(saved, params):
     """保存済みファイル（role→Path）から validator サブコマンド＋引数を決める。
     どの validator かはアップロードされたロールの有無で判定する（ruby と同様）。"""
+    if "ddbj_record" in saved:
+        return _plan_record(saved["ddbj_record"], params)
     if "biosample" in saved:
         f = saved["biosample"]
         # 拡張子 .xml、または D-way 由来の拡張子なしフォールバック名 "biosample" は XML と決め打ち。
@@ -73,6 +80,35 @@ def plan(saved, params):
             args += ["--sdrf", str(saved["metabobank_sdrf"])]
         return args
     return None
+
+
+def _plan_record(path, params):
+    """DDBJ Record（v3 JSON）の振り分け。
+
+    Record は 1 ファイルに project / samples / experiments … が同居し得るので、他ロールと違って
+    「そのファイルがある＝この validator」とは決まらない。中身を見て決める。現在 Record 入力に
+    対応しているのは BioSample だけなので、samples を持つものだけ回し、それ以外は理由を言って断る
+    （握りつぶすと「指摘ゼロで正常終了」に見えてしまう）。BioProject 対応が入ったらここが
+    「複数 validator を走らせて結果をまとめる」分岐になる。run_validation は 1 プロセス・
+    1 レポート前提なので、そのときは併せて直す必要がある。
+
+    全文を読み直すのは無駄に見えるが、アップロードは create_validation が既にメモリへ
+    読み切っており、ここが支配的なコストになることはない。
+    """
+    try:
+        record = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as e:
+        raise ValueError(f"DDBJ Record を読めません: {e}") from e
+    if not isinstance(record, dict):
+        raise ValueError("DDBJ Record が JSON オブジェクトではありません")
+    if not record.get("samples"):
+        raise ValueError("DDBJ Record に samples がありません"
+                         "（現在 Record 入力に対応しているのは BioSample のみ）")
+
+    args = ["biosample", "-r", str(path)]
+    if params.get("submission_id"):
+        args += ["-s", params["submission_id"]]
+    return args
 
 
 def run_validation(rdir, saved, params):

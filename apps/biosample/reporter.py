@@ -39,6 +39,18 @@ def _official_message(rule_id, fallback=""):
     return _official_messages().get(rule_id) or fallback
 
 
+def _message(r):
+    """結果 1 件の表示用メッセージ。
+
+    既定は公式メッセージ（D-way 本番と同一文言にするための正典）。ただし result が
+    `official_message=False` を持つときは rule 側の動的メッセージを使う。BS_R0097/R0098 の
+    公式文言は "XML document ..." で入力形式を名指ししており、DDBJ Record（JSON）入力に
+    そのまま出すと嘘になるため、その逃げ道として要る。"""
+    if r.get("official_message") is False:
+        return r["message"]
+    return _official_message(r["rule_id"], r["message"])
+
+
 def _sorted(results):
     return sorted(results, key=lambda x: (_LEVEL_ORDER.get(x["level"], 9), x["rule_id"]))
 
@@ -81,7 +93,7 @@ def build_summary(results, sample_count, input_name, submission_id, package, ver
         lines.append(f"[ {lv.upper()} ]")
         seen = set()
         for r in rs:
-            line = f"{r['rule_id']}:{_official_message(r['rule_id'], r['message'])}"
+            line = f"{r['rule_id']}:{_message(r)}"
             if line in seen:
                 continue
             seen.add(line)
@@ -107,7 +119,7 @@ def build_details(results, records, sample_count, input_name, submission_id, pac
             sid = r.get("sample")
             acc, name = idmap.get(sid, (None, sid))
             ident = acc or name or sid or "-"  # SAMD 優先（両方あれば SAMD のみ）
-            msg = _official_message(r["rule_id"], r["message"]).replace(chr(10), " ")
+            msg = _message(r).replace(chr(10), " ")
             lines.append(f"{r['rule_id']}:{ident}:{msg}")
         lines.append("")
     return "\n".join(lines).rstrip("\n") + "\n"
@@ -222,7 +234,7 @@ _AUTO_SUFFIX_RULES = frozenset({
 
 def _error_obj(r, source):
     """result dict を web validator 互換の error_obj へ写像。"""
-    msg = _official_message(r["rule_id"], r["message"])
+    msg = _message(r)
     # ruby と同様、対象 rule のみ公式文言の末尾に補正告知を付与する。
     if r["rule_id"] in _AUTO_SUFFIX_RULES:
         msg = f"{msg} {_AUTO_ANNOTATION_MSG}"
