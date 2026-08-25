@@ -21,11 +21,17 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# DDBJ Record（v3 JSON）入力のスキーマ検証（BS_R0098）用。無くても Record の検証自体はできるが、
-# スキーマ違反の検出はスキップされる（lxml が無いとき XSD 検証をスキップするのと同じ扱い）。
-# PyPI 未公開なので git 参照。インストール: pip install .[record]
+# DDBJ Record（v3 JSON）入力のスキーマ検証（BS_R0098）用。
+#
+# PyPI 未公開なので GitHub の tarball を参照する。**ブランチを名指しするのが必須**で、
+# 既定ブランチ (main) には v3 スキーマがまだ無い。tarball にしているのは git URL と違って
+# イメージに git を入れずに済むため（hatch-vcs は fallback-version で 0.0.0 になる）。
+# v3 がリリースされたらタグへ差し替える。
+#
+# これが無くても Record の検証自体はできる（reader が前提とする形は自前で確かめる）が、
+# スキーマ違反の検出は行われない。インストール: pip install '.[record]'
 record = [
-    "ddbj-record @ git+https://github.com/ddbj/ddbj-record-specifications.git",
+    "ddbj-record @ https://github.com/ddbj/ddbj-record-specifications/archive/refs/heads/record-v3.tar.gz",
 ]
 
 # Web API（FastAPI）用。validator 本体には不要なので extra に分離。

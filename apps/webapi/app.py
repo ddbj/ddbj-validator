@@ -107,8 +107,6 @@ _MONITORING_XML = FsPath(__file__).parent / "resources" / "monitoring.xml"
 
 _UUID_RE = r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"   # 標準 uuid（ハイフンあり）
 
-# run_dir 直下に validator 自身が書く JSON。入力ファイルの探索から除くためのもの。
-_RESULT_FILES = frozenset({"result.json", "status.json"})
 
 
 def _err(message, status):
@@ -287,7 +285,9 @@ def show_validation(uuid: str = FPath(pattern=_UUID_RE)):
     if result is None:
         if status.get("status") in (run_event.ACCEPTED, run_event.RUNNING):
             return _err("Validation process has not finished yet", 400)
-        return _err("Validation not found", 404)
+        # 検証が成立しなかった run。status の message には理由が入っているので、
+        # "Validation not found"（＝知らない UUID）と同じ本文を返さない。
+        return _err(status.get("message") or "Validation not found", 404)
     return {**status, "result": result}
 
 
@@ -308,10 +308,12 @@ def get_file(uuid: str = FPath(pattern=_UUID_RE), filetype: str = FPath(pattern=
     if not rdir.exists():
         return _err("Validation not found", 404)
     if filetype == "input":
-        # run_dir 直下の入力ファイル（<SSUB>.xml / <SSUB>.json 等）。result.json と status.json は
-        # 同じ場所に出力されるので名指しで除く（除かないと候補が複数になって 404 になる）。
+        # run_dir 直下の入力ファイル（<SSUB>.xml / <SSUB>.json 等）。run 自身の出力
+        # （result.json / status.json / validation.log）は同じ場所にあるので除く。
+        # 同名でアップロードされたものは save_upload がロール名を前置してある。
         files = sorted(rdir.glob("*.xml"))
-        files += [p for p in sorted(rdir.glob("*.json")) if p.name not in _RESULT_FILES]
+        files += [p for p in sorted(rdir.glob("*.json"))
+                  if p.name not in runner.RESERVED_NAMES]
         if not files:
             # D-way が拡張子なしのフォールバック名 "biosample" で送った入力も拾う（fixed を fixed/* で
             # 緩めているのと同様）。今後 D-way は <SSUB>.xml で送る想定だが、拡張子なし時の後方互換。

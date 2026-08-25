@@ -39,15 +39,24 @@ def _official_message(rule_id, fallback=""):
     return _official_messages().get(rule_id) or fallback
 
 
-def _message(r):
-    """結果 1 件の表示用メッセージ。
+# 入力形式ごとの公式文言の差し替え。(rule_id, input_format) -> 文言。
+#
+# rule_messages.json は D-way 本番と同一文言にするための正典なので中身は変えない。
+# 一方 BS_R0097/R0098 の公式文言は "XML document ..." と入力形式を名指ししており、
+# XML 以外の入力にそのまま出すと嘘になる。差分はルール側に散らさずここに閉じ込める
+# （どのルールがどの形式で公式文言から外れるかが、この表を見れば分かる）。
+_FORMAT_MESSAGES = {
+    ("BS_R0097", "record"): "DDBJ Record (JSON) document is not well-formed.",
+    ("BS_R0098", "record"): "DDBJ Record (JSON) document is invalid against the schema.",
+}
 
-    既定は公式メッセージ（D-way 本番と同一文言にするための正典）。ただし result が
-    `official_message=False` を持つときは rule 側の動的メッセージを使う。BS_R0097/R0098 の
-    公式文言は "XML document ..." で入力形式を名指ししており、DDBJ Record（JSON）入力に
-    そのまま出すと嘘になるため、その逃げ道として要る。"""
-    if r.get("official_message") is False:
-        return r["message"]
+
+def _message(r):
+    """結果 1 件の表示用メッセージ。公式文言が既定、形式差だけ _FORMAT_MESSAGES で上書き。
+    個別の理由（どのフィールドがなぜ）は message ではなく annotation 側に出る。"""
+    override = _FORMAT_MESSAGES.get((r["rule_id"], r.get("input_format")))
+    if override:
+        return override
     return _official_message(r["rule_id"], r["message"])
 
 

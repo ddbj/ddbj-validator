@@ -1,0 +1,10 @@
+{
+  "schema_version": "v3.0",
+  "samples": [
+    {
+      "alias": "S1",
+      "package": "Microbe",
+      "organism": "Escherichia coli"
+    }
+  ]
+}

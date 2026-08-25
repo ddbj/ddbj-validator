@@ -174,22 +174,64 @@ def _apply_organism(bs, p):
 # 提案は形式非依存（attribute / old_value / new_value / kind）なので、XML 版と違うのは
 # 「どこに書き戻すか」だけ。識別子の取り方も record_reader の組み方と一致させてある。
 
-# 属性バッグと typed slot の両方に載り得る値。片方だけ直すと record が自己矛盾するので両方直す。
+# 属性バッグと typed slot の両方に載り得る値と、その slot のパス。
+# 片方だけ直すと record が自己矛盾する（バッグは直っているのに typed slot は古いまま。
+# reader は typed slot を先に見るので、直したはずの record を再検証すると同じ指摘が出ない）。
 _RECORD_TYPED_SLOTS = {
-    "sample_title": "title",
-    "description": "description",
+    "sample_name": ("alias",),
+    "sample_title": ("title",),
+    "description": ("description",),
+    "organism": ("organism", "name"),
+    "taxonomy_id": ("organism", "taxonomy_id"),
 }
+
+# v3 で int の slot。数字でない値はそのまま載せてスキーマ検証に落とさせる（黙って捨てない）。
+_RECORD_INT_SLOTS = {("organism", "taxonomy_id")}
+
+
+def _slot_get(sample, path):
+    """typed slot の現在値。途中が dict でなければ None。"""
+    node = sample
+    for key in path:
+        if not isinstance(node, dict):
+            return None
+        node = node.get(key)
+    return node
+
+
+def _slot_set(sample, path, value):
+    """typed slot を書き換える。**既に存在する slot のみ**。無い slot を生やすと
+    record に元は無かった主張を足すことになるので、そこは autofix の仕事ではない。"""
+    node = sample
+    for key in path[:-1]:
+        node = node.get(key) if isinstance(node, dict) else None
+        if not isinstance(node, dict):
+            return False
+    if not isinstance(node, dict) or node.get(path[-1]) is None:
+        return False
+    if path in _RECORD_INT_SLOTS and str(value).isdigit():
+        value = int(value)
+    node[path[-1]] = value
+    return True
 
 
 def _record_sample_identity(sample):
-    """v3 sample の識別子候補（sample_name, accession）。属性優先は record_reader と同じ順。"""
-    name = None
-    for attr in sample.get("attributes") or []:
-        if attr.get("name") == "sample_name" and attr.get("value"):
-            name = attr["value"].strip()
-            break
+    """v3 sample の識別子候補（sample_name, accession）。
+
+    alias を先に見るのは record_reader と同じ順。ここがずれると、提案が結び付かない
+    サンプルができて autofix が黙って適用されない。
+    """
+    name = sample.get("alias")
+    if isinstance(name, str):
+        name = name.strip() or None
+    else:
+        name = None
     if not name:
-        name = sample.get("alias")
+        for attr in sample.get("attributes") or []:
+            if attr.get("name") == "sample_name" and isinstance(attr.get("value"), str):
+                name = attr["value"].strip() or None
+                if name:
+                    break
     return name, sample.get("accession")
 
 
@@ -211,32 +253,35 @@ def _apply_record_attribute_value(sample, p):
     old_value = p.get("old_value")
     new_value = p.get("new_value")
     changed = _record_set_attribute(sample, attr_name, old_value, new_value)
-    slot = _RECORD_TYPED_SLOTS.get(attr_name)
-    if slot and sample.get(slot) is not None:
-        if old_value is None or (sample.get(slot) or "").strip() == old_value:
-            sample[slot] = new_value
-            changed = True
+    path = _RECORD_TYPED_SLOTS.get(attr_name)
+    if path:
+        current = _slot_get(sample, path)
+        if current is not None and (old_value is None or str(current).strip() == old_value):
+            changed = _slot_set(sample, path, new_value) or changed
     return 1 if changed else 0
 
 
 def _apply_record_organism(sample, p):
-    """organism（学名）と taxonomy_id を補正（kind=organism）。typed slot と属性の両方を揃える。"""
+    """organism（学名）と taxonomy_id を補正（kind=organism）。typed slot と属性の両方を揃える。
+
+    `_apply_record_attribute_value` と違って slot が無ければ作る。BS_R0045 は
+    「organism から taxonomy_id を補う」提案なので、taxonomy_id が空なのが前提だから。
+    """
     new_name = p.get("new_value")
     new_taxid = p.get("new_taxid")
-    organism = sample.get("organism")
     changed = False
-    if new_name:
-        if isinstance(organism, dict):
+    if new_name or new_taxid:
+        organism = sample.setdefault("organism", {})
+        if not isinstance(organism, dict):
+            organism = sample["organism"] = {}
+        if new_name:
             organism["name"] = new_name
-            changed = True
-        changed = _record_set_attribute(sample, "organism", None, new_name) or changed
-    if new_taxid:
-        if isinstance(organism, dict):
+            changed = _record_set_attribute(sample, "organism", None, new_name) or True
+        if new_taxid:
             # v3 の taxonomy_id は int。数字でない提案（ありえないが）はそのまま載せて
             # スキーマ検証に落とさせる — 黙って捨てるより気付ける。
             organism["taxonomy_id"] = int(new_taxid) if str(new_taxid).isdigit() else new_taxid
-            changed = True
-        changed = _record_set_attribute(sample, "taxonomy_id", None, str(new_taxid)) or changed
+            changed = _record_set_attribute(sample, "taxonomy_id", None, str(new_taxid)) or True
     return 1 if changed else 0
 
 
@@ -251,8 +296,10 @@ def apply_autofix_record(record_source, results, out_dir, out_name):
 
     try:
         record = json.loads(Path(record_source).read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-        return 0
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as e:
+        # ここに来るのは検証を通った直後の同じファイルが読めなくなった場合だけ。
+        # 黙って 0 を返すと「autofix を適用した」と報告しながら何も出力しないことになる。
+        raise RuntimeError(f"autofix: 検証済みの record を読み直せません: {e}") from e
 
     applied = 0
     for sample in record.get("samples") or []:

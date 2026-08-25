@@ -98,8 +98,7 @@ def _resolve_tsv_meta(tsv_path, arg_sub, arg_pkg):
     return (submission_id, package), None
 
 
-def _finalize(args, results, records, in_path, out_dir, submission_id, package, started, fixed_path,
-              fixed_label="XML"):
+def _finalize(args, results, records, in_path, out_dir, submission_id, package, started, fixed_path):
     """レポート出力（ファイル）＋標準出力を仕様どおりに行う。戻り値: レベル別 error 件数を含む counts。"""
     now = datetime.datetime.now(_JST)
     when = started.strftime("%Y-%m-%d %H:%M:%S JST")
@@ -127,12 +126,17 @@ def _finalize(args, results, records, in_path, out_dir, submission_id, package, 
     if autofix_lines:
         parts.append("[ Auto-Fix ]\n" + "\n".join(autofix_lines))
         if fixed_path:
-            parts.append(f"=> Auto-fixed {fixed_label} saved to: {fixed_path}")
+            parts.append(f"=> Auto-fixed {_fixed_label(fixed_path)} saved to: {fixed_path}")
     parts.append(f"[ All reports successfully generated to {reports_dir} ]\n"
                  + "\n".join(f"  {f}" for f in report_files))
     print("\n" + "\n\n".join(parts))   # DB チェック/Found 行との間に空行
 
     return {"error": sum(1 for r in results if r.get("level") == "error")}
+
+
+def _fixed_label(fixed_path):
+    """autofix 出力の呼び名。ddbj の "Auto-fixed ANN saved to" と同じ形にする。"""
+    return "Record" if fixed_path.suffix.lower() == ".json" else "XML"
 
 
 def _ssub_from_name(path):
@@ -151,6 +155,13 @@ def run(args):
         print(f"[ERROR] Input not found: {in_path}", file=sys.stderr)
         return 2
 
+    if is_record and args.package:
+        # record の package は samples[].package から取る。黙って無視すると、
+        # 指定したつもりの package で検証されたと読まれる。
+        print("[ERROR] -p/--package is not used with -r/--record; "
+              "the package is taken from samples[].package.", file=sys.stderr)
+        return 2
+
     skip_db, skip_ncbi, skip_auth = _resolve_modes(args)
     # --account は curator（内部DB）モードでのみ有効。他モードでは auth 検証ができないため abort（英語メッセージ）。
     if args.account and skip_db:
@@ -167,8 +178,15 @@ def run(args):
     submission_id = None
     if is_record:
         fix_source = str(in_path)
+        # record は SSUB を持たないので -s がそのまま submission_id になる。
+        # 渡されないと BS_R0091 が自分自身の locus_tag_prefix を重複と報告する。
+        submission_id = args.submission_id
+        if not submission_id:
+            print("[WARN] --submission-id が指定されていません。登録済みの submission を"
+                  "再検証する場合、自分自身の locus_tag_prefix が重複として報告されます "
+                  "(BS_R0091)。", file=sys.stderr)
         submission, pre_errors = record_reader.parse_record(
-            str(in_path), submission_id=args.submission_id, account=args.account)
+            str(in_path), submission_id=submission_id, account=args.account)
     else:
         if is_tsv:
             meta, err = _resolve_tsv_meta(str(in_path), args.submission_id, args.package)
@@ -190,14 +208,21 @@ def run(args):
     if submission is None:
         # 整形不正（R0097 等）でパース不可（サンプル 0）
         counts = _finalize(args, pre_errors, [], in_path, out_dir,
-                           submission_id or args.submission_id or _ssub_from_name(in_path),
-                           None, started, None)
+                           submission_id or _ssub_from_name(in_path), None, started, None)
         return 1 if counts.get("error") else 0
 
     # 読めたが検証対象が無い。「サンプル 0 件」を「指摘 0 件」として返すと、渡す record を
-    # 間違えた側は成功したと読む。空のレポートを出さずに入力エラーとして落とす。
+    # 間違えた側は成功したと読むので、入力エラーとして落とす。ただしスキーマ違反などの
+    # pre_errors は握りつぶさずレポートに残す（落とす理由と別の問題が同時にあり得る）。
     if is_record and not submission.records:
         print(f"[ERROR] No samples in record: {in_path}", file=sys.stderr)
+        if pre_errors:
+            # スキーマ違反は実際の指摘なので残す。error 級なので「問題なし」とは読まれない。
+            _finalize(args, pre_errors, [], in_path, out_dir,
+                      submission_id or _ssub_from_name(in_path), None, started, None)
+            return 1
+        # 指摘ゼロのレポートを書くと「検証して問題なし」に見える。書かずに入力エラーで落とす
+        # （レポートが無ければ web api 側も「検証は成立していない」と扱う）。
         return 2
 
     # account が --account 未指定でも XML ルートの submitter_id から解決できていれば採用（互換）
@@ -247,9 +272,9 @@ def run(args):
     fixed_path = (Path(out_dir) / "fixed" / fixed_name) if n_fixed else None
 
     package = submission.package or (submission.records[0].package if submission.records else None)
-    sub_id = submission.submission_id or submission_id or args.submission_id or _ssub_from_name(in_path)
+    sub_id = submission.submission_id or submission_id or _ssub_from_name(in_path)
     counts = _finalize(args, results, submission.records, in_path, out_dir, sub_id, package, started,
-                       fixed_path, "Record" if is_record else "XML")
+                       fixed_path)
     return 1 if counts.get("error") else 0
 
 

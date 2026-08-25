@@ -76,7 +76,7 @@ MOCK_REGISTERED_PREFIXES = {"TAKENPFX": {"SSUB999999"}}
 
 
 def _fixtures(d):
-    """fixture 一式（XML / TSV / DDBJ Record）を名前順で返す。"""
+    """fixture 一式（XML / TSV(.txt) / DDBJ Record(.json)）を名前順で返す。"""
     return sorted(list(d.glob("*.xml")) + list(d.glob("*.txt")) + list(d.glob("*.json")))
 
 
@@ -175,7 +175,8 @@ def run_inprocess_mode(target=None):
                 continue
             expected = parts[-2]
             # 環境依存: XSD(R0098) は lxml 必須。無ければ検証不能なので skip（CLI モードと同じ扱い）。
-            if rule_id == "BS_R0098" and not _lxml_available():
+            # Record 入力の R0098 は lxml ではなく形状チェック / v3 スキーマなので対象外。
+            if rule_id == "BS_R0098" and not _is_record(fx) and not _lxml_available():
                 print(f"  [SKIP]     {fx.name} (BS_R0098=XSD は lxml 未導入のため検証不可)")
                 continue
             fired = _fired_rules(fx)
@@ -195,7 +196,7 @@ def run_inprocess_mode(target=None):
             for fx in _fixtures(d):
                 # golden の拡張子は autofix 出力の形式に揃える（Record 入力なら .json、他は .xml）。
                 want_suffix = ".json" if _is_record(fx) else ".xml"
-                golden = exp_dir / (fx.name if fx.suffix == want_suffix
+                golden = exp_dir / (fx.name if fx.suffix.lower() == want_suffix
                                     else Path(fx.name).stem + want_suffix)
                 if not golden.exists():
                     continue
@@ -219,18 +220,25 @@ def run_inprocess_mode(target=None):
     else:
         print(f"{RED}[ABORT] BioSample rule tests failed.{END}")
 
-    # TSV→XML 変換テストも同時に実行（"tsv2xml 含めて test"）。全 fixture 実行時のみ。
-    tsv_ok = True
+    # 変換系・同値性のテストも同時に実行（"含めて test"）。全 fixture 実行時のみ。
+    tsv_ok = parity_ok = True
     if target is None:
         print("\n--- tsv_to_xml conversion test ---")
-        import importlib.util
-        spec = importlib.util.spec_from_file_location(
-            "run_tsv2xml_test", Path(__file__).resolve().parent / "run_tsv2xml_test.py")
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
-        tsv_ok = (mod.main() == 0)
+        tsv_ok = (_run_sibling("run_tsv2xml_test") == 0)
+        print("\n--- XML / DDBJ Record parity test ---")
+        parity_ok = (_run_sibling("run_record_parity_test") == 0)
 
-    return 0 if (rule_ok and tsv_ok) else 1
+    return 0 if (rule_ok and tsv_ok and parity_ok) else 1
+
+
+def _run_sibling(module_name):
+    """同ディレクトリの補助ハーネスを読み込んで main() を回す。"""
+    import importlib.util
+    path = Path(__file__).resolve().parent / f"{module_name}.py"
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.main()
 
 
 # ============================================================================
