@@ -1,0 +1,41 @@
+{
+  "schema_version": "v3.0",
+  "samples": [
+    {
+      "accession": "SAMD00000001",
+      "alias": "S1",
+      "title": "S1",
+      "package": "Microbe",
+      "organism": {
+        "name": "Escherichia coli",
+        "taxonomy_id": 562
+      },
+      "attributes": [
+        {
+          "name": "sample_name",
+          "value": "S1"
+        },
+        {
+          "name": "organism",
+          "value": "Escherichia coli"
+        },
+        {
+          "name": "strain",
+          "value": "K-12"
+        },
+        {
+          "name": "collection_date",
+          "value": "2020-06-30"
+        },
+        {
+          "name": "geo_loc_name",
+          "value": "Japan:Tsukuba"
+        },
+        {
+          "name": "isolation_source",
+          "value": "soil"
+        }
+      ]
+    }
+  ]
+}

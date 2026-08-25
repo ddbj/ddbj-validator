@@ -208,7 +208,7 @@ NCBI_API_EMAIL=あなたのメールアドレス
 |---|---|---|
 | `ddbj`（省略可・既定） | 塩基配列アノテーション | `.ann` ＋ FASTA のペア（ディレクトリ） |
 | `bioproject` | BioProject | XML |
-| `biosample` | BioSample | XML または TSV |
+| `biosample` | BioSample | XML / TSV / DDBJ Record（v3 JSON） |
 | `dra` | DRA（Sequence Read Archive） | Submission/Experiment/Run/Analysis XML |
 | `gea` | GEA（Genomic Expression Archive） | MAGE-TAB（IDF/SDRF） |
 | `metabobank`（`mb`） | MetaboBank | MAGE-TAB（IDF/SDRF） |
@@ -243,7 +243,7 @@ ddbj-validator bioproject -x PSUB012060.xml
 
 ## BioSample（`biosample`）
 
-BioSample 登録データ（XML または TSV）を検証します。
+BioSample 登録データ（XML / TSV / DDBJ Record）を検証します。
 
 ```bash
 # XML 入力
@@ -251,13 +251,33 @@ ddbj-validator biosample -x SSUB045342.xml
 
 # TSV 入力（submission id / package はファイル名 SSUBxxxx.<Package>.txt から補完。-s/-p で明示指定可）
 ddbj-validator biosample -t SSUB045342.Human.txt [-s SSUB045342] [-p Human]
+
+# DDBJ Record 入力（v3 JSON。record の samples[] を検証する）
+ddbj-validator biosample -r SSUB045342.json [-s SSUB045342]
 ```
 
-- 入力: `-x`, `--xml` または `-t`, `--tsv`（どちらか必須）。TSV は内部で XML に変換して検証します。
+- 入力: `-x`, `--xml` / `-t`, `--tsv` / `-r`, `--record`（いずれか 1 つ必須）。TSV は内部で XML に変換して検証します。
 - `-s`, `--submission-id` / `-p`, `--package`: TSV の submission id / package。省略時はファイル名（`SSUBxxxx.<Package>.txt`）から補完。
-- autofix は常に自動適用され、修正済み XML を `fixed/` に出力します（`reports/` には autofix 確認ファイルも出力）。
+  Record は submission id を持たないため、必要なら `-s` で渡します（`-p` は使いません。package は `samples[].package` から取ります）。
+- autofix は常に自動適用され、修正済みファイルを `fixed/` に出力します。**形式は入力に従います**
+  （XML/TSV 入力なら XML、Record 入力なら Record）。`reports/` には autofix 確認ファイルも出力します。
 - モード: 既定 NCBI API。`-d` で内部 DB（account / BioProject / 登録済み locus_tag_prefix の取得）。
 - サンプル: `docs/biosample/SSUB045342.xml` / `SSUB045342.txt` ほか。
+
+### DDBJ Record（v3 JSON）入力について
+
+[ddbj/ddbj-record-specifications](https://github.com/ddbj/ddbj-record-specifications) の v3 レコードを
+そのまま入力にできます。検証ルールは XML/TSV と同じものが同じように動きます（`record_reader` が
+XML と同じ内部モデルを組むため、ルールは入力形式を区別しません）。
+
+対応関係と、v3 に無いために呼び出し側から渡す必要があるものは `apps/biosample/record_reader.py`
+の docstring にまとめてあります。要点:
+
+- `samples[]` のみを見ます。`project` などが同居していても無視します（BioProject は今後対応）。
+- `submission_id` は record が持たないので `-s` で渡します。`--account` も同様に record からは取れません。
+- 値が typed slot（`organism` / `title` / …）と属性バッグのどちらに載っていても拾います。
+- **スキーマ検証（`BS_R0098`）には `ddbj-record` パッケージが要ります**（`pip install '.[record]'`）。
+  入っていない場合はスキーマ検証だけがスキップされ、その旨を stderr に警告します。
 
 ## DRA（`dra`）
 

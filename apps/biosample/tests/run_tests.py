@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """BioSample validator 専用 E2E ハーネス（ddbj とは完全分離）。
 
-- 対象: apps/biosample/tests/<BS_Rxxxx>/ 配下の fixture（*.xml / *.txt(TSV)）。
-- 命名: `BS_Rxxxx_n.pass.xml` / `BS_Rxxxx_n.fail.xml`（.txt も可）。
+- 対象: apps/biosample/tests/<BS_Rxxxx>/ 配下の fixture（*.xml / *.txt(TSV) / *.json(DDBJ Record)）。
+- 命名: `BS_Rxxxx_n.pass.xml` / `BS_Rxxxx_n.fail.xml`（.txt / .json も可）。
   ディレクトリ名のルール ID を「対象ルール」とし、
     pass → 対象ルールが発火しないこと、fail → 対象ルールが発火すること、を検証。
 - 実行は in-process（パイプライン直呼び）。既定は local モード（DB 非依存ルールの検証）。
@@ -17,7 +17,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from apps.biosample.context import ValidationContext
-from apps.biosample import xml_reader, tsv_to_xml
+from apps.biosample import xml_reader, tsv_to_xml, record_reader
 from apps.biosample.validator import Validator
 
 GREEN = "\033[92m"; RED = "\033[91m"; END = "\033[0m"
@@ -75,6 +75,15 @@ MOCK_PSUB_TO_PRJD = {
 MOCK_REGISTERED_PREFIXES = {"TAKENPFX": {"SSUB999999"}}
 
 
+def _fixtures(d):
+    """fixture 一式（XML / TSV / DDBJ Record）を名前順で返す。"""
+    return sorted(list(d.glob("*.xml")) + list(d.glob("*.txt")) + list(d.glob("*.json")))
+
+
+def _is_record(path):
+    return Path(path).suffix.lower() == ".json"
+
+
 def _fired_rules(fixture_path):
     """fixture を検証し、発火したルール ID 集合を返す。
     taxonomy ルールも有効化（skip_ncbi=False）し、mock taxonomy を注入して決定的に評価する。
@@ -87,33 +96,38 @@ def _fired_rules(fixture_path):
         bp_meta=dict(MOCK_BP_META), psub_to_prjd=dict(MOCK_PSUB_TO_PRJD),
         registered_locus_tag_prefixes=dict(MOCK_REGISTERED_PREFIXES),
     )
-    submission, results, _xml_src = _validate(fixture_path, ctx)
+    submission, results, _src = _validate(fixture_path, ctx)
     return {r["rule_id"] for r in results}
 
 
 def _validate(fixture_path, ctx):
-    """fixture を検証し (submission, results, xml_source_path) を返す。
-    TSV は XML へ変換した一時ファイルのパスを xml_source として返す（autofix 適用に使う）。"""
+    """fixture を検証し (submission, results, autofix_source_path) を返す。
+    TSV は XML へ変換した一時ファイルのパスを source として返す（autofix 適用に使う）。
+    Record(.json) は record_reader が XML と同じモデルを組むので、以降は同じ扱いになる。"""
     path = Path(fixture_path)
-    if path.suffix.lower() in (".txt", ".tsv"):
+    if _is_record(path):
+        src = str(path)
+        submission, pre = record_reader.parse_record(src)
+    elif path.suffix.lower() in (".txt", ".tsv"):
         import tempfile
         xml_text = tsv_to_xml.tsv_to_xml(str(path))
         sub_id, _ = tsv_to_xml.parse_filename(str(path))
         tmp = tempfile.NamedTemporaryFile("w", suffix=".xml", delete=False, encoding="utf-8")
         tmp.write(xml_text or ""); tmp.close()
-        xml_src = tmp.name
-        submission, pre = xml_reader.parse_xml(xml_src, submission_id=sub_id)
+        src = tmp.name
+        submission, pre = xml_reader.parse_xml(src, submission_id=sub_id)
     else:
-        xml_src = str(path)
-        submission, pre = xml_reader.parse_xml(xml_src)
+        src = str(path)
+        submission, pre = xml_reader.parse_xml(src)
     results = list(pre)
     if submission is not None:
         results += Validator(ctx).run(submission)
-    return submission, results, xml_src
+    return submission, results, src
 
 
 def _check_autofix(fixture_path, golden_path):
-    """fixture を検証→autofix 全自動適用し、生成 XML を golden とバイト突合。
+    """fixture を検証→autofix 全自動適用し、生成物を golden とバイト突合。
+    出力形式は入力に従う（XML/TSV → XML、Record → Record）。
     戻り値: (ok, error_message)。"""
     import tempfile
     from apps.biosample import autofix
@@ -124,12 +138,16 @@ def _check_autofix(fixture_path, golden_path):
         bp_meta=dict(MOCK_BP_META), psub_to_prjd=dict(MOCK_PSUB_TO_PRJD),
         registered_locus_tag_prefixes=dict(MOCK_REGISTERED_PREFIXES),
     )
-    submission, results, xml_src = _validate(fixture_path, ctx)
+    submission, results, src = _validate(fixture_path, ctx)
     if submission is None:
         return False, "parse failed"
     with tempfile.TemporaryDirectory() as td:
-        name = "out.xml"
-        n = autofix.apply_autofix(xml_src, results, td, name)
+        if _is_record(fixture_path):
+            name = "out.json"
+            n = autofix.apply_autofix_record(src, results, td, name)
+        else:
+            name = "out.xml"
+            n = autofix.apply_autofix(src, results, td, name)
         if n == 0:
             return False, "no autofix applied (expected fixed output)"
         got = (Path(td) / "fixed" / name).read_bytes()
@@ -151,7 +169,7 @@ def run_inprocess_mode(target=None):
     for d in test_dirs:
         rule_id = d.name
         print(f"Testing: {d.name}")
-        for fx in sorted(list(d.glob("*.xml")) + list(d.glob("*.txt"))):
+        for fx in _fixtures(d):
             parts = fx.name.split(".")
             if len(parts) < 3 or parts[-2] not in ("pass", "fail"):
                 continue
@@ -174,8 +192,11 @@ def run_inprocess_mode(target=None):
         # autofix ゴールデン検証: <dir>/expected/<name> があれば、その入力に autofix を適用して突合。
         exp_dir = d / "expected"
         if exp_dir.is_dir():
-            for fx in sorted(list(d.glob("*.xml")) + list(d.glob("*.txt"))):
-                golden = exp_dir / (Path(fx.name).stem + ".xml" if fx.suffix != ".xml" else fx.name)
+            for fx in _fixtures(d):
+                # golden の拡張子は autofix 出力の形式に揃える（Record 入力なら .json、他は .xml）。
+                want_suffix = ".json" if _is_record(fx) else ".xml"
+                golden = exp_dir / (fx.name if fx.suffix == want_suffix
+                                    else Path(fx.name).stem + want_suffix)
                 if not golden.exists():
                     continue
                 ap, af_err = _check_autofix(fx, golden)

@@ -2,7 +2,9 @@
 
 方針（ddbj の対話式とは異なる）:
 - **全自動適用**（対話なし）。検証結果のうち autofix 提案を持つものを全て適用する。
-- 修正済み XML を `<out_dir>/fixed/` に出力する（入力が TSV の場合も XML として出力）。
+- 修正済みファイルを `<out_dir>/fixed/` に出力する。形式は入力に従う: XML/TSV 入力なら
+  XML、DDBJ Record 入力なら Record（JSON）。提案そのもの（attribute/old_value/new_value）は
+  形式に依らないので、形式ごとに違うのは適用先の書き方だけである。
 
 autofix 提案は結果 dict に次を持つ（BsRule.result の extra 経由）:
     autofix=True, attribute=<attr_name>, old_value=<現値>, new_value=<修正値>
@@ -11,6 +13,7 @@ autofix 提案は結果 dict に次を持つ（BsRule.result の extra 経由）
 サンプル対応付けは result["sample"]（sample_name か accession）と
 XML の SampleName / Ids/Id を突き合わせる。
 """
+import json
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -57,11 +60,12 @@ def collect_proposals(results):
 
 
 def clean_fixed_dir(out_dir):
-    """fixed/ 内の既存 .xml を削除（取り違え防止。reports/ と同様の運用）。"""
+    """fixed/ 内の既存出力を削除（取り違え防止。reports/ と同様の運用）。"""
     fixed = Path(out_dir) / "fixed"
     if fixed.is_dir():
-        for f in fixed.glob("*.xml"):
-            f.unlink()
+        for pattern in ("*.xml", "*.json"):
+            for f in fixed.glob(pattern):
+                f.unlink()
 
 
 def apply_autofix(xml_source, results, out_dir, out_name):
@@ -163,4 +167,111 @@ def _apply_organism(bs, p):
             a.text = new_name
         elif an == "taxonomy_id" and new_taxid:
             a.text = str(new_taxid)
+    return applied
+
+
+# ---- DDBJ Record（v3 JSON）への適用 ----
+# 提案は形式非依存（attribute / old_value / new_value / kind）なので、XML 版と違うのは
+# 「どこに書き戻すか」だけ。識別子の取り方も record_reader の組み方と一致させてある。
+
+# 属性バッグと typed slot の両方に載り得る値。片方だけ直すと record が自己矛盾するので両方直す。
+_RECORD_TYPED_SLOTS = {
+    "sample_title": "title",
+    "description": "description",
+}
+
+
+def _record_sample_identity(sample):
+    """v3 sample の識別子候補（sample_name, accession）。属性優先は record_reader と同じ順。"""
+    name = None
+    for attr in sample.get("attributes") or []:
+        if attr.get("name") == "sample_name" and attr.get("value"):
+            name = attr["value"].strip()
+            break
+    if not name:
+        name = sample.get("alias")
+    return name, sample.get("accession")
+
+
+def _record_set_attribute(sample, name, old_value, new_value):
+    """属性バッグの name を new_value へ。old_value 指定時は一致するものだけ。適用したら True。"""
+    for attr in sample.get("attributes") or []:
+        if attr.get("name") != name:
+            continue
+        if old_value is not None and (attr.get("value") or "").strip() != old_value:
+            continue
+        attr["value"] = new_value
+        return True
+    return False
+
+
+def _apply_record_attribute_value(sample, p):
+    """属性値置換（kind=attribute_value）。適用件数(0/1)を返す。"""
+    attr_name = p.get("attribute")
+    old_value = p.get("old_value")
+    new_value = p.get("new_value")
+    changed = _record_set_attribute(sample, attr_name, old_value, new_value)
+    slot = _RECORD_TYPED_SLOTS.get(attr_name)
+    if slot and sample.get(slot) is not None:
+        if old_value is None or (sample.get(slot) or "").strip() == old_value:
+            sample[slot] = new_value
+            changed = True
+    return 1 if changed else 0
+
+
+def _apply_record_organism(sample, p):
+    """organism（学名）と taxonomy_id を補正（kind=organism）。typed slot と属性の両方を揃える。"""
+    new_name = p.get("new_value")
+    new_taxid = p.get("new_taxid")
+    organism = sample.get("organism")
+    changed = False
+    if new_name:
+        if isinstance(organism, dict):
+            organism["name"] = new_name
+            changed = True
+        changed = _record_set_attribute(sample, "organism", None, new_name) or changed
+    if new_taxid:
+        if isinstance(organism, dict):
+            # v3 の taxonomy_id は int。数字でない提案（ありえないが）はそのまま載せて
+            # スキーマ検証に落とさせる — 黙って捨てるより気付ける。
+            organism["taxonomy_id"] = int(new_taxid) if str(new_taxid).isdigit() else new_taxid
+            changed = True
+        changed = _record_set_attribute(sample, "taxonomy_id", None, str(new_taxid)) or changed
+    return 1 if changed else 0
+
+
+def apply_autofix_record(record_source, results, out_dir, out_name):
+    """autofix 提案を DDBJ Record に全自動適用し <out_dir>/fixed/<out_name> に出力。
+
+    戻り値: 適用件数（0 なら何も書き出さない）。
+    """
+    proposals = collect_proposals(results)
+    if not proposals:
+        return 0
+
+    try:
+        record = json.loads(Path(record_source).read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return 0
+
+    applied = 0
+    for sample in record.get("samples") or []:
+        name, acc = _record_sample_identity(sample)
+        fixes = []
+        for key in (name, acc):
+            if key is not None and key in proposals:
+                fixes.extend(proposals[key])
+        for p in fixes:
+            if p.get("kind", "attribute_value") == "organism":
+                applied += _apply_record_organism(sample, p)
+            else:
+                applied += _apply_record_attribute_value(sample, p)
+
+    if applied == 0:
+        return 0
+
+    fixed = Path(out_dir) / "fixed"
+    fixed.mkdir(parents=True, exist_ok=True)
+    (fixed / out_name).write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n",
+                                  encoding="utf-8")
     return applied
