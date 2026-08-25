@@ -258,7 +258,8 @@ ddbj-validator biosample -r SSUB045342.json [-s SSUB045342]
 
 - 入力: `-x`, `--xml` / `-t`, `--tsv` / `-r`, `--record`（いずれか 1 つ必須）。TSV は内部で XML に変換して検証します。
 - `-s`, `--submission-id` / `-p`, `--package`: TSV の submission id / package。省略時はファイル名（`SSUBxxxx.<Package>.txt`）から補完。
-  Record は submission id を持たないため、必要なら `-s` で渡します（`-p` は使いません。package は `samples[].package` から取ります）。
+  Record は submission id を持たないため `-s` で渡します（`-p` は Record では使えません。package は
+  `samples[].package` から取るため、併用するとエラーになります）。
 - autofix は常に自動適用され、修正済みファイルを `fixed/` に出力します。**形式は入力に従います**
   （XML/TSV 入力なら XML、Record 入力なら Record）。`reports/` には autofix 確認ファイルも出力します。
 - モード: 既定 NCBI API。`-d` で内部 DB（account / BioProject / 登録済み locus_tag_prefix の取得）。
@@ -273,11 +274,20 @@ XML と同じ内部モデルを組むため、ルールは入力形式を区別�
 対応関係と、v3 に無いために呼び出し側から渡す必要があるものは `apps/biosample/record_reader.py`
 の docstring にまとめてあります。要点:
 
-- `samples[]` のみを見ます。`project` などが同居していても無視します（BioProject は今後対応）。
-- `submission_id` は record が持たないので `-s` で渡します。`--account` も同様に record からは取れません。
+- **`samples[]` のみを見ます。** `project` などが同居していても検証しません（BioProject は今後対応）。
+  `samples` が無い record は「指摘ゼロ」ではなく入力エラーとして落とします。
+- `submission_id` は record が持たないので `-s` で渡します。**省略すると `BS_R0091` が
+  そのサブミッション自身の locus_tag_prefix を重複として報告します**（警告を出します）。
+  `--account` も同様に record からは取れず、省略すると権限系ルール（`BS_R0006` 等）は動きません。
 - 値が typed slot（`organism` / `title` / …）と属性バッグのどちらに載っていても拾います。
-- **スキーマ検証（`BS_R0098`）には `ddbj-record` パッケージが要ります**（`pip install '.[record]'`）。
-  入っていない場合はスキーマ検証だけがスキップされ、その旨を stderr に警告します。
+  値は XML 入力と同じく全て strip します。
+- **`attributes[].unit` は見ていません。** BioSample の XML/TSV に単位の概念が無く、ルールも
+  単位を見ないためです。単位付きの値をどう扱うかは未決で、現状は値だけを検証します。
+- スキーマ検証（`BS_R0098`）は `ddbj-record` パッケージを使います（`[record]` extra。
+  Docker イメージには同梱済み）。入っていない場合でも reader が前提とする形の検査は行い、
+  スキーマ検証を行わなかったことを stderr に警告します。
+- autofix は typed slot と属性バッグの両方を揃えて書き戻します（片方だけ直すと、
+  直したはずの record を再検証したときに同じ指摘が出なくなるため）。
 
 ## DRA（`dra`）
 

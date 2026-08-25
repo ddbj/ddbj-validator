@@ -77,8 +77,7 @@ def _resolve_tsv_meta(tsv_path, arg_sub, arg_pkg):
     return (submission_id, package), None
 
 
-def _finalize(args, results, records, in_path, out_dir, submission_id, package, started, fixed_path,
-              fixed_label="XML"):
+def _finalize(args, results, records, in_path, out_dir, submission_id, package, started, fixed_path):
     """レポート出力（ファイル）＋標準出力を仕様どおりに行う。戻り値: レベル別 error 件数を含む counts。"""
     now = datetime.datetime.now(_JST)
     when = started.strftime("%Y-%m-%d %H:%M:%S JST")
@@ -106,12 +105,17 @@ def _finalize(args, results, records, in_path, out_dir, submission_id, package, 
     if autofix_lines:
         parts.append("[ Auto-Fix ]\n" + "\n".join(autofix_lines))
         if fixed_path:
-            parts.append(f"=> Auto-fixed {fixed_label} saved to: {fixed_path}")
+            parts.append(f"=> Auto-fixed {_fixed_label(fixed_path)} saved to: {fixed_path}")
     parts.append(f"[ All reports successfully generated to {reports_dir} ]\n"
                  + "\n".join(f"  {f}" for f in report_files))
     print("\n" + "\n\n".join(parts))   # DB チェック/Found 行との間に空行
 
     return {"error": sum(1 for r in results if r.get("level") == "error")}
+
+
+def _fixed_label(fixed_path):
+    """autofix 出力の呼び名。ddbj の "Auto-fixed ANN saved to" と同じ形にする。"""
+    return "Record" if fixed_path.suffix.lower() == ".json" else "XML"
 
 
 def _ssub_from_name(path):
@@ -210,7 +214,12 @@ def run(args):
 
     if is_record:
         # Record は専用 reader。SSUB を持たないので submission_id は -s からだけ来る。
+        # 渡されないと BS_R0091 が自分自身の locus_tag_prefix を重複と報告する。
         parse_source, submission_id = str(in_path), args.submission_id
+        if not submission_id:
+            print("[WARN] --submission-id が指定されていません。登録済みの submission を"
+                  "再検証する場合、自分自身の locus_tag_prefix が重複として報告されます "
+                  "(BS_R0091)。", file=sys.stderr)
         submission, pre_errors = record_reader.parse_record(parse_source, submission_id=submission_id,
                                                             account=args.account)
     else:
@@ -255,8 +264,7 @@ def run(args):
 
     package = submission.package or (submission.records[0].package if submission.records else None)
     sub_id = submission.submission_id or submission_id or _ssub_from_name(in_path)
-    counts = _finalize(args, results, submission.records, in_path, out_dir, sub_id, package, started, fixed_path,
-                       fixed_label="Record" if is_record else "XML")
+    counts = _finalize(args, results, submission.records, in_path, out_dir, sub_id, package, started, fixed_path)
     return 1 if counts.get("error") else 0
 
 

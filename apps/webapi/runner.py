@@ -3,7 +3,6 @@
 validator は別コンテナでも良い（config.VALIDATOR_CMD を `podman exec ...` にする）。
 各 validator CLI は `-o <run_dir>`（出力先）と `-j`（result.json）に対応済み。
 """
-import json
 import logging
 import subprocess
 from pathlib import Path
@@ -49,7 +48,8 @@ def save_upload(rdir, role, filename, data):
 
 def plan(saved, params):
     """保存済みファイル（role→Path）から validator サブコマンド＋引数を決める。
-    どの validator かはアップロードされたロールの有無で判定する（ruby と同様）。"""
+    どの validator かはアップロードされたロールの有無で判定する（ruby と同様）。
+    決められなければ None を返す（呼び出し側が入力エラーにする）。"""
     if "ddbj_record" in saved:
         return _plan_record(saved["ddbj_record"], params)
     if "biosample" in saved:
@@ -110,25 +110,15 @@ def _plan_record(path, params):
     """DDBJ Record（v3 JSON）の振り分け。
 
     Record は 1 ファイルに project / samples / experiments … が同居し得るので、他ロールと違って
-    「そのファイルがある＝この validator」とは決まらない。中身を見て決める。現在 Record 入力に
-    対応しているのは BioSample だけなので、samples を持つものだけ回し、それ以外は理由を言って断る
-    （握りつぶすと「指摘ゼロで正常終了」に見えてしまう）。BioProject 対応が入ったらここが
-    「複数 validator を走らせて結果をまとめる」分岐になる。run_validation は 1 プロセス・
-    1 レポート前提なので、そのときは併せて直す必要がある。
+    「そのファイルがある＝この validator」とは決まらない。現在 Record 入力に対応しているのは
+    BioSample だけなので biosample へ回し、**中身の判断は validator 側に任せる**。
+    samples を持たない record は CLI が理由を言って終了コード 2 で落ち、run_validation が
+    それを status の message に載せる。ここで判断するには全文をパースする必要があり、
+    10 万 sample の record では数百 MB の一時オブジェクトが web プロセス側に載る。
 
-    全文を読み直すのは無駄に見えるが、アップロードは create_validation が既にメモリへ
-    読み切っており、ここが支配的なコストになることはない。
+    BioProject 対応が入ったら、ここが「複数 validator を走らせて結果をまとめる」分岐になる
+    （run_validation は 1 プロセス・1 レポート前提なので、そのときは併せて直す必要がある）。
     """
-    try:
-        record = json.loads(Path(path).read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as e:
-        raise ValueError(f"DDBJ Record を読めません: {e}") from e
-    if not isinstance(record, dict):
-        raise ValueError("DDBJ Record が JSON オブジェクトではありません")
-    if not record.get("samples"):
-        raise ValueError("DDBJ Record に samples がありません"
-                         "（現在 Record 入力に対応しているのは BioSample のみ）")
-
     args = ["biosample", "-r", str(path)]
     if params.get("submission_id"):
         args += ["-s", params["submission_id"]]

@@ -1,0 +1,20 @@
+{
+  "schema_version": "v3.0",
+  "samples": [
+    {
+      "accession": "SAMD00000001",
+      "alias": "  S1  ",
+      "title": "  Padded Title  ",
+      "description": "  Padded description  ",
+      "package": "  Plant  ",
+      "organism": {"name": "  Arabidopsis thaliana  ", "taxonomy_id": 3702},
+      "attributes": [
+        {"name": "sample_name", "value": "S1"},
+        {"name": "collection_date", "value": "2020-06-30"},
+        {"name": "geo_loc_name", "value": "Japan:Tsukuba"},
+        {"name": "tissue", "value": "Leaf"},
+        {"name": "cultivar", "value": "Cv"}
+      ]
+    }
+  ]
+}
