@@ -37,8 +37,14 @@ python build_attributes_packages_json.py
 - **use**（package-attribute.txt）: `M`=mandatory / `O`=optional / `-`=非該当 /
   `E:<group>`=either_one_mandatory（`group` を付与）/ 末尾 `:N`=null 非推奨（現行 JSON は未使用のため無視）。
 - **fixed_attributes**: 先頭 6 属性（sample_name..bioproject_id）。use は全パッケージ恒常。
-- **列順**（package-tsv.txt）: `full_name` に続く属性名の並びをそのまま列順に採用
-  （＝fixed → 準固定 → 必須α → 選択必須α → 任意α）。必須/任意/択一必須の区別は package-attribute.txt から引く。
+- **列順**（package-tsv.txt）: 非 MixS（Standard/Pathogen）は `full_name` に続く属性名の並びをそのまま採用
+  （＝fixed → 準固定 → either_one → 必須α → 任意α）。必須/任意/択一必須の区別は package-attribute.txt から引く。
+- **MixS シリーズの列順**（`_reorder_mixs`）: MIGS.ba/eu/vi・MIMS.me・MIMAG・MISAG・MIMARKS.specimen/survey・MIUVIG は
+  package-tsv 順ではなく規則で並べ替える:
+  `fixed → locus_tag_prefix（あれば）→ either_one（現行順を維持）→ core 必須(α) → env 必須(α) → 任意(core+env 統合, α)`。
+  - **core**（＝MixS 本体）= 同一 package_group の全 env variant に共通して現れる属性。**env 固有** = variant 固有（環境パッケージ由来）。
+  - env は base（env_package 空）を持たないため、共通集合（intersection）で core/env を判定する。
+  - either_one は MixS にも存在（MIGS.eu/vi・MIMARKS.specimen・MIUVIG）。core 必須の前にグループ化し、内部順は現行を維持。
 - **env_package**: `No environmental package` → `""` に正規化。
 - **追加列**（attribute-added.txt）:
   - `allowed_values` / `invalid_values`: JSON 配列文字列（例 `["male", "female"]`）。空欄=無し。

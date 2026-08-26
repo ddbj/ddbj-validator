@@ -26,6 +26,19 @@ import json
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+# MixS シリーズの package_group（either_one を含むものもある。standard/pathogen は対象外）。
+# これらは列順を規則で並べ替える: fixed → locus_tag_prefix → either_one(現行順) →
+# core必須(α) → env必須(α) → 任意(core+env 統合, α)。core = group 内 全 variant 共通の属性。
+_MIXS_GROUPS = {"MIGS.ba", "MIGS.eu", "MIGS.vi", "MIMS.me", "MIMAG", "MISAG",
+                "MIMARKS.specimen", "MIMARKS.survey", "MIUVIG"}
+# group 別に「必須グループの先頭へ前寄せする属性」（core 必須のα順より前に置く）。
+# source identifier を先頭に見せたいという運用要望による個別調整。
+_MIXS_LEAD_MANDATORY = {
+    "MIGS.ba": ["strain"],
+    "MIMAG": ["isolate"],
+    "MISAG": ["isolate"],
+    "MIUVIG": ["isolate"],
+}
 F_PKG = HERE / "package.txt"                 # パッケージ定義
 F_MATRIX = HERE / "package-attribute.txt"    # use マトリクス
 F_ATTR = HERE / "attribute-added.txt"        # 属性定義（追加列 allowed_values/invalid_values/allow_multiple/type 込み）
@@ -61,6 +74,44 @@ def _parse_use(cell):
 def _json_list(cell):
     c = (cell or "").strip()
     return json.loads(c) if c else []
+
+
+def _reorder_mixs(packages):
+    """MixS シリーズの列順を規則で並べ替える（fixed の後ろのみ）。
+
+    順序: [locus_tag_prefix（あれば）] → either_one（現行順を維持） →
+          core 必須(α) → env 必須(α) → 任意(core+env 統合, α)
+    core = 同一 package_group の全 variant に共通して現れる属性（＝MixS 本体）。
+    env  = variant 固有（＝環境パッケージ由来）。standard/pathogen は対象外（並べ替えない）。
+    """
+    from collections import defaultdict
+    by_group = defaultdict(list)
+    for key, p in packages.items():
+        if p["package_group"] in _MIXS_GROUPS:
+            by_group[p["package_group"]].append(key)
+
+    for group, keys in by_group.items():
+        core = set.intersection(*(set(packages[k]["attributes"].keys()) for k in keys))
+        lead_mand = _MIXS_LEAD_MANDATORY.get(group, [])
+        for key in keys:
+            attrs = packages[key]["attributes"]
+            names = list(attrs.keys())
+            lead = ["locus_tag_prefix"] if "locus_tag_prefix" in attrs else []
+            eo = [n for n in names if attrs[n]["use"] == "either_one_mandatory"]  # 現行順維持
+            skip = set(lead) | set(eo)
+            core_mand_all = [n for n in names
+                             if n in core and attrs[n]["use"] == "mandatory" and n not in skip]
+            # group 別の前寄せ必須（strain/isolate 等）を core 必須の先頭へ、残りはα順
+            lead_present = [a for a in lead_mand if a in core_mand_all]
+            core_mand = lead_present + sorted(n for n in core_mand_all if n not in lead_present)
+            env_mand = sorted(n for n in names
+                              if n not in core and attrs[n]["use"] == "mandatory" and n not in skip)
+            optional = sorted(n for n in names
+                              if attrs[n]["use"] == "optional" and n not in skip)
+            new_order = lead + eo + core_mand + env_mand + optional
+            assert set(new_order) == set(names), (key, set(names) ^ set(new_order))
+            packages[key]["attributes"] = {n: attrs[n] for n in new_order}
+    return packages
 
 
 def build():
@@ -160,6 +211,9 @@ def build():
             "not_recommended_for": [],
             "attributes": attrs,
         }
+
+    # MixS シリーズは列順を規則で並べ替える（standard/pathogen は package-tsv 順のまま）
+    packages = _reorder_mixs(packages)
 
     return {
         "metadata": {"version": "1.0",
