@@ -7678,6 +7678,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "strain": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -7703,9 +7706,6 @@
           "use": "mandatory"
         },
         "ref_biomaterial": {
-          "use": "mandatory"
-        },
-        "strain": {
           "use": "mandatory"
         },
         "biotic_relationship": {
@@ -7786,7 +7786,7 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "chem_administration": {
+        "strain": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -7801,10 +7801,25 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_source": {
+        "geo_loc_name": {
           "use": "mandatory"
         },
-        "geo_loc_name": {
+        "isol_growth_condt": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "num_replicons": {
+          "use": "mandatory"
+        },
+        "ref_biomaterial": {
+          "use": "mandatory"
+        },
+        "chem_administration": {
+          "use": "mandatory"
+        },
+        "food_source": {
           "use": "mandatory"
         },
         "host_age": {
@@ -7831,22 +7846,10 @@
         "host_tot_mass": {
           "use": "mandatory"
         },
-        "isol_growth_condt": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
-          "use": "mandatory"
-        },
         "microbial_biomass": {
           "use": "mandatory"
         },
         "microbial_biomass_meth": {
-          "use": "mandatory"
-        },
-        "num_replicons": {
-          "use": "mandatory"
-        },
-        "ref_biomaterial": {
           "use": "mandatory"
         },
         "samp_store_dur": {
@@ -7865,9 +7868,6 @@
           "use": "mandatory"
         },
         "store_cond": {
-          "use": "mandatory"
-        },
-        "strain": {
           "use": "mandatory"
         },
         "temp": {
@@ -8260,7 +8260,7 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "altitude": {
+        "strain": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -8290,7 +8290,7 @@
         "ref_biomaterial": {
           "use": "mandatory"
         },
-        "strain": {
+        "altitude": {
           "use": "mandatory"
         },
         "air_pm_concen": {
@@ -8446,6 +8446,36 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "strain": {
+          "use": "mandatory"
+        },
+        "collection_date": {
+          "use": "mandatory"
+        },
+        "env_broad_scale": {
+          "use": "mandatory"
+        },
+        "env_local_scale": {
+          "use": "mandatory"
+        },
+        "env_medium": {
+          "use": "mandatory"
+        },
+        "geo_loc_name": {
+          "use": "mandatory"
+        },
+        "isol_growth_condt": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "num_replicons": {
+          "use": "mandatory"
+        },
+        "ref_biomaterial": {
+          "use": "mandatory"
+        },
         "abs_air_humidity": {
           "use": "mandatory"
         },
@@ -8461,22 +8491,7 @@
         "carb_dioxide": {
           "use": "mandatory"
         },
-        "collection_date": {
-          "use": "mandatory"
-        },
-        "env_broad_scale": {
-          "use": "mandatory"
-        },
-        "env_local_scale": {
-          "use": "mandatory"
-        },
-        "env_medium": {
-          "use": "mandatory"
-        },
         "filter_type": {
-          "use": "mandatory"
-        },
-        "geo_loc_name": {
           "use": "mandatory"
         },
         "heat_cool_type": {
@@ -8485,16 +8500,7 @@
         "indoor_space": {
           "use": "mandatory"
         },
-        "isol_growth_condt": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
-          "use": "mandatory"
-        },
         "light_type": {
-          "use": "mandatory"
-        },
-        "num_replicons": {
           "use": "mandatory"
         },
         "occup_samp": {
@@ -8506,16 +8512,10 @@
         "organism_count": {
           "use": "mandatory"
         },
-        "ref_biomaterial": {
-          "use": "mandatory"
-        },
         "rel_air_humidity": {
           "use": "mandatory"
         },
         "space_typ_state": {
-          "use": "mandatory"
-        },
-        "strain": {
           "use": "mandatory"
         },
         "typ_occupant_dens": {
@@ -9034,7 +9034,7 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "coll_site_geo_feat": {
+        "strain": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -9049,22 +9049,7 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_origin": {
-          "use": "mandatory"
-        },
-        "food_prod_char": {
-          "use": "mandatory"
-        },
-        "food_product_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "ifsac_category": {
-          "use": "mandatory"
-        },
-        "intended_consumer": {
           "use": "mandatory"
         },
         "isol_growth_condt": {
@@ -9076,13 +9061,28 @@
         "num_replicons": {
           "use": "mandatory"
         },
-        "purpose_of_sampling": {
-          "use": "mandatory"
-        },
         "ref_biomaterial": {
           "use": "mandatory"
         },
-        "strain": {
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
+        "food_origin": {
+          "use": "mandatory"
+        },
+        "food_prod_char": {
+          "use": "mandatory"
+        },
+        "food_product_type": {
+          "use": "mandatory"
+        },
+        "ifsac_category": {
+          "use": "mandatory"
+        },
+        "intended_consumer": {
+          "use": "mandatory"
+        },
+        "purpose_of_sampling": {
           "use": "mandatory"
         },
         "animal_am_dur": {
@@ -9406,16 +9406,10 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "biotic_regm": {
-          "use": "mandatory"
-        },
-        "chem_administration": {
+        "strain": {
           "use": "mandatory"
         },
         "collection_date": {
-          "use": "mandatory"
-        },
-        "depth": {
           "use": "mandatory"
         },
         "env_broad_scale": {
@@ -9427,13 +9421,7 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_product_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "ifsac_category": {
           "use": "mandatory"
         },
         "isol_growth_condt": {
@@ -9448,10 +9436,22 @@
         "ref_biomaterial": {
           "use": "mandatory"
         },
-        "samp_mat_type": {
+        "biotic_regm": {
           "use": "mandatory"
         },
-        "strain": {
+        "chem_administration": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "food_product_type": {
+          "use": "mandatory"
+        },
+        "ifsac_category": {
+          "use": "mandatory"
+        },
+        "samp_mat_type": {
           "use": "mandatory"
         },
         "adjacent_environment": {
@@ -9892,7 +9892,7 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "coll_site_geo_feat": {
+        "strain": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -9907,13 +9907,7 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_product_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "ifsac_category": {
           "use": "mandatory"
         },
         "isol_growth_condt": {
@@ -9928,7 +9922,13 @@
         "ref_biomaterial": {
           "use": "mandatory"
         },
-        "strain": {
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
+        "food_product_type": {
+          "use": "mandatory"
+        },
+        "ifsac_category": {
           "use": "mandatory"
         },
         "bacterial_density": {
@@ -10282,7 +10282,7 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "coll_site_geo_feat": {
+        "strain": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -10297,19 +10297,7 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_contact_surf": {
-          "use": "mandatory"
-        },
-        "food_product_qual": {
-          "use": "mandatory"
-        },
-        "food_product_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "ifsac_category": {
           "use": "mandatory"
         },
         "isol_growth_condt": {
@@ -10324,6 +10312,21 @@
         "ref_biomaterial": {
           "use": "mandatory"
         },
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
+        "food_contact_surf": {
+          "use": "mandatory"
+        },
+        "food_product_qual": {
+          "use": "mandatory"
+        },
+        "food_product_type": {
+          "use": "mandatory"
+        },
+        "ifsac_category": {
+          "use": "mandatory"
+        },
         "samp_mat_type": {
           "use": "mandatory"
         },
@@ -10334,9 +10337,6 @@
           "use": "mandatory"
         },
         "samp_stor_media": {
-          "use": "mandatory"
-        },
-        "strain": {
           "use": "mandatory"
         },
         "air_temp": {
@@ -10642,6 +10642,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "strain": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -10670,9 +10673,6 @@
           "use": "mandatory"
         },
         "ref_biomaterial": {
-          "use": "mandatory"
-        },
-        "strain": {
           "use": "mandatory"
         },
         "altitude": {
@@ -10885,6 +10885,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "strain": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -10913,9 +10916,6 @@
           "use": "mandatory"
         },
         "ref_biomaterial": {
-          "use": "mandatory"
-        },
-        "strain": {
           "use": "mandatory"
         },
         "amniotic_fluid_color": {
@@ -11140,6 +11140,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "strain": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -11168,9 +11171,6 @@
           "use": "mandatory"
         },
         "ref_biomaterial": {
-          "use": "mandatory"
-        },
-        "strain": {
           "use": "mandatory"
         },
         "biotic_relationship": {
@@ -11347,6 +11347,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "strain": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -11375,9 +11378,6 @@
           "use": "mandatory"
         },
         "ref_biomaterial": {
-          "use": "mandatory"
-        },
-        "strain": {
           "use": "mandatory"
         },
         "biotic_relationship": {
@@ -11551,6 +11551,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "strain": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -11579,9 +11582,6 @@
           "use": "mandatory"
         },
         "ref_biomaterial": {
-          "use": "mandatory"
-        },
-        "strain": {
           "use": "mandatory"
         },
         "biotic_relationship": {
@@ -11758,6 +11758,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "strain": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -11786,9 +11789,6 @@
           "use": "mandatory"
         },
         "ref_biomaterial": {
-          "use": "mandatory"
-        },
-        "strain": {
           "use": "mandatory"
         },
         "biotic_relationship": {
@@ -11986,10 +11986,7 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "api": {
-          "use": "mandatory"
-        },
-        "basin_name": {
+        "strain": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -12007,15 +12004,6 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "hc_produced": {
-          "use": "mandatory"
-        },
-        "hcr": {
-          "use": "mandatory"
-        },
-        "hcr_temp": {
-          "use": "mandatory"
-        },
         "isol_growth_condt": {
           "use": "mandatory"
         },
@@ -12028,10 +12016,22 @@
         "ref_biomaterial": {
           "use": "mandatory"
         },
-        "samp_mat_type": {
+        "api": {
           "use": "mandatory"
         },
-        "strain": {
+        "basin_name": {
+          "use": "mandatory"
+        },
+        "hc_produced": {
+          "use": "mandatory"
+        },
+        "hcr": {
+          "use": "mandatory"
+        },
+        "hcr_temp": {
+          "use": "mandatory"
+        },
+        "samp_mat_type": {
           "use": "mandatory"
         },
         "sulfate_fw": {
@@ -12331,13 +12331,7 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "add_recov_method": {
-          "use": "mandatory"
-        },
-        "api": {
-          "use": "mandatory"
-        },
-        "basin_name": {
+        "strain": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -12355,22 +12349,10 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "hc_produced": {
-          "use": "mandatory"
-        },
-        "hcr": {
-          "use": "mandatory"
-        },
         "isol_growth_condt": {
           "use": "mandatory"
         },
-        "iwf": {
-          "use": "mandatory"
-        },
         "lat_lon": {
-          "use": "mandatory"
-        },
-        "nitrate": {
           "use": "mandatory"
         },
         "num_replicons": {
@@ -12379,13 +12361,31 @@
         "ref_biomaterial": {
           "use": "mandatory"
         },
+        "add_recov_method": {
+          "use": "mandatory"
+        },
+        "api": {
+          "use": "mandatory"
+        },
+        "basin_name": {
+          "use": "mandatory"
+        },
+        "hc_produced": {
+          "use": "mandatory"
+        },
+        "hcr": {
+          "use": "mandatory"
+        },
+        "iwf": {
+          "use": "mandatory"
+        },
+        "nitrate": {
+          "use": "mandatory"
+        },
         "samp_collect_point": {
           "use": "mandatory"
         },
         "samp_mat_type": {
-          "use": "mandatory"
-        },
-        "strain": {
           "use": "mandatory"
         },
         "sulfate": {
@@ -12688,13 +12688,10 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "strain": {
+          "use": "mandatory"
+        },
         "collection_date": {
-          "use": "mandatory"
-        },
-        "depth": {
-          "use": "mandatory"
-        },
-        "elev": {
           "use": "mandatory"
         },
         "env_broad_scale": {
@@ -12721,7 +12718,10 @@
         "ref_biomaterial": {
           "use": "mandatory"
         },
-        "strain": {
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -12982,6 +12982,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "strain": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -13007,9 +13010,6 @@
           "use": "mandatory"
         },
         "ref_biomaterial": {
-          "use": "mandatory"
-        },
-        "strain": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -13219,6 +13219,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "strain": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -13247,9 +13250,6 @@
           "use": "mandatory"
         },
         "ref_biomaterial": {
-          "use": "mandatory"
-        },
-        "strain": {
           "use": "mandatory"
         },
         "air_temp_regm": {
@@ -13540,13 +13540,10 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "strain": {
+          "use": "mandatory"
+        },
         "collection_date": {
-          "use": "mandatory"
-        },
-        "depth": {
-          "use": "mandatory"
-        },
-        "elev": {
           "use": "mandatory"
         },
         "env_broad_scale": {
@@ -13573,7 +13570,10 @@
         "ref_biomaterial": {
           "use": "mandatory"
         },
-        "strain": {
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -13852,13 +13852,10 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "strain": {
+          "use": "mandatory"
+        },
         "collection_date": {
-          "use": "mandatory"
-        },
-        "depth": {
-          "use": "mandatory"
-        },
-        "elev": {
           "use": "mandatory"
         },
         "env_broad_scale": {
@@ -13885,7 +13882,10 @@
         "ref_biomaterial": {
           "use": "mandatory"
         },
-        "strain": {
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "agrochem_addition": {
@@ -14122,6 +14122,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "strain": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -14137,12 +14140,6 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host_dependence": {
-          "use": "mandatory"
-        },
-        "host_life_stage": {
-          "use": "mandatory"
-        },
         "isol_growth_condt": {
           "use": "mandatory"
         },
@@ -14155,7 +14152,10 @@
         "ref_biomaterial": {
           "use": "mandatory"
         },
-        "strain": {
+        "host_dependence": {
+          "use": "mandatory"
+        },
+        "host_life_stage": {
           "use": "mandatory"
         },
         "sym_life_cycle_type": {
@@ -14413,6 +14413,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "strain": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -14438,9 +14441,6 @@
           "use": "mandatory"
         },
         "ref_biomaterial": {
-          "use": "mandatory"
-        },
-        "strain": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -14632,10 +14632,10 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "collection_date": {
+        "strain": {
           "use": "mandatory"
         },
-        "depth": {
+        "collection_date": {
           "use": "mandatory"
         },
         "env_broad_scale": {
@@ -14662,7 +14662,7 @@
         "ref_biomaterial": {
           "use": "mandatory"
         },
-        "strain": {
+        "depth": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -15129,9 +15129,6 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
-        "chem_administration": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -15144,10 +15141,19 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_source": {
+        "geo_loc_name": {
           "use": "mandatory"
         },
-        "geo_loc_name": {
+        "isol_growth_condt": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "chem_administration": {
+          "use": "mandatory"
+        },
+        "food_source": {
           "use": "mandatory"
         },
         "host_age": {
@@ -15172,12 +15178,6 @@
           "use": "mandatory"
         },
         "host_tot_mass": {
-          "use": "mandatory"
-        },
-        "isol_growth_condt": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "microbial_biomass": {
@@ -15619,9 +15619,6 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
-        "altitude": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -15641,6 +15638,9 @@
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "altitude": {
           "use": "mandatory"
         },
         "air_pm_concen": {
@@ -15821,6 +15821,27 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
+        "collection_date": {
+          "use": "mandatory"
+        },
+        "env_broad_scale": {
+          "use": "mandatory"
+        },
+        "env_local_scale": {
+          "use": "mandatory"
+        },
+        "env_medium": {
+          "use": "mandatory"
+        },
+        "geo_loc_name": {
+          "use": "mandatory"
+        },
+        "isol_growth_condt": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
         "abs_air_humidity": {
           "use": "mandatory"
         },
@@ -15836,34 +15857,13 @@
         "carb_dioxide": {
           "use": "mandatory"
         },
-        "collection_date": {
-          "use": "mandatory"
-        },
-        "env_broad_scale": {
-          "use": "mandatory"
-        },
-        "env_local_scale": {
-          "use": "mandatory"
-        },
-        "env_medium": {
-          "use": "mandatory"
-        },
         "filter_type": {
-          "use": "mandatory"
-        },
-        "geo_loc_name": {
           "use": "mandatory"
         },
         "heat_cool_type": {
           "use": "mandatory"
         },
         "indoor_space": {
-          "use": "mandatory"
-        },
-        "isol_growth_condt": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "light_type": {
@@ -16425,9 +16425,6 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
-        "coll_site_geo_feat": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -16440,6 +16437,18 @@
         "env_medium": {
           "use": "mandatory"
         },
+        "geo_loc_name": {
+          "use": "mandatory"
+        },
+        "isol_growth_condt": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
         "food_origin": {
           "use": "mandatory"
         },
@@ -16449,19 +16458,10 @@
         "food_product_type": {
           "use": "mandatory"
         },
-        "geo_loc_name": {
-          "use": "mandatory"
-        },
         "ifsac_category": {
           "use": "mandatory"
         },
         "intended_consumer": {
-          "use": "mandatory"
-        },
-        "isol_growth_condt": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "purpose_of_sampling": {
@@ -16813,16 +16813,7 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
-        "biotic_regm": {
-          "use": "mandatory"
-        },
-        "chem_administration": {
-          "use": "mandatory"
-        },
         "collection_date": {
-          "use": "mandatory"
-        },
-        "depth": {
           "use": "mandatory"
         },
         "env_broad_scale": {
@@ -16834,19 +16825,28 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_product_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "ifsac_category": {
           "use": "mandatory"
         },
         "isol_growth_condt": {
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "biotic_regm": {
+          "use": "mandatory"
+        },
+        "chem_administration": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "food_product_type": {
+          "use": "mandatory"
+        },
+        "ifsac_category": {
           "use": "mandatory"
         },
         "samp_mat_type": {
@@ -17315,9 +17315,6 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
-        "coll_site_geo_feat": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -17330,19 +17327,22 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_product_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "ifsac_category": {
           "use": "mandatory"
         },
         "isol_growth_condt": {
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
+        "food_product_type": {
+          "use": "mandatory"
+        },
+        "ifsac_category": {
           "use": "mandatory"
         },
         "bacterial_density": {
@@ -17721,9 +17721,6 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
-        "coll_site_geo_feat": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -17736,6 +17733,18 @@
         "env_medium": {
           "use": "mandatory"
         },
+        "geo_loc_name": {
+          "use": "mandatory"
+        },
+        "isol_growth_condt": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
         "food_contact_surf": {
           "use": "mandatory"
         },
@@ -17745,16 +17754,7 @@
         "food_product_type": {
           "use": "mandatory"
         },
-        "geo_loc_name": {
-          "use": "mandatory"
-        },
         "ifsac_category": {
-          "use": "mandatory"
-        },
-        "isol_growth_condt": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "samp_mat_type": {
@@ -19537,12 +19537,6 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
-        "api": {
-          "use": "mandatory"
-        },
-        "basin_name": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -19558,6 +19552,18 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
+        "isol_growth_condt": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "api": {
+          "use": "mandatory"
+        },
+        "basin_name": {
+          "use": "mandatory"
+        },
         "hc_produced": {
           "use": "mandatory"
         },
@@ -19565,12 +19571,6 @@
           "use": "mandatory"
         },
         "hcr_temp": {
-          "use": "mandatory"
-        },
-        "isol_growth_condt": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "samp_mat_type": {
@@ -19898,15 +19898,6 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
-        "add_recov_method": {
-          "use": "mandatory"
-        },
-        "api": {
-          "use": "mandatory"
-        },
-        "basin_name": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -19922,19 +19913,28 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
+        "isol_growth_condt": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "add_recov_method": {
+          "use": "mandatory"
+        },
+        "api": {
+          "use": "mandatory"
+        },
+        "basin_name": {
+          "use": "mandatory"
+        },
         "hc_produced": {
           "use": "mandatory"
         },
         "hcr": {
           "use": "mandatory"
         },
-        "isol_growth_condt": {
-          "use": "mandatory"
-        },
         "iwf": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "nitrate": {
@@ -20274,12 +20274,6 @@
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
-        "elev": {
-          "use": "mandatory"
-        },
         "env_broad_scale": {
           "use": "mandatory"
         },
@@ -20296,6 +20290,12 @@
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -21174,12 +21174,6 @@
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
-        "elev": {
-          "use": "mandatory"
-        },
         "env_broad_scale": {
           "use": "mandatory"
         },
@@ -21196,6 +21190,12 @@
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -21502,12 +21502,6 @@
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
-        "elev": {
-          "use": "mandatory"
-        },
         "env_broad_scale": {
           "use": "mandatory"
         },
@@ -21524,6 +21518,12 @@
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "agrochem_addition": {
@@ -21800,16 +21800,16 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host_dependence": {
-          "use": "mandatory"
-        },
-        "host_life_stage": {
-          "use": "mandatory"
-        },
         "isol_growth_condt": {
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "host_dependence": {
+          "use": "mandatory"
+        },
+        "host_life_stage": {
           "use": "mandatory"
         },
         "sym_life_cycle_type": {
@@ -22330,9 +22330,6 @@
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
         "env_broad_scale": {
           "use": "mandatory"
         },
@@ -22349,6 +22346,9 @@
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "depth": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -22802,9 +22802,6 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
-        "chem_administration": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -22817,10 +22814,22 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_source": {
+        "geo_loc_name": {
           "use": "mandatory"
         },
-        "geo_loc_name": {
+        "isol_growth_condt": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "propagation": {
+          "use": "mandatory"
+        },
+        "chem_administration": {
+          "use": "mandatory"
+        },
+        "food_source": {
           "use": "mandatory"
         },
         "host_age": {
@@ -22847,19 +22856,10 @@
         "host_tot_mass": {
           "use": "mandatory"
         },
-        "isol_growth_condt": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
-          "use": "mandatory"
-        },
         "microbial_biomass": {
           "use": "mandatory"
         },
         "microbial_biomass_meth": {
-          "use": "mandatory"
-        },
-        "propagation": {
           "use": "mandatory"
         },
         "samp_store_dur": {
@@ -23281,9 +23281,6 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
-        "altitude": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -23306,6 +23303,9 @@
           "use": "mandatory"
         },
         "propagation": {
+          "use": "mandatory"
+        },
+        "altitude": {
           "use": "mandatory"
         },
         "air_pm_concen": {
@@ -23469,6 +23469,30 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
+        "collection_date": {
+          "use": "mandatory"
+        },
+        "env_broad_scale": {
+          "use": "mandatory"
+        },
+        "env_local_scale": {
+          "use": "mandatory"
+        },
+        "env_medium": {
+          "use": "mandatory"
+        },
+        "geo_loc_name": {
+          "use": "mandatory"
+        },
+        "isol_growth_condt": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "propagation": {
+          "use": "mandatory"
+        },
         "abs_air_humidity": {
           "use": "mandatory"
         },
@@ -23484,34 +23508,13 @@
         "carb_dioxide": {
           "use": "mandatory"
         },
-        "collection_date": {
-          "use": "mandatory"
-        },
-        "env_broad_scale": {
-          "use": "mandatory"
-        },
-        "env_local_scale": {
-          "use": "mandatory"
-        },
-        "env_medium": {
-          "use": "mandatory"
-        },
         "filter_type": {
-          "use": "mandatory"
-        },
-        "geo_loc_name": {
           "use": "mandatory"
         },
         "heat_cool_type": {
           "use": "mandatory"
         },
         "indoor_space": {
-          "use": "mandatory"
-        },
-        "isol_growth_condt": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "light_type": {
@@ -23524,9 +23527,6 @@
           "use": "mandatory"
         },
         "organism_count": {
-          "use": "mandatory"
-        },
-        "propagation": {
           "use": "mandatory"
         },
         "rel_air_humidity": {
@@ -24059,9 +24059,6 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
-        "coll_site_geo_feat": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -24074,22 +24071,7 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_origin": {
-          "use": "mandatory"
-        },
-        "food_prod_char": {
-          "use": "mandatory"
-        },
-        "food_product_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "ifsac_category": {
-          "use": "mandatory"
-        },
-        "intended_consumer": {
           "use": "mandatory"
         },
         "isol_growth_condt": {
@@ -24099,6 +24081,24 @@
           "use": "mandatory"
         },
         "propagation": {
+          "use": "mandatory"
+        },
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
+        "food_origin": {
+          "use": "mandatory"
+        },
+        "food_prod_char": {
+          "use": "mandatory"
+        },
+        "food_product_type": {
+          "use": "mandatory"
+        },
+        "ifsac_category": {
+          "use": "mandatory"
+        },
+        "intended_consumer": {
           "use": "mandatory"
         },
         "purpose_of_sampling": {
@@ -24433,16 +24433,7 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
-        "biotic_regm": {
-          "use": "mandatory"
-        },
-        "chem_administration": {
-          "use": "mandatory"
-        },
         "collection_date": {
-          "use": "mandatory"
-        },
-        "depth": {
           "use": "mandatory"
         },
         "env_broad_scale": {
@@ -24454,13 +24445,7 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_product_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "ifsac_category": {
           "use": "mandatory"
         },
         "isol_growth_condt": {
@@ -24470,6 +24455,21 @@
           "use": "mandatory"
         },
         "propagation": {
+          "use": "mandatory"
+        },
+        "biotic_regm": {
+          "use": "mandatory"
+        },
+        "chem_administration": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "food_product_type": {
+          "use": "mandatory"
+        },
+        "ifsac_category": {
           "use": "mandatory"
         },
         "samp_mat_type": {
@@ -24921,9 +24921,6 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
-        "coll_site_geo_feat": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -24936,13 +24933,7 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_product_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "ifsac_category": {
           "use": "mandatory"
         },
         "isol_growth_condt": {
@@ -24952,6 +24943,15 @@
           "use": "mandatory"
         },
         "propagation": {
+          "use": "mandatory"
+        },
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
+        "food_product_type": {
+          "use": "mandatory"
+        },
+        "ifsac_category": {
           "use": "mandatory"
         },
         "bacterial_density": {
@@ -25313,9 +25313,6 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
-        "coll_site_geo_feat": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -25328,19 +25325,7 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_contact_surf": {
-          "use": "mandatory"
-        },
-        "food_product_qual": {
-          "use": "mandatory"
-        },
-        "food_product_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "ifsac_category": {
           "use": "mandatory"
         },
         "isol_growth_condt": {
@@ -25350,6 +25335,21 @@
           "use": "mandatory"
         },
         "propagation": {
+          "use": "mandatory"
+        },
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
+        "food_contact_surf": {
+          "use": "mandatory"
+        },
+        "food_product_qual": {
+          "use": "mandatory"
+        },
+        "food_product_type": {
+          "use": "mandatory"
+        },
+        "ifsac_category": {
           "use": "mandatory"
         },
         "samp_mat_type": {
@@ -27031,12 +27031,6 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
-        "api": {
-          "use": "mandatory"
-        },
-        "basin_name": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -27052,15 +27046,6 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "hc_produced": {
-          "use": "mandatory"
-        },
-        "hcr": {
-          "use": "mandatory"
-        },
-        "hcr_temp": {
-          "use": "mandatory"
-        },
         "isol_growth_condt": {
           "use": "mandatory"
         },
@@ -27068,6 +27053,21 @@
           "use": "mandatory"
         },
         "propagation": {
+          "use": "mandatory"
+        },
+        "api": {
+          "use": "mandatory"
+        },
+        "basin_name": {
+          "use": "mandatory"
+        },
+        "hc_produced": {
+          "use": "mandatory"
+        },
+        "hcr": {
+          "use": "mandatory"
+        },
+        "hcr_temp": {
           "use": "mandatory"
         },
         "samp_mat_type": {
@@ -27378,15 +27378,6 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
-        "add_recov_method": {
-          "use": "mandatory"
-        },
-        "api": {
-          "use": "mandatory"
-        },
-        "basin_name": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -27402,25 +27393,34 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
+        "isol_growth_condt": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "propagation": {
+          "use": "mandatory"
+        },
+        "add_recov_method": {
+          "use": "mandatory"
+        },
+        "api": {
+          "use": "mandatory"
+        },
+        "basin_name": {
+          "use": "mandatory"
+        },
         "hc_produced": {
           "use": "mandatory"
         },
         "hcr": {
           "use": "mandatory"
         },
-        "isol_growth_condt": {
-          "use": "mandatory"
-        },
         "iwf": {
           "use": "mandatory"
         },
-        "lat_lon": {
-          "use": "mandatory"
-        },
         "nitrate": {
-          "use": "mandatory"
-        },
-        "propagation": {
           "use": "mandatory"
         },
         "samp_collect_point": {
@@ -27740,12 +27740,6 @@
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
-        "elev": {
-          "use": "mandatory"
-        },
         "env_broad_scale": {
           "use": "mandatory"
         },
@@ -27765,6 +27759,12 @@
           "use": "mandatory"
         },
         "propagation": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -28598,12 +28598,6 @@
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
-        "elev": {
-          "use": "mandatory"
-        },
         "env_broad_scale": {
           "use": "mandatory"
         },
@@ -28623,6 +28617,12 @@
           "use": "mandatory"
         },
         "propagation": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -28912,12 +28912,6 @@
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
-        "elev": {
-          "use": "mandatory"
-        },
         "env_broad_scale": {
           "use": "mandatory"
         },
@@ -28937,6 +28931,12 @@
           "use": "mandatory"
         },
         "propagation": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "agrochem_addition": {
@@ -29196,12 +29196,6 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host_dependence": {
-          "use": "mandatory"
-        },
-        "host_life_stage": {
-          "use": "mandatory"
-        },
         "isol_growth_condt": {
           "use": "mandatory"
         },
@@ -29209,6 +29203,12 @@
           "use": "mandatory"
         },
         "propagation": {
+          "use": "mandatory"
+        },
+        "host_dependence": {
+          "use": "mandatory"
+        },
+        "host_life_stage": {
           "use": "mandatory"
         },
         "sym_life_cycle_type": {
@@ -29698,9 +29698,6 @@
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
         "env_broad_scale": {
           "use": "mandatory"
         },
@@ -29720,6 +29717,9 @@
           "use": "mandatory"
         },
         "propagation": {
+          "use": "mandatory"
+        },
+        "depth": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -30043,9 +30043,6 @@
       "env_package": "agriculture",
       "not_recommended_for": [],
       "attributes": {
-        "chem_administration": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -30058,10 +30055,16 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_source": {
+        "geo_loc_name": {
           "use": "mandatory"
         },
-        "geo_loc_name": {
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "chem_administration": {
+          "use": "mandatory"
+        },
+        "food_source": {
           "use": "mandatory"
         },
         "host": {
@@ -30092,9 +30095,6 @@
           "use": "mandatory"
         },
         "host_tot_mass": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "microbial_biomass": {
@@ -30496,9 +30496,6 @@
       "env_package": "air",
       "not_recommended_for": [],
       "attributes": {
-        "altitude": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -30515,6 +30512,9 @@
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "altitude": {
           "use": "mandatory"
         },
         "air_pm_concen": {
@@ -30640,6 +30640,24 @@
       "env_package": "built",
       "not_recommended_for": [],
       "attributes": {
+        "collection_date": {
+          "use": "mandatory"
+        },
+        "env_broad_scale": {
+          "use": "mandatory"
+        },
+        "env_local_scale": {
+          "use": "mandatory"
+        },
+        "env_medium": {
+          "use": "mandatory"
+        },
+        "geo_loc_name": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
         "abs_air_humidity": {
           "use": "mandatory"
         },
@@ -30655,31 +30673,13 @@
         "carb_dioxide": {
           "use": "mandatory"
         },
-        "collection_date": {
-          "use": "mandatory"
-        },
-        "env_broad_scale": {
-          "use": "mandatory"
-        },
-        "env_local_scale": {
-          "use": "mandatory"
-        },
-        "env_medium": {
-          "use": "mandatory"
-        },
         "filter_type": {
-          "use": "mandatory"
-        },
-        "geo_loc_name": {
           "use": "mandatory"
         },
         "heat_cool_type": {
           "use": "mandatory"
         },
         "indoor_space": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "light_type": {
@@ -31186,9 +31186,6 @@
       "env_package": "food-animal",
       "not_recommended_for": [],
       "attributes": {
-        "coll_site_geo_feat": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -31201,6 +31198,15 @@
         "env_medium": {
           "use": "mandatory"
         },
+        "geo_loc_name": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
         "food_origin": {
           "use": "mandatory"
         },
@@ -31210,16 +31216,10 @@
         "food_product_type": {
           "use": "mandatory"
         },
-        "geo_loc_name": {
-          "use": "mandatory"
-        },
         "ifsac_category": {
           "use": "mandatory"
         },
         "intended_consumer": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "purpose_of_sampling": {
@@ -31516,16 +31516,7 @@
       "env_package": "food-farm_env",
       "not_recommended_for": [],
       "attributes": {
-        "biotic_regm": {
-          "use": "mandatory"
-        },
-        "chem_administration": {
-          "use": "mandatory"
-        },
         "collection_date": {
-          "use": "mandatory"
-        },
-        "depth": {
           "use": "mandatory"
         },
         "env_broad_scale": {
@@ -31537,16 +31528,25 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_product_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "ifsac_category": {
+        "lat_lon": {
           "use": "mandatory"
         },
-        "lat_lon": {
+        "biotic_regm": {
+          "use": "mandatory"
+        },
+        "chem_administration": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "food_product_type": {
+          "use": "mandatory"
+        },
+        "ifsac_category": {
           "use": "mandatory"
         },
         "samp_mat_type": {
@@ -31966,9 +31966,6 @@
       "env_package": "food-human_foods",
       "not_recommended_for": [],
       "attributes": {
-        "coll_site_geo_feat": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -31981,16 +31978,19 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_product_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "ifsac_category": {
+        "lat_lon": {
           "use": "mandatory"
         },
-        "lat_lon": {
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
+        "food_product_type": {
+          "use": "mandatory"
+        },
+        "ifsac_category": {
           "use": "mandatory"
         },
         "bacterial_density": {
@@ -32314,9 +32314,6 @@
       "env_package": "food-prod_facility",
       "not_recommended_for": [],
       "attributes": {
-        "coll_site_geo_feat": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -32329,6 +32326,15 @@
         "env_medium": {
           "use": "mandatory"
         },
+        "geo_loc_name": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
         "food_contact_surf": {
           "use": "mandatory"
         },
@@ -32338,13 +32344,7 @@
         "food_product_type": {
           "use": "mandatory"
         },
-        "geo_loc_name": {
-          "use": "mandatory"
-        },
         "ifsac_category": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "samp_mat_type": {
@@ -32650,10 +32650,10 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host": {
+        "lat_lon": {
           "use": "mandatory"
         },
-        "lat_lon": {
+        "host": {
           "use": "mandatory"
         },
         "altitude": {
@@ -32860,10 +32860,10 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host": {
+        "lat_lon": {
           "use": "mandatory"
         },
-        "lat_lon": {
+        "host": {
           "use": "mandatory"
         },
         "amniotic_fluid_color": {
@@ -33079,10 +33079,10 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host": {
+        "lat_lon": {
           "use": "mandatory"
         },
-        "lat_lon": {
+        "host": {
           "use": "mandatory"
         },
         "chem_administration": {
@@ -33250,10 +33250,10 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host": {
+        "lat_lon": {
           "use": "mandatory"
         },
-        "lat_lon": {
+        "host": {
           "use": "mandatory"
         },
         "chem_administration": {
@@ -33418,10 +33418,10 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host": {
+        "lat_lon": {
           "use": "mandatory"
         },
-        "lat_lon": {
+        "host": {
           "use": "mandatory"
         },
         "chem_administration": {
@@ -33589,10 +33589,10 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host": {
+        "lat_lon": {
           "use": "mandatory"
         },
-        "lat_lon": {
+        "host": {
           "use": "mandatory"
         },
         "birth_control": {
@@ -33766,12 +33766,6 @@
       "env_package": "hydrocarbon-cores",
       "not_recommended_for": [],
       "attributes": {
-        "api": {
-          "use": "mandatory"
-        },
-        "basin_name": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -33787,6 +33781,15 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "api": {
+          "use": "mandatory"
+        },
+        "basin_name": {
+          "use": "mandatory"
+        },
         "hc_produced": {
           "use": "mandatory"
         },
@@ -33794,9 +33797,6 @@
           "use": "mandatory"
         },
         "hcr_temp": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "samp_mat_type": {
@@ -34069,15 +34069,6 @@
       "env_package": "hydrocarbon-fluids_swabs",
       "not_recommended_for": [],
       "attributes": {
-        "add_recov_method": {
-          "use": "mandatory"
-        },
-        "api": {
-          "use": "mandatory"
-        },
-        "basin_name": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -34093,6 +34084,18 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "add_recov_method": {
+          "use": "mandatory"
+        },
+        "api": {
+          "use": "mandatory"
+        },
+        "basin_name": {
+          "use": "mandatory"
+        },
         "hc_produced": {
           "use": "mandatory"
         },
@@ -34100,9 +34103,6 @@
           "use": "mandatory"
         },
         "iwf": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "nitrate": {
@@ -34387,12 +34387,6 @@
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
-        "elev": {
-          "use": "mandatory"
-        },
         "env_broad_scale": {
           "use": "mandatory"
         },
@@ -34406,6 +34400,12 @@
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -34846,10 +34846,10 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host": {
+        "lat_lon": {
           "use": "mandatory"
         },
-        "lat_lon": {
+        "host": {
           "use": "mandatory"
         },
         "air_temp_regm": {
@@ -35122,12 +35122,6 @@
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
-        "elev": {
-          "use": "mandatory"
-        },
         "env_broad_scale": {
           "use": "mandatory"
         },
@@ -35141,6 +35135,12 @@
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -35392,12 +35392,6 @@
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
-        "elev": {
-          "use": "mandatory"
-        },
         "env_broad_scale": {
           "use": "mandatory"
         },
@@ -35411,6 +35405,12 @@
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "agrochem_addition": {
@@ -35632,13 +35632,13 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
+        "lat_lon": {
+          "use": "mandatory"
+        },
         "host_dependence": {
           "use": "mandatory"
         },
         "host_life_stage": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "sym_life_cycle_type": {
@@ -36049,9 +36049,6 @@
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
         "env_broad_scale": {
           "use": "mandatory"
         },
@@ -36065,6 +36062,9 @@
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "depth": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -36364,6 +36364,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -36380,9 +36383,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -36445,7 +36445,7 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "chem_administration": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -36463,10 +36463,22 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_source": {
+        "geo_loc_name": {
           "use": "mandatory"
         },
-        "geo_loc_name": {
+        "isolation_source": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "metagenome_source": {
+          "use": "mandatory"
+        },
+        "chem_administration": {
+          "use": "mandatory"
+        },
+        "food_source": {
           "use": "mandatory"
         },
         "host": {
@@ -36497,18 +36509,6 @@
           "use": "mandatory"
         },
         "host_tot_mass": {
-          "use": "mandatory"
-        },
-        "isolate": {
-          "use": "mandatory"
-        },
-        "isolation_source": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
-          "use": "mandatory"
-        },
-        "metagenome_source": {
           "use": "mandatory"
         },
         "microbial_biomass": {
@@ -36913,7 +36913,7 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "altitude": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -36934,9 +36934,6 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "isolate": {
-          "use": "mandatory"
-        },
         "isolation_source": {
           "use": "mandatory"
         },
@@ -36944,6 +36941,9 @@
           "use": "mandatory"
         },
         "metagenome_source": {
+          "use": "mandatory"
+        },
+        "altitude": {
           "use": "mandatory"
         },
         "air_pm_concen": {
@@ -37072,19 +37072,7 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "abs_air_humidity": {
-          "use": "mandatory"
-        },
-        "air_temp": {
-          "use": "mandatory"
-        },
-        "build_occup_type": {
-          "use": "mandatory"
-        },
-        "building_setting": {
-          "use": "mandatory"
-        },
-        "carb_dioxide": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -37102,19 +37090,7 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "filter_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "heat_cool_type": {
-          "use": "mandatory"
-        },
-        "indoor_space": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -37123,10 +37099,34 @@
         "lat_lon": {
           "use": "mandatory"
         },
-        "light_type": {
+        "metagenome_source": {
           "use": "mandatory"
         },
-        "metagenome_source": {
+        "abs_air_humidity": {
+          "use": "mandatory"
+        },
+        "air_temp": {
+          "use": "mandatory"
+        },
+        "build_occup_type": {
+          "use": "mandatory"
+        },
+        "building_setting": {
+          "use": "mandatory"
+        },
+        "carb_dioxide": {
+          "use": "mandatory"
+        },
+        "filter_type": {
+          "use": "mandatory"
+        },
+        "heat_cool_type": {
+          "use": "mandatory"
+        },
+        "indoor_space": {
+          "use": "mandatory"
+        },
+        "light_type": {
           "use": "mandatory"
         },
         "occup_samp": {
@@ -37633,7 +37633,7 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "coll_site_geo_feat": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -37651,25 +37651,7 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_origin": {
-          "use": "mandatory"
-        },
-        "food_prod_char": {
-          "use": "mandatory"
-        },
-        "food_product_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "ifsac_category": {
-          "use": "mandatory"
-        },
-        "intended_consumer": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -37679,6 +37661,24 @@
           "use": "mandatory"
         },
         "metagenome_source": {
+          "use": "mandatory"
+        },
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
+        "food_origin": {
+          "use": "mandatory"
+        },
+        "food_prod_char": {
+          "use": "mandatory"
+        },
+        "food_product_type": {
+          "use": "mandatory"
+        },
+        "ifsac_category": {
+          "use": "mandatory"
+        },
+        "intended_consumer": {
           "use": "mandatory"
         },
         "purpose_of_sampling": {
@@ -37975,16 +37975,10 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "biotic_regm": {
-          "use": "mandatory"
-        },
-        "chem_administration": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
-          "use": "mandatory"
-        },
-        "depth": {
           "use": "mandatory"
         },
         "derived_from": {
@@ -37999,16 +37993,7 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_product_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "ifsac_category": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -38018,6 +38003,21 @@
           "use": "mandatory"
         },
         "metagenome_source": {
+          "use": "mandatory"
+        },
+        "biotic_regm": {
+          "use": "mandatory"
+        },
+        "chem_administration": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "food_product_type": {
+          "use": "mandatory"
+        },
+        "ifsac_category": {
           "use": "mandatory"
         },
         "samp_mat_type": {
@@ -38440,7 +38440,7 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "coll_site_geo_feat": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -38458,16 +38458,7 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_product_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "ifsac_category": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -38477,6 +38468,15 @@
           "use": "mandatory"
         },
         "metagenome_source": {
+          "use": "mandatory"
+        },
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
+        "food_product_type": {
+          "use": "mandatory"
+        },
+        "ifsac_category": {
           "use": "mandatory"
         },
         "bacterial_density": {
@@ -38800,7 +38800,7 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "coll_site_geo_feat": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -38818,22 +38818,7 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_contact_surf": {
-          "use": "mandatory"
-        },
-        "food_product_qual": {
-          "use": "mandatory"
-        },
-        "food_product_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "ifsac_category": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -38843,6 +38828,21 @@
           "use": "mandatory"
         },
         "metagenome_source": {
+          "use": "mandatory"
+        },
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
+        "food_contact_surf": {
+          "use": "mandatory"
+        },
+        "food_product_qual": {
+          "use": "mandatory"
+        },
+        "food_product_type": {
+          "use": "mandatory"
+        },
+        "ifsac_category": {
           "use": "mandatory"
         },
         "samp_mat_type": {
@@ -39133,6 +39133,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -39149,9 +39152,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -39355,6 +39355,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -39371,9 +39374,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -39586,6 +39586,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -39602,9 +39605,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -39769,6 +39769,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -39785,9 +39788,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -39949,6 +39949,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -39965,9 +39968,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -40132,6 +40132,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -40148,9 +40151,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -40336,10 +40336,7 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "api": {
-          "use": "mandatory"
-        },
-        "basin_name": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -40360,18 +40357,6 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "hc_produced": {
-          "use": "mandatory"
-        },
-        "hcr": {
-          "use": "mandatory"
-        },
-        "hcr_temp": {
-          "use": "mandatory"
-        },
-        "isolate": {
-          "use": "mandatory"
-        },
         "isolation_source": {
           "use": "mandatory"
         },
@@ -40379,6 +40364,21 @@
           "use": "mandatory"
         },
         "metagenome_source": {
+          "use": "mandatory"
+        },
+        "api": {
+          "use": "mandatory"
+        },
+        "basin_name": {
+          "use": "mandatory"
+        },
+        "hc_produced": {
+          "use": "mandatory"
+        },
+        "hcr": {
+          "use": "mandatory"
+        },
+        "hcr_temp": {
           "use": "mandatory"
         },
         "samp_mat_type": {
@@ -40654,13 +40654,7 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "add_recov_method": {
-          "use": "mandatory"
-        },
-        "api": {
-          "use": "mandatory"
-        },
-        "basin_name": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -40681,25 +40675,31 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "hc_produced": {
-          "use": "mandatory"
-        },
-        "hcr": {
-          "use": "mandatory"
-        },
-        "isolate": {
-          "use": "mandatory"
-        },
         "isolation_source": {
-          "use": "mandatory"
-        },
-        "iwf": {
           "use": "mandatory"
         },
         "lat_lon": {
           "use": "mandatory"
         },
         "metagenome_source": {
+          "use": "mandatory"
+        },
+        "add_recov_method": {
+          "use": "mandatory"
+        },
+        "api": {
+          "use": "mandatory"
+        },
+        "basin_name": {
+          "use": "mandatory"
+        },
+        "hc_produced": {
+          "use": "mandatory"
+        },
+        "hcr": {
+          "use": "mandatory"
+        },
+        "iwf": {
           "use": "mandatory"
         },
         "nitrate": {
@@ -40984,16 +40984,13 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
         "derived_from": {
-          "use": "mandatory"
-        },
-        "elev": {
           "use": "mandatory"
         },
         "env_broad_scale": {
@@ -41008,9 +41005,6 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "isolate": {
-          "use": "mandatory"
-        },
         "isolation_source": {
           "use": "mandatory"
         },
@@ -41018,6 +41012,12 @@
           "use": "mandatory"
         },
         "metagenome_source": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -41251,6 +41251,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -41267,9 +41270,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -41461,6 +41461,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -41477,9 +41480,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -41761,16 +41761,13 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
         "derived_from": {
-          "use": "mandatory"
-        },
-        "elev": {
           "use": "mandatory"
         },
         "env_broad_scale": {
@@ -41785,9 +41782,6 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "isolate": {
-          "use": "mandatory"
-        },
         "isolation_source": {
           "use": "mandatory"
         },
@@ -41795,6 +41789,12 @@
           "use": "mandatory"
         },
         "metagenome_source": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -42046,16 +42046,13 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
         "derived_from": {
-          "use": "mandatory"
-        },
-        "elev": {
           "use": "mandatory"
         },
         "env_broad_scale": {
@@ -42070,9 +42067,6 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "isolate": {
-          "use": "mandatory"
-        },
         "isolation_source": {
           "use": "mandatory"
         },
@@ -42080,6 +42074,12 @@
           "use": "mandatory"
         },
         "metagenome_source": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "agrochem_addition": {
@@ -42289,6 +42289,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -42307,15 +42310,6 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host_dependence": {
-          "use": "mandatory"
-        },
-        "host_life_stage": {
-          "use": "mandatory"
-        },
-        "isolate": {
-          "use": "mandatory"
-        },
         "isolation_source": {
           "use": "mandatory"
         },
@@ -42323,6 +42317,12 @@
           "use": "mandatory"
         },
         "metagenome_source": {
+          "use": "mandatory"
+        },
+        "host_dependence": {
+          "use": "mandatory"
+        },
+        "host_life_stage": {
           "use": "mandatory"
         },
         "sym_life_cycle_type": {
@@ -42556,6 +42556,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -42572,9 +42575,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -42748,10 +42748,10 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "collection_date": {
+        "isolate": {
           "use": "mandatory"
         },
-        "depth": {
+        "collection_date": {
           "use": "mandatory"
         },
         "derived_from": {
@@ -42769,9 +42769,6 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "isolate": {
-          "use": "mandatory"
-        },
         "isolation_source": {
           "use": "mandatory"
         },
@@ -42779,6 +42776,9 @@
           "use": "mandatory"
         },
         "metagenome_source": {
+          "use": "mandatory"
+        },
+        "depth": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -43078,6 +43078,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -43091,9 +43094,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -43153,7 +43153,7 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "chem_administration": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -43168,10 +43168,19 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_source": {
+        "geo_loc_name": {
           "use": "mandatory"
         },
-        "geo_loc_name": {
+        "isolation_source": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "chem_administration": {
+          "use": "mandatory"
+        },
+        "food_source": {
           "use": "mandatory"
         },
         "host": {
@@ -43202,15 +43211,6 @@
           "use": "mandatory"
         },
         "host_tot_mass": {
-          "use": "mandatory"
-        },
-        "isolate": {
-          "use": "mandatory"
-        },
-        "isolation_source": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "microbial_biomass": {
@@ -43615,7 +43615,7 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "altitude": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -43633,13 +43633,13 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "isolate": {
-          "use": "mandatory"
-        },
         "isolation_source": {
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "altitude": {
           "use": "mandatory"
         },
         "air_pm_concen": {
@@ -43768,6 +43768,30 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
+        "collection_date": {
+          "use": "mandatory"
+        },
+        "env_broad_scale": {
+          "use": "mandatory"
+        },
+        "env_local_scale": {
+          "use": "mandatory"
+        },
+        "env_medium": {
+          "use": "mandatory"
+        },
+        "geo_loc_name": {
+          "use": "mandatory"
+        },
+        "isolation_source": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
         "abs_air_humidity": {
           "use": "mandatory"
         },
@@ -43783,37 +43807,13 @@
         "carb_dioxide": {
           "use": "mandatory"
         },
-        "collection_date": {
-          "use": "mandatory"
-        },
-        "env_broad_scale": {
-          "use": "mandatory"
-        },
-        "env_local_scale": {
-          "use": "mandatory"
-        },
-        "env_medium": {
-          "use": "mandatory"
-        },
         "filter_type": {
-          "use": "mandatory"
-        },
-        "geo_loc_name": {
           "use": "mandatory"
         },
         "heat_cool_type": {
           "use": "mandatory"
         },
         "indoor_space": {
-          "use": "mandatory"
-        },
-        "isolate": {
-          "use": "mandatory"
-        },
-        "isolation_source": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "light_type": {
@@ -44323,7 +44323,7 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "coll_site_geo_feat": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -44338,6 +44338,18 @@
         "env_medium": {
           "use": "mandatory"
         },
+        "geo_loc_name": {
+          "use": "mandatory"
+        },
+        "isolation_source": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
         "food_origin": {
           "use": "mandatory"
         },
@@ -44347,22 +44359,10 @@
         "food_product_type": {
           "use": "mandatory"
         },
-        "geo_loc_name": {
-          "use": "mandatory"
-        },
         "ifsac_category": {
           "use": "mandatory"
         },
         "intended_consumer": {
-          "use": "mandatory"
-        },
-        "isolate": {
-          "use": "mandatory"
-        },
-        "isolation_source": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "purpose_of_sampling": {
@@ -44659,16 +44659,10 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "biotic_regm": {
-          "use": "mandatory"
-        },
-        "chem_administration": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
-          "use": "mandatory"
-        },
-        "depth": {
           "use": "mandatory"
         },
         "env_broad_scale": {
@@ -44680,22 +44674,28 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_product_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "ifsac_category": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "biotic_regm": {
+          "use": "mandatory"
+        },
+        "chem_administration": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "food_product_type": {
+          "use": "mandatory"
+        },
+        "ifsac_category": {
           "use": "mandatory"
         },
         "samp_mat_type": {
@@ -45118,7 +45118,7 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "coll_site_geo_feat": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -45133,22 +45133,22 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_product_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "ifsac_category": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
+        "food_product_type": {
+          "use": "mandatory"
+        },
+        "ifsac_category": {
           "use": "mandatory"
         },
         "bacterial_density": {
@@ -45472,7 +45472,7 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "coll_site_geo_feat": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -45487,6 +45487,18 @@
         "env_medium": {
           "use": "mandatory"
         },
+        "geo_loc_name": {
+          "use": "mandatory"
+        },
+        "isolation_source": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
         "food_contact_surf": {
           "use": "mandatory"
         },
@@ -45496,19 +45508,7 @@
         "food_product_type": {
           "use": "mandatory"
         },
-        "geo_loc_name": {
-          "use": "mandatory"
-        },
         "ifsac_category": {
-          "use": "mandatory"
-        },
-        "isolate": {
-          "use": "mandatory"
-        },
-        "isolation_source": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "samp_mat_type": {
@@ -45799,6 +45799,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -45812,9 +45815,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -46015,6 +46015,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -46028,9 +46031,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -46240,6 +46240,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -46253,9 +46256,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -46417,6 +46417,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -46430,9 +46433,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -46591,6 +46591,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -46604,9 +46607,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -46768,6 +46768,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -46781,9 +46784,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -46966,10 +46966,7 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "api": {
-          "use": "mandatory"
-        },
-        "basin_name": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -46987,6 +46984,18 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
+        "isolation_source": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "api": {
+          "use": "mandatory"
+        },
+        "basin_name": {
+          "use": "mandatory"
+        },
         "hc_produced": {
           "use": "mandatory"
         },
@@ -46994,15 +47003,6 @@
           "use": "mandatory"
         },
         "hcr_temp": {
-          "use": "mandatory"
-        },
-        "isolate": {
-          "use": "mandatory"
-        },
-        "isolation_source": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "samp_mat_type": {
@@ -47278,13 +47278,7 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "add_recov_method": {
-          "use": "mandatory"
-        },
-        "api": {
-          "use": "mandatory"
-        },
-        "basin_name": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -47302,22 +47296,28 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
+        "isolation_source": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "add_recov_method": {
+          "use": "mandatory"
+        },
+        "api": {
+          "use": "mandatory"
+        },
+        "basin_name": {
+          "use": "mandatory"
+        },
         "hc_produced": {
           "use": "mandatory"
         },
         "hcr": {
           "use": "mandatory"
         },
-        "isolate": {
-          "use": "mandatory"
-        },
-        "isolation_source": {
-          "use": "mandatory"
-        },
         "iwf": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "nitrate": {
@@ -47602,13 +47602,10 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
-          "use": "mandatory"
-        },
-        "depth": {
-          "use": "mandatory"
-        },
-        "elev": {
           "use": "mandatory"
         },
         "env_broad_scale": {
@@ -47623,13 +47620,16 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "isolate": {
-          "use": "mandatory"
-        },
         "isolation_source": {
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -47863,6 +47863,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -47876,9 +47879,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -48067,6 +48067,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -48080,9 +48083,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -48361,13 +48361,10 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
-          "use": "mandatory"
-        },
-        "depth": {
-          "use": "mandatory"
-        },
-        "elev": {
           "use": "mandatory"
         },
         "env_broad_scale": {
@@ -48382,13 +48379,16 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "isolate": {
-          "use": "mandatory"
-        },
         "isolation_source": {
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -48640,13 +48640,10 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
-          "use": "mandatory"
-        },
-        "depth": {
-          "use": "mandatory"
-        },
-        "elev": {
           "use": "mandatory"
         },
         "env_broad_scale": {
@@ -48661,13 +48658,16 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "isolate": {
-          "use": "mandatory"
-        },
         "isolation_source": {
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "agrochem_addition": {
@@ -48877,6 +48877,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -48892,19 +48895,16 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host_dependence": {
-          "use": "mandatory"
-        },
-        "host_life_stage": {
-          "use": "mandatory"
-        },
-        "isolate": {
-          "use": "mandatory"
-        },
         "isolation_source": {
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "host_dependence": {
+          "use": "mandatory"
+        },
+        "host_life_stage": {
           "use": "mandatory"
         },
         "sym_life_cycle_type": {
@@ -49138,6 +49138,9 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -49151,9 +49154,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "isolation_source": {
@@ -49324,10 +49324,10 @@
         "locus_tag_prefix": {
           "use": "optional"
         },
-        "collection_date": {
+        "isolate": {
           "use": "mandatory"
         },
-        "depth": {
+        "collection_date": {
           "use": "mandatory"
         },
         "env_broad_scale": {
@@ -49342,13 +49342,13 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "isolate": {
-          "use": "mandatory"
-        },
         "isolation_source": {
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "depth": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -49758,9 +49758,6 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
-        "chem_administration": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -49773,10 +49770,19 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_source": {
+        "geo_loc_name": {
           "use": "mandatory"
         },
-        "geo_loc_name": {
+        "isol_growth_condt": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "chem_administration": {
+          "use": "mandatory"
+        },
+        "food_source": {
           "use": "mandatory"
         },
         "host": {
@@ -49807,12 +49813,6 @@
           "use": "mandatory"
         },
         "host_tot_mass": {
-          "use": "mandatory"
-        },
-        "isol_growth_condt": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "microbial_biomass": {
@@ -50233,9 +50233,6 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
-        "altitude": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -50255,6 +50252,9 @@
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "altitude": {
           "use": "mandatory"
         },
         "air_pm_concen": {
@@ -50408,6 +50408,27 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
+        "collection_date": {
+          "use": "mandatory"
+        },
+        "env_broad_scale": {
+          "use": "mandatory"
+        },
+        "env_local_scale": {
+          "use": "mandatory"
+        },
+        "env_medium": {
+          "use": "mandatory"
+        },
+        "geo_loc_name": {
+          "use": "mandatory"
+        },
+        "isol_growth_condt": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
         "abs_air_humidity": {
           "use": "mandatory"
         },
@@ -50423,34 +50444,13 @@
         "carb_dioxide": {
           "use": "mandatory"
         },
-        "collection_date": {
-          "use": "mandatory"
-        },
-        "env_broad_scale": {
-          "use": "mandatory"
-        },
-        "env_local_scale": {
-          "use": "mandatory"
-        },
-        "env_medium": {
-          "use": "mandatory"
-        },
         "filter_type": {
-          "use": "mandatory"
-        },
-        "geo_loc_name": {
           "use": "mandatory"
         },
         "heat_cool_type": {
           "use": "mandatory"
         },
         "indoor_space": {
-          "use": "mandatory"
-        },
-        "isol_growth_condt": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "light_type": {
@@ -50985,9 +50985,6 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
-        "coll_site_geo_feat": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -51000,6 +50997,18 @@
         "env_medium": {
           "use": "mandatory"
         },
+        "geo_loc_name": {
+          "use": "mandatory"
+        },
+        "isol_growth_condt": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
         "food_origin": {
           "use": "mandatory"
         },
@@ -51009,19 +51018,10 @@
         "food_product_type": {
           "use": "mandatory"
         },
-        "geo_loc_name": {
-          "use": "mandatory"
-        },
         "ifsac_category": {
           "use": "mandatory"
         },
         "intended_consumer": {
-          "use": "mandatory"
-        },
-        "isol_growth_condt": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "purpose_of_sampling": {
@@ -51346,16 +51346,7 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
-        "biotic_regm": {
-          "use": "mandatory"
-        },
-        "chem_administration": {
-          "use": "mandatory"
-        },
         "collection_date": {
-          "use": "mandatory"
-        },
-        "depth": {
           "use": "mandatory"
         },
         "env_broad_scale": {
@@ -51367,19 +51358,28 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_product_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "ifsac_category": {
           "use": "mandatory"
         },
         "isol_growth_condt": {
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "biotic_regm": {
+          "use": "mandatory"
+        },
+        "chem_administration": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "food_product_type": {
+          "use": "mandatory"
+        },
+        "ifsac_category": {
           "use": "mandatory"
         },
         "samp_mat_type": {
@@ -51827,9 +51827,6 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
-        "coll_site_geo_feat": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -51842,19 +51839,22 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_product_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "ifsac_category": {
           "use": "mandatory"
         },
         "isol_growth_condt": {
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
+        "food_product_type": {
+          "use": "mandatory"
+        },
+        "ifsac_category": {
           "use": "mandatory"
         },
         "bacterial_density": {
@@ -52206,9 +52206,6 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
-        "coll_site_geo_feat": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -52221,6 +52218,18 @@
         "env_medium": {
           "use": "mandatory"
         },
+        "geo_loc_name": {
+          "use": "mandatory"
+        },
+        "isol_growth_condt": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
         "food_contact_surf": {
           "use": "mandatory"
         },
@@ -52230,16 +52239,7 @@
         "food_product_type": {
           "use": "mandatory"
         },
-        "geo_loc_name": {
-          "use": "mandatory"
-        },
         "ifsac_category": {
-          "use": "mandatory"
-        },
-        "isol_growth_condt": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "samp_mat_type": {
@@ -52570,13 +52570,13 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host": {
-          "use": "mandatory"
-        },
         "isol_growth_condt": {
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "host": {
           "use": "mandatory"
         },
         "altitude": {
@@ -52811,13 +52811,13 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host": {
-          "use": "mandatory"
-        },
         "isol_growth_condt": {
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "host": {
           "use": "mandatory"
         },
         "amniotic_fluid_color": {
@@ -53061,13 +53061,13 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host": {
-          "use": "mandatory"
-        },
         "isol_growth_condt": {
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "host": {
           "use": "mandatory"
         },
         "biotic_relationship": {
@@ -53263,13 +53263,13 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host": {
-          "use": "mandatory"
-        },
         "isol_growth_condt": {
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "host": {
           "use": "mandatory"
         },
         "biotic_relationship": {
@@ -53462,13 +53462,13 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host": {
-          "use": "mandatory"
-        },
         "isol_growth_condt": {
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "host": {
           "use": "mandatory"
         },
         "biotic_relationship": {
@@ -53664,13 +53664,13 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host": {
-          "use": "mandatory"
-        },
         "isol_growth_condt": {
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "host": {
           "use": "mandatory"
         },
         "biotic_relationship": {
@@ -53872,12 +53872,6 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
-        "api": {
-          "use": "mandatory"
-        },
-        "basin_name": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -53893,6 +53887,18 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
+        "isol_growth_condt": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "api": {
+          "use": "mandatory"
+        },
+        "basin_name": {
+          "use": "mandatory"
+        },
         "hc_produced": {
           "use": "mandatory"
         },
@@ -53900,12 +53906,6 @@
           "use": "mandatory"
         },
         "hcr_temp": {
-          "use": "mandatory"
-        },
-        "isol_growth_condt": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "samp_mat_type": {
@@ -54206,15 +54206,6 @@
           "use": "either_one_mandatory",
           "group": "organism"
         },
-        "add_recov_method": {
-          "use": "mandatory"
-        },
-        "api": {
-          "use": "mandatory"
-        },
-        "basin_name": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -54230,19 +54221,28 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
+        "isol_growth_condt": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "add_recov_method": {
+          "use": "mandatory"
+        },
+        "api": {
+          "use": "mandatory"
+        },
+        "basin_name": {
+          "use": "mandatory"
+        },
         "hc_produced": {
           "use": "mandatory"
         },
         "hcr": {
           "use": "mandatory"
         },
-        "isol_growth_condt": {
-          "use": "mandatory"
-        },
         "iwf": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "nitrate": {
@@ -54555,12 +54555,6 @@
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
-        "elev": {
-          "use": "mandatory"
-        },
         "env_broad_scale": {
           "use": "mandatory"
         },
@@ -54577,6 +54571,12 @@
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -55076,13 +55076,13 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host": {
-          "use": "mandatory"
-        },
         "isol_growth_condt": {
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "host": {
           "use": "mandatory"
         },
         "air_temp_regm": {
@@ -55383,12 +55383,6 @@
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
-        "elev": {
-          "use": "mandatory"
-        },
         "env_broad_scale": {
           "use": "mandatory"
         },
@@ -55405,6 +55399,12 @@
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -55684,12 +55684,6 @@
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
-        "elev": {
-          "use": "mandatory"
-        },
         "env_broad_scale": {
           "use": "mandatory"
         },
@@ -55706,6 +55700,12 @@
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "agrochem_addition": {
@@ -55955,16 +55955,16 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host_dependence": {
-          "use": "mandatory"
-        },
-        "host_life_stage": {
-          "use": "mandatory"
-        },
         "isol_growth_condt": {
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "host_dependence": {
+          "use": "mandatory"
+        },
+        "host_life_stage": {
           "use": "mandatory"
         },
         "sym_life_cycle_type": {
@@ -56434,9 +56434,6 @@
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
         "env_broad_scale": {
           "use": "mandatory"
         },
@@ -56453,6 +56450,9 @@
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "depth": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -56761,9 +56761,6 @@
       "env_package": "agriculture",
       "not_recommended_for": [],
       "attributes": {
-        "chem_administration": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -56776,10 +56773,16 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_source": {
+        "geo_loc_name": {
           "use": "mandatory"
         },
-        "geo_loc_name": {
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "chem_administration": {
+          "use": "mandatory"
+        },
+        "food_source": {
           "use": "mandatory"
         },
         "host": {
@@ -56810,9 +56813,6 @@
           "use": "mandatory"
         },
         "host_tot_mass": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "microbial_biomass": {
@@ -57211,9 +57211,6 @@
       "env_package": "air",
       "not_recommended_for": [],
       "attributes": {
-        "altitude": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -57230,6 +57227,9 @@
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "altitude": {
           "use": "mandatory"
         },
         "air_pm_concen": {
@@ -57352,6 +57352,24 @@
       "env_package": "built",
       "not_recommended_for": [],
       "attributes": {
+        "collection_date": {
+          "use": "mandatory"
+        },
+        "env_broad_scale": {
+          "use": "mandatory"
+        },
+        "env_local_scale": {
+          "use": "mandatory"
+        },
+        "env_medium": {
+          "use": "mandatory"
+        },
+        "geo_loc_name": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
         "abs_air_humidity": {
           "use": "mandatory"
         },
@@ -57367,31 +57385,13 @@
         "carb_dioxide": {
           "use": "mandatory"
         },
-        "collection_date": {
-          "use": "mandatory"
-        },
-        "env_broad_scale": {
-          "use": "mandatory"
-        },
-        "env_local_scale": {
-          "use": "mandatory"
-        },
-        "env_medium": {
-          "use": "mandatory"
-        },
         "filter_type": {
-          "use": "mandatory"
-        },
-        "geo_loc_name": {
           "use": "mandatory"
         },
         "heat_cool_type": {
           "use": "mandatory"
         },
         "indoor_space": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "light_type": {
@@ -57895,9 +57895,6 @@
       "env_package": "food-animal",
       "not_recommended_for": [],
       "attributes": {
-        "coll_site_geo_feat": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -57910,6 +57907,15 @@
         "env_medium": {
           "use": "mandatory"
         },
+        "geo_loc_name": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
         "food_origin": {
           "use": "mandatory"
         },
@@ -57919,16 +57925,10 @@
         "food_product_type": {
           "use": "mandatory"
         },
-        "geo_loc_name": {
-          "use": "mandatory"
-        },
         "ifsac_category": {
           "use": "mandatory"
         },
         "intended_consumer": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "purpose_of_sampling": {
@@ -58222,16 +58222,7 @@
       "env_package": "food-farm_env",
       "not_recommended_for": [],
       "attributes": {
-        "biotic_regm": {
-          "use": "mandatory"
-        },
-        "chem_administration": {
-          "use": "mandatory"
-        },
         "collection_date": {
-          "use": "mandatory"
-        },
-        "depth": {
           "use": "mandatory"
         },
         "env_broad_scale": {
@@ -58243,16 +58234,25 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_product_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "ifsac_category": {
+        "lat_lon": {
           "use": "mandatory"
         },
-        "lat_lon": {
+        "biotic_regm": {
+          "use": "mandatory"
+        },
+        "chem_administration": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "food_product_type": {
+          "use": "mandatory"
+        },
+        "ifsac_category": {
           "use": "mandatory"
         },
         "samp_mat_type": {
@@ -58669,9 +58669,6 @@
       "env_package": "food-human_foods",
       "not_recommended_for": [],
       "attributes": {
-        "coll_site_geo_feat": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -58684,16 +58681,19 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_product_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "ifsac_category": {
+        "lat_lon": {
           "use": "mandatory"
         },
-        "lat_lon": {
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
+        "food_product_type": {
+          "use": "mandatory"
+        },
+        "ifsac_category": {
           "use": "mandatory"
         },
         "bacterial_density": {
@@ -59014,9 +59014,6 @@
       "env_package": "food-prod_facility",
       "not_recommended_for": [],
       "attributes": {
-        "coll_site_geo_feat": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -59029,6 +59026,15 @@
         "env_medium": {
           "use": "mandatory"
         },
+        "geo_loc_name": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
         "food_contact_surf": {
           "use": "mandatory"
         },
@@ -59038,13 +59044,7 @@
         "food_product_type": {
           "use": "mandatory"
         },
-        "geo_loc_name": {
-          "use": "mandatory"
-        },
         "ifsac_category": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "samp_mat_type": {
@@ -59347,10 +59347,10 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host": {
+        "lat_lon": {
           "use": "mandatory"
         },
-        "lat_lon": {
+        "host": {
           "use": "mandatory"
         },
         "altitude": {
@@ -59554,10 +59554,10 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host": {
+        "lat_lon": {
           "use": "mandatory"
         },
-        "lat_lon": {
+        "host": {
           "use": "mandatory"
         },
         "amniotic_fluid_color": {
@@ -59770,10 +59770,10 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host": {
+        "lat_lon": {
           "use": "mandatory"
         },
-        "lat_lon": {
+        "host": {
           "use": "mandatory"
         },
         "chem_administration": {
@@ -59938,10 +59938,10 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host": {
+        "lat_lon": {
           "use": "mandatory"
         },
-        "lat_lon": {
+        "host": {
           "use": "mandatory"
         },
         "chem_administration": {
@@ -60103,10 +60103,10 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host": {
+        "lat_lon": {
           "use": "mandatory"
         },
-        "lat_lon": {
+        "host": {
           "use": "mandatory"
         },
         "chem_administration": {
@@ -60271,10 +60271,10 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host": {
+        "lat_lon": {
           "use": "mandatory"
         },
-        "lat_lon": {
+        "host": {
           "use": "mandatory"
         },
         "birth_control": {
@@ -60445,12 +60445,6 @@
       "env_package": "hydrocarbon-cores",
       "not_recommended_for": [],
       "attributes": {
-        "api": {
-          "use": "mandatory"
-        },
-        "basin_name": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -60466,6 +60460,15 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "api": {
+          "use": "mandatory"
+        },
+        "basin_name": {
+          "use": "mandatory"
+        },
         "hc_produced": {
           "use": "mandatory"
         },
@@ -60473,9 +60476,6 @@
           "use": "mandatory"
         },
         "hcr_temp": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "samp_mat_type": {
@@ -60745,15 +60745,6 @@
       "env_package": "hydrocarbon-fluids_swabs",
       "not_recommended_for": [],
       "attributes": {
-        "add_recov_method": {
-          "use": "mandatory"
-        },
-        "api": {
-          "use": "mandatory"
-        },
-        "basin_name": {
-          "use": "mandatory"
-        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -60769,6 +60760,18 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "add_recov_method": {
+          "use": "mandatory"
+        },
+        "api": {
+          "use": "mandatory"
+        },
+        "basin_name": {
+          "use": "mandatory"
+        },
         "hc_produced": {
           "use": "mandatory"
         },
@@ -60776,9 +60779,6 @@
           "use": "mandatory"
         },
         "iwf": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "nitrate": {
@@ -61060,12 +61060,6 @@
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
-        "elev": {
-          "use": "mandatory"
-        },
         "env_broad_scale": {
           "use": "mandatory"
         },
@@ -61079,6 +61073,12 @@
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -61513,10 +61513,10 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host": {
+        "lat_lon": {
           "use": "mandatory"
         },
-        "lat_lon": {
+        "host": {
           "use": "mandatory"
         },
         "air_temp_regm": {
@@ -61786,12 +61786,6 @@
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
-        "elev": {
-          "use": "mandatory"
-        },
         "env_broad_scale": {
           "use": "mandatory"
         },
@@ -61805,6 +61799,12 @@
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -62053,12 +62053,6 @@
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
-        "elev": {
-          "use": "mandatory"
-        },
         "env_broad_scale": {
           "use": "mandatory"
         },
@@ -62072,6 +62066,12 @@
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "agrochem_addition": {
@@ -62290,13 +62290,13 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
+        "lat_lon": {
+          "use": "mandatory"
+        },
         "host_dependence": {
           "use": "mandatory"
         },
         "host_life_stage": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
           "use": "mandatory"
         },
         "sym_life_cycle_type": {
@@ -62701,9 +62701,6 @@
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
         "env_broad_scale": {
           "use": "mandatory"
         },
@@ -62717,6 +62714,9 @@
           "use": "mandatory"
         },
         "lat_lon": {
+          "use": "mandatory"
+        },
+        "depth": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -63018,6 +63018,9 @@
           "use": "either_one_mandatory",
           "group": "source"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -63034,9 +63037,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "lat_lon": {
@@ -63119,7 +63119,7 @@
           "use": "either_one_mandatory",
           "group": "source"
         },
-        "chem_administration": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -63137,10 +63137,25 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_source": {
+        "geo_loc_name": {
           "use": "mandatory"
         },
-        "geo_loc_name": {
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "metagenome_source": {
+          "use": "mandatory"
+        },
+        "source_uvig": {
+          "use": "mandatory"
+        },
+        "virus_enrich_appr": {
+          "use": "mandatory"
+        },
+        "chem_administration": {
+          "use": "mandatory"
+        },
+        "food_source": {
           "use": "mandatory"
         },
         "host_age": {
@@ -63167,15 +63182,6 @@
         "host_tot_mass": {
           "use": "mandatory"
         },
-        "isolate": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
-          "use": "mandatory"
-        },
-        "metagenome_source": {
-          "use": "mandatory"
-        },
         "microbial_biomass": {
           "use": "mandatory"
         },
@@ -63197,16 +63203,10 @@
         "soil_type_meth": {
           "use": "mandatory"
         },
-        "source_uvig": {
-          "use": "mandatory"
-        },
         "store_cond": {
           "use": "mandatory"
         },
         "temp": {
-          "use": "mandatory"
-        },
-        "virus_enrich_appr": {
           "use": "mandatory"
         },
         "adjacent_environment": {
@@ -63592,7 +63592,7 @@
           "use": "either_one_mandatory",
           "group": "source"
         },
-        "altitude": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -63613,9 +63613,6 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "isolate": {
-          "use": "mandatory"
-        },
         "lat_lon": {
           "use": "mandatory"
         },
@@ -63626,6 +63623,9 @@
           "use": "mandatory"
         },
         "virus_enrich_appr": {
+          "use": "mandatory"
+        },
+        "altitude": {
           "use": "mandatory"
         },
         "air_pm_concen": {
@@ -63771,19 +63771,7 @@
           "use": "either_one_mandatory",
           "group": "source"
         },
-        "abs_air_humidity": {
-          "use": "mandatory"
-        },
-        "air_temp": {
-          "use": "mandatory"
-        },
-        "build_occup_type": {
-          "use": "mandatory"
-        },
-        "building_setting": {
-          "use": "mandatory"
-        },
-        "carb_dioxide": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -63801,10 +63789,37 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "filter_type": {
+        "geo_loc_name": {
           "use": "mandatory"
         },
-        "geo_loc_name": {
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "metagenome_source": {
+          "use": "mandatory"
+        },
+        "source_uvig": {
+          "use": "mandatory"
+        },
+        "virus_enrich_appr": {
+          "use": "mandatory"
+        },
+        "abs_air_humidity": {
+          "use": "mandatory"
+        },
+        "air_temp": {
+          "use": "mandatory"
+        },
+        "build_occup_type": {
+          "use": "mandatory"
+        },
+        "building_setting": {
+          "use": "mandatory"
+        },
+        "carb_dioxide": {
+          "use": "mandatory"
+        },
+        "filter_type": {
           "use": "mandatory"
         },
         "heat_cool_type": {
@@ -63813,16 +63828,7 @@
         "indoor_space": {
           "use": "mandatory"
         },
-        "isolate": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
-          "use": "mandatory"
-        },
         "light_type": {
-          "use": "mandatory"
-        },
-        "metagenome_source": {
           "use": "mandatory"
         },
         "occup_samp": {
@@ -63837,9 +63843,6 @@
         "rel_air_humidity": {
           "use": "mandatory"
         },
-        "source_uvig": {
-          "use": "mandatory"
-        },
         "space_typ_state": {
           "use": "mandatory"
         },
@@ -63847,9 +63850,6 @@
           "use": "mandatory"
         },
         "ventilation_type": {
-          "use": "mandatory"
-        },
-        "virus_enrich_appr": {
           "use": "mandatory"
         },
         "address": {
@@ -64352,7 +64352,7 @@
           "use": "either_one_mandatory",
           "group": "source"
         },
-        "coll_site_geo_feat": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -64370,6 +64370,24 @@
         "env_medium": {
           "use": "mandatory"
         },
+        "geo_loc_name": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "metagenome_source": {
+          "use": "mandatory"
+        },
+        "source_uvig": {
+          "use": "mandatory"
+        },
+        "virus_enrich_appr": {
+          "use": "mandatory"
+        },
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
         "food_origin": {
           "use": "mandatory"
         },
@@ -64379,31 +64397,13 @@
         "food_product_type": {
           "use": "mandatory"
         },
-        "geo_loc_name": {
-          "use": "mandatory"
-        },
         "ifsac_category": {
           "use": "mandatory"
         },
         "intended_consumer": {
           "use": "mandatory"
         },
-        "isolate": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
-          "use": "mandatory"
-        },
-        "metagenome_source": {
-          "use": "mandatory"
-        },
         "purpose_of_sampling": {
-          "use": "mandatory"
-        },
-        "source_uvig": {
-          "use": "mandatory"
-        },
-        "virus_enrich_appr": {
           "use": "mandatory"
         },
         "animal_am_dur": {
@@ -64714,16 +64714,10 @@
           "use": "either_one_mandatory",
           "group": "source"
         },
-        "biotic_regm": {
-          "use": "mandatory"
-        },
-        "chem_administration": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
-          "use": "mandatory"
-        },
-        "depth": {
           "use": "mandatory"
         },
         "derived_from": {
@@ -64738,16 +64732,7 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_product_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "ifsac_category": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "lat_lon": {
@@ -64756,13 +64741,28 @@
         "metagenome_source": {
           "use": "mandatory"
         },
-        "samp_mat_type": {
-          "use": "mandatory"
-        },
         "source_uvig": {
           "use": "mandatory"
         },
         "virus_enrich_appr": {
+          "use": "mandatory"
+        },
+        "biotic_regm": {
+          "use": "mandatory"
+        },
+        "chem_administration": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "food_product_type": {
+          "use": "mandatory"
+        },
+        "ifsac_category": {
+          "use": "mandatory"
+        },
+        "samp_mat_type": {
           "use": "mandatory"
         },
         "adjacent_environment": {
@@ -65193,7 +65193,7 @@
           "use": "either_one_mandatory",
           "group": "source"
         },
-        "coll_site_geo_feat": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -65211,16 +65211,7 @@
         "env_medium": {
           "use": "mandatory"
         },
-        "food_product_type": {
-          "use": "mandatory"
-        },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "ifsac_category": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "lat_lon": {
@@ -65233,6 +65224,15 @@
           "use": "mandatory"
         },
         "virus_enrich_appr": {
+          "use": "mandatory"
+        },
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
+        "food_product_type": {
+          "use": "mandatory"
+        },
+        "ifsac_category": {
           "use": "mandatory"
         },
         "bacterial_density": {
@@ -65573,7 +65573,7 @@
           "use": "either_one_mandatory",
           "group": "source"
         },
-        "coll_site_geo_feat": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -65591,6 +65591,24 @@
         "env_medium": {
           "use": "mandatory"
         },
+        "geo_loc_name": {
+          "use": "mandatory"
+        },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "metagenome_source": {
+          "use": "mandatory"
+        },
+        "source_uvig": {
+          "use": "mandatory"
+        },
+        "virus_enrich_appr": {
+          "use": "mandatory"
+        },
+        "coll_site_geo_feat": {
+          "use": "mandatory"
+        },
         "food_contact_surf": {
           "use": "mandatory"
         },
@@ -65600,19 +65618,7 @@
         "food_product_type": {
           "use": "mandatory"
         },
-        "geo_loc_name": {
-          "use": "mandatory"
-        },
         "ifsac_category": {
-          "use": "mandatory"
-        },
-        "isolate": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
-          "use": "mandatory"
-        },
-        "metagenome_source": {
           "use": "mandatory"
         },
         "samp_mat_type": {
@@ -65625,12 +65631,6 @@
           "use": "mandatory"
         },
         "samp_stor_media": {
-          "use": "mandatory"
-        },
-        "source_uvig": {
-          "use": "mandatory"
-        },
-        "virus_enrich_appr": {
           "use": "mandatory"
         },
         "air_temp": {
@@ -65926,6 +65926,9 @@
           "use": "either_one_mandatory",
           "group": "source"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -65942,9 +65945,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "lat_lon": {
@@ -66162,6 +66162,9 @@
           "use": "either_one_mandatory",
           "group": "source"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -66178,9 +66181,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "lat_lon": {
@@ -66410,6 +66410,9 @@
           "use": "either_one_mandatory",
           "group": "source"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -66426,9 +66429,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "lat_lon": {
@@ -66610,6 +66610,9 @@
           "use": "either_one_mandatory",
           "group": "source"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -66626,9 +66629,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "lat_lon": {
@@ -66807,6 +66807,9 @@
           "use": "either_one_mandatory",
           "group": "source"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -66823,9 +66826,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "lat_lon": {
@@ -67007,6 +67007,9 @@
           "use": "either_one_mandatory",
           "group": "source"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -67023,9 +67026,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "lat_lon": {
@@ -67228,10 +67228,7 @@
           "use": "either_one_mandatory",
           "group": "source"
         },
-        "api": {
-          "use": "mandatory"
-        },
-        "basin_name": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -67252,6 +67249,24 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "metagenome_source": {
+          "use": "mandatory"
+        },
+        "source_uvig": {
+          "use": "mandatory"
+        },
+        "virus_enrich_appr": {
+          "use": "mandatory"
+        },
+        "api": {
+          "use": "mandatory"
+        },
+        "basin_name": {
+          "use": "mandatory"
+        },
         "hc_produced": {
           "use": "mandatory"
         },
@@ -67261,19 +67276,7 @@
         "hcr_temp": {
           "use": "mandatory"
         },
-        "isolate": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
-          "use": "mandatory"
-        },
-        "metagenome_source": {
-          "use": "mandatory"
-        },
         "samp_mat_type": {
-          "use": "mandatory"
-        },
-        "source_uvig": {
           "use": "mandatory"
         },
         "sulfate_fw": {
@@ -67283,9 +67286,6 @@
           "use": "mandatory"
         },
         "vfa_fw": {
-          "use": "mandatory"
-        },
-        "virus_enrich_appr": {
           "use": "mandatory"
         },
         "additional_info": {
@@ -67566,13 +67566,7 @@
           "use": "either_one_mandatory",
           "group": "source"
         },
-        "add_recov_method": {
-          "use": "mandatory"
-        },
-        "api": {
-          "use": "mandatory"
-        },
-        "basin_name": {
+        "isolate": {
           "use": "mandatory"
         },
         "collection_date": {
@@ -67593,22 +67587,34 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
+        "lat_lon": {
+          "use": "mandatory"
+        },
+        "metagenome_source": {
+          "use": "mandatory"
+        },
+        "source_uvig": {
+          "use": "mandatory"
+        },
+        "virus_enrich_appr": {
+          "use": "mandatory"
+        },
+        "add_recov_method": {
+          "use": "mandatory"
+        },
+        "api": {
+          "use": "mandatory"
+        },
+        "basin_name": {
+          "use": "mandatory"
+        },
         "hc_produced": {
           "use": "mandatory"
         },
         "hcr": {
           "use": "mandatory"
         },
-        "isolate": {
-          "use": "mandatory"
-        },
         "iwf": {
-          "use": "mandatory"
-        },
-        "lat_lon": {
-          "use": "mandatory"
-        },
-        "metagenome_source": {
           "use": "mandatory"
         },
         "nitrate": {
@@ -67620,9 +67626,6 @@
         "samp_mat_type": {
           "use": "mandatory"
         },
-        "source_uvig": {
-          "use": "mandatory"
-        },
         "sulfate": {
           "use": "mandatory"
         },
@@ -67630,9 +67633,6 @@
           "use": "mandatory"
         },
         "temp": {
-          "use": "mandatory"
-        },
-        "virus_enrich_appr": {
           "use": "mandatory"
         },
         "water_cut": {
@@ -67916,16 +67916,13 @@
           "use": "either_one_mandatory",
           "group": "source"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
         "derived_from": {
-          "use": "mandatory"
-        },
-        "elev": {
           "use": "mandatory"
         },
         "env_broad_scale": {
@@ -67940,9 +67937,6 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "isolate": {
-          "use": "mandatory"
-        },
         "lat_lon": {
           "use": "mandatory"
         },
@@ -67953,6 +67947,12 @@
           "use": "mandatory"
         },
         "virus_enrich_appr": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -68203,6 +68203,9 @@
           "use": "either_one_mandatory",
           "group": "source"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -68219,9 +68222,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "lat_lon": {
@@ -68433,6 +68433,9 @@
           "use": "either_one_mandatory",
           "group": "source"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -68449,9 +68452,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "lat_lon": {
@@ -68747,16 +68747,13 @@
           "use": "either_one_mandatory",
           "group": "source"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
         "derived_from": {
-          "use": "mandatory"
-        },
-        "elev": {
           "use": "mandatory"
         },
         "env_broad_scale": {
@@ -68771,9 +68768,6 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "isolate": {
-          "use": "mandatory"
-        },
         "lat_lon": {
           "use": "mandatory"
         },
@@ -68784,6 +68778,12 @@
           "use": "mandatory"
         },
         "virus_enrich_appr": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "alkalinity": {
@@ -69052,16 +69052,13 @@
           "use": "either_one_mandatory",
           "group": "source"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
-        "depth": {
-          "use": "mandatory"
-        },
         "derived_from": {
-          "use": "mandatory"
-        },
-        "elev": {
           "use": "mandatory"
         },
         "env_broad_scale": {
@@ -69076,9 +69073,6 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "isolate": {
-          "use": "mandatory"
-        },
         "lat_lon": {
           "use": "mandatory"
         },
@@ -69089,6 +69083,12 @@
           "use": "mandatory"
         },
         "virus_enrich_appr": {
+          "use": "mandatory"
+        },
+        "depth": {
+          "use": "mandatory"
+        },
+        "elev": {
           "use": "mandatory"
         },
         "agrochem_addition": {
@@ -69315,6 +69315,9 @@
           "use": "either_one_mandatory",
           "group": "source"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -69333,15 +69336,6 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "host_dependence": {
-          "use": "mandatory"
-        },
-        "host_life_stage": {
-          "use": "mandatory"
-        },
-        "isolate": {
-          "use": "mandatory"
-        },
         "lat_lon": {
           "use": "mandatory"
         },
@@ -69351,10 +69345,16 @@
         "source_uvig": {
           "use": "mandatory"
         },
-        "sym_life_cycle_type": {
+        "virus_enrich_appr": {
           "use": "mandatory"
         },
-        "virus_enrich_appr": {
+        "host_dependence": {
+          "use": "mandatory"
+        },
+        "host_life_stage": {
+          "use": "mandatory"
+        },
+        "sym_life_cycle_type": {
           "use": "mandatory"
         },
         "altitude": {
@@ -69599,6 +69599,9 @@
           "use": "either_one_mandatory",
           "group": "source"
         },
+        "isolate": {
+          "use": "mandatory"
+        },
         "collection_date": {
           "use": "mandatory"
         },
@@ -69615,9 +69618,6 @@
           "use": "mandatory"
         },
         "geo_loc_name": {
-          "use": "mandatory"
-        },
-        "isolate": {
           "use": "mandatory"
         },
         "lat_lon": {
@@ -69811,10 +69811,10 @@
           "use": "either_one_mandatory",
           "group": "source"
         },
-        "collection_date": {
+        "isolate": {
           "use": "mandatory"
         },
-        "depth": {
+        "collection_date": {
           "use": "mandatory"
         },
         "derived_from": {
@@ -69832,9 +69832,6 @@
         "geo_loc_name": {
           "use": "mandatory"
         },
-        "isolate": {
-          "use": "mandatory"
-        },
         "lat_lon": {
           "use": "mandatory"
         },
@@ -69845,6 +69842,9 @@
           "use": "mandatory"
         },
         "virus_enrich_appr": {
+          "use": "mandatory"
+        },
+        "depth": {
           "use": "mandatory"
         },
         "alkalinity": {

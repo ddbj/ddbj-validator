@@ -1360,8 +1360,14 @@ class ANN1100(BaseRule):
 class ANN1110(BaseRule):
     rule_id = "ANN1110"
     alternate_id = "JK"
-    target = "strain"
-    description = "The strain matches an institution code. Please add a culture_collection if the sample was obtained from the culture collection."
+    target = "strain, isolate"
+    # strain / isolate の値が機関コードに一致し、かつ由来 voucher（culture_collection /
+    # specimen_voucher）が未記載のとき、voucher 追加を提案（warning）。
+    # コード種別（culture/specimen）は coll_dump の情報が不正確なため使わず、
+    # 提案は常に culture_collection / specimen_voucher の両方を併記する（キャッチオール）。
+    description = ("The strain or isolate matches an institution code. Please add a "
+                   "culture_collection/specimen_voucher if the sample was obtained from the "
+                   "culture collection/specimen voucher.")
     requires_rdb = False
     is_file_level = True
 
@@ -1373,33 +1379,41 @@ class ANN1110(BaseRule):
         # 機関コードを小文字でセット化
         inst_codes_lower = {str(code).lower() for code in context.institution_codes}
 
+        def _matches(feature, q_name):
+            # 値の先頭アルファベット部分（NBRC100 -> nbrc, JCM 1234 -> jcm）が機関コードに一致するか
+            for val in feature.qualifiers.get(q_name, []):
+                val_str = str(val).strip()
+                if not val_str:
+                    continue
+                m = re.match(r'^([a-zA-Z]+)', val_str)
+                if m and m.group(1).lower() in inst_codes_lower:
+                    return True
+            return False
+
         for entry_id, record in records.items():
             for feature in self.get_features(record):
-                # culture_collection が既にある場合はスキップ
-                if "culture_collection" in feature.qualifiers:
+                # 既に voucher（culture_collection / specimen_voucher）があれば由来記録済み → skip
+                if "culture_collection" in feature.qualifiers or "specimen_voucher" in feature.qualifiers:
                     continue
-                    
-                targets = []
-                if "strain" in feature.qualifiers:
-                    targets.extend([("strain", v) for v in feature.qualifiers["strain"]])
 
-                for q_name, val in targets:
-                    val_str = str(val).strip()
-                    if not val_str:
-                        continue
-                        
-                    # 数字・スペース・ハイフン・コロン等で分割し、先頭のアルファベット部分だけを抽出する
-                    # NBRC100 -> nbrc, JCM 1234 -> jcm
-                    match = re.match(r'^([a-zA-Z]+)', val_str)
-                    if match:
-                        first_word = match.group(1).lower()
-                    else:
-                        first_word = ""
-                    
-                    if first_word and first_word in inst_codes_lower:
-                        res = self.feature_result(record, feature, self.description, level="warning", qualifier=q_name, entry=getattr(feature, 'original_entry_id', entry_id))
-                        results.append(res)
-                        break # 1つのフィーチャーで1回エラーを出せばOK
+                strain_hit = _matches(feature, "strain")
+                isolate_hit = _matches(feature, "isolate")
+
+                # マッチした qualifier をメッセージ先頭に反映（strain / isolate / strain and isolate）
+                if strain_hit and isolate_hit:
+                    matched, verb, q = "strain and isolate", "match", "strain, isolate"
+                elif strain_hit:
+                    matched, verb, q = "strain", "matches", "strain"
+                elif isolate_hit:
+                    matched, verb, q = "isolate", "matches", "isolate"
+                else:
+                    continue
+
+                msg = (f"The {matched} {verb} an institution code. Please add a "
+                       f"culture_collection/specimen_voucher if the sample was obtained from the "
+                       f"culture collection/specimen voucher.")
+                results.append(self.feature_result(record, feature, msg, level="warning",
+                               qualifier=q, entry=getattr(feature, 'original_entry_id', entry_id)))
 
         return results
         
