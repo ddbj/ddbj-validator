@@ -63,6 +63,8 @@ def _build_record(proj):
     rel = descr.find("./Relevance") if descr is not None else None
     if rel is not None:
         rec.relevance_present = True
+        # 要素があれば「選択した」。text の有無は問わない（空なら BP_R0007）。
+        rec.relevance_other_selected = rel.find("./Other") is not None
         rec.relevance_other = _text(rel.find("./Other"))
     ptype = proj.find("./ProjectType")
     if ptype is not None:
