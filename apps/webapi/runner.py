@@ -3,6 +3,7 @@
 validator は別コンテナでも良い（config.VALIDATOR_CMD を `podman exec ...` にする）。
 各 validator CLI は `-o <run_dir>`（出力先）と `-j`（result.json）に対応済み。
 """
+import json
 import logging
 import subprocess
 from pathlib import Path
@@ -92,20 +93,45 @@ def plan(saved, params):
 def _plan_record(path, params):
     """DDBJ Record（v3 JSON）の振り分け。
 
-    Record は 1 ファイルに project / samples / experiments … が同居し得るので、他ロールと違って
-    「そのファイルがある＝この validator」とは決まらない。現在 Record 入力に対応しているのは
-    BioSample だけなので biosample へ回し、**中身の判断は validator 側に任せる**。
-    samples を持たない record は CLI が理由を言って終了コード 2 で落ち、run_validation が
-    それを status の message に載せる。ここで判断するには全文をパースする必要があり、
-    10 万 sample の record では数百 MB の一時オブジェクトが web プロセス側に載る。
+    Record は 1 ファイルに project / samples / experiments … が同居し得るので、他ロールと
+    違って「そのファイルがある＝この validator」とは決まらない。中身の top-level を見て決める。
 
-    BioProject 対応が入ったら、ここが「複数 validator を走らせて結果をまとめる」分岐になる
-    （run_validation は 1 プロセス・1 レポート前提なので、そのときは併せて直す必要がある）。
+    **project と samples が同居する record は断る。** 断る理由は「対応が面倒だから」では
+    ない。BP_R0021（locus_tag prefix と BioSample の組）や BS_R0006（bioproject_id の所属）は
+    参照先を**登録済みの DB に問い合わせて**確かめる。同一ドキュメント内のまだ登録されて
+    いない相手は見つからないので、両方の validator が正しく動いた上で両方間違った答えを
+    出す。レポートをマージしても解けない。ルールが「まずドキュメント内、無ければ DB」を
+    見る形になる必要がある。
+
+    top-level を知るためだけに全文をパースしている。10 万 sample の record では数百 MB の
+    一時オブジェクトが web プロセスに載る。呼び出し側はどちらか分かっていることが多いので、
+    form に種別のヒントを足せば避けられる（未実装）。
     """
-    args = ["biosample", "-r", str(path)]
-    if params.get("submission_id"):
-        args += ["-s", params["submission_id"]]
-    return args
+    try:
+        with open(path, encoding="utf-8") as f:
+            record = json.load(f)
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as e:
+        raise ValueError(f"DDBJ Record を読めません: {e}") from e
+    if not isinstance(record, dict):
+        raise ValueError("DDBJ Record が JSON オブジェクトではありません")
+
+    has_project = bool(record.get("project"))
+    has_samples = bool(record.get("samples"))
+
+    if has_project and has_samples:
+        raise ValueError(
+            "project と samples が同居する DDBJ Record には未対応です。"
+            "相互参照（BP_R0021 / BS_R0006 等）は登録済み DB を引いて確かめるため、"
+            "同一 record 内の未登録の相手を解決できません。片方ずつ送ってください。")
+    if has_project:
+        return ["bioproject", "-r", str(path)]
+    if has_samples:
+        args = ["biosample", "-r", str(path)]
+        if params.get("submission_id"):
+            args += ["-s", params["submission_id"]]
+        return args
+
+    raise ValueError("DDBJ Record に project も samples もありません")
 
 
 def _run_failure_message(proc):

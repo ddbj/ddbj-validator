@@ -207,7 +207,7 @@ NCBI_API_EMAIL=あなたのメールアドレス
 | サブコマンド | 対象 | 入力 |
 |---|---|---|
 | `ddbj`（省略可・既定） | 塩基配列アノテーション | `.ann` ＋ FASTA のペア（ディレクトリ） |
-| `bioproject` | BioProject | XML |
+| `bioproject` | BioProject | XML / DDBJ Record（v3 JSON） |
 | `biosample` | BioSample | XML / TSV / DDBJ Record（v3 JSON） |
 | `dra` | DRA（Sequence Read Archive） | Submission/Experiment/Run/Analysis XML |
 | `gea` | GEA（Genomic Expression Archive） | MAGE-TAB（IDF/SDRF） |
@@ -230,16 +230,36 @@ NCBI_API_EMAIL=あなたのメールアドレス
 
 ## BioProject（`bioproject`）
 
-BioProject 登録 XML を検証します。
+BioProject 登録データ（XML または DDBJ Record）を検証します。
 
 ```bash
-# XML を指定（-x は必須）
+# XML 入力
 ddbj-validator bioproject -x PSUB012060.xml
+
+# DDBJ Record 入力（v3 JSON。record の project を検証する）
+ddbj-validator bioproject -r PSUB012060.json
 ```
 
-- 入力: `-x`, `--xml`（BioProject XML、**必須**）。
+- 入力: `-x`, `--xml` または `-r`, `--record`（どちらか必須）。
 - モード: 既定 NCBI API。内部 DB モード（`-d`）では umbrella/locus_tag/重複チェック用のメタ情報を取得します。
 - サンプル: `docs/bioproject/PSUB003313.xml` ほか。
+
+### DDBJ Record（v3 JSON）入力について
+
+BioSample と同じ考え方で、`record_reader` が XML と同じ内部モデルを組みます。対応関係は
+`apps/bioproject/record_reader.py` の docstring にまとめてあります。要点:
+
+- **`project` のみを見ます。** `samples` などが同居していても検証しません。
+  `project` が無い record は「指摘ゼロ」ではなく入力エラーとして落とします。
+- 語彙は XML と同じ e- 接頭辞付き（`eOther` / `eMonoisolate`）。変換表は置いていません。
+- **v3 が XML を表現しきれず、評価できないルールが 3 つあります。**
+  `BP_R0016`（umbrella の member を表す関係が v3 で未確定 — 該当時は警告を出します）、
+  `BP_R0040`（`ProjectTypeTopSingleOrganism` を表現できない）、
+  `BP_R0015`（Publication の自由記述 reference にあたる slot が無い）。
+  `apps/bioproject/tests/run_record_parity_test.py` の `_KNOWN_GAPS` に理由付きで
+  列挙してあり、埋まったらテストが落ちて表から消せと言います。
+- `locus_tag_prefix` は `{prefix, biosample_id}` の対である必要があります
+  （v3 の途中まで `list[str]` でした。古い形は `BP_R0002` で弾きます）。
 
 ## BioSample（`biosample`）
 

@@ -126,15 +126,11 @@ class BP_R0007(_OtherDescrRule):
     rule_id = "BP_R0007"
     target = "Relevance"
     description = "Text description for the Relevance 'Other' is not provided. Please provide description of the Relevance 'Other'."
-    # Relevance/Other 要素があり text が空 → 説明無し
-    _cond = staticmethod(lambda rec: rec.relevance_present and (rec.raw is not None) and _relevance_other_selected(rec))
+    # Relevance/Other を選んでいて text が空 → 説明無し。
+    # 「選んだか」は reader が model へ持ち上げている（元は .raw を辿って XML を
+    # 直接見ていたが、それだと入力形式が XML に固定される）。
+    _cond = staticmethod(lambda rec: rec.relevance_present and rec.relevance_other_selected)
     _descr = staticmethod(lambda rec: rec.relevance_other)
-
-
-def _relevance_other_selected(rec):
-    # Relevance/Other 要素が XML に存在するか（text の有無に関わらず）。存在＝Other を選択とみなす。
-    r = rec.raw.find("./ProjectDescr/Relevance/Other") if rec.raw is not None else None
-    return r is not None
 
 
 class BP_R0008(_OtherDescrRule):
