@@ -93,9 +93,9 @@ def main(argv):
     if mismatched:
         print(f"{RED}[FAIL]{END}")
         return 1
-    print(f"{GREEN}[SUCCESS] All BioProject rule tests passed.{END}")
-
     # 全件実行のときだけ、XML と Record の同値性も確かめる。
+    # SUCCESS はその後に出す（先に出すと、落ちた実行の出力が緑の SUCCESS で始まる）。
+    parity_ok = True
     if not targets:
         print("\n--- XML / DDBJ Record parity test ---")
         import importlib.util
@@ -103,9 +103,13 @@ def main(argv):
         spec = importlib.util.spec_from_file_location("run_record_parity_test", path)
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
-        if mod.main() != 0:
-            return 1
+        parity_ok = (mod.main() == 0)
 
+    if not parity_ok:
+        print(f"{RED}[FAIL] XML / Record parity mismatch.{END}")
+        return 1
+
+    print(f"{GREEN}[SUCCESS] All BioProject rule tests passed.{END}")
     return 0
 
 

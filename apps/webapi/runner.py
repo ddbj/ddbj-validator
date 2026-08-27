@@ -115,7 +115,9 @@ def _plan_record(path, params):
     if not isinstance(record, dict):
         raise ValueError("DDBJ Record が JSON オブジェクトではありません")
 
-    has_project = bool(record.get("project"))
+    # 判定は reader と揃える。`bool()` だと `{"project": {}}` が「project 無し」に
+    # なり、web api は断るのに CLI は全ルールを回す、という食い違いが出る。
+    has_project = isinstance(record.get("project"), dict)
     has_samples = bool(record.get("samples"))
 
     if has_project and has_samples:
@@ -124,7 +126,12 @@ def _plan_record(path, params):
             "相互参照（BP_R0021 / BS_R0006 等）は登録済み DB を引いて確かめるため、"
             "同一 record 内の未登録の相手を解決できません。片方ずつ送ってください。")
     if has_project:
-        return ["bioproject", "-r", str(path)]
+        args = ["bioproject", "-r", str(path)]
+        if params.get("submission_id"):
+            # BP_R0004 の自己除外に使う。BP の CLI はファイル名から PSUB を拾うが、
+            # web api の一時ファイル名は PSUB を含まない。
+            args += ["-s", params["submission_id"]]
+        return args
     if has_samples:
         args = ["biosample", "-r", str(path)]
         if params.get("submission_id"):

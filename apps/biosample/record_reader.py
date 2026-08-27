@@ -58,6 +58,15 @@ _SCHEMA_ERR_CAP = 20   # スキーマエラーは大量に出るため上限（x
 _warned_no_schema = False
 
 
+class Unsupported(Exception):
+    """検証できないものを「検証して問題なし」として返さないための拒否。
+
+    レポートを書かずに終える。レポートが無ければ web api も「検証は成立していない」と
+    扱う（runner.run_validation）。中途半端に検証して validity: true を返すより、
+    何も返さないほうが嘘が少ない。
+    """
+
+
 def _format_error(rule_id, message, field=None, detail=None):
     """入力形式そのものの不備（BS_R0097/R0098）を 1 件組む。
 
@@ -275,6 +284,13 @@ def parse_record(record_path, submission_id=None, account=None):
     # 形が違えばモデルは組めないのでここで止まる。スキーマ違反のうち reader が触らない
     # 部分（未知のキー等）は報告したうえで検証は続ける。触る部分は _shape_errors が
     # 全て見ているので、続けても落ちない。
+    if record.get('project'):
+        raise Unsupported(
+            'project と samples が同居する DDBJ Record には未対応です。'
+            'BS_R0006（bioproject_id の所属）等は参照先を登録済み DB に問い合わせて '
+            '確かめるため、同一 record 内の未登録の相手を解決できません。'
+            'samples だけを検証して validity: true を返すと project を検証したように読めます。')
+
     shape_errors = _shape_errors(record)
     if shape_errors:
         return None, shape_errors
