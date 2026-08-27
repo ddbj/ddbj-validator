@@ -215,9 +215,7 @@ def run_inprocess_mode(target=None):
         print(f"    - {e}")
     print("=" * 60)
     rule_ok = mismatched == 0
-    if rule_ok:
-        print(f"{GREEN}[SUCCESS] All BioSample rule tests passed.{END}")
-    else:
+    if not rule_ok:
         print(f"{RED}[ABORT] BioSample rule tests failed.{END}")
 
     # 変換系・同値性のテストも同時に実行（"含めて test"）。全 fixture 実行時のみ。
@@ -228,7 +226,12 @@ def run_inprocess_mode(target=None):
         print("\n--- XML / DDBJ Record parity test ---")
         parity_ok = (_run_sibling("run_record_parity_test") == 0)
 
-    return 0 if (rule_ok and tsv_ok and parity_ok) else 1
+    ok = rule_ok and tsv_ok and parity_ok
+    # SUCCESS は全部終わってから出す（先に出すと、落ちた実行の出力が緑の SUCCESS で始まる）。
+    if ok:
+        print(f"\n{GREEN}[SUCCESS] All BioSample rule tests passed.{END}")
+
+    return 0 if ok else 1
 
 
 def _run_sibling(module_name):

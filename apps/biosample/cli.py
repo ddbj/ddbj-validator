@@ -220,8 +220,13 @@ def run(args):
             print("[WARN] --submission-id が指定されていません。登録済みの submission を"
                   "再検証する場合、自分自身の locus_tag_prefix が重複として報告されます "
                   "(BS_R0091)。", file=sys.stderr)
-        submission, pre_errors = record_reader.parse_record(parse_source, submission_id=submission_id,
-                                                            account=args.account)
+        try:
+            submission, pre_errors = record_reader.parse_record(parse_source, submission_id=submission_id,
+                                                                account=args.account)
+        except record_reader.Unsupported as e:
+            # レポートを書かずに落とす。書くと「検証して問題なし」に見える。
+            print(f"[ERROR] {e}", file=sys.stderr)
+            return 2
     else:
         parse_source, submission_id, err = _prepare_input(args, in_path)
         if err:

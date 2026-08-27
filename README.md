@@ -249,17 +249,28 @@ ddbj-validator bioproject -r PSUB012060.json
 BioSample と同じ考え方で、`record_reader` が XML と同じ内部モデルを組みます。対応関係は
 `apps/bioproject/record_reader.py` の docstring にまとめてあります。要点:
 
-- **`project` のみを見ます。** `samples` などが同居していても検証しません。
-  `project` が無い record は「指摘ゼロ」ではなく入力エラーとして落とします。
+- **`project` のみを見ます。** `project` が無い record は「指摘ゼロ」ではなく
+  入力エラーとして落とします。
+- **`project` と `samples` が同居する record は断ります**（CLI・web api とも）。
+  `BP_R0021`（locus_tag prefix と BioSample の組）や `BS_R0006`（bioproject_id の所属）は
+  参照先を**登録済み DB に問い合わせて**確かめるため、同一 record 内のまだ登録されていない
+  相手を解決できません。片方だけ検証して `validity: true` を返すと、もう片方も検証したように
+  読めてしまいます。レポートを書かずに終了するので、web api 側も「検証は成立していない」と
+  扱います。
 - 語彙は XML と同じ e- 接頭辞付き（`eOther` / `eMonoisolate`）。変換表は置いていません。
 - **v3 が XML を表現しきれず、評価できないルールが 3 つあります。**
-  `BP_R0016`（umbrella の member を表す関係が v3 で未確定 — 該当時は警告を出します）、
+  `BP_R0016`（umbrella の member を表す関係が v3 で未確定 — 該当する record では
+  `level: info` の結果としてレポートに「評価できなかった」と出します。`validity` にも
+  error/warning 数にも影響しません）、
   `BP_R0040`（`ProjectTypeTopSingleOrganism` を表現できない）、
   `BP_R0015`（Publication の自由記述 reference にあたる slot が無い）。
   `apps/bioproject/tests/run_record_parity_test.py` の `_KNOWN_GAPS` に理由付きで
   列挙してあり、埋まったらテストが落ちて表から消せと言います。
 - `locus_tag_prefix` は `{prefix, biosample_id}` の対である必要があります
   （v3 の途中まで `list[str]` でした。古い形は `BP_R0002` で弾きます）。
+- `-s`, `--submission-id`: PSUB id。省略時はファイル名から拾いますが、Record は
+  ファイル名に PSUB を含まないので、`BP_R0004`（既提出 project との重複）の自己除外を
+  効かせたい場合は明示的に渡します。
 
 ## BioSample（`biosample`）
 

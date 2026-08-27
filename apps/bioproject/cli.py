@@ -29,6 +29,9 @@ def _build_parser():
     g.add_argument("-x", "--xml", dest="xml", default=None, help="BioProject XML 入力ファイル")
     g.add_argument("-r", "--record", dest="record", default=None,
                    help="DDBJ Record 入力ファイル (v3 JSON)。project を検証する")
+    p.add_argument("-s", "--submission-id", dest="submission_id", default=None,
+                   help="PSUB id。省略時はファイル名から拾う。Record 入力は PSUB を持たないので、"
+                        "BP_R0004 の自己除外を効かせたいならここで渡す")
     p.add_argument("--account", default=None, help="Submitter id (account) for auth-dependent rules")
     p.add_argument("-o", "--out-dir", default=None, help="Output directory (default: input's parent)")
     p.add_argument("-l", "--local", action="store_true", help="Local mode (skip DB and NCBI API)")
@@ -118,7 +121,9 @@ def run(args):
         return 2
     skip_db, skip_ncbi, skip_auth = _resolve_modes(args)
     # account 未指定なら PSUB（ファイル名）から自動導出（内部 DB モードのみ）。導出できなければ認証系スキップ。
-    submission_id = _psub_from_path(in_path)
+    # Record はファイル名に PSUB を含まない（web api の一時ファイルも同様）。
+    # 渡されなければファイル名から拾う、が従来の挙動。
+    submission_id = args.submission_id or _psub_from_path(in_path)
     account = args.account or (_account_from_psub(submission_id) if not skip_db else None)
     if not account:
         skip_auth = True
@@ -126,7 +131,12 @@ def run(args):
     context.self_submission_id = submission_id   # BP_R0004 の自己除外にも使う
 
     if is_record:
-        submission, pre_errors = record_reader.parse_record(str(in_path), account=account)
+        try:
+            submission, pre_errors = record_reader.parse_record(str(in_path), account=account)
+        except record_reader.Unsupported as e:
+            # レポートを書かずに落とす。書くと「検証して問題なし」に見える。
+            print(f"[ERROR] {e}", file=sys.stderr)
+            return 2
     else:
         submission, pre_errors = xml_reader.parse_xml(str(in_path), account=account)
     out_dir = args.out_dir or str(in_path.parent)

@@ -75,23 +75,29 @@ def _fired(submission, pre_errors):
 
 def main():
     matched = mismatched = 0
-    diffs = []
+    diffs, skipped = [], []
     for xml_path in sorted(p for d in _HERE.iterdir() if d.is_dir() and d.name.startswith("BS_R")
                            for p in d.glob("*.xml")):
         submission, pre_errors = xml_reader.parse_xml(str(xml_path))
         if submission is None:      # 整形不正 fixture。写す先が無い
+            skipped.append(str(xml_path.relative_to(_HERE)))
             continue
         # BS_R0012/R0013 は rec.attributes を in-place で書き換えるので、
         # record への写しは検証を走らせる前に取る。
         record = _to_record(submission)
         want = _fired(submission, pre_errors)
 
-        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as f:
-            json.dump(record, f, ensure_ascii=False)
-            record_path = f.name
-        got_submission, got_pre = record_reader.parse_record(
-            record_path, submission_id=submission.submission_id)
-        Path(record_path).unlink()
+        record_path = None
+        try:
+            with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False,
+                                             encoding="utf-8") as f:
+                json.dump(record, f, ensure_ascii=False)
+                record_path = f.name
+            got_submission, got_pre = record_reader.parse_record(
+                record_path, submission_id=submission.submission_id)
+        finally:
+            if record_path:
+                Path(record_path).unlink(missing_ok=True)
         got = _fired(got_submission, got_pre)
 
         if want == got:
@@ -102,10 +108,19 @@ def main():
 
     print(f"\n[record parity] Matched: {matched}   "
           f"Mismatched: {RED if mismatched else GREEN}{mismatched}{END}")
+    if skipped:
+        print(f"  比較できなかった fixture {len(skipped)} 件（XML から model を組めない）: {skipped}")
     for name, only_xml, only_record in diffs:
         print(f"  [{RED}MISMATCH{END}] {name}")
         print(f"      XML のみ:    {only_xml}")
         print(f"      Record のみ: {only_record}")
+
+    # 1 件も比較していないのに緑を返さない。fixture が読めなくなったときに
+    # 「全部一致」と言うのが、このテストが防ぐはずの失敗そのもの。
+    if not matched:
+        print(f"  [{RED}FAIL{END}] 比較できた fixture が 1 件もありません")
+        return 1
+
     return 1 if mismatched else 0
 
 

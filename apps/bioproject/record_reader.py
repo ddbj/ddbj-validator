@@ -15,6 +15,7 @@ v3 → BioProjectRecord の対応:
     project.locus_tag_prefix[]           -> locus_tags [{prefix, biosample_id}]
     project.relevance                    -> relevance_present / _other_selected / _other
     project.publications[]               -> publications [{id, db_type, reference}]
+                                            （title -> reference、pubmed_id / doi は両方）
     project.target.sample_scope          -> sample_scope
     project.target.material              -> material
     project.target.capture               -> capture
@@ -41,7 +42,9 @@ v3 に無いもの / 見ていないもの:
     umbrella の member -- XML の ProjectLinks/.../MemberID にあたる関係を v3 の
         `relations` でどう書くかが未確定で、我々の converter も出していない。
         **BP_R0016（umbrella の妥当性）は record 入力では評価できない。**
-        黙って通すと「検証して問題なし」に見えるので、umbrella のときは警告する。
+        黙って通すと「検証して問題なし」に見えるので、**「評価できなかった」を
+        level=info の結果としてレポートに出す**（validity にも error 数にも影響しない）。
+        断らないのは、断ると同じ umbrella の BP_R0008 / BP_R0042 まで検証できなくなるため。
 """
 import json
 import sys
@@ -51,6 +54,16 @@ from apps.bioproject.model import BioProjectRecord, BioProjectSubmission, Public
 
 _SCHEMA_ERR_CAP = 20
 _warned_no_schema = False
+
+
+class Unsupported(Exception):
+    """検証できないものを「検証して問題なし」として返さないための拒否。
+
+    レポートを書かずに終える。レポートが無ければ web api も「検証は成立していない」と
+    扱う（runner.run_validation）。中途半端に検証して validity: true を返すより、
+    何も返さないほうが嘘が少ない。
+    """
+
 
 # v3 project_type -> モデルの project_kind。
 # 'single_organism'（XML の ProjectTypeTopSingleOrganism）は v3 で表現できない。
@@ -113,8 +126,18 @@ def _shape_errors(record):
             bad(f'project.{key}', 'a string', value)
 
     organism = project.get('organism')
-    if organism is not None and not isinstance(organism, dict):
-        bad('project.organism', 'an object', organism)
+    if organism is not None:
+        if not isinstance(organism, dict):
+            bad('project.organism', 'an object', organism)
+        else:
+            if organism.get('name') is not None and not isinstance(organism['name'], str):
+                bad('project.organism.name', 'a string', organism['name'])
+            tax_id = organism.get('taxonomy_id')
+            # str() は何でも受けるので、ここで見ないと "{'oops': 1}" が
+            # taxonomy_id として通り、BP_R0038 が「学名と id が不一致」という
+            # 誤った診断を出す。
+            if tax_id is not None and not isinstance(tax_id, (int, str)):
+                bad('project.organism.taxonomy_id', 'an integer', tax_id)
 
     relevance = project.get('relevance')
     if relevance is not None and not isinstance(relevance, dict):
@@ -151,8 +174,16 @@ def _shape_errors(record):
                 if value is not None and not isinstance(value, str):
                     bad(f'project.target.{key}', 'a string', value)
             data_types = target.get('data_types')
-            if data_types is not None and not isinstance(data_types, list):
-                bad('project.target.data_types', 'a list', data_types)
+            if data_types is not None:
+                if not isinstance(data_types, list):
+                    bad('project.target.data_types', 'a list', data_types)
+                else:
+                    # 要素まで見る。dict が来ると _data_entries が descriptions の
+                    # キーに使って TypeError で落ちる（unhashable）。落ちると
+                    # レポートが出ず、終了コードは「指摘あり」と同じ 1 になる。
+                    for i, data_type in enumerate(data_types):
+                        if not isinstance(data_type, str):
+                            bad(f'project.target.data_types.{i}', 'a string', data_type)
             descriptions = target.get('data_type_descriptions')
             if descriptions is not None and not isinstance(descriptions, dict):
                 bad('project.target.data_type_descriptions', 'an object', descriptions)
@@ -195,26 +226,36 @@ def _publications(project):
     """v3 publications[] -> [Publication(id, db_type, reference)]。
 
     v3 は pubmed_id / doi を別のキーに持ち、XML は id ＋ DbType の組で持つ。
-    reference（自由記述）にあたる slot は v3 に無い。
+    XML の <Reference>（自由記述）は v3 に専用 slot が無く、converter が `title` に
+    載せている（載せないと BP_R0015 が誤検知になり、Publication[i].Reference を対象に
+    する非 ASCII 検査 BP_R0059/R0060 が record 入力で死ぬ）。
     """
     out = []
     for pub in project.get('publications') or []:
-        identifier = db_type = None
-        for key, xml_db_type in _PUBLICATION_DB_TYPE.items():
-            value = _text(pub.get(key))
-            if value:
-                identifier, db_type = value, xml_db_type
-                break
-        out.append(Publication(id=identifier, db_type=db_type, reference=None))
+        reference = _text(pub.get('title'))
+        # pubmed_id と doi が両方あれば両方を検証対象にする。片方で break すると
+        # もう片方が BP_R0014（識別子の形式）をすり抜ける。
+        found = [(_text(pub.get(key)), db_type)
+                 for key, db_type in _PUBLICATION_DB_TYPE.items() if _text(pub.get(key))]
+
+        if not found:
+            out.append(Publication(id=None, db_type=None, reference=reference))
+        else:
+            out.extend(Publication(id=identifier, db_type=db_type, reference=reference)
+                       for identifier, db_type in found)
     return out
 
 
 def _data_entries(target):
-    """data_types と data_type_descriptions を XML の <Data data_type=..>本文</Data> の形へ。"""
-    descriptions = target.get('data_type_descriptions') or {}
+    """data_types と data_type_descriptions を XML の <Data data_type=..>本文</Data> の形へ。
 
-    return [{'type': _text(data_type), 'text': _text(descriptions.get(data_type))}
-            for data_type in target.get('data_types') or []]
+    説明の引き当ては正規化後のキーで行う。生の値で引くと " eOther " と "eOther" が
+    別物になり、説明があるのに BP_R0013 が発火する。
+    """
+    descriptions = {_text(k): v for k, v in (target.get('data_type_descriptions') or {}).items()}
+
+    return [{'type': data_type, 'text': _text(descriptions.get(data_type))}
+            for data_type in (_text(t) for t in target.get('data_types') or [])]
 
 
 def _build_record(project):
@@ -245,13 +286,18 @@ def _build_record(project):
     # v3 では dict のキーが選択、値が説明。
     relevance = project.get('relevance')
     if isinstance(relevance, dict):
-        rec.relevance_present       = bool(relevance)
-        rec.relevance_other_selected = 'other' in relevance
-        rec.relevance_other          = _text(relevance.get('other'))
+        # XML の `<Relevance/>`（空）は「要素あり」なので、空 dict も present 扱いにする。
+        rec.relevance_present = True
+        # キーの大小は producer 次第（我々の converter は要素名を downcase する）。
+        other = next((v for k, v in relevance.items() if k.lower() == 'other'), None)
+        rec.relevance_other_selected = any(k.lower() == 'other' for k in relevance)
+        rec.relevance_other          = _text(other)
 
     rec.publications = _publications(project)
 
-    target = project.get('target') or {}
+    # xml_reader は Target/Method/Objectives を ProjectTypeSubmission の下でだけ読む。
+    # umbrella に target が付いた record で BP_R0009 等が出ないよう、同じ条件にする。
+    target = (project.get('target') or {}) if rec.project_kind == 'submission' else {}
     rec.sample_scope       = _text(target.get('sample_scope'))
     rec.material           = _text(target.get('material'))
     rec.capture            = _text(target.get('capture'))
@@ -282,6 +328,13 @@ def parse_record(record_path, account=None):
     if not isinstance(record, dict):
         return None, [_format_error('BP_R0001', 'JSON document is not a DDBJ Record object.')]
 
+    if record.get('samples'):
+        raise Unsupported(
+            'project と samples が同居する DDBJ Record には未対応です。'
+            'BP_R0021（locus_tag prefix と BioSample の組）等は参照先を登録済み DB に '
+            '問い合わせて確かめるため、同一 record 内の未登録の相手を解決できません。'
+            'project だけを検証して validity: true を返すと samples を検証したように読めます。')
+
     shape_errors = _shape_errors(record)
     if shape_errors:
         return None, shape_errors
@@ -291,8 +344,16 @@ def parse_record(record_path, account=None):
     records = [_build_record(project)] if isinstance(project, dict) else []
 
     if records and records[0].project_kind == 'umbrella':
-        # umbrella の member を v3 の relations でどう書くかが未確定で、我々の
-        # converter も出していない。黙って通すと「検証して問題なし」に見える。
+        # 「評価できなかった」をレポートに出す。level=info は validity にも
+        # error/warning 数にも影響せず messages に載る（common/reporter.py）ので、
+        # 先方のレポート形式を変えずに「検証していない」を可視化できる。
+        # stderr だけだと validation.log にしか残らず、取得する API が無い。
+        errors.append({
+            'rule_id': 'BP_R0016', 'level': 'info', 'target': '#not_evaluated',
+            'sample': records[0].label, 'input_format': 'record',
+            'message': 'Umbrella membership is not expressed in DDBJ Record v3, '
+                       'so this rule could not be evaluated for this input.',
+        })
         print('[WARN] umbrella project ですが、v3 には member を表す関係が未確定のため '
               'BP_R0016 (umbrella の妥当性) は評価できません。', file=sys.stderr)
 

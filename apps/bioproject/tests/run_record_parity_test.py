@@ -41,13 +41,17 @@ _KNOWN_GAPS = {
     },
     "BP_R0016/BP_R0016_1.fail.xml": {
         "BP_R0016": "umbrella の member（XML の ProjectLinks/.../MemberID）を v3 の relations で "
-                    "どう書くかが未確定。reader は umbrella のとき警告を出す。",
+                    "どう書くかが未確定。reader は umbrella のとき level=info で "
+                    "「評価できなかった」をレポートに出す（validity には影響しない）。",
     },
     "BP_R0040/BP_R0040_1.fail.xml": {
         "BP_R0040": "v3 の project_type は primary / umbrella だけで、"
                     "ProjectTypeTopSingleOrganism を表現できない。",
     },
 }
+
+# record_reader が断る fixture（project と samples の同居など）。素通りさせず理由付きで列挙する。
+_REFUSED = {}
 
 _PROJECT_TYPE = {"submission": "primary", "umbrella": "umbrella"}
 _DB_TYPE_KEY  = {"ePubmed": "pubmed_id", "eDOI": "doi"}
@@ -71,9 +75,10 @@ def _to_record(submission):
         "locus_tag_prefix": [
             {k: v for k, v in lt.items() if v} for lt in rec.locus_tags
         ] or None,
-        "publications": [
-            {_DB_TYPE_KEY.get(p.db_type, "pubmed_id"): p.id} for p in rec.publications if p.id
-        ] or None,
+        # converter と同じ落とし方をする。既定で pubmed_id に寄せると、DbType が
+        # 未知/不在の publication が record 側だけ「ePubmed の id」に化けて、
+        # 写像のずれをこのテストが見つけられなくなる。
+        "publications": [pub for pub in (_publication(p) for p in rec.publications) if pub] or None,
         "relevance": _relevance(rec),
         "target":    _target(rec),
     }
@@ -82,15 +87,28 @@ def _to_record(submission):
             "project": {k: v for k, v in project.items() if v is not None}}
 
 
+def _publication(pub):
+    """Publication -> v3 の 1 件。converter に合わせて、既知の DbType 以外は id を落とす。"""
+    out = {}
+    key = _DB_TYPE_KEY.get(pub.db_type)
+    if key and pub.id:
+        out[key] = pub.id
+    if pub.reference:
+        out["title"] = pub.reference
+
+    return out or None
+
+
 def _relevance(rec):
     """モデルは「Relevance 要素があるか」と「Other の text」しか持たない。どのカテゴリが
-    選ばれていたかは残っていないので、その 2 つが round-trip する最小の dict を作る。
-    ここだけは実データの写しではなく、同値性を問うための合成。"""
+    選ばれていたかは残らないので、その 2 つが round-trip する最小の dict を作る。
+    Other が選ばれていなければ空 dict — reader は「キーがある＝要素がある」で present と
+    見るので、存在しないキーをでっち上げずに済む。"""
     if not rec.relevance_present:
         return None
     if rec.relevance_other_selected:
         return {"other": rec.relevance_other or ""}
-    return {"unspecified": ""}
+    return {}
 
 
 def _target(rec):
@@ -121,45 +139,73 @@ def _context():
 
 
 def _fired(submission, pre_errors):
-    fired = {r["rule_id"] for r in pre_errors}
+    """発火した (rule_id, sample) の組。rule_id の集合だけで比べると、同じルールが
+    2 件出るか 1 件出るかの違いを「一致」と言ってしまう。"""
+    results = list(pre_errors)
     if submission is not None:
-        fired |= {r["rule_id"] for r in Validator(_context()).run(submission)}
-    return fired - _FORMAT_RULES
+        results += Validator(_context()).run(submission)
+
+    return {(r["rule_id"], r.get("sample"), r.get("level"))
+            for r in results
+            if r["rule_id"] not in _FORMAT_RULES
+            # 「このルールは評価できなかった」という record 経路だけの注記。
+            # 比較対象ではない（出ること自体は info として報告される）。
+            and r.get("target") != "#not_evaluated"}
 
 
 def main():
+    fixtures = sorted(p for d in _HERE.iterdir() if d.is_dir() and d.name.startswith("BP_R")
+                      for p in d.glob("*.xml"))
     matched = mismatched = 0
-    diffs = []
-    gaps  = []
-    for xml_path in sorted(p for d in _HERE.iterdir() if d.is_dir() and d.name.startswith("BP_R")
-                           for p in d.glob("*.xml")):
+    diffs, gaps, refused, skipped = [], [], [], []
+
+    for xml_path in fixtures:
+        name = str(xml_path.relative_to(_HERE))
         submission, pre_errors = xml_reader.parse_xml(str(xml_path))
         if submission is None or not submission.records:
-            continue      # 整形不正 fixture。写す先が無い
+            # 整形不正 fixture。写す先が無い。数えて表に出す（黙って飛ばさない）。
+            skipped.append(name)
+            continue
 
         want = _fired(submission, pre_errors)
-        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as f:
-            json.dump(_to_record(submission), f, ensure_ascii=False)
-            record_path = f.name
-        got_submission, got_pre = record_reader.parse_record(record_path)
-        Path(record_path).unlink()
-        got = _fired(got_submission, got_pre)
+        record_path = None
+        try:
+            with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False,
+                                             encoding="utf-8") as f:
+                json.dump(_to_record(submission), f, ensure_ascii=False)
+                record_path = f.name
+            got_submission, got_pre = record_reader.parse_record(record_path)
+        except record_reader.Unsupported as e:
+            why = _REFUSED.get(name)
+            if why:
+                refused.append((name, why))
+                matched += 1
+            else:
+                mismatched += 1
+                diffs.append((name, [f"reader が断った: {e}"], []))
+            continue
+        finally:
+            if record_path:
+                Path(record_path).unlink(missing_ok=True)
 
-        name  = str(xml_path.relative_to(_HERE))
+        got   = _fired(got_submission, got_pre)
         known = _KNOWN_GAPS.get(name, {})
 
         only_xml    = sorted(want - got)
         only_record = sorted(got - want)
-        unexplained = [r for r in only_xml if r not in known] + only_record
-        stale       = [r for r in known if r not in only_xml]
+        unexplained = [r for r in only_xml if r[0] not in known] + only_record
+        stale       = [r for r in known if r not in {entry[0] for entry in only_xml}]
 
         if not unexplained and not stale:
             matched += 1
-            for rule_id in only_xml:
+            for rule_id, *_ in only_xml:
                 gaps.append((name, rule_id, known[rule_id]))
         else:
             mismatched += 1
             diffs.append((name, unexplained, stale))
+
+    # 表に挙げたまま fixture が消えると、永久に反証されない言い訳が残る。
+    missing = sorted({*_KNOWN_GAPS, *_REFUSED} - {str(p.relative_to(_HERE)) for p in fixtures})
 
     print(f"\n[record parity] Matched: {matched}   "
           f"Mismatched: {RED if mismatched else GREEN}{mismatched}{END}")
@@ -168,6 +214,12 @@ def main():
         print(f"  既知の差 {len(gaps)} 件（v3 が XML を表現しきれない箇所）:")
         for name, rule_id, why in gaps:
             print(f"    {rule_id} @ {name}\n      {why}")
+    if refused:
+        print(f"  reader が断った {len(refused)} 件:")
+        for name, why in refused:
+            print(f"    {name} — {why}")
+    if skipped:
+        print(f"  比較できなかった fixture {len(skipped)} 件（XML から model を組めない）: {skipped}")
 
     for name, unexplained, stale in diffs:
         print(f"  [{RED}MISMATCH{END}] {name}")
@@ -176,7 +228,16 @@ def main():
         if stale:
             print(f"      _KNOWN_GAPS に挙がっているのに差が出ない（埋まった？表から消す）: {stale}")
 
-    return 1 if mismatched else 0
+    if missing:
+        print(f"  [{RED}STALE{END}] 存在しない fixture が表に残っている（消すか直す）: {missing}")
+
+    # 1 件も比較していないのに緑を返さない。fixture が読めなくなった / glob が
+    # 壊れたときに「全部一致」と言うのが、このテストが防ぐはずの失敗そのもの。
+    if not matched:
+        print(f"  [{RED}FAIL{END}] 比較できた fixture が 1 件もありません")
+        return 1
+
+    return 1 if (mismatched or missing) else 0
 
 
 if __name__ == "__main__":
