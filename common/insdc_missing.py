@@ -52,6 +52,21 @@ def is_valid_reporting_term(v):
     return bool(v) and v.strip().lower() in _REPORTING
 
 
+# 空白を除去した reporting term 集合（"missing:humanidentifiable" 形）。
+# スペースだけの差を吸収した照合に使う。
+_REPORTING_NS = {re.sub(r"\s+", "", t.lower()) for t in _REPORTING}
+
+
+def is_reporting_term_normalizable(v):
+    """v が「空白を補えば有効な "missing: <reporting term>" になる」値なら True。
+
+    例: "missing:human-identifiable"（コロン後スペース無し）→ True。
+    これは R0001 の autofix（normalize_null）が正規表記へ直せる値と一致する。
+    完全に無効な term（"missing" 単独 / "missing: 無効語" / "missing:"）は False。
+    """
+    return bool(v) and re.sub(r"\s+", "", v.strip().lower()) in _REPORTING_NS
+
+
 def normalize_null(val, null_accepted, null_not_recommended, date_or_geo):
     """missing 値の表記揺れ/非推奨値を正規表記へ補正した値を返す（不要なら None）。Ruby rule:1 準拠。
     biosample R0001（必須属性の missing 値正規化）で使用。null_accepted / null_not_recommended は呼び出し側から渡す。
