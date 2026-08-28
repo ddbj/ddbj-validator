@@ -228,6 +228,38 @@ NCBI_API_EMAIL=あなたのメールアドレス
   - 注: `-j` の意味はサブコマンドで異なります。**`ddbj` のみ `-j` は並列数**（JSON は `--json`）。
     それ以外（`bioproject`/`biosample`/`dra`/`gea`/`metabobank`）は **`-j`/`--json` が JSON 出力**です。
 
+## Web API（`apps/webapi`）
+
+`POST /validation` にアップロードして非同期に検証し、`GET /validation/{uuid}/status` で
+状態を、`GET /validation/{uuid}` で結果を取ります。**どの validator を動かすかは
+アップロードのフィールド名（ロール）で決まります**。
+
+| ロール | 中身 |
+|---|---|
+| `biosample` | BioSample XML（`.xml`）または TSV |
+| `bioproject` | BioProject XML |
+| `dra_submission` / `dra_experiment` / `dra_run` / `dra_analysis` | DRA XML |
+| `gea_idf` / `gea_sdrf`、`metabobank_idf` / `metabobank_sdrf` | IDF / SDRF |
+| `ddbj_record` | DDBJ Record（v3 JSON） |
+
+同時に送れるフォームフィールド:
+
+| フィールド | 対象 | 意味 |
+|---|---|---|
+| `submitter_id` | 全部 | 権限系ルールが使う account。内部 DB モードでのみ効きます |
+| `submission_id` | 全部 | 自分自身を除外するために使う（`BP_R0004` / `BS_R0091`）。`record_db` と接頭辞が食い違えば 400 |
+| `package` | `biosample` の XML / TSV | TSV の package。**`ddbj_record` と併用すると 400**（record は sample ごとに package を持つため） |
+| `record_db` | `ddbj_record` | `bioproject` / `biosample`。省略時は record の top-level から推測 |
+
+**`ddbj_record` だけはロールで validator が決まりません。** DDBJ Record は 1 ドキュメントに
+project と samples を同居させられるためで、`record_db` で指定します。省略した場合は
+top-level を見て決めますが、同居していると決められないので断ります。指定すると振り分けの
+ために全文をパースしなくて済むので、サンプル数の多い record では指定するほうが軽くなります。
+
+受付時に分かる入力の誤り（未知の `record_db`、ロールと合わないフィールド）は `400` で
+返します。ファイルを読んで初めて分かる誤りは `202` のあと `GET /validation/{uuid}` の
+`404`＋本文で返ります。
+
 ## BioProject（`bioproject`）
 
 BioProject 登録データ（XML または DDBJ Record）を検証します。
@@ -253,12 +285,22 @@ BioSample と同じ考え方で、`record_reader` が XML と同じ内部モデ�
   入力エラーとして落とします。
 - **`project` と `samples` が同居していても `project` だけを読みます。** 登録は DB ごとに
   行い、BioProject として登録するときに読まれるのは `project` だけなので、片方だけを
-  検証するのが正しい振る舞いです（読まなかったことは stderr に出します）。ただし
-  **スキーマ検証はドキュメント全体にかけます** — 壊れた `samples` を載せた record は
-  「読めるドキュメント」ではないためで、`BP_R0002` はその位置を message に出します。
+  検証するのが正しい振る舞いです。読まなかったことは **`level: info` の結果として
+  レポートに出します**（`validity` にも error/warning 数にも影響しません）。
   web api では**どちらとして検証するかが決まらない**ので、`record_db` フォーム
-  （`bioproject` / `biosample`）で指定してください。省略時は top-level から推測し、
-  同居していれば「推測できない」として断ります。
+  フィールド（`bioproject` / `biosample`）で指定してください。省略時は top-level から
+  推測し、同居していれば「推測できない」として断ります。
+- スキーマ検証はドキュメント全体にかけますが、**担当外（`samples` 側）の違反は
+  `warning`** にします。v3 モデルは `extra="forbid"` なので `samples` 側の独自キー 1 つで
+  ドキュメント全体が invalid になり、それを error にすると BioProject の curator が
+  直せない瑕疵で BioProject の `validity` が false になるためです。
+  なお **`[record]` extra が入っていない環境ではスキーマ検証そのものが動きません**
+  （`_shape_errors` は `project` しか見ないので、壊れた `samples` は何も報告されません）。
+- **同一ドキュメント内の相互参照は解決されません。** `BP_R0021` は locus_tag prefix と
+  BioSample の組を **BioSample DB に問い合わせて**確かめ、`BP_R0022` は accession の形を
+  見ます。同居する sample を `locus_tag_prefix[].biosample_id` から指しても accession は
+  登録後にしか存在しないので通りません。実際にはそういう書き方は起こりません
+  （参照先は必ず登録済み）が、落ちるときは黙って通らず error になります。
 - 語彙は XML と同じ e- 接頭辞付き（`eOther` / `eMonoisolate`）。変換表は置いていません。
 - **v3 が XML を表現しきれず、評価できないルールが 3 つあります。**
   `BP_R0016`（umbrella の member を表す関係が v3 で未確定 — 該当する record では
@@ -309,7 +351,11 @@ XML と同じ内部モデルを組むため、ルールは入力形式を区別�
 
 - **`samples[]` のみを見ます。** `project` が同居していても読みません（BioProject として
   検証したいときは `bioproject` サブコマンド、web api なら `record_db=bioproject`）。
+  読まなかったことは `level: info` の結果としてレポートに出します。
   `samples` が無い record は「指摘ゼロ」ではなく入力エラーとして落とします。
+- BioProject 側と同じく、**スキーマ検証はドキュメント全体にかけ、担当外（`project` 側）の
+  違反は `warning`** にします。`[record]` extra が無ければスキーマ検証は動きません
+  （`_shape_errors` は `samples` しか見ません）。
 - `submission_id` は record が持たないので `-s` で渡します。**省略すると `BS_R0091` が
   そのサブミッション自身の locus_tag_prefix を重複として報告します**（警告を出します）。
   `--account` も同様に record からは取れず、省略すると権限系ルール（`BS_R0006` 等）は動きません。

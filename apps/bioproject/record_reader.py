@@ -29,9 +29,23 @@ v3 → BioProjectRecord の対応:
 **読むのは `project` だけ。** DDBJ Record は 1 ドキュメントに project と samples を
 同居させられるが、登録は DB ごとに行い、BioProject として登録するときに読まれるのは
 project だけ（2026-08-28 の方針決定）。同居していても samples は読まず、読まなかった
-ことを stderr に出す。BioProject のレポートが samples について何も言わないのは XML 入力
-でも同じなので、レポートの意味は変わらない。ただし**スキーマ検証はドキュメント全体に
-かける** — 壊れた samples を載せた record は「読めるドキュメント」ではないため。
+ことを **level=info の結果としてレポートに出す**（stderr は validation.log にしか残らず、
+取得する API が無い）。
+
+スキーマ検証はドキュメント全体にかけるが、**担当外の違反は warning に落とす**
+（`_scoped_schema_errors`）。v3 モデルは `extra='forbid'` なので samples 側の独自キー
+1 つで document 全体が invalid になり、それを error にすると BioProject の curator が
+直せない瑕疵で BioProject の validity が false になる。なお `ddbj_record` が入っていない
+環境ではスキーマ検証そのものが動かず、`_shape_errors` は project しか見ないので、
+**壊れた samples は何も報告されない**。
+
+**同一ドキュメント内の相互参照は解決されない。** `BP_R0021` は locus_tag prefix と
+BioSample の組を **BioSample DB に問い合わせて**確かめ、`BP_R0022` は accession の
+形を見る。同居する samples を `locus_tag_prefix[].biosample_id` から指しても、
+accession は登録後にしか存在しないので通らない（`Invalid BioSample accession` になる）。
+これは仕様どおりで、黙って通るより良い。同居 record を断っていたときの理由がこれで、
+断るのをやめたのは **accession が無い相手を指す書き方がそもそも無い**（参照先は必ず
+登録済み）ため。上の info 結果でその旨を呼び出し側に伝えている。
 
 語彙は XML と同じ e- 接頭辞付き（`eOther` / `eMonoisolate`）。v3 の仕様書は接頭辞なしの
 例を載せているが、実データ（D-way 由来の record 43,021 件）は XML の値をそのまま
@@ -62,6 +76,10 @@ from apps.bioproject.model import BioProjectRecord, BioProjectSubmission, Public
 _SCHEMA_ERR_CAP = 20
 _warned_no_schema = False
 
+# BioProject が読まない側。同居していても検証対象にせず、スキーマ違反も validity へ
+# 算入しない（_scoped_schema_errors）。
+_OUT_OF_SCOPE_KEY = 'samples'
+
 
 # v3 project_type -> モデルの project_kind。
 # 'single_organism'（XML の ProjectTypeTopSingleOrganism）は v3 で表現できない。
@@ -81,11 +99,12 @@ def _format_error(rule_id, message, field=None, detail=None):
     """入力形式そのものの不備（BP_R0001/R0002）を 1 件組む。
 
     **どこがなぜ悪いかを message に畳み込む。** BioProject のレポートには注釈列の
-    channel が無く、JSON も text も id / level / message / target / object しか運ばない
-    （`common.reporter`）。BioSample の reader と同じつもりで anno_cols に置くと、
-    フィールドのパスはどこにも出ずに消える。43,021 件の record に対して
+    channel が無く、JSON も text も id / level / message / target / object / external
+    しか運ばない（`common.reporter`）。BioSample の reader と同じつもりで anno_cols に
+    置くと、フィールドのパスはどこにも出ずに消える。43,021 件の record に対して
     「スキーマ違反です」だけ返ってもどこを直せば良いか分からない。
-    載せ方は BP_R0005 の `(Found: 19)` に揃えてある。
+    括弧で補足を足すのは BP_R0005 の `(Found: 19)` と同じだが、あちらは固定ラベル、
+    こちらはフィールドのパスなので中身の形までは揃わない。
     """
     where = ': '.join(x for x in (field, detail) if x)
     return {
@@ -210,9 +229,46 @@ def _schema_validate(record):
     try:
         DdbjRecord.model_validate(record)
     except ValidationError as e:
-        return [_schema_error('.'.join(str(x) for x in err['loc']), err['msg'])
-                for err in e.errors()[:_SCHEMA_ERR_CAP]]
+        return _scoped_schema_errors(e.errors())
     return []
+
+
+def _scoped_schema_errors(errors):
+    """スキーマ違反を「BioProject が読む側」と「そうでない側」に分ける。
+
+    v3 モデルは `extra='forbid'` なので、**samples 側に producer 独自のキーが 1 つ
+    あるだけで document 全体が invalid になる**。それを BP_R0002 の error として出すと、
+    BioProject としては何の問題も無い record が、BioProject の curator には直しようの
+    無い BioSample 側の瑕疵で `validity: false` になる。登録を DB ごとに行うという
+    前提と食い違うので、**担当外は warning に落として validity を動かさない**。
+    黙らせはしない — 読まないことと、壊れていて良いことは別。
+
+    上限も別々にかける。pydantic はモデルのフィールド順に返し `project` は `samples`
+    より先なので、まとめて 20 件で切ると project 側の瑕疵 20 件で samples 側の違反が
+    1 件も出ない、が起きる（逆向きは BioSample 側で同じことになる）。
+    切ったときは切ったと言う。
+    """
+    mine, theirs = [], []
+    for err in errors:
+        dest = theirs if tuple(err['loc'][:1]) == (_OUT_OF_SCOPE_KEY,) else mine
+        dest.append(('.'.join(str(x) for x in err['loc']), err['msg']))
+
+    out = [_schema_error(field, detail) for field, detail in mine[:_SCHEMA_ERR_CAP]]
+    if len(mine) > _SCHEMA_ERR_CAP:
+        out.append(_format_error(
+            'BP_R0002', 'Record is invalid against the DDBJ Record v3 schema.',
+            detail=f'{len(mine) - _SCHEMA_ERR_CAP} further violation(s) not listed'))
+    if theirs:
+        shown = '; '.join(f'{field}: {detail}' for field, detail in theirs[:3])
+        more  = f' (+{len(theirs) - 3} more)' if len(theirs) > 3 else ''
+        out.append({
+            'rule_id': 'BP_R0002', 'level': 'warning', 'target': '#out_of_scope',
+            'sample': None,
+            'message': 'The DDBJ Record is invalid against the v3 schema outside the '
+                       f'BioProject scope, under \'{_OUT_OF_SCOPE_KEY}\'. '
+                       f'It is not validated here. ({shown}{more})',
+        })
+    return out
 
 
 def _text(value):
@@ -328,16 +384,6 @@ def parse_record(record_path, account=None):
     if not isinstance(record, dict):
         return None, [_format_error('BP_R0001', 'JSON document is not a DDBJ Record object.')]
 
-    samples = record.get('samples')
-    if samples:
-        # 同居していても project だけを読む。DDBJ Record は複数 DB を 1 ドキュメントに
-        # 書けるが、登録は DB ごとに行い、BioProject として登録するときに読まれるのは
-        # project だけ（2026-08-28 の方針決定）。BioProject のレポートが samples に
-        # ついて何も言わないのは XML 入力でも同じで、レポートの意味は変わらない。
-        count = len(samples) if isinstance(samples, list) else '?'
-        print(f'[INFO] この record は samples を {count} 件持っていますが、BioProject の'
-              '検証対象ではないので読みません。', file=sys.stderr)
-
     shape_errors = _shape_errors(record)
     if shape_errors:
         return None, shape_errors
@@ -346,6 +392,29 @@ def parse_record(record_path, account=None):
     project = record.get('project')
     records = [_build_record(project)] if isinstance(project, dict) else []
 
+    samples = record.get(_OUT_OF_SCOPE_KEY)
+    if samples:
+        # 読まなかったことを**レポートに**出す。stderr は validation.log にしか残らず、
+        # それを取れる API が無い（`get_file` の filetype は `^[a-z][a-z_]*$`）ので、
+        # web 経由の呼び出し側から見ると「指摘ゼロの綺麗なレポート」と区別が付かない。
+        # BP_R0016 の info と同じ扱い（level=info は validity にも error/warning 数にも
+        # 影響しない。common/reporter.py）。
+        count = len(samples) if isinstance(samples, list) else None
+        shown = f'{count} sample(s)' if count is not None else 'samples'
+        errors.append({
+            'rule_id': 'BP_R0002', 'level': 'info', 'target': '#not_validated',
+            'sample': None,
+            'message': f'This DDBJ Record also carries {shown}. They are not '
+                       'validated here — send the same record to the BioSample validator '
+                       'as well. References from the project into them (locus_tag_prefix'
+                       '.biosample_id) are resolved against the registered BioSample '
+                       'database, not against this document, so a reference to a sample '
+                       'that has no accession yet is reported as invalid (BP_R0021 / '
+                       'BP_R0022).',
+        })
+        print(f'[INFO] この record は samples を{f" {count} 件" if count is not None else ""}'
+              '持っていますが、BioProject の検証対象ではないので読みません。', file=sys.stderr)
+
     if records and records[0].project_kind == 'umbrella':
         # 「評価できなかった」をレポートに出す。level=info は validity にも
         # error/warning 数にも影響せず messages に載る（common/reporter.py）ので、
@@ -353,7 +422,7 @@ def parse_record(record_path, account=None):
         # stderr だけだと validation.log にしか残らず、取得する API が無い。
         errors.append({
             'rule_id': 'BP_R0016', 'level': 'info', 'target': '#not_evaluated',
-            'sample': records[0].label, 'input_format': 'record',
+            'sample': records[0].label,
             'message': 'Umbrella membership is not expressed in DDBJ Record v3, '
                        'so this rule could not be evaluated for this input.',
         })
