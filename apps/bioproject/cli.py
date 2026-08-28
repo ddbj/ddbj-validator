@@ -131,12 +131,7 @@ def run(args):
     context.self_submission_id = submission_id   # BP_R0004 の自己除外にも使う
 
     if is_record:
-        try:
-            submission, pre_errors = record_reader.parse_record(str(in_path), account=account)
-        except record_reader.Unsupported as e:
-            # レポートを書かずに落とす。書くと「検証して問題なし」に見える。
-            print(f"[ERROR] {e}", file=sys.stderr)
-            return 2
+        submission, pre_errors = record_reader.parse_record(str(in_path), account=account)
     else:
         submission, pre_errors = xml_reader.parse_xml(str(in_path), account=account)
     out_dir = args.out_dir or str(in_path.parent)

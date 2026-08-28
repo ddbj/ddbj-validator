@@ -26,6 +26,13 @@ v3 → BioProjectRecord の対応:
     project.target.data_types
       ＋ .data_type_descriptions          -> data_entries [{type, text}]
 
+**読むのは `project` だけ。** DDBJ Record は 1 ドキュメントに project と samples を
+同居させられるが、登録は DB ごとに行い、BioProject として登録するときに読まれるのは
+project だけ（2026-08-28 の方針決定）。同居していても samples は読まず、読まなかった
+ことを stderr に出す。BioProject のレポートが samples について何も言わないのは XML 入力
+でも同じなので、レポートの意味は変わらない。ただし**スキーマ検証はドキュメント全体に
+かける** — 壊れた samples を載せた record は「読めるドキュメント」ではないため。
+
 語彙は XML と同じ e- 接頭辞付き（`eOther` / `eMonoisolate`）。v3 の仕様書は接頭辞なしの
 例を載せているが、実データ（D-way 由来の record 43,021 件）は XML の値をそのまま
 持っており、ルール側も e- 付きで比較している。変換表は置かない — 置くと、仕様書どおりの
@@ -56,15 +63,6 @@ _SCHEMA_ERR_CAP = 20
 _warned_no_schema = False
 
 
-class Unsupported(Exception):
-    """検証できないものを「検証して問題なし」として返さないための拒否。
-
-    レポートを書かずに終える。レポートが無ければ web api も「検証は成立していない」と
-    扱う（runner.run_validation）。中途半端に検証して validity: true を返すより、
-    何も返さないほうが嘘が少ない。
-    """
-
-
 # v3 project_type -> モデルの project_kind。
 # 'single_organism'（XML の ProjectTypeTopSingleOrganism）は v3 で表現できない。
 _PROJECT_KIND = {
@@ -82,16 +80,18 @@ _PUBLICATION_DB_TYPE = {
 def _format_error(rule_id, message, field=None, detail=None):
     """入力形式そのものの不備（BP_R0001/R0002）を 1 件組む。
 
-    どこがなぜ悪いかは message でなく anno_cols に置く。XML 入力では XSD の
-    行番号が message に埋め込まれていて、そこから先へ運べていない。
+    **どこがなぜ悪いかを message に畳み込む。** BioProject のレポートには注釈列の
+    channel が無く、JSON も text も id / level / message / target / object しか運ばない
+    （`common.reporter`）。BioSample の reader と同じつもりで anno_cols に置くと、
+    フィールドのパスはどこにも出ずに消える。43,021 件の record に対して
+    「スキーマ違反です」だけ返ってもどこを直せば良いか分からない。
+    載せ方は BP_R0005 の `(Found: 19)` に揃えてある。
     """
+    where = ': '.join(x for x in (field, detail) if x)
     return {
         'rule_id': rule_id, 'level': 'error', 'target': '#file_format',
-        'sample': None, 'message': message, 'input_format': 'record',
-        'anno_cols': [c for c in (
-            {'key': 'Field', 'value': field} if field else None,
-            {'key': 'Message', 'value': detail or message},
-        ) if c],
+        'sample': None,
+        'message': f'{message} ({where})' if where else message,
     }
 
 
@@ -328,12 +328,15 @@ def parse_record(record_path, account=None):
     if not isinstance(record, dict):
         return None, [_format_error('BP_R0001', 'JSON document is not a DDBJ Record object.')]
 
-    if record.get('samples'):
-        raise Unsupported(
-            'project と samples が同居する DDBJ Record には未対応です。'
-            'BP_R0021（locus_tag prefix と BioSample の組）等は参照先を登録済み DB に '
-            '問い合わせて確かめるため、同一 record 内の未登録の相手を解決できません。'
-            'project だけを検証して validity: true を返すと samples を検証したように読めます。')
+    samples = record.get('samples')
+    if samples:
+        # 同居していても project だけを読む。DDBJ Record は複数 DB を 1 ドキュメントに
+        # 書けるが、登録は DB ごとに行い、BioProject として登録するときに読まれるのは
+        # project だけ（2026-08-28 の方針決定）。BioProject のレポートが samples に
+        # ついて何も言わないのは XML 入力でも同じで、レポートの意味は変わらない。
+        count = len(samples) if isinstance(samples, list) else '?'
+        print(f'[INFO] この record は samples を {count} 件持っていますが、BioProject の'
+              '検証対象ではないので読みません。', file=sys.stderr)
 
     shape_errors = _shape_errors(record)
     if shape_errors:
