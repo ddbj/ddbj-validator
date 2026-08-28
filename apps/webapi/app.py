@@ -236,6 +236,10 @@ async def create_validation(
     submitter_id: str = Form(None),
     submission_id: str = Form(None),
     package: str = Form(None),
+    # ddbj_record 専用。1 ファイルに複数 DB が同居し得るので、どの DB として検証するかを
+    # 呼び出し側が指定する（省略時は top-level から推測。runner._plan_record）。
+    # 名前が record_db なのは、この file 内の「db モード」（MODE_FLAG_DB）と別物だから。
+    record_db: str = Form(None),
 ):
     uploads = {
         "biosample": biosample, "bioproject": bioproject,
@@ -243,7 +247,8 @@ async def create_validation(
         "dra_run": dra_run, "dra_analysis": dra_analysis,
         "gea_idf": gea_idf, "gea_sdrf": gea_sdrf,
         "metabobank_idf": metabobank_idf, "metabobank_sdrf": metabobank_sdrf,
-        # DDBJ Record（v3 JSON）は DB 別でなく形式で 1 ロール。中身を見て振り分ける（runner._plan_record）。
+        # DDBJ Record（v3 JSON）は DB 別でなく形式で 1 ロール。record_db フォームか、
+        # 無ければ中身を見て振り分ける（runner._plan_record）。
         "ddbj_record": ddbj_record,
     }
     uploads = {r: f for r, f in uploads.items() if f is not None}
@@ -269,7 +274,7 @@ async def create_validation(
         return _err(f"検証を受け付けられません（保存先エラー）: {e}.{hint}", 503)
 
     params = {"account": submitter_id, "submission_id": submission_id,
-              "package": package, "start_time": start}   # mode は db 固定（引数で受けない）
+              "package": package, "record_db": record_db, "start_time": start}   # mode は db 固定（引数で受けない）
     background.add_task(runner.run_validation, rdir, saved, params)
 
     return {"uuid": uuid, "status": run_event.ACCEPTED, "start_time": start}

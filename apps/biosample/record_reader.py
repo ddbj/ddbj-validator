@@ -18,6 +18,11 @@ v3 → BioSampleRecord の対応:
     samples[].package                -> package
     samples[].attributes[]           -> attributes（同名は XML と同じくリストで保持）
 
+**読むのは `samples[]` だけ。** DDBJ Record は 1 ドキュメントに project と samples を
+同居させられるが、登録は DB ごとに行い、BioSample として登録するときに読まれるのは
+samples だけ（2026-08-28 の方針決定）。同居していても project は読まず、読まなかった
+ことを stderr に出す。スキーマ検証はドキュメント全体にかける。
+
 typed slot を先に見るのは xml_reader と揃えるためで、`alias` は v3 における
 サンプルの識別子でもある（正規化のキー、公開 XML の突合キー）。属性バッグを
 先に見ると、typed slot だけが更新されたサンプルで、どこにも表示されない値を
@@ -56,15 +61,6 @@ from apps.biosample.model import BioSampleRecord, BioSampleSubmission
 
 _SCHEMA_ERR_CAP = 20   # スキーマエラーは大量に出るため上限（xml_reader と同じ）
 _warned_no_schema = False
-
-
-class Unsupported(Exception):
-    """検証できないものを「検証して問題なし」として返さないための拒否。
-
-    レポートを書かずに終える。レポートが無ければ web api も「検証は成立していない」と
-    扱う（runner.run_validation）。中途半端に検証して validity: true を返すより、
-    何も返さないほうが嘘が少ない。
-    """
 
 
 def _format_error(rule_id, message, field=None, detail=None):
@@ -285,11 +281,11 @@ def parse_record(record_path, submission_id=None, account=None):
     # 部分（未知のキー等）は報告したうえで検証は続ける。触る部分は _shape_errors が
     # 全て見ているので、続けても落ちない。
     if record.get('project'):
-        raise Unsupported(
-            'project と samples が同居する DDBJ Record には未対応です。'
-            'BS_R0006（bioproject_id の所属）等は参照先を登録済み DB に問い合わせて '
-            '確かめるため、同一 record 内の未登録の相手を解決できません。'
-            'samples だけを検証して validity: true を返すと project を検証したように読めます。')
+        # 同居していても samples だけを読む。DDBJ Record は複数 DB を 1 ドキュメントに
+        # 書けるが、登録は DB ごとに行い、BioSample として登録するときに読まれるのは
+        # samples だけ（2026-08-28 の方針決定）。
+        print('[INFO] この record は project を持っていますが、BioSample の検証対象では'
+              'ないので読みません。', file=sys.stderr)
 
     shape_errors = _shape_errors(record)
     if shape_errors:

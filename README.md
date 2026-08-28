@@ -251,12 +251,14 @@ BioSample と同じ考え方で、`record_reader` が XML と同じ内部モデ�
 
 - **`project` のみを見ます。** `project` が無い record は「指摘ゼロ」ではなく
   入力エラーとして落とします。
-- **`project` と `samples` が同居する record は断ります**（CLI・web api とも）。
-  `BP_R0021`（locus_tag prefix と BioSample の組）や `BS_R0006`（bioproject_id の所属）は
-  参照先を**登録済み DB に問い合わせて**確かめるため、同一 record 内のまだ登録されていない
-  相手を解決できません。片方だけ検証して `validity: true` を返すと、もう片方も検証したように
-  読めてしまいます。レポートを書かずに終了するので、web api 側も「検証は成立していない」と
-  扱います。
+- **`project` と `samples` が同居していても `project` だけを読みます。** 登録は DB ごとに
+  行い、BioProject として登録するときに読まれるのは `project` だけなので、片方だけを
+  検証するのが正しい振る舞いです（読まなかったことは stderr に出します）。ただし
+  **スキーマ検証はドキュメント全体にかけます** — 壊れた `samples` を載せた record は
+  「読めるドキュメント」ではないためで、`BP_R0002` はその位置を message に出します。
+  web api では**どちらとして検証するかが決まらない**ので、`record_db` フォーム
+  （`bioproject` / `biosample`）で指定してください。省略時は top-level から推測し、
+  同居していれば「推測できない」として断ります。
 - 語彙は XML と同じ e- 接頭辞付き（`eOther` / `eMonoisolate`）。変換表は置いていません。
 - **v3 が XML を表現しきれず、評価できないルールが 3 つあります。**
   `BP_R0016`（umbrella の member を表す関係が v3 で未確定 — 該当する record では
@@ -305,7 +307,8 @@ XML と同じ内部モデルを組むため、ルールは入力形式を区別�
 対応関係と、v3 に無いために呼び出し側から渡す必要があるものは `apps/biosample/record_reader.py`
 の docstring にまとめてあります。要点:
 
-- **`samples[]` のみを見ます。** `project` などが同居していても検証しません（BioProject は今後対応）。
+- **`samples[]` のみを見ます。** `project` が同居していても読みません（BioProject として
+  検証したいときは `bioproject` サブコマンド、web api なら `record_db=bioproject`）。
   `samples` が無い record は「指摘ゼロ」ではなく入力エラーとして落とします。
 - `submission_id` は record が持たないので `-s` で渡します。**省略すると `BS_R0091` が
   そのサブミッション自身の locus_tag_prefix を重複として報告します**（警告を出します）。

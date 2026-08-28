@@ -50,9 +50,6 @@ _KNOWN_GAPS = {
     },
 }
 
-# record_reader が断る fixture（project と samples の同居など）。素通りさせず理由付きで列挙する。
-_REFUSED = {}
-
 _PROJECT_TYPE = {"submission": "primary", "umbrella": "umbrella"}
 _DB_TYPE_KEY  = {"ePubmed": "pubmed_id", "eDOI": "doi"}
 
@@ -157,7 +154,7 @@ def main():
     fixtures = sorted(p for d in _HERE.iterdir() if d.is_dir() and d.name.startswith("BP_R")
                       for p in d.glob("*.xml"))
     matched = mismatched = 0
-    diffs, gaps, refused, skipped = [], [], [], []
+    diffs, gaps, skipped = [], [], []
 
     for xml_path in fixtures:
         name = str(xml_path.relative_to(_HERE))
@@ -175,15 +172,6 @@ def main():
                 json.dump(_to_record(submission), f, ensure_ascii=False)
                 record_path = f.name
             got_submission, got_pre = record_reader.parse_record(record_path)
-        except record_reader.Unsupported as e:
-            why = _REFUSED.get(name)
-            if why:
-                refused.append((name, why))
-                matched += 1
-            else:
-                mismatched += 1
-                diffs.append((name, [f"reader が断った: {e}"], []))
-            continue
         finally:
             if record_path:
                 Path(record_path).unlink(missing_ok=True)
@@ -205,7 +193,7 @@ def main():
             diffs.append((name, unexplained, stale))
 
     # 表に挙げたまま fixture が消えると、永久に反証されない言い訳が残る。
-    missing = sorted({*_KNOWN_GAPS, *_REFUSED} - {str(p.relative_to(_HERE)) for p in fixtures})
+    missing = sorted(set(_KNOWN_GAPS) - {str(p.relative_to(_HERE)) for p in fixtures})
 
     print(f"\n[record parity] Matched: {matched}   "
           f"Mismatched: {RED if mismatched else GREEN}{mismatched}{END}")
@@ -214,10 +202,6 @@ def main():
         print(f"  既知の差 {len(gaps)} 件（v3 が XML を表現しきれない箇所）:")
         for name, rule_id, why in gaps:
             print(f"    {rule_id} @ {name}\n      {why}")
-    if refused:
-        print(f"  reader が断った {len(refused)} 件:")
-        for name, why in refused:
-            print(f"    {name} — {why}")
     if skipped:
         print(f"  比較できなかった fixture {len(skipped)} 件（XML から model を組めない）: {skipped}")
 

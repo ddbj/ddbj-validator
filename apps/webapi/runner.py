@@ -90,22 +90,41 @@ def plan(saved, params):
     return None
 
 
+# DDBJ Record を「どの validator に渡すか」を呼び出し側が指定するときの値と、
+# 指定が無いときに record の top-level から推測するためのキー。
+_RECORD_DB = {"bioproject": "project", "biosample": "samples"}
+
+
 def _plan_record(path, params):
     """DDBJ Record（v3 JSON）の振り分け。
 
     Record は 1 ファイルに project / samples / experiments … が同居し得るので、他ロールと
-    違って「そのファイルがある＝この validator」とは決まらない。中身の top-level を見て決める。
+    違って「そのファイルがある＝この validator」とは決まらない。`record_db` で指定して
+    もらうのが本筋で、無ければ top-level から推測する。
 
-    **project と samples が同居する record は断る。** 断る理由は「対応が面倒だから」では
-    ない。BP_R0021（locus_tag prefix と BioSample の組）や BS_R0006（bioproject_id の所属）は
-    参照先を**登録済みの DB に問い合わせて**確かめる。同一ドキュメント内のまだ登録されて
-    いない相手は見つからないので、両方の validator が正しく動いた上で両方間違った答えを
-    出す。レポートをマージしても解けない。ルールが「まずドキュメント内、無ければ DB」を
-    見る形になる必要がある。
+    **同居する record 自体は不正ではない。** 登録は DB ごとに行い、BioProject として登録
+    するときに読まれるのは project、BioSample として登録するときは samples だけなので、
+    片方だけを検証するのは正しい振る舞いになる。不正なのは「どちらとして検証するのか
+    分からないまま片方を選ぶ」ことだけで、それは `record_db` があれば起きない。
+    """
+    db = (params.get("record_db") or "").strip().lower()
+    if db and db not in _RECORD_DB:
+        raise ValueError(
+            f"record_db に指定できるのは {' / '.join(sorted(_RECORD_DB))} です: {db!r}")
+
+    args = [db or _sniff_record_db(path), "-r", str(path)]
+    if params.get("submission_id"):
+        # BP_R0004 の自己除外・BS_R0091 の自己重複除外に使う。record は submission id を
+        # 持たず、web api の一時ファイル名も PSUB / SSUB を含まない（CLI はファイル名から拾う）。
+        args += ["-s", params["submission_id"]]
+    return args
+
+
+def _sniff_record_db(path):
+    """`record_db` 指定が無いときだけ、record の top-level から DB を決める。
 
     top-level を知るためだけに全文をパースしている。10 万 sample の record では数百 MB の
-    一時オブジェクトが web プロセスに載る。呼び出し側はどちらか分かっていることが多いので、
-    form に種別のヒントを足せば避けられる（未実装）。
+    一時オブジェクトが web プロセスに載るので、呼び出し側は `record_db` を渡すほうがよい。
     """
     try:
         with open(path, encoding="utf-8") as f:
@@ -122,22 +141,12 @@ def _plan_record(path, params):
 
     if has_project and has_samples:
         raise ValueError(
-            "project と samples が同居する DDBJ Record には未対応です。"
-            "相互参照（BP_R0021 / BS_R0006 等）は登録済み DB を引いて確かめるため、"
-            "同一 record 内の未登録の相手を解決できません。片方ずつ送ってください。")
+            "project と samples が同居する DDBJ Record は、どちらとして検証するのかを "
+            "推測できません。record_db に bioproject / biosample のいずれかを指定してください。")
     if has_project:
-        args = ["bioproject", "-r", str(path)]
-        if params.get("submission_id"):
-            # BP_R0004 の自己除外に使う。BP の CLI はファイル名から PSUB を拾うが、
-            # web api の一時ファイル名は PSUB を含まない。
-            args += ["-s", params["submission_id"]]
-        return args
+        return "bioproject"
     if has_samples:
-        args = ["biosample", "-r", str(path)]
-        if params.get("submission_id"):
-            args += ["-s", params["submission_id"]]
-        return args
-
+        return "biosample"
     raise ValueError("DDBJ Record に project も samples もありません")
 
 
