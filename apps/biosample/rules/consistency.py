@@ -12,7 +12,7 @@ from apps.biosample.rules._util import (
     is_missing_value,
 )
 # missing/null 判定・正規化は common に一本化
-from common.insdc_missing import normalize_null as _normalize_missing_value, is_valid_reporting_term
+from common.insdc_missing import normalize_null as _normalize_missing_value, is_reporting_term_normalizable
 
 
 # strain に使ってはいけない値（case-insensitive）
@@ -180,14 +180,16 @@ class BS_R0137(BsRule):
         # collection_date / geo_loc_name は「実値」または「有効な reporting-level term
         # （cv_terms.missing_reporting_terms＝'missing: xxx'）」のみ許容（ddbj 準拠）。
         # 未入力、missing 系だが有効 reporting term でない（'missing' 単独 / 'missing: 無効語' 等）→ error。
-        # 有効 term 判定は common.insdc_missing.is_valid_reporting_term に一本化。
+        # ただし 'missing:human-identifiable' のように**空白を補えば有効 term になる**値は
+        # R0001 の autofix が正規化するため error にしない（is_reporting_term_normalizable で吸収）。
+        # これにより「スペース差だけの値」に error と autofix warning が二重に出る動線を解消する。
         out = []
         for rec in submission.records:
             for name in self._TARGETS:
                 v = rec.attr(name)
                 if is_empty(v):
                     continue  # 未入力（欠落）は R0027（必須属性欠落）が担当
-                if is_missing_value(v) and not is_valid_reporting_term(v):
+                if is_missing_value(v) and not is_reporting_term_normalizable(v):
                     out.append(self.result(sample=rec.sample_id, target=name,
                                            anno_cols=[{"key": "Attribute names", "value": name}],
                                            message=f"Missing reporting level term for '{name}'. (Found: '{v}')"))
