@@ -21,7 +21,17 @@ v3 → BioSampleRecord の対応:
 **読むのは `samples[]` だけ。** DDBJ Record は 1 ドキュメントに project と samples を
 同居させられるが、登録は DB ごとに行い、BioSample として登録するときに読まれるのは
 samples だけ（2026-08-28 の方針決定）。同居していても project は読まず、読まなかった
-ことを stderr に出す。スキーマ検証はドキュメント全体にかける。
+ことを **level=info の結果としてレポートに出す**（stderr は validation.log にしか残らず、
+取得する API が無い）。
+
+スキーマ検証はドキュメント全体にかけるが、**担当外の違反は warning に落とす**
+（`_scoped_schema_errors`）。なお `ddbj_record` が入っていない環境ではスキーマ検証
+そのものが動かず、`_shape_errors` は samples しか見ないので、壊れた project は
+何も報告されない。
+
+**同一ドキュメント内の相互参照は解決されない。** `BS_R0006`（bioproject_id の所属）は
+登録済みの DB を引くので、同居する project を指しても見つからない。参照先は必ず
+accession で、accession は登録後にしか存在しないため、実際にはこの書き方は起こらない。
 
 typed slot を先に見るのは xml_reader と揃えるためで、`alias` は v3 における
 サンプルの識別子でもある（正規化のキー、公開 XML の突合キー）。属性バッグを
@@ -61,6 +71,10 @@ from apps.biosample.model import BioSampleRecord, BioSampleSubmission
 
 _SCHEMA_ERR_CAP = 20   # スキーマエラーは大量に出るため上限（xml_reader と同じ）
 _warned_no_schema = False
+
+# BioSample が読まない側。同居していても検証対象にせず、スキーマ違反も validity へ
+# 算入しない（_scoped_schema_errors）。
+_OUT_OF_SCOPE_KEY = "project"
 
 
 def _format_error(rule_id, message, field=None, detail=None):
@@ -174,9 +188,43 @@ def _schema_validate(record):
     try:
         DdbjRecord.model_validate(record)
     except ValidationError as e:
-        return [_schema_error(".".join(str(x) for x in err["loc"]), err["msg"])
-                for err in e.errors()[:_SCHEMA_ERR_CAP]]
+        return _scoped_schema_errors(e.errors())
     return []
+
+
+def _scoped_schema_errors(errors):
+    """スキーマ違反を「BioSample が読む側」と「そうでない側」に分ける。
+
+    v3 モデルは `extra='forbid'` なので、**project 側に producer 独自のキーが 1 つ
+    あるだけで document 全体が invalid になる**。それを BS_R0098 の error として出すと、
+    BioSample としては何の問題も無い record が、BioSample の curator には直しようの
+    無い BioProject 側の瑕疵で `validity: false` になる。登録を DB ごとに行うという
+    前提と食い違うので、**担当外は warning に落として validity を動かさない**。
+    黙らせはしない — 読まないことと、壊れていて良いことは別。
+
+    上限も別々にかける。pydantic はモデルのフィールド順に返し `project` は `samples`
+    より先なので、まとめて 20 件で切ると project 側の瑕疵 20 件で samples 側の違反が
+    1 件も出ない、が起きる。切ったときは切ったと言う。
+    """
+    mine, theirs = [], []
+    for err in errors:
+        dest = theirs if tuple(err["loc"][:1]) == (_OUT_OF_SCOPE_KEY,) else mine
+        dest.append((".".join(str(x) for x in err["loc"]), err["msg"]))
+
+    out = [_schema_error(field, detail) for field, detail in mine[:_SCHEMA_ERR_CAP]]
+    if len(mine) > _SCHEMA_ERR_CAP:
+        out.append(_schema_error(None, f"{len(mine) - _SCHEMA_ERR_CAP} further violation(s) "
+                                       "not listed"))
+    if theirs:
+        r = _format_error("BS_R0098", "Record is invalid against the DDBJ Record v3 schema "
+                                      "outside the BioSample scope.",
+                          field=theirs[0][0], detail=theirs[0][1])
+        r["level"]  = "warning"
+        r["target"] = "#out_of_scope"
+        if len(theirs) > 1:
+            r["anno_cols"].append({"key": "Other violations", "value": str(len(theirs) - 1)})
+        out.append(r)
+    return out
 
 
 def _text(value):
@@ -280,18 +328,28 @@ def parse_record(record_path, submission_id=None, account=None):
     # 形が違えばモデルは組めないのでここで止まる。スキーマ違反のうち reader が触らない
     # 部分（未知のキー等）は報告したうえで検証は続ける。触る部分は _shape_errors が
     # 全て見ているので、続けても落ちない。
-    if record.get('project'):
-        # 同居していても samples だけを読む。DDBJ Record は複数 DB を 1 ドキュメントに
-        # 書けるが、登録は DB ごとに行い、BioSample として登録するときに読まれるのは
-        # samples だけ（2026-08-28 の方針決定）。
-        print('[INFO] この record は project を持っていますが、BioSample の検証対象では'
-              'ないので読みません。', file=sys.stderr)
-
     shape_errors = _shape_errors(record)
     if shape_errors:
         return None, shape_errors
 
     errors = _schema_validate(record)
+
+    # 判定は runner._sniff_record_db / BioProject の reader と揃える。truthy で見ると
+    # `{"project": {}}` が「project 無し」になり、web api は「どちらか決められない」と
+    # 断るのに reader は何も言わない、という食い違いが出る。
+    if isinstance(record.get(_OUT_OF_SCOPE_KEY), dict):
+        # 読まなかったことを**レポートに**出す。stderr は validation.log にしか残らず、
+        # それを取れる API が無い（`get_file` の filetype は `^[a-z][a-z_]*$`）ので、
+        # web 経由の呼び出し側から見ると「指摘ゼロの綺麗なレポート」と区別が付かない。
+        # level=info は validity にも error/warning 数にも影響しない（common/reporter.py）。
+        # 文言は reporter._FORMAT_MESSAGES が target ごとに持っている。
+        skipped = _format_error("BS_R0098", "This record also carries a project, which is "
+                                            "not validated here.")
+        skipped["level"]  = "info"
+        skipped["target"] = "#not_validated"
+        errors.append(skipped)
+        print("[INFO] この record は project を持っていますが、BioSample の検証対象では"
+              "ないので読みません。", file=sys.stderr)
 
     global _disagreements
     _disagreements = 0

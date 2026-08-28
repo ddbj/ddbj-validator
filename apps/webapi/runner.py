@@ -90,9 +90,51 @@ def plan(saved, params):
     return None
 
 
-# DDBJ Record を「どの validator に渡すか」を呼び出し側が指定するときの値と、
-# 指定が無いときに record の top-level から推測するためのキー。
-_RECORD_DB = {"bioproject": "project", "biosample": "samples"}
+# DDBJ Record を「どの validator に渡すか」。値は、指定が無いときに top-level から
+# 推測するためのキーでもある（サブコマンド名 -> そのサブコマンドが読む top-level キー）。
+RECORD_DB_KEYS = {"bioproject": "project", "biosample": "samples"}
+
+
+# D-way の submission id 接頭辞。同じ record を DB ごとに 2 回投げるようになったので、
+# 片方の id をもう片方の実行に付けたままにする間違いが現実的になった。
+_SUBMISSION_ID_PREFIX = {"bioproject": "PSUB", "biosample": "SSUB"}
+
+
+def submission_id_mismatch(db, submission_id):
+    """`record_db` と `submission_id` の接頭辞が食い違っていればその説明、無ければ None。
+
+    自分自身を除外するために使う id なので（BP_R0004 / BS_R0091）、他の DB の id を
+    渡すと**除外が効かず、再検証した submission が自分自身と衝突していると報告される**。
+    CLI は id をそのまま受け取るだけで、この食い違いはどこにも現れない。
+
+    接頭辞が既知のものでなければ何も言わない。将来 id の体系が変わったときに、
+    正しい入力を拒む側へ倒れないようにする。
+    """
+    if not db or not submission_id:
+        return None
+    mine   = _SUBMISSION_ID_PREFIX[db]
+    theirs = {p: d for d, p in _SUBMISSION_ID_PREFIX.items() if d != db}
+    for prefix, other_db in theirs.items():
+        if submission_id.upper().startswith(prefix) and not submission_id.upper().startswith(mine):
+            return (f"submission_id {submission_id!r} は {other_db} のものに見えますが "
+                    f"record_db は {db} です。{mine} から始まる id を指定してください。")
+    return None
+
+
+def normalise_record_db(value):
+    """`record_db` フォームの値を正規化する。空/未指定は None、未知の値は ValueError。
+
+    app.py が受付時に呼ぶ。ここで弾かないと、呼び出し側の入力ミスが background task の
+    例外になり、`202 accepted` を返したあとの `404` として届く（本文にしか理由が無く、
+    素朴な client には「知らない uuid」と区別が付かない）。
+    """
+    db = (value or "").strip().lower()
+    if not db:
+        return None
+    if db not in RECORD_DB_KEYS:
+        raise ValueError(
+            f"record_db に指定できるのは {' / '.join(sorted(RECORD_DB_KEYS))} です: {value!r}")
+    return db
 
 
 def _plan_record(path, params):
@@ -107,12 +149,8 @@ def _plan_record(path, params):
     片方だけを検証するのは正しい振る舞いになる。不正なのは「どちらとして検証するのか
     分からないまま片方を選ぶ」ことだけで、それは `record_db` があれば起きない。
     """
-    db = (params.get("record_db") or "").strip().lower()
-    if db and db not in _RECORD_DB:
-        raise ValueError(
-            f"record_db に指定できるのは {' / '.join(sorted(_RECORD_DB))} です: {db!r}")
-
-    args = [db or _sniff_record_db(path), "-r", str(path)]
+    args = [normalise_record_db(params.get("record_db")) or _sniff_record_db(path),
+            "-r", str(path)]
     if params.get("submission_id"):
         # BP_R0004 の自己除外・BS_R0091 の自己重複除外に使う。record は submission id を
         # 持たず、web api の一時ファイル名も PSUB / SSUB を含まない（CLI はファイル名から拾う）。
@@ -125,6 +163,11 @@ def _sniff_record_db(path):
 
     top-level を知るためだけに全文をパースしている。10 万 sample の record では数百 MB の
     一時オブジェクトが web プロセスに載るので、呼び出し側は `record_db` を渡すほうがよい。
+
+    渡すかどうかで**壊れた入力の見え方が変わる**ことに注意。JSON として読めないものを
+    `ddbj_record` として送ると、`record_db` があれば CLI まで届いて BP_R0001 / BS_R0097
+    のレポートになり、無ければここで落ちてレポートの無い `error` になる。推測できない
+    ものは振り分けようが無いので避けられない差で、`record_db` を渡す側が良い。
     """
     try:
         with open(path, encoding="utf-8") as f:
@@ -134,20 +177,24 @@ def _sniff_record_db(path):
     if not isinstance(record, dict):
         raise ValueError("DDBJ Record が JSON オブジェクトではありません")
 
-    # 判定は reader と揃える。`bool()` だと `{"project": {}}` が「project 無し」に
-    # なり、web api は断るのに CLI は全ルールを回す、という食い違いが出る。
-    has_project = isinstance(record.get("project"), dict)
-    has_samples = bool(record.get("samples"))
+    # 判定は両方の reader と揃える。`bool()` だと `{"project": {}}` が「project 無し」に
+    # なり、web api は断るのに reader は何も言わない、という食い違いが出る。
+    present = sorted(db for db, key in RECORD_DB_KEYS.items() if _has(record.get(key)))
 
-    if has_project and has_samples:
+    if len(present) > 1:
         raise ValueError(
-            "project と samples が同居する DDBJ Record は、どちらとして検証するのかを "
-            "推測できません。record_db に bioproject / biosample のいずれかを指定してください。")
-    if has_project:
-        return "bioproject"
-    if has_samples:
-        return "biosample"
-    raise ValueError("DDBJ Record に project も samples もありません")
+            "project と samples が同居する DDBJ Record は、どちらとして検証するのかを"
+            "推測できません。record_db フォームフィールドに "
+            f"{' / '.join(sorted(RECORD_DB_KEYS))} のいずれかを指定してください。")
+    if not present:
+        raise ValueError("DDBJ Record に project も samples もありません")
+    return present[0]
+
+
+def _has(value):
+    """top-level の要素が「在る」か。dict は空でも在る（`{"project": {}}` は project 在り）、
+    list は空なら無い（`{"samples": []}` は 0 件であって samples 無し）。"""
+    return isinstance(value, dict) or bool(value)
 
 
 def _run_failure_message(proc):
