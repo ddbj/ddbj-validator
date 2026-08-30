@@ -56,6 +56,12 @@ def write_json_report(results, out_dir, fname, version, stats_key="input", inclu
         if include_object:
             m["object"] = r.get("sample")
         m["external"] = r.get("external", False)
+        # 行位置（magetab: mb/gea の SDRF 行単位メッセージ）。存在時のみ付与し、
+        # 登録システムの JS が該当行（line）・assay で位置特定/ハイライトできるようにする。
+        # target は IDF / SDRF（＝ファイル種別）を表す。
+        for k in ("line", "assay"):
+            if r.get(k) is not None:
+                m[k] = r[k]
         return m
 
     payload = {

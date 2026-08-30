@@ -176,21 +176,30 @@ class DRA_R0028(DraRule):
 
 
 class DRA_R0029(DraRule):
-    """bam alignment 系列: bam/tab/reference_fasta のうち 2 種以上が Run 内に混在。"""
+    """bam alignment 系列の不正。
+
+    (1) bam 系列（bam/tab/reference_fasta）内で同一 companion が重複（例: bam 2 つ）。
+    (2) bam があるのに bam 系列以外の filetype（fastq 等）と混在（genelab-0011）。
+    """
     rule_id = "DRA_R0029"
     level = "error"
     target = "RUN/FILE"
     description = ("A series of bam alignment files, one bam | one reference mapping table | "
-                  "one reference fasta, must be registered per Run.")
+                  "one reference fasta, must be registered per Run. Other filetypes such as "
+                  "fastq must not be mixed with bam.")
 
     def validate(self, submission, context):
         out = []
         for r in submission.runs:
-            types = [(f.filetype or "") for f in r.files if (f.filetype or "") in _BAM_SERIES]
-            if len(types) >= 2 and len(set(types)) < len(types):
-                # 同一 companion type が重複（例: bam 2 つ）= 系列不正
+            all_types = [(f.filetype or "") for f in r.files if (f.filetype or "")]
+            series = [t for t in all_types if t in _BAM_SERIES]
+            # (1) bam 系列内で同一 companion type が重複（例: bam 2 つ）
+            dup = len(series) >= 2 and len(set(series)) < len(series)
+            # (2) bam があるのに bam 系列（bam/tab/reference_fasta）以外の filetype と混在（fastq 等）
+            mixed = ("bam" in all_types) and any(t not in _BAM_SERIES for t in all_types)
+            if dup or mixed:
                 out.append(self.result(sample=r.label,
-                                       message=f"{self.description} (Found: {types})"))
+                                       message=f"{self.description} (Found: {all_types})"))
         return out
 
 
