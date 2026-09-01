@@ -5478,7 +5478,7 @@
     },
     "protein_id": {
       "max_length": 4000,
-      "format_pattern": "^[A-Z]{3}\\d{5}\\.\\d+$",
+      "format_pattern": "^[A-Z]{3}(\\d{5}|\\d{7})(\\.\\d+)?$",
       "format_rule": {
         "rule_id": "ANN0185",
         "level": "error",
@@ -6010,7 +6010,6 @@
     "partial",
     "phenotype",
     "pop_variant",
-    "protein_id",
     "recombination_class",
     "rpt_unit_range",
     "standard_name",
@@ -6026,6 +6025,7 @@
   ],
   "discouraged_qualifiers": [
     "ff_definition",
+    "protein_id",
     "pseudo",
     "translation",
     "type_material"
