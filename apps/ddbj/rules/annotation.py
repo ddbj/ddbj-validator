@@ -2540,25 +2540,23 @@ class ANN2540(BaseRule):
     def validate(self, record, context):
         results = []
         if record.id == "COMMON": return results
-        
-        acc_pattern = re.compile(r'^[A-Z]{2}\d{6}(?:\.\d+)?$')
-        
+
         for feature in self.get_features(record):
             for tag in feature.qualifiers.get("locus_tag", []):
                 tag_str = str(tag)
-                
+
                 parts = tag_str.split('_', 1)
                 prefix = parts[0]
                 suffix = parts[1] if len(parts) > 1 else ""
-                
+
                 errors = []
-                
+
                 if '.' in tag_str:
                     errors.append(f"Version-like decimal notation is not allowed. (Found: '{tag_str}')")
 
-                if acc_pattern.match(tag_str) or acc_pattern.match(prefix) or (suffix and acc_pattern.match(suffix)):
-                    errors.append(f"Accession-like format (<2 letters><6 digits>) is not allowed. (Found: '{tag_str}')")
-                
+                # accession-like（<2 letters><6 digits>）のチェックは廃止。
+                # locus_tag prefix 本来のフォーマットのみを検証する（acc に似ているかは見ない）。
+
                 is_valid_prefix = (
                     3 <= len(prefix) <= 12 and
                     prefix.isalnum() and

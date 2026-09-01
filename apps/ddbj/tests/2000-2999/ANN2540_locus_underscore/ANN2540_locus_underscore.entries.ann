@@ -24,3 +24,9 @@ seq2	source	1..60	organism	Mus musculus
 			geo_loc_name	Japan:Shizuoka, Mishima
 	gene	1..30	locus_tag	KPSE29_00010
 			note	ANN2540 pass (valid locus_tag)
+seq3	source	1..60	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	gene	1..30	locus_tag	HF329102_00010
+			note	ANN2540 pass (accession-like allowed; acc check removed)
