@@ -8,10 +8,10 @@ SDRF は BioSample の引き写しのため、値不一致ルール（mb=MB_SR00
 -b（biosample_mode）あり時のみ SDRF -> BioSample（[b]）を出す。無ければ BioSample -> SDRF のみ。
 """
 import logging
-import sys
 from pathlib import Path
 
 from common.magetab import biosample as _bs
+from common.prompt import ask as _ask, is_interactive as _is_interactive
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ def review(proposals, force_fix=False, biosample_apply="bs2sdrf", biosample_mode
     if not proposals:
         return proposals
     default = "sdrf2bs" if (biosample_mode and biosample_apply == "sdrf2bs") else "bs2sdrf"
-    if force_fix or not sys.stdin.isatty():
+    if force_fix or not _is_interactive():
         for p in proposals:
             p["direction"] = default
         return proposals
@@ -57,7 +57,7 @@ def review(proposals, force_fix=False, biosample_apply="bs2sdrf", biosample_mode
                 "[i] Interactive, [q] Quit/Skip all? ")
         item_prompt = "[y] BioSample -> SDRF, [n] skip? "
 
-    ans = input(menu).strip().lower()
+    ans = _ask(menu, "q")
     if ans == "a":
         for p in proposals:
             p["direction"] = "bs2sdrf"
@@ -76,9 +76,9 @@ def review(proposals, force_fix=False, biosample_apply="bs2sdrf", biosample_mode
             rep = ps[0]
             first = rep.get("assay") or "-"
             assay_disp = f"{first} etc" if len(ps) > 1 else first
-            k = input(f"\n  {len(ps)} lines:{assay_disp}\n"
-                      f"  {attr} SDRF:'{rep['sdrf_value']}', BioSample:'{rep['bs_value']}'\n"
-                      f"  {item_prompt}").strip().lower()
+            k = _ask(f"\n  {len(ps)} lines:{assay_disp}\n"
+                     f"  {attr} SDRF:'{rep['sdrf_value']}', BioSample:'{rep['bs_value']}'\n"
+                     f"  {item_prompt}", "n")
             d = keymap.get(k, "skip")
             for p in ps:
                 p["direction"] = d

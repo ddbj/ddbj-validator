@@ -1,24 +1,7 @@
-import sys
 from pathlib import Path
 from collections import defaultdict
 
-
-def _is_interactive():
-    """確認プロンプトを出せる状況か（stdin が TTY か）を判定する。"""
-    try:
-        return sys.stdin is not None and sys.stdin.isatty()
-    except (ValueError, AttributeError):
-        # stdin が閉じている／差し替えられている場合は非対話とみなす
-        return False
-
-
-def _ask(prompt, eof_default):
-    """対話プロンプト。EOF (Ctrl-D / stdin 終端) では eof_default を返して落ちないようにする。"""
-    try:
-        return input(prompt).strip().lower()
-    except EOFError:
-        print()
-        return eof_default
+from common.prompt import ask as _ask, is_interactive as _is_interactive
 
 
 def _is_bs_sync(p):
