@@ -223,13 +223,19 @@ class Validator:
                 self.active_rules.append(cross_rule)
                             
     # 引数に ann_lines=None を追加
-    def run(self, records, ann_path=None, seq_path=None, ann_lines=None, fasta_content=None):
+    def run(self, records, ann_path=None, seq_path=None, ann_lines=None, fasta_content=None,
+            fasta_only_records=None):
         all_results = []
+
+        # FASTA にのみ存在する (アノテーション記載の無い) エントリ。
+        # feature が無いためアノテーション系ルールは適用できないが、
+        # 配列単体で判定できる target="sequence" のエントリレベルルールは適用する。
+        fasta_only_records = fasta_only_records or {}
         
         # ==============================================================
         # 事前インデックス構築のフォールバック (パーサーをバイパスした場合の安全網)
         # ==============================================================
-        for record in records.values():
+        for record in list(records.values()) + list(fasta_only_records.values()):
             if record.id == "COMMON": 
                 continue
                 
@@ -278,7 +284,13 @@ class Validator:
                 if 'context' in sig.parameters:
                     kwargs['context'] = self.context
 
-                for entry_id, record in records.items():
+                # 配列単体で判定できるルールのみ FASTA 専用エントリも対象に含める
+                if getattr(rule, 'target', None) == "sequence":
+                    target_records = list(records.items()) + list(fasta_only_records.items())
+                else:
+                    target_records = records.items()
+
+                for entry_id, record in target_records:
                     try:
                         res = rule.validate(record, **kwargs)
                         if res:

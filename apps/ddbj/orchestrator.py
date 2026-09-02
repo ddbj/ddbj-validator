@@ -98,7 +98,7 @@ def _validate_single_file_set(task):
     from apps.ddbj.utils.features import get_features # 追加
     
     ann_lines, fasta_content, pre_warnings = preprocess_files(ann_path, seq_path)
-    records, parse_errors = parse_ddbj_submission(
+    records, parse_errors, fasta_only_records = parse_ddbj_submission(
         fasta_content=fasta_content, 
         ann_path=ann_path, 
         ann_lines=ann_lines, 
@@ -136,7 +136,8 @@ def _validate_single_file_set(task):
                         msg = f"DRR accession is not associated with this account. (Found: '{acc}')"
                         file_results.append({"file": Path(ann_path).name, "full_path": str(ann_path), "rule": "ANN0481", "level": "ERROR", "entry": entry_id, "feature_type": "DBLINK", "target": "sequence read archive", "message": msg, "line_number": getattr(feature, "line_number", None), "category": "auth"})
                         
-    val_results = validator.run(records, ann_path, seq_path, ann_lines=ann_lines, fasta_content=fasta_content)
+    val_results = validator.run(records, ann_path, seq_path, ann_lines=ann_lines,
+                                fasta_content=fasta_content, fasta_only_records=fasta_only_records)
     file_results.extend(val_results)
     
     for res in val_results:
@@ -321,7 +322,7 @@ def _apply_autofix_worker(task):
     from apps.ddbj.parser import parse_ddbj_submission
     
     ann_lines, fasta_content, _ = preprocess_files(ann_path, seq_path)
-    records, _ = parse_ddbj_submission(fasta_content, ann_path, ann_lines, {})
+    records, _, _ = parse_ddbj_submission(fasta_content, ann_path, ann_lines, {})
     
     # -o オプションがあればそこへ。なければ入力ファイルの親へ
     base_out_dir = Path(report_out_dir) if report_out_dir else Path(ann_path).parent
