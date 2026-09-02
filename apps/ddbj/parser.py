@@ -79,9 +79,11 @@ def parse_ddbj_submission(fasta_content, ann_path, ann_lines, ddbj_dict=None):
     # ---------------------------------------------------------
     # 5. 空エントリの削除
     # ---------------------------------------------------------
-    _remove_empty_entries(records)
+    # FASTA にのみ存在するエントリは records から外すが、配列そのものの
+    # チェック (SEQ0090/SEQ5010/SEQ5040/SEQ5050 等) は行えるよう別途返す。
+    fasta_only_records = _remove_empty_entries(records)
 
-    return records, parse_errors
+    return records, parse_errors, fasta_only_records
 
 
 # =========================================================
@@ -540,13 +542,19 @@ def _validate_locations_post_parse(records, parse_errors, ann_path, features_dic
 
 
 def _remove_empty_entries(records):
-    """FASTAにのみ存在し、アノテーション情報が全く無いエントリを安全に削除する"""
+    """FASTAにのみ存在し、アノテーション情報が全く無いエントリを安全に削除する。
+
+    削除したエントリは呼び出し側に返す。アノテーションが無いので feature 依存の
+    ルールは適用できないが、配列単体で判定できるルールの対象にはなる。
+    """
     empty_entries = [
         seq_id for seq_id, record in records.items()
         if seq_id != "COMMON" and len(record.features) == 0
     ]
+    removed = {}
     for seq_id in empty_entries:
-        del records[seq_id]
+        removed[seq_id] = records.pop(seq_id)
+    return removed
 
 
 # =========================================================
