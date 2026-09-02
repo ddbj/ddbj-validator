@@ -16,7 +16,7 @@ from pathlib import Path as FsPath
 from fastapi import BackgroundTasks, FastAPI, File, Form, Path as FPath, Query, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response
 
-from apps.webapi import config, packages, runner
+from apps.webapi import config, definitions, packages, runner
 from common import run_event
 
 logger = logging.getLogger(__name__)
@@ -202,6 +202,20 @@ def attribute_list(package: str = Query(None)):
         return _err(f"Unknown package: '{package}'", 400)
     return {"status": "success", "version": packages.version(), "package": package,
             "attributes": packages.attribute_list(package)}
+
+
+@app.get("/definitions")
+def definitions_list(db: str = Query(None)):
+    """指定 DB の定義 JSON（登録システムがフォームの選択肢の正本として読む）。
+
+    中身は apps/<db>/resources/definitions.json のそのまま。どの版由来かを version / commit で示す。
+    """
+    if not db:
+        return _err(f"'db' parameter is required (available: {', '.join(definitions.DBS)})", 400)
+    if not definitions.has_db(db):
+        return _err(f"Unknown db: '{db}' (available: {', '.join(definitions.DBS)})", 400)
+    return {"status": "success", "db": db, "version": definitions.version(db),
+            "commit": definitions.commit(), "definitions": definitions.definitions(db)}
 
 
 @app.get("/attribute_template_file")

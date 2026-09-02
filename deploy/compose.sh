@@ -22,6 +22,11 @@ if [ -z "${DDBJ_VALIDATOR_TAG}" ]; then
 fi
 export DDBJ_VALIDATOR_TAG
 
+# web イメージに焼く commit（GET /definitions の `commit`）。イメージには .git が入らないので
+# ここで取って build arg として渡す。git が無い/リポジトリ外でも止めない（空なら version だけで運用）。
+DDBJ_COMMIT="$(git -C "$here/.." rev-parse --short HEAD 2>/dev/null || true)"
+export DDBJ_COMMIT
+
 # .env から値を1つ取り出す（値の "" は除去）。
 env_val() { sed -n "s/^$1=//p" "$here/.env" | tr -d '"' | head -1; }
 

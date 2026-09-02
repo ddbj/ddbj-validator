@@ -23,6 +23,12 @@ RUN pip install --no-cache-dir ".[web]"
 # 転送された rootless podman socket（コンテナ内では root:root 0660）も所有者一致で扱えるため、
 # 以前必要だった `useradd -G root web` の group 0 ハックも不要になった。
 
+# 稼働中コードの commit を焼き込む（GET /definitions の `commit`）。.dockerignore で .git を
+# 除いており、イメージ内では git から取れないため。compose.sh が `git rev-parse --short HEAD` を
+# build arg で渡す。未指定なら空で、登録システム側は version だけで運用する。
+ARG DDBJ_COMMIT=""
+ENV DDBJ_COMMIT=${DDBJ_COMMIT}
+
 EXPOSE 8000
 
 # 既定は同一イメージ内の validator を子プロセス起動（DDBJ_VALIDATOR_CMD 未設定時）。
