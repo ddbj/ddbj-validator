@@ -26,7 +26,8 @@ class MB_IR0003(MbRule):
 
 
 class MB_IR0004(MbRule):
-    rule_id = "MB_IR0004"; level = "error"; target = "IDF"
+    # MAGE-TAB は仕様上フィールドを自由に追加できるため warning（mb-rules2.txt）。
+    rule_id = "MB_IR0004"; level = "warning"; target = "IDF"
     description = "Only pre-defined fields are allowed."
 
     def validate(self, sub, context):

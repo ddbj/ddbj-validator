@@ -19,7 +19,8 @@ class Validator:
             # --- SDRF（metadata）---
             S.MB_SR0003(), S.MB_SR0004(), S.MB_SR0005(), S.MB_SR0006(), S.MB_SR0009(),
             S.MB_SR0017(), S.MB_SR0018(), S.MB_SR0019(), S.MB_SR0024(), S.MB_SR0026(),
-            S.MB_SR0030(), S.MB_SR0033(), S.MB_SR0045(), S.MB_SR0046(),
+            S.MB_SR0030(), S.MB_SR0033(), S.MB_SR0034(), S.MB_SR0035(), S.MB_SR0036(),
+            S.MB_SR0037(), S.MB_SR0045(), S.MB_SR0046(),
             # --- cross ---
             C.MB_CR0001(), C.MB_CR0002(), C.MB_CR0003(), C.MB_CR0004(),
             # --- BioSample DB 整合 ---

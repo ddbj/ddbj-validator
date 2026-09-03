@@ -26,6 +26,13 @@ EXPECTED = {
     "MTBKS240": {"MB_IR0018", "MB_IR0024", "MB_IR0037"},
     # 非 ASCII 正規化 autofix ＋ 残存 error の合成ケース（IDF=MB_IR0024 / SDRF=MB_SR0030）。
     "MTBKS_charnorm": {"MB_IR0024", "MB_SR0030", "MB_IR0037"},
+    # MB_SR0003（列名重複）は singleton_columns のみが対象。Unit[...] のような修飾列は
+    # 同名で複数回現れても発火しない（Sample Name の重複だけが検出される）。
+    "MTBKS_dupcol": {"MB_IR0024", "MB_IR0037", "MB_SR0003"},
+    # Protocol REF の type 参照（MB_SR0034/0035）とデータファイル名・ディレクトリ名の
+    # 禁則文字（MB_SR0036/0037）。実データには違反が無いため合成ケースで担保する。
+    "MTBKS_protofile": {"MB_IR0024", "MB_IR0037",
+                        "MB_SR0034", "MB_SR0035", "MB_SR0036", "MB_SR0037"},
 }
 
 
