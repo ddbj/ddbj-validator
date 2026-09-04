@@ -56,6 +56,8 @@ class MB_SR0024(MbRule):
 
 class MB_SR0004(MbRule):
     # required_columns_error は literal な列名（Characteristics[organism] 等）＝完全一致で判定。
+    # submission type によって存在しない列は required_columns_error_exclude で除外する
+    # （例: MSI は imaging のため抽出工程が無く、投稿テンプレートに Extract Name 列が無い）。
     rule_id = "MB_SR0004"; level = "error"; target = "SDRF"
     description = "Missing required column(s)."
 
@@ -63,7 +65,10 @@ class MB_SR0004(MbRule):
         if not sub.sdrf:
             return []
         header = set(sub.sdrf.header)
-        miss = [req for req in _sdrf_def(context).get("required_columns_error", []) if req not in header]
+        st = sub.idf.submission_type if sub.idf else None
+        exclude = set(_sdrf_def(context).get("required_columns_error_exclude", {}).get(st, []))
+        miss = [req for req in _sdrf_def(context).get("required_columns_error", [])
+                if req not in header and req not in exclude]
         return [self.result(message=f"{self.description} ({', '.join(miss)})")] if miss else []
 
 

@@ -1,0 +1,41 @@
+MAGE-TAB Version	1.1
+Comment[MetaboBank accession]	MTBKS212
+Study Title	Imaging of ALC and PI in the bodies of termite queens and workers
+Study Description	To investigate the distribution of 13C-labelled acetyl-L-carnitine and phosphatidylinositol in the bodies of queens and workers.
+
+Experimental Design	organism part comparison design	compound treatment design
+Experimental Factor Name	tissue	treatment
+Experimental Factor Type	tissue	treatment
+
+Person Last Name	Mitaka	Sakamoto
+Person First Name	Yuki	Takumi
+Person Mid Initials
+Person Affiliation	Kyoto University	Hamamatsu University School of Medicine
+Person Roles	submitter	submitter
+
+PubMed ID
+Publication DOI	10.1093/pnasnexus/pgad222
+
+Protocol Name	Sample collection	Preparation	Mass spectrometry	Histology	Data processing	Metabolite identification
+Protocol Type	Sample collection	Preparation	Mass spectrometry	Histology	Data processing	Metabolite identification
+Protocol Description	A queen and randomly selected 10 workers from one colony (colony A) were introduced into each well of a 48-well plate where 13C-labeled cellulose (13C-cellulose; U-13C cellulose from potato [Solanium tuberosum] 97 atom% 13C, IsoLife BV) was pressed together with an appropriate amount of water. They were kept in the dark at room temperature for one week and then collected as 13C-labbeled queens and workers. In addition, as the control for chemical analysis, we collected a queen and workers from another colony (colony I) that had been reared with termite-culturing medium without 13C-cellulose.	The whole body of termites was embedded by SCEM in a cryo mold (Tissue-Tek Cryomol-, Sakura Finetek Japan Co., Ltd) and frozen at -20 °C. The frozen termite sample was then mounted on a sample holder using the OCT compound and sectioned sagittally at 10 µm thickness at -20 °C in a cryostat (CM1950; Leica Biosystems, Wetzlar, Germany). The sections were mounted on glass slides soon (Matsunami, Osaka, Japan) for DESI-MSI analysis.	A quadrupole time-of-flight (Q-TOF) mass spectrometer (Xevo G2-XS Q-TOF, Waters, Milford, MA, USA) linked to a DESI source was used to conduct the DESI-MSI study in both positive and negative ion modes. The sodium formate solution (500 µM) was used in a ratio of 2-propanol: water (90:10, v/v) to calibrate the DESI mass spectra, and leucine enkephalin solution (500 µM) was used for the detector set up before the measurement. The solvent (98:2 methanol/water, v/v) was delivered at a flow rate of 2 µL/minute using a solvent pump (ACQUITY UPLC Binary Solvent Manager, Waters, Milford, MA, USA). To achieve the best signal intensity in the tissue before acquiring data, the DESI source conditions were optimized to capillary voltage of 4.0 kV, a nitrogen gas pressure of 0.4 MPa, an inlet temperature of 120 °C, a spray impact angle of 70°, and a sampling cone of 50 V. The emitter was about 0.5 mm away from the sprayer tip. The distance between the emitter tip-to-sample surface, emitter tip-to-inlet, and inlet-to-sample surface were all about 2, 6, and 0.5 mm, respectively. The identified areas on the glass slide were scanned at a scan rate of 200 µm/sec and pixel size of 100 µm × 100 µm, accordingly. The analyzer mode was set as "sensitivity," whereas mass resolution, mass window, and collision energy were set at 20,000, 0.02 Da, and 4.00 V, respectively. The mass spectra from termite tissues were obtained in a mass range of m/z 100-1,000. For better mass accuracy, lock mass correction was performed using m/z 281.2486 (exact m/z of oleic acid, deprotonated adduct) in negative ion mode and m/z 309.2036 (sodium adduct of diisopropyl sebacate, a common background peak in mass spectrometry) in positive ion mode.	Not applicable	Data not submitted.	Data not submitted.
+Protocol Parameters		Sample mounting;Sample preservation;Tissue modification;Sectioning instrument;Section thickness;Matrix;Matrix application	Scan polarity;Scan m/z range;Instrument;Instrument manufacturer;Ion source;Mass analyzer;Solvent;Target material;Spatial resolution;Pixel size x;Pixel size y;Max count of pixel x;Max count of pixel y;Max dimension x;Max dimension y;Inlet type;Detector;Detector mode;Resolving power;Resolving power m/z;Native spectrum identifier format;Data file content;Spectrum representation;Raw data file format;Instrument software;Instrument software version;Line scan direction;Line scan sequence;Scan pattern;Scan type;Number of scans	Stain	Data processing software;Data processing software version
+Protocol Hardware
+Protocol Software
+
+Public Release Date	2023-07-06
+
+Term Source Name
+Term Source File
+Term Source Version
+
+SDRF File	MTBKS212.sdrf.txt
+
+Comment[Study type]	metabolite target analysis
+Comment[Experiment type]	mass spectrometry imaging
+Comment[Submission type]	MSI
+Comment[BioProject]	PRJDB14286
+Comment[Related study]
+Comment[Contributor]	Takumi Sakamoto, A. S. M. Waliullah, Zinat Tamannaa
+Comment[Submission Date]	2022-10-01
+Comment[Last Update Date]	2023-07-06
