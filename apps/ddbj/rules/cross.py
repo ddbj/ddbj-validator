@@ -5,6 +5,7 @@ from Bio.SeqFeature import CompoundLocation, BeforePosition, AfterPosition
 from Bio.Data import CodonTable
 from Bio.Seq import Seq
 from apps.ddbj.utils.location import get_introns_from_join, get_feature_positions
+from apps.ddbj.utils.features import is_pseudogene
 from apps.ddbj.db_metadata import get_expected_transl_table
 from apps.ddbj.parser import _parse_location_string
 from intervaltree import IntervalTree
@@ -541,7 +542,7 @@ class CDS_TRANSLATION_VALIDATOR(BaseRule):
         default_table_id = get_expected_transl_table(record, context.tax_data)
 
         for feature in self.get_features(record, "CDS"):
-            if "pseudo" in feature.qualifiers or "pseudogene" in feature.qualifiers:
+            if is_pseudogene(feature):
                 continue
 
             # ヘルパー関数で table_id と codon_start を一括取得
