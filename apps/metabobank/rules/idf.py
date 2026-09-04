@@ -1,6 +1,7 @@
 """IDF ルール（MB_IR）。definitions.json の idf.* を data 駆動で参照。"""
 import datetime
 import re
+from common.jst import today as jst_today
 from apps.metabobank.rules.base import MbRule, null_values
 
 _DATE_OK = re.compile(r"^20\d{2}-\d{2}-\d{2}$")
@@ -147,7 +148,8 @@ class MB_IR0033(MbRule):
     def validate(self, sub, context):
         if not sub.idf:
             return []
-        today = datetime.date.today()
+        # 投稿日付は JST。コンテナが UTC だと JST 00:00〜09:00 の間だけ当日が未来日になる
+        today = jst_today()
         out = []
         for f in _DATE_FIELDS:
             v = sub.idf.first(f).strip()
