@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
-from apps.ddbj.utils.features import get_features
+from apps.ddbj.utils.features import get_features, is_pseudogene
 from apps.ddbj.db_metadata import get_expected_transl_table
 from apps.ddbj.autofix.proposal import build_proposal, update_qualifier_action
 
@@ -176,6 +176,10 @@ def propose_transl_table_fixes(records, tax_data, ann_path):
 
                 # 期待値が 1 (標準表) の場合は、システムのデフォルトで処理されるため Autofix の提案をスキップする
                 if table_id == 1:
+                    continue
+
+                # pseudogene は翻訳されないため transl_table は不要（ANN6520 も要求しない）
+                if is_pseudogene(feature):
                     continue
 
                 updates = [{

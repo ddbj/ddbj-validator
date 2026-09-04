@@ -7,6 +7,7 @@ from apps.ddbj.rules.division_datatype import get_active_divisions
 from apps.ddbj.autofix.format import _VALID_METHOD_PATTERN, _FIX_METHOD_PATTERN
 from collections import defaultdict
 from apps.ddbj.utils.location import get_introns_from_join
+from apps.ddbj.utils.features import is_pseudogene
 from common.db_taxonomy import get_expected_transl_table, tax_rank_invalid
 from common.geo import GeoChecker
 from datetime import date
@@ -4742,6 +4743,10 @@ class ANN6520(BaseRule):
             return results
 
         for feature in self.get_features(record, "CDS"):
+            # pseudogene は翻訳されないため transl_table は不要
+            if is_pseudogene(feature):
+                continue
+
             if "transl_table" not in feature.qualifiers:
                 msg = f"{self.description} (Expected: {table_id})"
                 results.append(self.feature_result(record, feature, msg, level="error", qualifier="transl_table"))
