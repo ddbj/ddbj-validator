@@ -2,10 +2,6 @@
 import re
 from apps.metabobank.rules.base import MbRule, null_values
 
-# 複数回出現が許される列（重複エラーの対象外）
-_REPEATABLE = {"Protocol REF", "Raw Data File", "Processed Data File",
-               "Metabolite Assignment File", "Image Data File"}
-
 
 def _sdrf_def(context):
     return (context.definitions or {}).get("sdrf", {})
@@ -39,13 +35,12 @@ class MB_SR0003(MbRule):
     def validate(self, sub, context):
         if not sub.sdrf:
             return []
-        seen, dup = set(), set()
-        for h in sub.sdrf.header:
-            if h in _REPEATABLE:
-                continue
-            if h in seen:
-                dup.add(h)
-            seen.add(h)
+        # 重複を許さないのは singleton_columns に列挙された列だけ（conf の sdrf_singleton_columns 準拠）。
+        # Unit[...] や Comment[...]、Protocol REF 等の修飾列は直前の値列に紐づくため、
+        # 同名で複数回現れるのが MAGE-TAB として正しい。
+        singleton = _sdrf_def(context).get("singleton_columns", [])
+        header = list(sub.sdrf.header)
+        dup = {c for c in singleton if header.count(c) > 1}
         return [self.result(message=f"{self.description} ({', '.join(sorted(dup))})")] if dup else []
 
 
@@ -281,3 +276,133 @@ class MB_SR0045(_SdrfCvBase):
 class MB_SR0046(_SdrfCvBase):
     rule_id = "MB_SR0046"; level = "warning"; target = "SDRF"; _level_key = "warning"
     description = "Value is not in controlled terms."
+
+
+# --- Protocol REF の type 参照チェック（MB_SR0034 / MB_SR0035）------------------
+
+_DATA_FILE_COLUMNS = ("Raw Data File", "Processed Data File", "Metabolite Assignment File")
+
+
+def _protocol_name_to_type(sub):
+    """IDF の Protocol Name -> Protocol Type の対応表。"""
+    if not sub.idf:
+        return {}
+    return {p["Protocol Name"].strip(): (p["Protocol Type"] or "").strip()
+            for p in sub.idf.protocols() if p["Protocol Name"].strip()}
+
+
+def _protocol_types_per_ref_column(sub):
+    """Protocol REF 列ごとに、その列が参照している protocol type の集合を返す。
+
+    戻り値: [(列インデックス, [type, ...]), ...]。IDF で type を引けない値は無視する。
+    """
+    name2type = _protocol_name_to_type(sub)
+    out = []
+    for i in sub.sdrf.col_indices("Protocol REF"):
+        types = set()
+        for row in sub.sdrf.rows:
+            v = (row[i] if i < len(row) else "").strip()
+            t = name2type.get(v)
+            if t:
+                types.add(t)
+        out.append((i, sorted(types)))
+    return out
+
+
+class MB_SR0034(MbRule):
+    rule_id = "MB_SR0034"; level = "error"; target = "SDRF"
+    description = ("More than one protocol type are referenced in Protocol REF. "
+                   "Specify protocol name(s) of single type.")
+
+    def validate(self, sub, context):
+        if not sub.sdrf or not sub.idf:
+            return []
+        out = []
+        for i, types in _protocol_types_per_ref_column(sub):
+            if len(types) > 1:
+                out.append(self.result(
+                    message=f"{self.description} (Protocol REF at column {i + 1}: {', '.join(types)})"))
+        return out
+
+
+class MB_SR0035(MbRule):
+    rule_id = "MB_SR0035"; level = "warning"; target = "SDRF"
+    description = "A protocol type is referenced from different Protocol REF columns."
+
+    def validate(self, sub, context):
+        if not sub.sdrf or not sub.idf:
+            return []
+        # 列ごとの代表 type（ruby と同じく sort uniq の先頭）が複数列で重複していれば warning
+        rep = [types[0] for _, types in _protocol_types_per_ref_column(sub) if types]
+        dup = sorted({t for t in rep if rep.count(t) > 1})
+        if not dup:
+            return []
+        return [self.result(message=f"{self.description} ({', '.join(dup)})")]
+
+
+# --- データファイル名・ディレクトリ名の禁則文字（MB_SR0036 / MB_SR0037）--------
+
+_VALID_FILENAME = re.compile(r"^[-_A-Za-z0-9. ]+$")
+_VALID_DIRNAME = re.compile(r"^[-_A-Za-z0-9./ ]+$")
+
+
+def _data_file_entries(sub):
+    """データファイル列に現れるパスを (パス, 最初の行番号, その行) で返す（重複除去）。"""
+    seen = {}
+    for col in _DATA_FILE_COLUMNS:
+        for i in sub.sdrf.col_indices(col):
+            for r, row in enumerate(sub.sdrf.rows):
+                v = (row[i] if i < len(row) else "").strip()
+                if v and v not in seen:
+                    seen[v] = (r + 1, row)
+    return [(path, line, row) for path, (line, row) in seen.items()]
+
+
+def _split_path(path):
+    """SDRF のデータファイルパスを (ディレクトリ名, ファイル名) に分ける。
+
+    先頭が '/' や './' の絶対・相対指定はファイル名として不正扱い（ruby と同じ）。
+    末尾が '/' のものはディレクトリ指定とみなす。
+    """
+    if re.match(r"^\.?/+", path):
+        return "", path          # 不正な先頭 → ファイル名側で弾く
+    if path.endswith("/"):
+        return path.rstrip("/"), ""
+    if "/" in path:
+        return path.rsplit("/", 1)[0], path.rsplit("/", 1)[1]
+    return "", path
+
+
+class MB_SR0036(MbRule):
+    rule_id = "MB_SR0036"; level = "error"; target = "SDRF"
+    description = ("Invalid character in file name. Use only alphanumerals [A-Z,a-z,0-9], "
+                   "underscores [_], hyphens [-], spaces and dots [.] for file name.")
+
+    def validate(self, sub, context):
+        if not sub.sdrf:
+            return []
+        out = []
+        for path, line, row in _data_file_entries(sub):
+            _, filename = _split_path(path)
+            if filename and not _VALID_FILENAME.fullmatch(filename):
+                out.append(self.result(message=f"{self.description} ('{filename}')",
+                                       assay=_assay(sub, row), line=line))
+        return out
+
+
+class MB_SR0037(MbRule):
+    rule_id = "MB_SR0037"; level = "error"; target = "SDRF"
+    description = ("Invalid character in directory name. Use only alphanumerals [A-Z,a-z,0-9], "
+                   "underscores [_], hyphens [-] and dots [.] for directory name.")
+
+    def validate(self, sub, context):
+        if not sub.sdrf:
+            return []
+        out, seen = [], set()
+        for path, line, row in _data_file_entries(sub):
+            dirname, _ = _split_path(path)
+            if dirname and dirname not in seen and not _VALID_DIRNAME.fullmatch(dirname):
+                seen.add(dirname)
+                out.append(self.result(message=f"{self.description} ('{dirname}')",
+                                       assay=_assay(sub, row), line=line))
+        return out

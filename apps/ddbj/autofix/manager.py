@@ -1,6 +1,8 @@
 from pathlib import Path
 from collections import defaultdict
 
+from common.prompt import ask as _ask, is_interactive as _is_interactive
+
 
 def _is_bs_sync(p):
     """BioSample 値由来の同期提案か（source_db に SAMD アクセッションが入る）。"""
@@ -152,16 +154,20 @@ def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None, b
     summary_text, target_text_blocks, target_dirs = _build_confirmation_summary(all_proposals)
     _write_confirmation_summary(summary_text, out_dir, target_dirs)
 
-    if force_fix:
+    # 非 TTY（パイプ／リダイレクト／CI・Docker の -it 無し）では確認プロンプトを出せないため、
+    # --force-fix と同じ非対話扱いにする（common/magetab/bs_autofix.py と同仕様）。
+    # autofix の書き出し先は <out>/fixed/ のみで入力ファイルは変更しない。
+    if force_fix or not _is_interactive():
+        reason = "--force-fix" if force_fix else "non-interactive"
         # ann2bs（内部/テスト用）: clean bs-sync を ann_wins にし、ann 自体は変更しない
         # （SSUB TSV を ann 値で上書き／追加）。非 bs-sync の autofix は通常どおり適用。
         if biosample_mode and biosample_apply == "ann2bs":
-            print("  => Applying all auto-fixes (--force-fix, biosample: annotation -> BioSample)")
+            print(f"  => Applying all auto-fixes ({reason}, biosample: annotation -> BioSample)")
             for p in all_proposals:
                 if _bs_sync_clean(p):
                     p["bs_decision"] = "ann_wins"
             return [p for p in all_proposals if not _bs_sync_clean(p)]
-        print("  => Applying all auto-fixes (--force-fix)")
+        print(f"  => Applying all auto-fixes ({reason})")
         if biosample_mode:
             for p in all_proposals:
                 if _bs_sync_clean(p):
@@ -170,7 +176,7 @@ def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None, b
 
     # 対話モード（トップメニューは外部ユーザ・-b 共通。ann->BioSample の選択は interactive の対象 target でのみ提示）
     while True:
-        ans = input("\nAction: [a] Apply all auto-fixes, [i] Interactive, [q] Quit/Skip all? ").strip().lower()
+        ans = _ask("\nAction: [a] Apply all auto-fixes, [i] Interactive, [q] Quit/Skip all? ", "q")
         if ans in ('a', 'all'):
             # [a] は BioSample 値で ann を修正（bs_wins）。SSUB TSV は BioSample 現行値のまま。
             if biosample_mode:
@@ -206,9 +212,9 @@ def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None, b
             if addition_only:
                 # ann にしかない値の BioSample への追加。BS→ann 方向は無いので [b]追加/[n]skip の2択。
                 while True:
-                    sub_ans = input(
-                        f"  => [{target}]: [b] add to BioSample, [n] skip? "
-                    ).strip().lower()
+                    sub_ans = _ask(
+                        f"  => [{target}]: [b] add to BioSample, [n] skip? ", "n"
+                    )
                     if sub_ans in ('b',):
                         approved_proposals.extend(non_bs)
                         for p in bs_sync_in_target:
@@ -220,9 +226,9 @@ def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None, b
                         break
                 continue
             while True:
-                sub_ans = input(
-                    f"  => [{target}]: [y] BioSample -> ann, [b] ann -> BioSample, [n] skip? "
-                ).strip().lower()
+                sub_ans = _ask(
+                    f"  => [{target}]: [y] BioSample -> ann, [b] ann -> BioSample, [n] skip? ", "n"
+                )
                 if sub_ans in ('y', 'yes'):
                     approved_proposals.extend(target_proposals)  # ann を BioSample 値で修正
                     for p in bs_sync_in_target:
@@ -241,7 +247,7 @@ def review_and_approve_proposals(all_proposals, force_fix=False, out_dir=None, b
 
         # 通常（外部ユーザ／非 BioSample target）は従来どおり y/n
         while True:
-            sub_ans = input(f"  => Apply auto-fixes for Target [{target}]? (y/n): ").strip().lower()
+            sub_ans = _ask(f"  => Apply auto-fixes for Target [{target}]? (y/n): ", "n")
             if sub_ans in ('y', 'yes'):
                 approved_proposals.extend(target_proposals)
                 break

@@ -124,14 +124,15 @@
         "Protocol Name",
         "Protocol Type",
         "Protocol Description"
-      ],
+      ]
+    },
+    "required_group_warning": {
       "Term Source": [
         "Term Source Name",
         "Term Source File",
         "Term Source Version"
       ]
     },
-    "required_group_warning": [],
     "required_protocol_types": {
       "LC-MS": [
         "Sample collection",
