@@ -10,6 +10,7 @@ import datetime
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from xml.dom import minidom
+from common.jst import today as jst_today
 
 # テスト用固定値（ハーネス/CLI から差し替え可能）
 DEFAULT_FIXED = {
@@ -40,7 +41,8 @@ def parse_filename(tsv_path):
 
 
 def _today():
-    return datetime.date.today().isoformat()
+    # 出力は +09:00 を付けた JST 表記なので、日付も JST で取る（コンテナ TZ に依存させない）
+    return jst_today().isoformat()
 
 
 def tsv_to_xml(tsv_path, fixed=None, package=None, submission_id=None):

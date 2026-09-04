@@ -14,6 +14,7 @@ from apps.biosample.rules._util import is_missing_value
 # collection_date の形式判定・autofix は ddbj と共通（共有属性は ddbj v に倣う）。
 # INSDC_DATE_PATTERN は ddbj definitions.json の format_pattern と同一の共有定数。
 from common.format import fix_insdc_date, fix_insdc_lat_lon, INSDC_DATE_PATTERN, latlon_in_range
+from common.jst import today as jst_today
 
 # lat_lon: "d[d.ddd] N|S d[dd.ddd] W|E"（範囲外 90/180 超は latlon_in_range で別途弾く）
 _LATLON_RE = re.compile(r"^\d{1,3}(\.\d+)?\s+[NS]\s+\d{1,3}(\.\d+)?\s+[EW]$")
@@ -114,7 +115,8 @@ class BS_R0040(BsRule):
     def validate(self, submission, context):
         # 未来日判定は ddbj ANN1240 に倣う。範囲(/)・missing は対象外。粒度（年/年月/年月日）ごとに比較。
         out = []
-        today = datetime.date.today()
+        # 投稿日付は JST。コンテナが UTC だと JST 00:00〜09:00 の間だけ当日が未来日になる
+        today = jst_today()
         for rec in submission.records:
             v = rec.attr("collection_date")
             if not v or is_missing_value(v):

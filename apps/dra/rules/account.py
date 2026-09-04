@@ -9,6 +9,7 @@
 import datetime
 import re
 from apps.dra.rules.base import DraRule
+from common.jst import today as jst_today
 
 _DATE_RE = re.compile(r"(\d{4})-(\d{2})-(\d{2})")
 
@@ -48,7 +49,7 @@ class DRA_R0006(DraRule):
             hold = datetime.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
         except ValueError:
             return []
-        ref = getattr(context, "hold_ref_date", None) or datetime.date.today()
+        ref = getattr(context, "hold_ref_date", None) or jst_today()   # 起点は JST
         limit = datetime.date(ref.year + 2, ref.month, ref.day) if not (ref.month == 2 and ref.day == 29) \
             else datetime.date(ref.year + 2, 3, 1)
         if hold > limit:

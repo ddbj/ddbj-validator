@@ -8,6 +8,7 @@ from apps.ddbj.autofix.format import _VALID_METHOD_PATTERN, _FIX_METHOD_PATTERN
 from collections import defaultdict
 from apps.ddbj.utils.location import get_introns_from_join
 from apps.ddbj.utils.features import is_pseudogene
+from common.jst import today as jst_today
 from common.db_taxonomy import get_expected_transl_table, tax_rank_invalid
 from common.geo import GeoChecker
 from datetime import date
@@ -1492,7 +1493,8 @@ class ANN1240(BaseRule):
 
     def validate(self, record, context):
         results = []
-        today = date.today()
+        # 投稿日付は JST。コンテナが UTC だと JST 00:00〜09:00 の間だけ当日が未来日になる
+        today = jst_today()
 
         # collection_date は source 以外にも付く可能性があるため、全走査(get_features)
         for feature in self.get_features(record):
@@ -3634,7 +3636,7 @@ class ANN3350(BaseRule):
 
     def validate(self, record, context):
         results = []
-        today = datetime.date.today()
+        today = jst_today()   # 締切日の起点も JST（コンテナ TZ に依存させない）
 
         for feature in self.get_features(record, "DATE"):
             hold_dates = feature.qualifiers.get("hold_date", [])
