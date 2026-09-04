@@ -1,0 +1,13 @@
+{
+  "schema_version": "v3.0",
+  "project": {
+    "accession": "PRJDB0001",
+    "title": "Clean Project Title for the record-input fixture",
+    "description": "This is a sufficiently long and informative project description that clearly exceeds one hundred characters for the test.",
+    "project_type": "primary",
+    "organism": {"name": "Homo sapiens", "taxonomy_id": 9606},
+    "target": {"sample_scope": "eMonoisolate", "material": "eGenome", "capture": "eWhole", "method": "eSequencing",
+               "data_types": ["eOther"],
+               "data_type_descriptions": {"eOther": "Per-sample community composition tables."}}
+  }
+}

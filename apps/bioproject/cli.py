@@ -1,6 +1,7 @@
 """BioProject validator の CLI（サブコマンド bioproject）。
 
-入力は BioProject XML（-x）。実行モードは biosample と同一骨格:
+入力は BioProject XML（-x）または DDBJ Record v3 JSON（-r）。Record は record_reader が
+XML と同じモデルを組むので、ルールは入力形式を意識しない。実行モードは biosample と同一骨格:
   既定=NCBI API（DB/auth スキップ、taxonomy は NCBI）。env DDBJ_VALIDATOR_INTERNAL_DB=1 or -d で内部DB(curator)。
   -l 完全ローカル / -n NCBI / -d 内部DB。出力は既定 TSV（summary＋details）、-j で JSON。
 """
@@ -13,7 +14,7 @@ from common import cli_modes
 from pathlib import Path
 
 from apps.bioproject.context import ValidationContext
-from apps.bioproject import xml_reader
+from apps.bioproject import record_reader, xml_reader
 from apps.bioproject.validator import Validator
 from apps.bioproject.reporter import (
     build_summary, build_details, write_text_reports, write_json_report,
@@ -24,7 +25,13 @@ _JST = datetime.timezone(datetime.timedelta(hours=9))
 
 def _build_parser():
     p = argparse.ArgumentParser(prog="ddbj-validator bioproject", description="BioProject Validator")
-    p.add_argument("-x", "--xml", dest="xml", required=True, help="BioProject XML 入力ファイル")
+    g = p.add_mutually_exclusive_group(required=True)
+    g.add_argument("-x", "--xml", dest="xml", default=None, help="BioProject XML 入力ファイル")
+    g.add_argument("-r", "--record", dest="record", default=None,
+                   help="DDBJ Record 入力ファイル (v3 JSON)。project を検証する")
+    p.add_argument("-s", "--submission-id", dest="submission_id", default=None,
+                   help="PSUB id。省略時はファイル名から拾う。Record 入力は PSUB を持たないので、"
+                        "BP_R0004 の自己除外を効かせたいならここで渡す")
     p.add_argument("--account", default=None, help="Submitter id (account) for auth-dependent rules")
     p.add_argument("-o", "--out-dir", default=None, help="Output directory (default: input's parent)")
     p.add_argument("-l", "--local", action="store_true", help="Local mode (skip DB and NCBI API)")
@@ -106,25 +113,44 @@ def _account_from_psub(psub):
 
 
 def run(args):
-    started = datetime.datetime.now(_JST)
-    in_path = Path(args.xml)
+    started   = datetime.datetime.now(_JST)
+    is_record = bool(args.record)
+    in_path   = Path(args.record or args.xml)
     if not in_path.exists():
         print(f"[ERROR] Input not found: {in_path}", file=sys.stderr)
         return 2
     skip_db, skip_ncbi, skip_auth = _resolve_modes(args)
     # account 未指定なら PSUB（ファイル名）から自動導出（内部 DB モードのみ）。導出できなければ認証系スキップ。
-    submission_id = _psub_from_path(in_path)
+    # Record はファイル名に PSUB を含まない（web api の一時ファイルも同様）。
+    # 渡されなければファイル名から拾う、が従来の挙動。
+    submission_id = args.submission_id or _psub_from_path(in_path)
     account = args.account or (_account_from_psub(submission_id) if not skip_db else None)
     if not account:
         skip_auth = True
     context = ValidationContext(account=account, skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
     context.self_submission_id = submission_id   # BP_R0004 の自己除外にも使う
 
-    submission, pre_errors = xml_reader.parse_xml(str(in_path), account=account)
+    if is_record:
+        submission, pre_errors = record_reader.parse_record(str(in_path), account=account)
+    else:
+        submission, pre_errors = xml_reader.parse_xml(str(in_path), account=account)
     out_dir = args.out_dir or str(in_path.parent)
 
     if not args.json:
-        cli_modes.print_found(1, "file")   # BioProject は XML 1 ファイル
+        cli_modes.print_found(1, "file")   # BioProject は XML / Record いずれも 1 ファイル
+
+    # 読めたが検証対象が無い。「project 0 件」を「指摘 0 件」として返すと、渡す record を
+    # 間違えた側は成功したと読む。指摘が 1 件も無いのにレポートを書くと「検証して問題なし」に
+    # 見えるので、書かずに入力エラーで落とす。
+    if is_record and submission is not None and not submission.records:
+        print(f"[ERROR] No project in record: {in_path}", file=sys.stderr)
+        if not pre_errors:
+            # 指摘ゼロのレポートを書くと「検証して問題なし」に見える。書かずに落とす
+            # （レポートが無ければ web api 側も「検証は成立していない」と扱う）。
+            return 2
+        # スキーマ違反は実際の指摘なので通常経路でレポートに残す。project 0 件なので
+        # ルールは何も出さず、結果は pre_errors だけになる。
+
     if submission is None:  # BP_R0001（well-formed でない）
         results = pre_errors
     else:

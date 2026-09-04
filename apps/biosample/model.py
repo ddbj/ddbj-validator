@@ -1,7 +1,8 @@
 """BioSample validator の内部レコード表現。
 
-入力（XML、または TSV→XML 変換後の XML）をパースしてこの構造へ。
-ルールはこの構造だけを見る（XML/TSV の差異を意識しない）。
+入力をパースしてこの構造へ。対応する入力は XML / TSV（→XML 変換後）/ DDBJ Record（v3 JSON）。
+ルールはこの構造だけを見る（入力形式の差異を意識しない）。新しい入力形式に対応するとは、
+ここへ組み直す reader を 1 本足すこと以上の意味を持たない。
 """
 from dataclasses import dataclass, field
 from typing import Any, Optional
@@ -19,7 +20,9 @@ class BioSampleRecord:
     # 属性名 -> 値リスト（同名属性が複数あり得るためリストで保持。R0061 等の検出に使う）
     attributes: dict = field(default_factory=dict)
     access: Optional[str] = None             # BioSample@access
-    raw: Any = None                          # 元 XML 要素（必要時の参照用）
+    # 元の入力（XML 入力なら Element、Record 入力なら v3 の sample dict）。
+    # ルールは参照しない。参照すると入力形式に依存してしまい、上の契約が崩れる。
+    raw: Any = None
 
     @property
     def sample_id(self):
@@ -38,7 +41,7 @@ class BioSampleRecord:
 
 @dataclass
 class BioSampleSubmission:
-    """1 サブミッション（XML の <BioSampleSet>）。複数 BioSample を保持。"""
+    """1 サブミッション（XML の <BioSampleSet>、Record の samples[]）。複数 BioSample を保持。"""
     records: list = field(default_factory=list)
     submission_id: Optional[str] = None      # SSUB（ファイル名などから）
     package: Optional[str] = None            # サブミッション代表パッケージ（通常全サンプル共通）
