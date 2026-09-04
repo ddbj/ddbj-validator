@@ -70,11 +70,41 @@ def _fetch_biosample_attrs(context, sub, account):
     """参照 SAMD の BioSample 属性を内部 DB から取得（MB_SR0021/0022/0023 用）。core は common/magetab/biosample。
 
     account が確定していれば allowed（account 所有∪permit）でゲートし、account 外の SAMD は突合しない
-    （account 無しは全参照が対象）。
+    （account 無しは全参照が対象）。allowed は MB_IR0041 用の account_biosamples とも共有する
+    （同一の参照 SAMD 集合なので再クエリを避ける）。
     """
     from common.magetab import biosample as _bs
     cols = _bs.ref_columns(context, default=("Comment[BioSample]", "Characteristics[biosample_accession]"))
-    _bs.fetch_attrs_gated(context, sub, account, cols, warn_prefix="metabobank BioSample fetch failed")
+    _bs.fetch_attrs_gated(context, sub, account, cols, warn_prefix="metabobank BioSample fetch failed",
+                          share_account_biosamples=True)
+
+
+def _fetch_account_bioprojects(context, sub, account):
+    """MB_IR0040 用: IDF Comment[BioProject] のうち account 所有 ∪ DRA permit の集合を取得。
+
+    BioSample 側（MB_IR0041 の account_biosamples）は _fetch_biosample_attrs が解決済み。
+    取得に失敗しても None のままにして該当ルールをスキップさせる（他の検証は続行）。
+    """
+    if not account or not sub.idf:
+        return
+    from common.db_manager import DatabaseManager
+    from apps.dra import db_meta
+
+    ref_bp = {v.strip() for v in sub.idf.get("Comment[BioProject]") if v.strip()}
+    if not ref_bp:
+        return
+    cli_modes.db_checking("BioProject DB", len(ref_bp), "project")
+
+    def _fetch():
+        dm = DatabaseManager()
+        try:
+            dra_conn = dm.get_dra_conn()
+        except Exception:
+            dra_conn = None
+        return db_meta.fetch_account_bioprojects(dm.get_bp_conn(), dra_conn, account, ref_bp)
+
+    context.account_bioprojects = cli_modes.warn_none(
+        "bp", _fetch, "metabobank account BioProject fetch failed")
 
 
 def _write_fixed(sub, out_dir):
@@ -147,6 +177,8 @@ def run(args):
     if not context.skip_db:
         cli_modes.reset_db_access_log()
         _fetch_biosample_attrs(context, sub, args.account)
+        if not context.skip_auth:
+            _fetch_account_bioprojects(context, sub, args.account)
     results = pre + Validator(context).run(sub)
 
     now = datetime.datetime.now(_JST)
