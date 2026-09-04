@@ -33,6 +33,11 @@ EXPECTED = {
     # 禁則文字（MB_SR0036/0037）。実データには違反が無いため合成ケースで担保する。
     "MTBKS_protofile": {"MB_IR0024", "MB_IR0037",
                         "MB_SR0034", "MB_SR0035", "MB_SR0036", "MB_SR0037"},
+    # MSI（imaging）は抽出工程が無く投稿テンプレートにも Extract Name 列が無いため、
+    # 必須列から除外される（MB_SR0004 が出ない）。実データ MTBKS212 をそのまま使用。
+    "MTBKS_msi": {"MB_IR0024", "MB_IR0037", "MB_SR0046"},
+    # 同じ SDRF でも MSI 以外（FIA-MS）で Extract Name が無ければ MB_SR0004 は出る。
+    "MTBKS_noextract": {"MB_IR0024", "MB_IR0037", "MB_SR0004"},
 }
 
 
