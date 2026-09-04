@@ -4,6 +4,7 @@ from apps.metabobank.rules import idf as I
 from apps.metabobank.rules import sdrf as S
 from apps.metabobank.rules import cross as C
 from apps.metabobank.rules import biosample as B
+from apps.metabobank.rules import reference_db as R
 
 
 class Validator:
@@ -25,6 +26,8 @@ class Validator:
             C.MB_CR0001(), C.MB_CR0002(), C.MB_CR0003(), C.MB_CR0004(),
             # --- BioSample DB 整合 ---
             B.MB_SR0021(), B.MB_SR0022(), B.MB_SR0023(),
+            # --- 参照オブジェクトのアカウント整合（DB＋認証）---
+            R.MB_IR0040(), R.MB_IR0041(),
         ]
         self.active_rules = []
         for rule in available_rules:

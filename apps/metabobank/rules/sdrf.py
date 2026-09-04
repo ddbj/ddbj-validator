@@ -89,8 +89,10 @@ class MB_SR0005(MbRule):
 
 
 class MB_SR0006(MbRule):
-    rule_id = "MB_SR0006"; level = "error"; target = "SDRF"
-    description = "Undefined column exists."
+    # MAGE-TAB は仕様上、列を自由に追加できるため warning（MB_IR0004 と同じ理由）。
+    # Name: User-defined column
+    rule_id = "MB_SR0006"; level = "warning"; target = "SDRF"
+    description = "User-defined columns are used."
 
     def validate(self, sub, context):
         if not sub.sdrf:

@@ -15,7 +15,6 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     "MB_IR0024",   # Non-ASCII characters in an IDF field were normalized to ASCII.
     "MB_IR0037",   # Email address is required for the submitter.（非公開のため reminder）
     # --- SDRF ---
-    "MB_SR0006",   # Undefined column exists.（MAGE-TAB は列を自由に追加できる仕様のため）
     "MB_SR0009",   # Missing or null value for a required column.
     "MB_SR0017",   # Factor value is constant across all rows.
     "MB_SR0023",   # Characteristics value and BioSample attribute value do not match.
