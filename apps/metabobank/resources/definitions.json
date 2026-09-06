@@ -514,6 +514,8 @@
       "Labeled Extract Name",
       "Assay Name",
       "Raw Data File",
+      "Acquisition Parameter Data File",
+      "Free Induction Decay Data File",
       "Image Data File",
       "Processed Data File",
       "Metabolite Assignment File",

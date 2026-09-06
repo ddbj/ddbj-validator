@@ -62,8 +62,15 @@ class BS_R0129(BsRule):
                 continue
             for samd in _SAMD_RE.findall(v):
                 if samd.upper() not in authorized:
-                    out.append(self.result(sample=rec.sample_id,
-                                           message=f"derived_from BioSample not registered in your account. (Found: '{samd}')"))
+                    # レポートの message は公式文言で上書きされる（reporter._error_obj）ので、
+                    # どの accession が問題なのかは annotation に載せないと登録者に届かない。
+                    # 列は D-way 本番 ruby の実測に合わせる（docs/biosample/rule_pattern.md の
+                    # R0129 = A1 変種。3 列目の見出しは "Invalid Accession IDs"）。
+                    out.append(self.result(
+                        sample=rec.sample_id,
+                        anno_cols=[{"key": "Attribute", "value": "derived_from"},
+                                   {"key": "Invalid Accession IDs", "value": samd}],
+                        message=f"derived_from BioSample not registered in your account. (Found: '{samd}')"))
         return out
 
 
