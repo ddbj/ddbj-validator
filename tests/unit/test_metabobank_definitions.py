@@ -66,6 +66,26 @@ def test_required_protocol_parameters_reference_declared_protocol_types():
     assert not bad, f"required_protocol_types に無い protocol を参照: {bad}"
 
 
+def test_column_order_entries_are_known_sdrf_fields():
+    """`sdrf.column_order`（投稿テンプレートの列順）に載っている列は、すべて
+    `sdrf.fields`（既知の列パターン）に当たること。
+
+    当たらないと MB_SR0006「User-defined columns are used.」が
+    **テンプレートどおりに書いた投稿に対して出る**。実際 NMR の
+    `Acquisition Parameter Data File` / `Free Induction Decay Data File` がこの状態だった。
+    """
+    from apps.metabobank.rules.sdrf import _matches_any
+    fields = SDRF["fields"]
+    bad = {}
+    for st, cols in SDRF["column_order"].items():
+        # column_order の "Protocol REF:<type>" は列種別としては Protocol REF
+        norm = ["Protocol REF" if c.startswith("Protocol REF") else c for c in cols]
+        miss = sorted({c for c in norm if c and not _matches_any(c, fields)})
+        if miss:
+            bad[st] = miss
+    assert not bad, f"sdrf.fields に無い列がテンプレートにある: {bad}"
+
+
 def test_required_columns_error_exclude_targets_required_columns():
     """required_columns_error_exclude で除外する列は required_columns_error にある列であること
     （必須でない列を除外しても意味がなく、綴り違いの検出になる）。"""
