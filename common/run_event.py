@@ -28,6 +28,18 @@ _STATUS_NAME = "status.json"
 _RESULT_NAME = "result.json"
 _LOG_NAME = "validation.log"
 
+# run dir 直下に web / validator 自身が書くファイル名。アップロードの保存先（runner.save_upload）と
+# 入力ファイルの列挙（GET /validation/{uuid}/input）が「入力か自分の出力か」を見分けるのに使う。
+# 名前をここ 1 箇所に持つことで、出力を増やしたときに見分けが崩れないようにする。
+RUN_OUTPUT_NAMES = frozenset({_STATUS_NAME, _RESULT_NAME, _LOG_NAME})
+
+
+def is_run_output(name):
+    """run 自身が書いたファイル名か。書き換え途中の一時ファイル（`<名前>.<pid>.<8桁>.tmp`）も含む。"""
+    if name in RUN_OUTPUT_NAMES:
+        return True
+    return name.endswith(".tmp") and any(name.startswith(f"{n}.") for n in RUN_OUTPUT_NAMES)
+
 
 def new_uuid():
     """標準のハイフンあり uuid4（8-4-4-4-12）。現行 ruby と同形式。"""

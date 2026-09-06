@@ -25,10 +25,16 @@ def save_upload(rdir, role, filename, data):
     """アップロードを run_dir 直下に元ファイル名で保存してパスを返す（例 biosample=SSUB000000.xml）。
 
     D-way は biosample の SSUB XML を SSUB id 名（例 SSUB000000.xml）で送る想定。run_dir 直下に置くことで
-    autofix 出力（validator が `<out>/fixed/<同名>` に書く）とレイアウトが揃う。ファイル名が空なら role 名で代替。"""
+    autofix 出力（validator が `<out>/fixed/<同名>` に書く）とレイアウトが揃う。ファイル名が空なら role 名で代替。
+
+    ファイル名は呼び出し側から来るので、run 自身の出力（result.json / status.json / validation.log）と
+    同名で送られ得る。そのまま保存すると入力が検証結果として読み出される（`result.json` を入力にすると
+    GET /validation/{uuid} がその中身を返す）ので、ぶつかる名前はロール名を前置して避ける。"""
     dest_dir = Path(rdir)
     dest_dir.mkdir(parents=True, exist_ok=True)
     safe = Path(filename or f"{role}.xml").name
+    if run_event.is_run_output(safe):
+        safe = f"{role}_{safe}"
     dest = dest_dir / safe
     dest.write_bytes(data)
     return dest
@@ -75,6 +81,22 @@ def plan(saved, params):
     return None
 
 
+_FAILURE_DETAIL_MAX = 500
+
+
+def _failure_message(proc):
+    """レポートが出なかった run の理由。validator の最後の出力を添える。
+
+    呼び出し側は status の message しか見られない（validation.log を取得する口が無い）ので、
+    「なぜ落ちたか」をここに持ってくる。長さは status.json が肥大しないよう頭打ちにする。
+    """
+    tail = (proc.stderr or proc.stdout or "").strip().splitlines()
+    detail = tail[-1].strip() if tail else "no output"
+    if len(detail) > _FAILURE_DETAIL_MAX:
+        detail = detail[:_FAILURE_DETAIL_MAX] + "..."
+    return f"validator finished without a report (exit={proc.returncode}): {detail}"
+
+
 def run_validation(rdir, saved, params):
     """validator を子プロセス実行し、result.json を run_dir 直下へ集約する。
 
@@ -111,10 +133,17 @@ def run_validation(rdir, saved, params):
                 run_event.publish_result(rdir, report)
 
             result = run_event.read_result(rdir)
-            # CLI 終了コード: 1 = error 級の検証結果あり（プロセス異常ではない）。2 = 入力エラー等。
-            if result is None and proc.returncode not in (0, 1):
+            message = None
+            # **レポートが無ければ検証は成立していない。** 終了コードでは分けられない:
+            # CLI の 1 は「error 級の検証結果あり」（プロセスとしては正常）だが、
+            # 未捕捉例外も 1 で落ちるため両者を区別できず、クラッシュが finished に化けていた。
+            # レポートの有無で判定し、理由は message に載せる（validation.log を取る口が無く、
+            # 呼び出し側からは status の message しか見えないため）。
+            if result is None:
                 final = run_event.ERROR
-            elif result is not None and result.get("status") == "error":
+                message = _failure_message(proc)
+                logger.error("validation produced no report: %s", message)
+            elif result.get("status") == "error":
                 final = run_event.ERROR
             else:
                 final = run_event.FINISHED
@@ -125,6 +154,9 @@ def run_validation(rdir, saved, params):
                                    start_time=start, end_time=run_event.timestamp(),
                                    message=str(e))
             return final
-        run_event.write_status(rdir, uuid=rdir.name, status=final,
-                               start_time=start, end_time=run_event.timestamp())
+        fields = {"uuid": rdir.name, "status": final, "start_time": start,
+                  "end_time": run_event.timestamp()}
+        if message:
+            fields["message"] = message
+        run_event.write_status(rdir, **fields)
         return final
