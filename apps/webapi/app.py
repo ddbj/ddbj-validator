@@ -281,7 +281,10 @@ def show_validation(uuid: str = FPath(pattern=_UUID_RE)):
     if result is None:
         if status.get("status") in (run_event.ACCEPTED, run_event.RUNNING):
             return _err("Validation process has not finished yet", 400)
-        return _err("Validation not found", 404)
+        # 検証が成立しなかった run。status に理由が入っていればそれを返す。
+        # "Validation not found"（＝知らない UUID）と同じ本文だと、呼び出し側は
+        # 「UUID が違う」のか「検証が失敗した」のかを区別できない。
+        return _err(status.get("message") or "Validation not found", 404)
     return {**status, "result": result}
 
 
@@ -296,18 +299,18 @@ def show_status(uuid: str = FPath(pattern=_UUID_RE)):
 @app.get("/validation/{uuid}/{filetype}")
 def get_file(uuid: str = FPath(pattern=_UUID_RE), filetype: str = FPath(pattern=r"^[a-z][a-z_]*$")):
     """run_dir 直下レイアウト（入力 <SSUB>.xml / fixed/<SSUB>.xml / result.json / status.json）向けの取得。
-    filetype: input=入力 XML / fixed=autofix 済み XML / result / status。"""
+    filetype: input=入力ファイル / fixed=autofix 済みファイル / result / status。
+
+    入力の形式は XML とは限らない（BioSample は TSV も受ける）ので、拡張子では絞らない。
+    run_dir 直下の「run 自身の出力ではないファイル」＝アップロードされた入力、とする。
+    拡張子なしのフォールバック名（D-way が "biosample" で送るケース）もこれで拾える。
+    """
     rdir = run_event.run_dir(config.DATA_DIR, uuid)
     if not rdir.exists():
         return _err("Validation not found", 404)
     if filetype == "input":
-        files = [p for p in sorted(rdir.glob("*.xml"))]        # run_dir 直下の入力 XML（<SSUB>.xml 等）
-        if not files:
-            # D-way が拡張子なしのフォールバック名 "biosample" で送った入力も拾う（fixed を fixed/* で
-            # 緩めているのと同様）。今後 D-way は <SSUB>.xml で送る想定だが、拡張子なし時の後方互換。
-            cand = rdir / "biosample"
-            if cand.is_file():
-                files = [cand]
+        files = [p for p in sorted(rdir.iterdir())
+                 if p.is_file() and not run_event.is_run_output(p.name)]
     elif filetype == "fixed":
         files = sorted((rdir / "fixed").glob("*")) if (rdir / "fixed").is_dir() else []
     elif filetype in ("result", "status"):
