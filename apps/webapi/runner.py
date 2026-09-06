@@ -18,7 +18,16 @@ UPLOAD_ROLES = (
     "dra_submission", "dra_experiment", "dra_run", "dra_analysis",
     "gea_idf", "gea_sdrf",
     "metabobank_idf", "metabobank_sdrf",
+    "ddbj_record",
 )
+
+# ロール既定の拡張子（アップロードがファイル名を持たないとき用）。ddbj_record 以外は XML。
+_ROLE_SUFFIX = {"ddbj_record": ".json"}
+
+# run_dir 直下に web / validator 自身が書くファイル。アップロードが同じ名前で来ると
+# 上書きし合う（入力が result.json ならそれが検証結果として読み出される）。XML しか
+# 受けなかった間は起こらなかったが、JSON を受けるロールができたので現実的になった。
+RESERVED_NAMES = frozenset({"result.json", "status.json", "validation.log"})
 
 
 def save_upload(rdir, role, filename, data):
@@ -28,7 +37,9 @@ def save_upload(rdir, role, filename, data):
     autofix 出力（validator が `<out>/fixed/<同名>` に書く）とレイアウトが揃う。ファイル名が空なら role 名で代替。"""
     dest_dir = Path(rdir)
     dest_dir.mkdir(parents=True, exist_ok=True)
-    safe = Path(filename or f"{role}.xml").name
+    safe = Path(filename or f"{role}{_ROLE_SUFFIX.get(role, '.xml')}").name
+    if safe in RESERVED_NAMES:
+        safe = f"{role}_{safe}"
     dest = dest_dir / safe
     dest.write_bytes(data)
     return dest
@@ -36,7 +47,10 @@ def save_upload(rdir, role, filename, data):
 
 def plan(saved, params):
     """保存済みファイル（role→Path）から validator サブコマンド＋引数を決める。
-    どの validator かはアップロードされたロールの有無で判定する（ruby と同様）。"""
+    どの validator かはアップロードされたロールの有無で判定する（ruby と同様）。
+    決められなければ None を返す（呼び出し側が入力エラーにする）。"""
+    if "ddbj_record" in saved:
+        return _plan_record(saved["ddbj_record"], params)
     if "biosample" in saved:
         f = saved["biosample"]
         # 拡張子 .xml、または D-way 由来の拡張子なしフォールバック名 "biosample" は XML と決め打ち。
@@ -73,6 +87,33 @@ def plan(saved, params):
             args += ["--sdrf", str(saved["metabobank_sdrf"])]
         return args
     return None
+
+
+def _plan_record(path, params):
+    """DDBJ Record（v3 JSON）の振り分け。
+
+    Record は 1 ファイルに project / samples / experiments … が同居し得るので、他ロールと違って
+    「そのファイルがある＝この validator」とは決まらない。現在 Record 入力に対応しているのは
+    BioSample だけなので biosample へ回し、**中身の判断は validator 側に任せる**。
+    samples を持たない record は CLI が理由を言って終了コード 2 で落ち、run_validation が
+    それを status の message に載せる。ここで判断するには全文をパースする必要があり、
+    10 万 sample の record では数百 MB の一時オブジェクトが web プロセス側に載る。
+
+    BioProject 対応が入ったら、ここが「複数 validator を走らせて結果をまとめる」分岐になる
+    （run_validation は 1 プロセス・1 レポート前提なので、そのときは併せて直す必要がある）。
+    """
+    args = ["biosample", "-r", str(path)]
+    if params.get("submission_id"):
+        args += ["-s", params["submission_id"]]
+    return args
+
+
+def _run_failure_message(proc):
+    """検証が成立しなかったときに status へ載せる説明。呼び出し側は message しか見られない
+    （validation.log を取れるエンドポイントが無い）ので、validator の言い分を持ってくる。"""
+    tail = (proc.stderr or proc.stdout or "").strip().splitlines()
+    detail = tail[-1] if tail else "no output"
+    return f"validator がレポートを出力せずに終了しました (exit={proc.returncode}): {detail}"
 
 
 def run_validation(rdir, saved, params):
@@ -112,9 +153,11 @@ def run_validation(rdir, saved, params):
 
             result = run_event.read_result(rdir)
             # CLI 終了コード: 1 = error 級の検証結果あり（プロセス異常ではない）。2 = 入力エラー等。
-            if result is None and proc.returncode not in (0, 1):
-                final = run_event.ERROR
-            elif result is not None and result.get("status") == "error":
+            # レポートが無ければ検証は成立していない。終了コードで分けない: 未捕捉例外も
+            # 終了コード 1 なので、「検証結果あり」と区別が付かず finished に化けていた。
+            if result is None:
+                raise ValueError(_run_failure_message(proc))
+            if result.get("status") == "error":
                 final = run_event.ERROR
             else:
                 final = run_event.FINISHED

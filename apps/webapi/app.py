@@ -108,6 +108,7 @@ _MONITORING_XML = FsPath(__file__).parent / "resources" / "monitoring.xml"
 _UUID_RE = r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"   # 標準 uuid（ハイフンあり）
 
 
+
 def _err(message, status):
     return JSONResponse({"status": "error", "message": message}, status_code=status)
 
@@ -231,6 +232,7 @@ async def create_validation(
     gea_sdrf: UploadFile = File(None),
     metabobank_idf: UploadFile = File(None),
     metabobank_sdrf: UploadFile = File(None),
+    ddbj_record: UploadFile = File(None),
     submitter_id: str = Form(None),
     submission_id: str = Form(None),
     package: str = Form(None),
@@ -241,6 +243,8 @@ async def create_validation(
         "dra_run": dra_run, "dra_analysis": dra_analysis,
         "gea_idf": gea_idf, "gea_sdrf": gea_sdrf,
         "metabobank_idf": metabobank_idf, "metabobank_sdrf": metabobank_sdrf,
+        # DDBJ Record（v3 JSON）は DB 別でなく形式で 1 ロール。中身を見て振り分ける（runner._plan_record）。
+        "ddbj_record": ddbj_record,
     }
     uploads = {r: f for r, f in uploads.items() if f is not None}
     if not uploads:
@@ -281,7 +285,9 @@ def show_validation(uuid: str = FPath(pattern=_UUID_RE)):
     if result is None:
         if status.get("status") in (run_event.ACCEPTED, run_event.RUNNING):
             return _err("Validation process has not finished yet", 400)
-        return _err("Validation not found", 404)
+        # 検証が成立しなかった run。status の message には理由が入っているので、
+        # "Validation not found"（＝知らない UUID）と同じ本文を返さない。
+        return _err(status.get("message") or "Validation not found", 404)
     return {**status, "result": result}
 
 
@@ -296,12 +302,18 @@ def show_status(uuid: str = FPath(pattern=_UUID_RE)):
 @app.get("/validation/{uuid}/{filetype}")
 def get_file(uuid: str = FPath(pattern=_UUID_RE), filetype: str = FPath(pattern=r"^[a-z][a-z_]*$")):
     """run_dir 直下レイアウト（入力 <SSUB>.xml / fixed/<SSUB>.xml / result.json / status.json）向けの取得。
-    filetype: input=入力 XML / fixed=autofix 済み XML / result / status。"""
+    filetype: input=入力ファイル / fixed=autofix 済みファイル / result / status。
+    入力・autofix 出力は形式が XML とは限らない（DDBJ Record 入力なら JSON）。"""
     rdir = run_event.run_dir(config.DATA_DIR, uuid)
     if not rdir.exists():
         return _err("Validation not found", 404)
     if filetype == "input":
-        files = [p for p in sorted(rdir.glob("*.xml"))]        # run_dir 直下の入力 XML（<SSUB>.xml 等）
+        # run_dir 直下の入力ファイル（<SSUB>.xml / <SSUB>.json 等）。run 自身の出力
+        # （result.json / status.json / validation.log）は同じ場所にあるので除く。
+        # 同名でアップロードされたものは save_upload がロール名を前置してある。
+        files = sorted(rdir.glob("*.xml"))
+        files += [p for p in sorted(rdir.glob("*.json"))
+                  if p.name not in runner.RESERVED_NAMES]
         if not files:
             # D-way が拡張子なしのフォールバック名 "biosample" で送った入力も拾う（fixed を fixed/* で
             # 緩めているのと同様）。今後 D-way は <SSUB>.xml で送る想定だが、拡張子なし時の後方互換。
