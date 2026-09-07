@@ -86,6 +86,37 @@ def test_column_order_entries_are_known_sdrf_fields():
     assert not bad, f"sdrf.fields に無い列がテンプレートにある: {bad}"
 
 
+def test_protocol_positions_cover_declared_protocol_types():
+    """`protocol_positions` の protocol type が `required_protocol_types` と過不足なく一致すること。
+
+    このデータは MB 登録システムが SDRF テンプレートの列順を組むために使う。
+    **validator は参照しない**ので、綴り違いや追加漏れを検出できるのはここだけ。
+    """
+    declared = {t for types in IDF["required_protocol_types"].values() for t in types}
+    positions = set(DEFS["protocol_positions"])
+    assert positions == declared, (
+        f"protocol_positions に無い: {sorted(declared - positions)} / "
+        f"required_protocol_types に無い: {sorted(positions - declared)}")
+
+
+def test_protocol_positions_reference_known_columns():
+    """`before` / `fallback` が指す先が、既知の列か既知の protocol type であること。"""
+    from apps.metabobank.rules.sdrf import _matches_any
+    positions = DEFS["protocol_positions"]
+    bad = []
+    for name, spec in positions.items():
+        for key in ("before", "fallback"):
+            col = spec.get(key)
+            if not col:
+                continue
+            if col.startswith("Protocol REF:"):
+                if col.split(":", 1)[1] not in positions:
+                    bad.append((name, key, col, "未知の protocol type"))
+            elif not _matches_any(col, SDRF["fields"]):
+                bad.append((name, key, col, "sdrf.fields に無い列"))
+    assert not bad, f"参照先が解決できない: {bad}"
+
+
 def test_required_columns_error_exclude_targets_required_columns():
     """required_columns_error_exclude で除外する列は required_columns_error にある列であること
     （必須でない列を除外しても意味がなく、綴り違いの検出になる）。"""

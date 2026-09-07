@@ -1308,6 +1308,53 @@
       "peak_identifier"
     ]
   },
+  "protocol_positions": {
+    "Sample collection": {
+      "before": "Sample Name"
+    },
+    "Extraction": {
+      "before": "Extract Name"
+    },
+    "Preparation": {
+      "before": "Extract Name",
+      "fallback": "Protocol REF:Mass spectrometry"
+    },
+    "Chromatography": {
+      "before": "Labeled Extract Name"
+    },
+    "Capillary Electrophoresis": {
+      "before": "Labeled Extract Name"
+    },
+    "Direct infusion": {
+      "before": "Labeled Extract Name"
+    },
+    "Flow injection analysis": {
+      "before": "Labeled Extract Name"
+    },
+    "NMR sample": {
+      "before": "Labeled Extract Name"
+    },
+    "Mass spectrometry": {
+      "before": "Assay Name"
+    },
+    "NMR spectroscopy": {
+      "before": "Acquisition Parameter Data File",
+      "fallback": "Assay Name"
+    },
+    "NMR assay": {
+      "before": "Assay Name"
+    },
+    "Histology": {
+      "before": "Image Data File",
+      "fallback": "Protocol REF:Data processing"
+    },
+    "Data processing": {
+      "before": "Processed Data File"
+    },
+    "Metabolite identification": {
+      "before": "Metabolite Assignment File"
+    }
+  },
   "char_normalization": {
     "hyphen_like": {
       "\u00ad": "-",

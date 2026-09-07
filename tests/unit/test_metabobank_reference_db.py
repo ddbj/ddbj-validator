@@ -1,7 +1,12 @@
 """MB_IR0040 / MB_IR0041（参照オブジェクトのアカウント整合）のユニットテスト。
 
 これらは requires_rdb ＋ requires_auth のため E2E ハーネス（-l 実行）では常にスキップされる。
-DB を張らずに挙動を固定するため、account 集合を注入したコンテキストで直接検証する。
+DB / API を張らずに挙動を固定するため、citable 集合を注入したコンテキストで直接検証する。
+
+判定材料は「引用できる（citable）ID の集合」で、record-api が使えれば
+`?scope=citable`（permitted 込み・umbrella 除外）、無ければ内部 DB（所有 ∪ DRA permit）。
+**集合が None のときは判定できないのでスキップする**（部分的な情報で誤検知を出さない）。
+
 実行: リポジトリルートで `.venv/bin/python -m pytest`
 """
 import pytest
@@ -28,7 +33,7 @@ def _ctx(**kw):
 # --- MB_IR0040（BioProject）------------------------------------------------
 
 def test_ir0040_flags_bioproject_outside_account():
-    """account が所有しない PRJDB は error になる。"""
+    """account が引用できない PRJDB は error になる。"""
     res = MB_IR0040().validate(_sub(bioprojects=["PRJDB0001", "PRJDB0002"]),
                                _ctx(account_bioprojects={"PRJDB0001"}))
     assert [r["rule_id"] for r in res] == ["MB_IR0040"]
@@ -37,7 +42,7 @@ def test_ir0040_flags_bioproject_outside_account():
 
 
 def test_ir0040_passes_when_owned():
-    """account 所有なら発火しない。"""
+    """引用できるなら発火しない。"""
     assert MB_IR0040().validate(_sub(bioprojects=["PRJDB0001"]),
                                 _ctx(account_bioprojects={"PRJDB0001"})) == []
 
@@ -60,14 +65,16 @@ def test_ir0040_ignores_non_ddbj_accessions():
 
 
 def test_ir0040_skips_when_set_unavailable():
-    """DB 取得に失敗（None）した場合に全参照を error にしてしまわないこと。"""
+    """判定材料が無い（None）ときに全参照を error にしてしまわないこと。
+
+    DB / API の失敗、および一覧が上限で切れた場合がこれに当たる。"""
     assert MB_IR0040().validate(_sub(bioprojects=["PRJDB0002"]), _ctx(account_bioprojects=None)) == []
 
 
 # --- MB_IR0041（BioSample）------------------------------------------------
 
 def test_ir0041_flags_biosample_outside_account():
-    """account が所有しない SAMD は error になる。参照は SDRF 側にある。"""
+    """account が引用できない SAMD は error になる。参照は SDRF 側にある。"""
     res = MB_IR0041().validate(_sub(biosamples=["SAMD00000001", "SAMD00000002"]),
                                _ctx(account_biosamples={"SAMD00000001"}))
     assert [r["rule_id"] for r in res] == ["MB_IR0041"]
@@ -76,7 +83,7 @@ def test_ir0041_flags_biosample_outside_account():
 
 
 def test_ir0041_passes_when_owned():
-    """account 所有なら発火しない。"""
+    """引用できるなら発火しない。"""
     assert MB_IR0041().validate(_sub(biosamples=["SAMD00000001"]),
                                 _ctx(account_biosamples={"SAMD00000001"})) == []
 
@@ -87,7 +94,7 @@ def test_ir0041_ignores_non_samd():
 
 
 def test_ir0041_skips_when_set_unavailable():
-    """DB 取得に失敗（None）した場合はスキップ。"""
+    """判定材料が無い（None）ときはスキップ。"""
     assert MB_IR0041().validate(_sub(biosamples=["SAMD00000002"]), _ctx(account_biosamples=None)) == []
 
 
@@ -110,3 +117,73 @@ def test_mode_gating(kw, registered):
     ids = {r.rule_id for r in Validator(ValidationContext(**kw)).active_rules}
     assert ("MB_IR0040" in ids) is registered
     assert ("MB_IR0041" in ids) is registered
+
+
+# --- record-api クライアント（common/record_api）-------------------------
+
+class _Resp:
+    def __init__(self, payload, status=200):
+        self._payload, self.status_code = payload, status
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise RuntimeError(f"HTTP {self.status_code}")
+
+    def json(self):
+        return self._payload
+
+
+@pytest.fixture
+def api(monkeypatch):
+    from common import record_api
+    monkeypatch.setenv(record_api.BASE_URL_ENV, "https://record.example/")
+    return record_api
+
+
+def test_api_disabled_without_env(monkeypatch):
+    from common import record_api
+    monkeypatch.delenv(record_api.BASE_URL_ENV, raising=False)
+    assert record_api.enabled() is False
+    assert record_api.fetch_citable("acct", "bioproject") is None
+
+
+def test_api_returns_citable_ids(api, monkeypatch):
+    payload = {"truncated": False, "results": [{"id": "PRJDB1"}, {"id": "prjdb2"}]}
+    monkeypatch.setattr(api.requests, "get", lambda *a, **k: _Resp(payload))
+    assert api.fetch_citable("acct", "bioproject") == {"PRJDB1", "PRJDB2"}
+
+
+def test_api_uses_citable_scope(api, monkeypatch):
+    """scope=citable で問い合わせること（permitted 込み・umbrella 除外は API 側の仕事）。"""
+    seen = {}
+
+    def fake_get(url, params=None, timeout=None):
+        seen["url"], seen["params"] = url, params
+        return _Resp({"truncated": False, "results": []})
+
+    monkeypatch.setattr(api.requests, "get", fake_get)
+    api.fetch_citable("acct", "biosample")
+    assert seen["url"] == "https://record.example/api/account/acct/biosample"
+    assert seen["params"]["scope"] == "citable"
+
+
+def test_api_truncated_is_none(api, monkeypatch):
+    """一覧が上限で切れたら None。部分的な一覧で「引用不可」と言うと誤検知になる
+    （実例: account `ngdc` は SAMD 846,545 件）。"""
+    payload = {"truncated": True, "results": [{"id": "SAMD00000001"}],
+               "warnings": ["The result was truncated at 1 items (total 846545)."]}
+    monkeypatch.setattr(api.requests, "get", lambda *a, **k: _Resp(payload))
+    assert api.fetch_citable("acct", "biosample") is None
+
+
+def test_api_failure_is_none(api, monkeypatch):
+    """API が落ちても validator は止めず、そのルールだけスキップする。"""
+    def boom(*a, **k):
+        raise ConnectionError("refused")
+    monkeypatch.setattr(api.requests, "get", boom)
+    assert api.fetch_citable("acct", "bioproject") is None
+
+
+def test_api_unexpected_shape_is_none(api, monkeypatch):
+    monkeypatch.setattr(api.requests, "get", lambda *a, **k: _Resp({"results": "?"}))
+    assert api.fetch_citable("acct", "bioproject") is None
