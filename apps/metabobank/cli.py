@@ -9,7 +9,7 @@ import datetime
 import re
 import sys
 
-from common import cli_modes
+from common import cli_modes, record_api
 from pathlib import Path
 
 from apps.metabobank.context import ValidationContext
@@ -79,9 +79,30 @@ def _fetch_biosample_attrs(context, sub, account):
                           share_account_biosamples=True)
 
 
+def _fetch_citable_from_api(context, account):
+    """MB_IR0040/0041 用: record-api から「その account が引用できる ID」を取得する。
+
+    `DDBJ_RECORD_API_URL` が設定されているときだけ呼ばれる。直 SQL との違いは
+    **permitted を含む / umbrella の BioProject を除く / 未採番を含まない**の 3 点で、
+    これが「所有しているか」ではなく「引用できるか」の判定になる。
+
+    取れなければ None のままにして該当ルールをスキップさせる（誤検知を出さない）。
+    BioSample 属性の突合（MB_SR0021-0023）は内部 DB のままなので、ここでは上書きしない。
+    """
+    cli_modes.db_checking("record-api", 2, "citable list")
+    bp = record_api.fetch_citable(account, "bioproject")
+    bs = record_api.fetch_citable(account, "biosample")
+    if bp is not None:
+        context.account_bioprojects = bp
+    if bs is not None:
+        context.account_biosamples = bs
+
+
 def _fetch_account_bioprojects(context, sub, account):
     """MB_IR0040 用: IDF Comment[BioProject] のうち account 所有 ∪ DRA permit の集合を取得。
 
+    record-api が使えないときのフォールバック。**API と違い umbrella を除けず、
+    permitted も DRA permit の分しか見られない**（`docs/record-api-migration.md`）。
     BioSample 側（MB_IR0041 の account_biosamples）は _fetch_biosample_attrs が解決済み。
     取得に失敗しても None のままにして該当ルールをスキップさせる（他の検証は続行）。
     """
@@ -178,7 +199,12 @@ def run(args):
         cli_modes.reset_db_access_log()
         _fetch_biosample_attrs(context, sub, args.account)
         if not context.skip_auth:
-            _fetch_account_bioprojects(context, sub, args.account)
+            # 引用可否（MB_IR0040/0041）は record-api があればそちらを使う。
+            # umbrella 除外と permitted を API 側が解決してくれるため。
+            if record_api.enabled():
+                _fetch_citable_from_api(context, args.account)
+            else:
+                _fetch_account_bioprojects(context, sub, args.account)
     results = pre + Validator(context).run(sub)
 
     now = datetime.datetime.now(_JST)
