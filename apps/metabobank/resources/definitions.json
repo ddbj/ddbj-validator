@@ -71,8 +71,6 @@
       "Study Title",
       "Study Description",
       "Experimental Design",
-      "Experimental Factor Name",
-      "Experimental Factor Type",
       "Person Last Name",
       "Person First Name",
       "Person Affiliation",
@@ -94,6 +92,7 @@
       "MAGE-TAB Version",
       "Study Title",
       "Study Description",
+      "Experimental Factor Name",
       "Person Last Name",
       "Person First Name",
       "Person Affiliation",
@@ -104,11 +103,11 @@
       "Comment[Experiment type]",
       "Comment[Submission type]"
     ],
+    "autofix_null_to_empty": [
+      "Experimental Factor Name",
+      "Experimental Factor Type"
+    ],
     "required_group_error": {
-      "Experimental Factor": [
-        "Experimental Factor Name",
-        "Experimental Factor Type"
-      ],
       "Person": [
         "Person Last Name",
         "Person First Name",
@@ -255,10 +254,11 @@
           "Autosampler model",
           "Column model",
           "Column type",
-          "Temperature",
           "Guard column",
           "Detector",
-          "Signal range"
+          "Signal range",
+          "Resolution",
+          "Temperature"
         ],
         "Mass spectrometry": [
           "Scan polarity",
@@ -469,6 +469,14 @@
         ]
       }
     },
+    "protocol_parameters_required": {
+      "MSI": {
+        "Data processing": [
+          "Data processing software",
+          "Data processing software version"
+        ]
+      }
+    },
     "required_experiment_types": {
       "LC-MS": [
         "liquid chromatography-mass spectrometry"
@@ -544,10 +552,7 @@
     "required_columns_warning": [
       "Comment\\[BioSample\\]",
       "Comment\\[sample_title\\]",
-      "Raw Data File",
-      "Processed Data File",
-      "Metabolite Assignment File",
-      "Factor Value\\[[-_ A-Za-z0-9.]+\\]"
+      "Raw Data File"
     ],
     "required_group_warning": {
       "Raw Data File": [
@@ -589,6 +594,7 @@
         "Parameter Value[Column model]",
         "Parameter Value[Column type]",
         "Parameter Value[Temperature]",
+        "Unit[temperature]",
         "Parameter Value[Guard column]",
         "Labeled Extract Name",
         "Label",
@@ -628,7 +634,9 @@
         "Parameter Value[Guard column]",
         "Parameter Value[Detector]",
         "Parameter Value[Signal range]",
+        "Parameter Value[Resolution]",
         "Parameter Value[Temperature]",
+        "Unit[temperature]",
         "Labeled Extract Name",
         "Label",
         "Protocol REF:Mass spectrometry",
@@ -665,6 +673,7 @@
         "Parameter Value[Column model]",
         "Parameter Value[Column type]",
         "Parameter Value[Temperature]",
+        "Unit[temperature]",
         "Parameter Value[Guard column]",
         "Labeled Extract Name",
         "Label",
@@ -742,10 +751,9 @@
         "Parameter Value[Column model]",
         "Parameter Value[Column type]",
         "Parameter Value[Temperature]",
+        "Unit[temperature]",
         "Parameter Value[Guard column]",
         "Parameter Value[Detector]",
-        "Parameter Value[Temperature]",
-        "Unit[]",
         "Labeled Extract Name",
         "Label",
         "Protocol REF:Mass spectrometry",
@@ -907,7 +915,7 @@
         "Parameter Value[Tissue modification]",
         "Parameter Value[Sectioning instrument]",
         "Parameter Value[Section thickness]",
-        "Unit[]",
+        "Unit[length]",
         "Parameter Value[Matrix]",
         "Parameter Value[Matrix application]",
         "Protocol REF:Mass spectrometry",
@@ -920,17 +928,17 @@
         "Parameter Value[Solvent]",
         "Parameter Value[Target material]",
         "Parameter Value[Spatial resolution]",
-        "Unit[]",
+        "Unit[length]",
         "Parameter Value[Pixel size x]",
-        "Unit[]",
+        "Unit[length]",
         "Parameter Value[Pixel size y]",
-        "Unit[]",
+        "Unit[length]",
         "Parameter Value[Max count of pixel x]",
         "Parameter Value[Max count of pixel y]",
         "Parameter Value[Max dimension x]",
-        "Unit[]",
+        "Unit[length]",
         "Parameter Value[Max dimension y]",
-        "Unit[]",
+        "Unit[length]",
         "Parameter Value[Inlet type]",
         "Parameter Value[Detector]",
         "Parameter Value[Detector mode]",
@@ -979,7 +987,7 @@
         "Parameter Value[Solvent]",
         "Parameter Value[Sample pH]",
         "Parameter Value[Temperature]",
-        "Unit[]",
+        "Unit[temperature]",
         "Labeled Extract Name",
         "Label",
         "Protocol REF:NMR spectroscopy",
@@ -988,7 +996,7 @@
         "Parameter Value[Number of transients]",
         "Parameter Value[Pulse sequence name]",
         "Parameter Value[Magnetic field strength]",
-        "Unit[]",
+        "Unit[magnetic_field_strength]",
         "Acquisition Parameter Data File",
         "Comment[Acquisition Parameter Data File md5]",
         "Protocol REF:NMR assay",

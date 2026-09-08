@@ -209,10 +209,22 @@ class MB_IR0018(MbRule):
     description = "Missing protocol parameter(s) for the submission type."
 
     def validate(self, sub, context):
+        """submission type ごとに、必須の protocol parameter が宣言されているかを見る。
+
+        参照するのは `protocol_parameters_required`。よく似た `required_protocol_parameters`
+        は名前に反して「IDF Protocol Parameters として出力する項目」を規定するキーで
+        （登録システムが Excel/IDF の生成に使う。キー名は互換のため変えていない）、
+        必須／任意は規定していない。
+
+        公式 Excel テンプレ 11 種の Parameter Value 列 159 個のうち、ORANGE（mandatory）は
+        MSI の Data processing software / version の 2 個だけで、残り 157 個は BLUE（optional）。
+        以前は出力仕様のキーをそのまま必須リストとして読んでいたため、公開 114 study の
+        81%（92 件）で Temperature の未記入を誤ってエラーにしていた。
+        """
         if not sub.idf:
             return []
         st = sub.idf.submission_type
-        spec = _idf(context).get("required_protocol_parameters", {}).get(st, {})
+        spec = _idf(context).get("protocol_parameters_required", {}).get(st, {})
         if not spec:
             return []
         out = []
@@ -266,20 +278,6 @@ class MB_IR0037(MbRule):
             if role.strip().lower() == "submitter":
                 if i >= len(emails) or _empty(emails[i]):
                     return [self.result()]
-        return []
-
-
-class MB_IR0035(MbRule):
-    rule_id = "MB_IR0035"; level = "warning"; target = "IDF"
-    description = "Experimental factor name and type do not match (type auto-corrected to name)."
-
-    def validate(self, sub, context):
-        if not sub.idf:
-            return []
-        names = sub.idf.get("Experimental Factor Name")
-        types = sub.idf.get("Experimental Factor Type")
-        if names != types and set(names) - set(types):
-            return [self.result(message=f"{self.description} ({', '.join(set(names) - set(types))})")]
         return []
 
 

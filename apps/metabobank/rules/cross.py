@@ -1,6 +1,6 @@
 """IDF↔SDRF 横断ルール（MB_CR）。"""
 import re
-from apps.metabobank.rules.base import MbRule
+from apps.metabobank.rules.base import MbRule, null_values
 
 
 class MB_CR0001(MbRule):
@@ -8,16 +8,31 @@ class MB_CR0001(MbRule):
     description = "Experimental factor in SDRF does not match IDF Experimental Factor Name."
 
     def validate(self, sub, context):
+        """IDF Experimental Factor Name と SDRF Factor Value[...] を双方向に突き合わせる。
+
+        factor 自体は任意項目なので「どちらにも無い」は無指摘。片側にしか無ければ向きを
+        添えて指摘する（両方向あれば 2 件に分ける）。
+        IDF 側の null value（missing 等）は集合から除くが、これは無指摘にするためではなく
+        MB_IR0007（required_not_null）が同じ問題を指摘するので二重報告を避けるため。
+        SDRF 側は除かないので Factor Value[missing] は only in SDRF として指摘される。
+        """
         if not sub.idf or not sub.sdrf:
             return []
-        idf_factors = {n.strip() for n in sub.idf.get("Experimental Factor Name") if n.strip()}
+        nulls = null_values(context)
+        idf_factors = {n.strip() for n in sub.idf.get("Experimental Factor Name")
+                       if n.strip() and n.strip() not in nulls}
         sdrf_factors = set()
         for h in sub.sdrf.header:
             m = re.fullmatch(r"Factor Value\[(.+)\]", h)
             if m:
                 sdrf_factors.add(m.group(1).strip())
-        bad = sdrf_factors - idf_factors
-        return [self.result(message=f"{self.description} ({', '.join(sorted(bad))})")] if bad else []
+        out = []
+        for label, bad in (("only in SDRF", sdrf_factors - idf_factors),
+                           ("only in IDF", idf_factors - sdrf_factors)):
+            if bad:
+                out.append(self.result(
+                    message=f"{self.description} ({label}: {', '.join(sorted(bad))})"))
+        return out
 
 
 class MB_CR0002(MbRule):

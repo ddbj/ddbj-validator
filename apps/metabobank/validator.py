@@ -16,12 +16,12 @@ class Validator:
             I.MB_IR0008(), I.MB_IR0009(), I.MB_IR0010(), I.MB_IR0011(), I.MB_IR0013(),
             I.MB_IR0015(), I.MB_IR0016(), I.MB_IR0017(), I.MB_IR0018(), I.MB_IR0020(),
             I.MB_IR0023(), I.MB_IR0024(), I.MB_IR0025(), I.MB_IR0033(), I.MB_IR0034(),
-            I.MB_IR0035(), I.MB_IR0037(), I.MB_IR0038(),
+            I.MB_IR0037(), I.MB_IR0038(),
             # --- SDRF（metadata）---
             S.MB_SR0003(), S.MB_SR0004(), S.MB_SR0005(), S.MB_SR0006(), S.MB_SR0009(),
             S.MB_SR0017(), S.MB_SR0018(), S.MB_SR0019(), S.MB_SR0024(), S.MB_SR0026(),
             S.MB_SR0030(), S.MB_SR0033(), S.MB_SR0034(), S.MB_SR0035(), S.MB_SR0036(),
-            S.MB_SR0037(), S.MB_SR0045(), S.MB_SR0046(),
+            S.MB_SR0037(), S.MB_SR0045(), S.MB_SR0046(), S.MB_SR0047(),
             # --- cross ---
             C.MB_CR0001(), C.MB_CR0002(), C.MB_CR0003(), C.MB_CR0004(),
             # --- BioSample DB 整合 ---
