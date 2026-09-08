@@ -300,7 +300,7 @@ def test_column_order_has_no_duplicate_parameter_value_columns():
 
 
 def test_temperature_column_is_followed_by_a_unit_column():
-    """`Parameter Value[Temperature]` の直後には必ず `Unit[]` が来ること。
+    """`Parameter Value[Temperature]` の直後には必ず `Unit[temperature]` が来ること。
 
     公式 Excel テンプレは Parameter Value[Temperature] の直後に Unit[temperature] を置く。
     GC-FID-MS / NMR には入っていたが GC-MS / LC-MS / LC-DAD-MS で欠けていた。
@@ -309,5 +309,42 @@ def test_temperature_column_is_followed_by_a_unit_column():
     for st, cols in SDRF["column_order"].items():
         for i, c in enumerate(cols):
             if c == "Parameter Value[Temperature]":
-                assert cols[i + 1:i + 2] == ["Unit[]"], \
+                assert cols[i + 1:i + 2] == ["Unit[temperature]"], \
                     f"column_order['{st}'] の Temperature 直後が {cols[i + 1:i + 2]}"
+
+
+def test_unit_columns_are_named():
+    """`Unit[...]` は名前付きで定義すること（無名の `Unit[]` を残さない）。
+
+    Unit の名前は登録者が決めるものではなく直前の Parameter Value で決まるため、
+    公式 Excel テンプレと同じ名前を JSON に明記する。無名だと登録システムが生成する
+    Excel に名前の無い `Unit[]` 列が出てしまう。
+    """
+    bare = [st for st, cols in SDRF["column_order"].items() if "Unit[]" in cols]
+    assert not bare, f"無名の Unit[] が残っている: {bare}"
+
+
+def test_unit_column_names_match_their_anchor_parameter():
+    """`Unit[...]` の名前が直前の Parameter Value に対応していること（テンプレ準拠）。
+
+    MSI は Section thickness / Spatial resolution / Pixel size x,y / Max dimension x,y の
+    後がすべて `Unit[length]` で、列名から機械的には導けないためここに固定する。
+    """
+    expected = {
+        "Parameter Value[Temperature]": "Unit[temperature]",
+        "Parameter Value[Magnetic field strength]": "Unit[magnetic_field_strength]",
+        "Parameter Value[Section thickness]": "Unit[length]",
+        "Parameter Value[Spatial resolution]": "Unit[length]",
+        "Parameter Value[Pixel size x]": "Unit[length]",
+        "Parameter Value[Pixel size y]": "Unit[length]",
+        "Parameter Value[Max dimension x]": "Unit[length]",
+        "Parameter Value[Max dimension y]": "Unit[length]",
+    }
+    for st, cols in SDRF["column_order"].items():
+        for i, c in enumerate(cols):
+            if not c.startswith("Unit["):
+                continue
+            anchor = cols[i - 1]
+            assert anchor in expected, f"column_order['{st}']: {c} の直前が想定外の {anchor}"
+            assert c == expected[anchor], \
+                f"column_order['{st}']: {anchor} の直後は {expected[anchor]} のはずが {c}"
