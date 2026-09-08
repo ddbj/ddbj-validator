@@ -295,3 +295,17 @@ def test_column_order_has_no_duplicate_parameter_value_columns():
         pv = [c for c in cols if c.startswith("Parameter Value[")]
         dup = sorted({c for c in pv if pv.count(c) > 1})
         assert not dup, f"column_order['{st}'] に重複: {dup}"
+
+
+def test_temperature_column_is_followed_by_a_unit_column():
+    """`Parameter Value[Temperature]` の直後には必ず `Unit[]` が来ること。
+
+    公式 Excel テンプレは Parameter Value[Temperature] の直後に Unit[temperature] を置く。
+    GC-FID-MS / NMR には入っていたが GC-MS / LC-MS / LC-DAD-MS で欠けていた。
+    （GCGC-MS は Temperature 1 / 2 でテンプレ側にも Unit 列が無いため対象外。）
+    """
+    for st, cols in SDRF["column_order"].items():
+        for i, c in enumerate(cols):
+            if c == "Parameter Value[Temperature]":
+                assert cols[i + 1:i + 2] == ["Unit[]"], \
+                    f"column_order['{st}'] の Temperature 直後が {cols[i + 1:i + 2]}"
