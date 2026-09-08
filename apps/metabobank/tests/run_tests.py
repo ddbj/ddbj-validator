@@ -48,6 +48,10 @@ EXPECTED = {
     # 件数と向きの担保は tests/unit/test_metabobank_factor.py 側）。
     # Experimental Factor Type は値なし＝任意・無検証なので何も出ない。
     "MTBKS_factor": {"MB_CR0001", "MB_IR0024", "MB_IR0037"},
+    # Factor Value[tissue] 列はあるが全行空。任意列になったので factor が無いなら列自体を
+    # 書かなければよく、列だけ作って値が無いのは MB_SR0047。MB_SR0017（全行で一定）は
+    # 同じ列を二重に指摘しないよう抑止されるので、期待集合に入らないことが担保になる。
+    "MTBKS_factorval": {"MB_IR0024", "MB_IR0037", "MB_SR0047"},
 }
 
 

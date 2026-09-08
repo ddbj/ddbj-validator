@@ -275,3 +275,65 @@ def test_ir0018_still_detects_other_missing_parameters():
     """Temperature を外しても MB_IR0018 自体は他パラメータの欠落を検出できること。"""
     assert _chroma_missing("LC-MS", "Chromatography instrument") == [
         "Autosampler model", "Column model", "Column type", "Guard column"]
+
+
+# --- MB_SR0047: Factor Value 列があるのに値が無い ---------------------------
+
+def _fv_sub(rows_of_values):
+    """Factor Value[treatment] 列を持つ SDRF（値は行ごとに指定）。"""
+    fields = {"Comment[Submission type]": ["LC-MS"],
+              "Experimental Factor Name": ["treatment"]}
+    header = ["Source Name", "Factor Value[treatment]"]
+    rows = [[f"s{i + 1}", v] for i, v in enumerate(rows_of_values)]
+    return Submission(idf=Idf(fields=fields, field_order=list(fields)),
+                      sdrf=Sdrf(header=header, rows=rows))
+
+
+def test_sr0047_fires_when_all_rows_empty():
+    """列はあるが全行空 → 「値が無い」エラー。"""
+    msgs = _msgs(_fv_sub(["", ""]), S.MB_SR0047())
+    assert len(msgs) == 1 and "Factor Value[treatment]" in msgs[0]
+
+
+def test_sr0047_fires_for_single_row():
+    """MB_SR0017 は 2 行未満だと判定しないが、値が無いことは 1 行でも問題。"""
+    assert len(_msgs(_fv_sub([""]), S.MB_SR0047())) == 1
+
+
+def test_sr0047_treats_null_value_as_no_value():
+    """null value（missing 等）しか無い列も「値が無い」扱い。"""
+    assert len(_msgs(_fv_sub(["missing", "missing"]), S.MB_SR0047())) == 1
+
+
+def test_sr0047_silent_when_any_row_has_a_value():
+    """一部の行が空なのは正常（QC/blank 等で factor が適用されない行がある）。
+
+    公開 114 study では 83 列が「一部の行だけ空」だった。ここをエラーにすると
+    大量の誤検知になるため、全行に値が無い場合だけを対象にする。
+    """
+    assert _msgs(_fv_sub(["treated", ""]), S.MB_SR0047()) == []
+
+
+def test_sr0047_silent_when_no_factor_value_column():
+    """Factor Value 列そのものが無ければ無指摘（任意列）。"""
+    assert _msgs(_sub(), S.MB_SR0047()) == []
+
+
+def test_sr0017_does_not_report_constant_for_a_valueless_column():
+    """値が無い列を MB_SR0017 が「全行で一定」と誤診しないこと（MB_SR0047 に委譲）。"""
+    assert _msgs(_fv_sub(["", ""]), S.MB_SR0017()) == []
+
+
+def test_sr0017_still_reports_genuine_constant_value():
+    """非空の値が全行で同じなら、従来どおり MB_SR0017 が指摘する。"""
+    msgs = _msgs(_fv_sub(["treated", "treated"]), S.MB_SR0017())
+    assert len(msgs) == 1 and "Factor Value[treatment]" in msgs[0]
+
+
+def test_sr0047_is_internal_ignore():
+    """MB_SR0047 は ignore error（管理システムは無視、登録者には表示）。
+
+    MB_SR0017 も ignore なので、値が無い列の診断先が MB_SR0017 から MB_SR0047 に
+    移っても管理システム側の扱いは変わらない。
+    """
+    assert is_internal_ignore("MB_SR0047")

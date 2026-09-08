@@ -134,6 +134,19 @@ class MB_SR0018(MbRule):
         return [self.result(message=f"{self.description} (Found: {len(chars)})")] if len(chars) < 2 else []
 
 
+def _factor_value_columns(sdrf):
+    """SDRF の Factor Value[...] 列を (列名, 全行の値) で返す。"""
+    for h in sdrf.header:
+        if re.fullmatch(r"Factor Value\[.+\]", h):
+            ix = sdrf.col_indices(h)[0]
+            yield h, [(row[ix].strip() if ix < len(row) else "") for row in sdrf.rows]
+
+
+def _has_no_value(vals, nulls):
+    """その列にどの行も値が無い（空 or null value のみ）か。"""
+    return all(not v or v in nulls for v in vals)
+
+
 class MB_SR0017(MbRule):
     rule_id = "MB_SR0017"; level = "error"; target = "SDRF"
     description = "Factor value is constant across all rows."
@@ -141,13 +154,35 @@ class MB_SR0017(MbRule):
     def validate(self, sub, context):
         if not sub.sdrf or len(sub.sdrf.rows) < 2:
             return []
+        nulls = null_values(context)
         out = []
-        for h in sub.sdrf.header:
-            if re.fullmatch(r"Factor Value\[.+\]", h):
-                idxs = sub.sdrf.col_indices(h)
-                vals = {(row[idxs[0]].strip() if idxs[0] < len(row) else "") for row in sub.sdrf.rows}
-                if len(vals) == 1:
-                    out.append(self.result(message=f"{self.description} ({h})"))
+        for h, vals in _factor_value_columns(sub.sdrf):
+            if _has_no_value(vals, nulls):
+                continue      # 「一定」ではなく「値が無い」。MB_SR0047 が担当する
+            if len(set(vals)) == 1:
+                out.append(self.result(message=f"{self.description} ({h})"))
+        return out
+
+
+class MB_SR0047(MbRule):
+    rule_id = "MB_SR0047"; level = "error"; target = "SDRF"
+    description = "Experimental factor value is missing."
+
+    def validate(self, sub, context):
+        """Factor Value[...] 列があるのに、どの行にも値が無い場合のエラー。
+
+        Factor Value は任意列になったので、factor が無いなら列そのものを書かなければよい。
+        列だけ作って値を入れないと MB_SR0017 が「全行で一定」と報告してしまい、
+        実際の問題（値が無い）が伝わらないため、こちらで受ける。
+        MB_SR0017 と違って行数の下限は設けない（1 行でも値が無いことは問題）。
+        """
+        if not sub.sdrf:
+            return []
+        nulls = null_values(context)
+        out = []
+        for h, vals in _factor_value_columns(sub.sdrf):
+            if _has_no_value(vals, nulls):
+                out.append(self.result(message=f"{self.description} ({h})"))
         return out
 
 
