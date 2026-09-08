@@ -261,14 +261,16 @@ def test_lc_dad_ms_declares_resolution_as_protocol_parameter():
 
     このキーは「IDF Protocol Parameters として出力する項目」を規定しており、
     必須／任意は規定していない（Excel には任意項目として現れる）。
-    公式 Excel テンプレの MB_Study_IDF / Protocol Parameters は
-    `...;Column type;Resolution;Temperature;Guard column;Detector;Signal range` で
-    Resolution は Column type の直後。ここが欠けていると登録システムが IDF に宣言せず、
-    SDRF に列があるのに MB_CR0003 に化ける。
+    位置は Chromatography ブロックの末尾（Signal range の直後）。実データ 37 study の
+    IDF Protocol Parameters、ruby 登録システムの protocols.txt、公式テンプレの SDRF ヘッダが
+    すべて `...;Guard column;Detector;Signal range;Resolution` で一致する
+    （テンプレの MB_Study_IDF / Protocol Parameters 行だけが Column type の直後で、
+    自身の SDRF シートとも食い違う外れ値だった）。
+    ここが欠けていると登録システムが IDF に宣言せず、SDRF に列があるのに MB_CR0003 に化ける。
     """
     ch = IDF["required_protocol_parameters"]["LC-DAD-MS"]["Chromatography"]
     assert "Resolution" in ch
-    assert ch.index("Resolution") == ch.index("Column type") + 1
+    assert ch.index("Resolution") == ch.index("Signal range") + 1
 
 
 def test_column_order_parameter_sequence_matches_protocol_parameters():
