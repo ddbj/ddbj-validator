@@ -7,6 +7,8 @@
 
 実行: リポジトリルートで `.venv/bin/python -m pytest`
 """
+import re
+
 import pytest
 
 from apps.metabobank.defs import load_definitions
@@ -267,3 +269,29 @@ def test_lc_dad_ms_declares_resolution_as_protocol_parameter():
     ch = IDF["required_protocol_parameters"]["LC-DAD-MS"]["Chromatography"]
     assert "Resolution" in ch
     assert ch.index("Resolution") == ch.index("Column type") + 1
+
+
+def test_column_order_parameter_sequence_matches_protocol_parameters():
+    """sdrf.column_order の Parameter Value 列の並びが Protocol Parameters の順と一致すること。
+
+    MB_SR0026（Invalid column order）は `Parameter Value[x]` を種別に丸めて評価するので
+    順序のずれ自体は発火しないが、登録システムは両方を使って Excel/IDF を生成するため
+    ずれると出力の列順と宣言順が食い違う。実際に LC-DAD-MS は Temperature が
+    Chromatography ブロックの末尾に、GC-FID-MS は Temperature が 2 回入っていた。
+    """
+    order = SDRF["column_order"]
+    for st, protos in IDF["required_protocol_parameters"].items():
+        if st not in order:
+            continue
+        seq = [m.group(1) for c in order[st]
+               if (m := re.fullmatch(r"Parameter Value\[(.+)\]", c))]
+        expected = [x for params in protos.values() for x in params]
+        assert seq == expected, f"{st}: column_order={seq} / parameters={expected}"
+
+
+def test_column_order_has_no_duplicate_parameter_value_columns():
+    """同じ Parameter Value 列が column_order に 2 回現れないこと（GC-FID-MS の Temperature）。"""
+    for st, cols in SDRF["column_order"].items():
+        pv = [c for c in cols if c.startswith("Parameter Value[")]
+        dup = sorted({c for c in pv if pv.count(c) > 1})
+        assert not dup, f"column_order['{st}'] に重複: {dup}"
