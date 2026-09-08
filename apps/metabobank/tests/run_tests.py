@@ -22,8 +22,13 @@ DATA = HERE / "data"
 EXPECTED = {
     # 実データ 3 studies は ° / µ / × 等を含むため MB_IR0024（正規化 warning）が発火する。
     "MTBKS210": {"MB_IR0024", "MB_IR0037"},
-    "MTBKS230": {"MB_IR0018", "MB_IR0024", "MB_IR0037", "MB_SR0005", "MB_SR0046"},
-    "MTBKS240": {"MB_IR0018", "MB_IR0024", "MB_IR0037"},
+    # MTBKS230 は IDF factor name/type が "missing"。factor 任意化に伴い null value は不許可に
+    # したので、Name は MB_IR0007（error/ignore）、Type は MB_IR0023（任意項目の null warning）
+    # で受ける。Factor Value 列が無いことは MB_SR0005 の対象外になった（任意化）。
+    # MB_IR0018 は LC-MS Chromatography: Temperature を必須から外したので出なくなった
+    # （両 study とも LC-MS。MB_IR0018 自体は LC-DAD-MS 等で現役。担保は unit 側）。
+    "MTBKS230": {"MB_IR0007", "MB_IR0023", "MB_IR0024", "MB_IR0037", "MB_SR0046"},
+    "MTBKS240": {"MB_IR0024", "MB_IR0037"},
     # 非 ASCII 正規化 autofix ＋ 残存 error の合成ケース（IDF=MB_IR0024 / SDRF=MB_SR0030）。
     "MTBKS_charnorm": {"MB_IR0024", "MB_SR0030", "MB_IR0037"},
     # MB_SR0003（列名重複）は singleton_columns のみが対象。Unit[...] のような修飾列は
@@ -38,6 +43,11 @@ EXPECTED = {
     "MTBKS_msi": {"MB_IR0024", "MB_IR0037", "MB_SR0046"},
     # 同じ SDRF でも MSI 以外（FIA-MS）で Extract Name が無ければ MB_SR0004 は出る。
     "MTBKS_noextract": {"MB_IR0024", "MB_IR0037", "MB_SR0004"},
+    # MB_CR0001 の双方向照合。IDF が dose のみ・SDRF が Factor Value[tissue] のみなので
+    # only in IDF と only in SDRF の 2 件が出る（rule_id 集合では 1 件に畳まれるため、
+    # 件数と向きの担保は tests/unit/test_metabobank_factor.py 側）。
+    # Experimental Factor Type は値なし＝任意・無検証なので何も出ない。
+    "MTBKS_factor": {"MB_CR0001", "MB_IR0024", "MB_IR0037"},
 }
 
 

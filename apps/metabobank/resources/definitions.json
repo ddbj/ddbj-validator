@@ -71,8 +71,6 @@
       "Study Title",
       "Study Description",
       "Experimental Design",
-      "Experimental Factor Name",
-      "Experimental Factor Type",
       "Person Last Name",
       "Person First Name",
       "Person Affiliation",
@@ -94,6 +92,7 @@
       "MAGE-TAB Version",
       "Study Title",
       "Study Description",
+      "Experimental Factor Name",
       "Person Last Name",
       "Person First Name",
       "Person Affiliation",
@@ -104,11 +103,11 @@
       "Comment[Experiment type]",
       "Comment[Submission type]"
     ],
+    "autofix_null_to_empty": [
+      "Experimental Factor Name",
+      "Experimental Factor Type"
+    ],
     "required_group_error": {
-      "Experimental Factor": [
-        "Experimental Factor Name",
-        "Experimental Factor Type"
-      ],
       "Person": [
         "Person Last Name",
         "Person First Name",
@@ -234,7 +233,6 @@
           "Autosampler model",
           "Column model",
           "Column type",
-          "Temperature",
           "Guard column"
         ],
         "Mass spectrometry": [
@@ -255,7 +253,6 @@
           "Autosampler model",
           "Column model",
           "Column type",
-          "Temperature",
           "Guard column",
           "Detector",
           "Signal range"
@@ -278,7 +275,6 @@
           "Autosampler model",
           "Column model",
           "Column type",
-          "Temperature",
           "Guard column"
         ],
         "Mass spectrometry": [
@@ -299,11 +295,9 @@
           "Autosampler model",
           "Column model 1",
           "Column type 1",
-          "Temperature 1",
           "Guard column",
           "Column model 2",
-          "Column type 2",
-          "Temperature 2"
+          "Column type 2"
         ],
         "Mass spectrometry": [
           "Scan polarity",
@@ -323,7 +317,6 @@
           "Autosampler model",
           "Column model",
           "Column type",
-          "Temperature",
           "Guard column",
           "Detector"
         ],
@@ -457,8 +450,7 @@
         "NMR sample": [
           "NMR tube type",
           "Solvent",
-          "Sample pH",
-          "Temperature"
+          "Sample pH"
         ],
         "NMR spectroscopy": [
           "Instrument",
@@ -544,10 +536,7 @@
     "required_columns_warning": [
       "Comment\\[BioSample\\]",
       "Comment\\[sample_title\\]",
-      "Raw Data File",
-      "Processed Data File",
-      "Metabolite Assignment File",
-      "Factor Value\\[[-_ A-Za-z0-9.]+\\]"
+      "Raw Data File"
     ],
     "required_group_warning": {
       "Raw Data File": [

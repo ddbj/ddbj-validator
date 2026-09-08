@@ -19,6 +19,8 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     "MB_SR0017",   # Factor value is constant across all rows.
     "MB_SR0023",   # Characteristics value and BioSample attribute value do not match.
     "MB_SR0030",   # Non-ASCII or control characters in an SDRF cell.
+    # --- IDF↔SDRF ---
+    "MB_CR0001",   # Experimental factor in SDRF does not match IDF Experimental Factor Name.
 })
 
 

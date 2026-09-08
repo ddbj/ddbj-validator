@@ -124,3 +124,69 @@ def test_required_columns_error_exclude_targets_required_columns():
     bad = [(st, col) for st, cols in SDRF.get("required_columns_error_exclude", {}).items()
            for col in cols if col not in req]
     assert not bad, f"required_columns_error に無い列を除外: {bad}"
+
+
+def test_required_groups_have_at_least_two_members():
+    """required_group_* のグループは 2 要素以上であること。
+
+    MB_IR0008/0009 は「グループ内のどれかが埋まっていて、どれかが空」で発火するので、
+    1 要素のグループは構造上発火しない＝定義だけ残った死んだ設定になる。
+    """
+    for key in ("required_group_error", "required_group_warning"):
+        for name, members in IDF.get(key, {}).items():
+            assert len(members) >= 2, f"idf.{key}['{name}'] が 1 要素（発火しない）"
+
+
+def test_experimental_factor_is_fully_optional():
+    """Experimental Factor Name / Type は必須ではない（任意項目）。
+
+    factor は「書かない」が正規の書き方なので、必須にすると正規の書き方が error になる。
+    Name は null value のみ不許可（required_not_null）で、Type は何も検証しない。
+    """
+    assert "Experimental Factor Name" not in IDF["required_error"]
+    assert "Experimental Factor Type" not in IDF["required_error"]
+    assert "Experimental Factor Type" not in IDF["required_not_null"]
+    assert "Experimental Factor" not in IDF["required_group_error"]
+    # Name は「書かない」は可・「missing と書く」は不可
+    assert "Experimental Factor Name" in IDF["required_not_null"]
+
+
+def test_experimental_factor_type_has_no_validation():
+    """Type は CV も値形式も持たない（何もチェックしない任意項目）。"""
+    for level in ("error", "warning"):
+        assert "Experimental Factor Type" not in CV_IDF.get(level, {})
+    assert "Experimental Factor Type" not in DEFS.get("value_formats", {}).get("idf", {})
+
+
+def test_factor_value_column_is_not_required():
+    """SDRF の Factor Value / Processed Data File / Metabolite Assignment File は任意。"""
+    joined = " ".join(SDRF["required_columns_warning"] + SDRF["required_columns_error"])
+    for token in ("Factor Value", "Processed Data File", "Metabolite Assignment File"):
+        assert token not in joined, f"{token} が必須/推奨列に残っている"
+
+
+def test_autofix_null_to_empty_fields_are_known_idf_fields():
+    """autofix_null_to_empty の項目名は idf.fields に存在すること（誤記の検出）。"""
+    unknown = sorted(set(IDF["autofix_null_to_empty"]) - set(IDF["fields"]))
+    assert not unknown, f"idf.fields に無い項目名: {unknown}"
+
+
+def test_autofix_null_to_empty_fields_are_not_mandatory():
+    """null value を空にする項目は必須であってはならない（空にすると MB_IR0005 になる）。"""
+    for f in IDF["autofix_null_to_empty"]:
+        assert f not in IDF["required_error"], f"{f} は必須なので空にできない"
+        assert f not in IDF["required_warning"], f"{f} は必須なので空にできない"
+
+
+def test_temperature_is_never_a_required_protocol_parameter():
+    """Temperature 系（Temperature / Temperature 1 / 2）はどの submission type でも必須にしない。
+
+    公開 114 study で MB_IR0018 が発火した 92 件（81%）は、submission type を問わず全部この
+    Temperature の欠落が原因だった（他パラメータの欠落は 1 件も無し）。記載負荷が高く、
+    実運用と要求が合っていないため NMR sample も含めて任意とする。
+    """
+    left = [f"{st} / {ptype}: {x}"
+            for st, protos in IDF["required_protocol_parameters"].items()
+            for ptype, params in protos.items()
+            for x in params if x == "Temperature" or x.startswith("Temperature ")]
+    assert not left, f"Temperature が必須のまま: {left}"

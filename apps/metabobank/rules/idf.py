@@ -269,20 +269,6 @@ class MB_IR0037(MbRule):
         return []
 
 
-class MB_IR0035(MbRule):
-    rule_id = "MB_IR0035"; level = "warning"; target = "IDF"
-    description = "Experimental factor name and type do not match (type auto-corrected to name)."
-
-    def validate(self, sub, context):
-        if not sub.idf:
-            return []
-        names = sub.idf.get("Experimental Factor Name")
-        types = sub.idf.get("Experimental Factor Type")
-        if names != types and set(names) - set(types):
-            return [self.result(message=f"{self.description} ({', '.join(set(names) - set(types))})")]
-        return []
-
-
 class MB_IR0025(MbRule):
     rule_id = "MB_IR0025"; level = "warning"; target = "IDF"
     description = "Invalid publication identifier (PubMed ID must be numeric)."

@@ -311,7 +311,7 @@ ddbj-validator metabobank --idf MTBKS231.idf.txt --sdrf MTBKS231.sdrf.txt
 
 - 入力: positional でディレクトリ、または `--idf` / `--sdrf`。
 - モード: 既定 NCBI API。`-d` で内部 DB（BioSample 属性突合 `MB_SR0021-0023`。SDRF の全 Characteristics 属性を BioSample と突合）。
-- autofix: `-f`, `--force-fix` で全適用、または対話（提案ごとにキー入力）。日付 `/`→`-`〔MB_IR0013〕、非推奨 null→`missing`〔MB_IR0021〕、Experimental Factor Type の補完〔MB_IR0035〕を `fixed/` に出力。
+- autofix: `-f`, `--force-fix` で全適用、または対話（提案ごとにキー入力）。日付 `/`→`-`〔MB_IR0013〕、非推奨 null→`missing`〔MB_IR0021〕を `fixed/` に出力。
 - **BioSample ↔ SDRF 同期の autofix**（`MB_SR0023` の値不一致。MetaboBank の SDRF は BioSample の引き写しのため双方向）:
     - 既定（`[y]` / `-f`）= **BioSample → SDRF**（`fixed/` の SDRF を BS 値へ修正。入力 SDRF は変更しません）。
     - `-b`, `--biosample`（内部 DB 必須）併用時のみ **SDRF → BioSample**（`[b]`）を選べ、`biosample/` に SSUB 単位の BioSample 更新 TSV を出力します。

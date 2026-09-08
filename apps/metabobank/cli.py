@@ -133,14 +133,16 @@ def _write_fixed(sub, out_dir):
     from apps.metabobank.defs import load_definitions
     fixed = Path(out_dir) / "fixed"
     fixed.mkdir(parents=True, exist_ok=True)
-    nulls_nr = load_definitions().get("null_values", {}).get("not_recommended", [])
+    defs = load_definitions()
+    nulls_nr = defs.get("null_values", {}).get("not_recommended", [])
+    nulls_ok = set(defs.get("null_values", {}).get("accepted", []))
+    # null value を書くこと自体が許されない任意項目（factor は「書かない」が正規の書き方）。
+    # 非推奨 null → missing（MB_IR0021）を全項目に一律適用した上で、二段目としてここに
+    # 挙げた項目だけ null value を空にする。除外項目を持たないので一段目の判定は素のまま。
+    null_to_empty = set(defs.get("idf", {}).get("autofix_null_to_empty", []))
     written = []
     if sub.idf:
         idf = sub.idf
-        # Experimental Factor Type ← Name（MB_IR0035）
-        names = idf.get("Experimental Factor Name")
-        if names and idf.get("Experimental Factor Type") != names:
-            idf.fields["Experimental Factor Type"] = list(names)
         lines = []
         for name in idf.field_order:
             if name in idf.blank_before:
@@ -155,7 +157,11 @@ def _write_fixed(sub, out_dir):
                     if re.fullmatch(nr, vv.strip()):  # 非推奨 null → missing（MB_IR0021）
                         vv = "missing"
                         break
+                if name in null_to_empty and vv.strip() in nulls_ok:
+                    vv = ""      # 二段目: null value なら値を書かない（MB_IR0007 の解消）
                 vals.append(vv)
+            while vals and not vals[-1].strip():
+                vals.pop()       # 末尾の空値は列を落とす（項目名だけの行にする）
             lines.append("\t".join([name] + vals))
         p = fixed / Path(idf.raw_path).name
         p.write_text("\n".join(lines) + "\n", encoding="utf-8")
