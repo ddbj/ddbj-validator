@@ -178,15 +178,92 @@ def test_autofix_null_to_empty_fields_are_not_mandatory():
         assert f not in IDF["required_warning"], f"{f} は必須なので空にできない"
 
 
-def test_temperature_is_never_a_required_protocol_parameter():
-    """Temperature 系（Temperature / Temperature 1 / 2）はどの submission type でも必須にしない。
-
-    公開 114 study で MB_IR0018 が発火した 92 件（81%）は、submission type を問わず全部この
-    Temperature の欠落が原因だった（他パラメータの欠落は 1 件も無し）。記載負荷が高く、
-    実運用と要求が合っていないため NMR sample も含めて任意とする。
-    """
-    left = [f"{st} / {ptype}: {x}"
+def _temperature_params():
+    """required_protocol_parameters に現れる Temperature 系項目（出力対象）。"""
+    return [(st, ptype, x)
             for st, protos in IDF["required_protocol_parameters"].items()
             for ptype, params in protos.items()
             for x in params if x == "Temperature" or x.startswith("Temperature ")]
-    assert not left, f"Temperature が必須のまま: {left}"
+
+
+def test_temperature_is_still_emitted_as_a_protocol_parameter():
+    """Temperature 系は Protocol Parameters として出力し続けること（Excel に欄を残す）。
+
+    `required_protocol_parameters` は登録システムが IDF/Excel を生成する際の出力項目を
+    規定するキーなので、ここから消すと「任意になる」ではなく「欄自体が消える」。
+    公式 Excel テンプレは 11 種すべてに Parameter Value[Temperature] を持つ
+    （LC-DAD-MS は 2025-01-20 の改訂で追加された）ため、出力は維持する。
+    """
+    found = {(st, ptype) for st, ptype, _ in _temperature_params()}
+    for expected in (("LC-MS", "Chromatography"), ("GC-MS", "Chromatography"),
+                     ("LC-DAD-MS", "Chromatography"), ("GC-FID-MS", "Chromatography"),
+                     ("GCGC-MS", "Chromatography"), ("NMR", "NMR sample")):
+        assert expected in found, f"{expected} の Temperature が出力対象から消えている"
+
+
+def test_protocol_parameters_required_matches_template_mandatory_columns():
+    """MB_IR0018 が必須と見るのは公式テンプレで ORANGE(mandatory) の 2 列だけであること。
+
+    公式 Excel テンプレ 11 種の Parameter Value 列 159 個を色で判定すると、
+    ORANGE(mandatory) は MSI の Data processing software / version の 2 個のみで、
+    残り 157 個は BLUE(optional)。テンプレは docs/（.gitignore 対象）にあり
+    テストから読めないので、判定結果をここに固定する。
+    """
+    assert IDF["protocol_parameters_required"] == {
+        "MSI": {"Data processing": ["Data processing software",
+                                    "Data processing software version"]}}
+
+
+def test_temperature_is_never_required():
+    """Temperature 系は必須リストに載っていないこと（出力はするが任意）。
+
+    以前は出力仕様のキー（required_protocol_parameters）をそのまま必須として読んでいたため、
+    公開 114 study の 81%（92 件）で Temperature の未記入を誤ってエラーにしていた。
+    """
+    req = {x for protos in IDF["protocol_parameters_required"].values()
+           for params in protos.values() for x in params}
+    bad = sorted({x for _, _, x in _temperature_params() if x in req})
+    assert not bad, f"Temperature が必須のまま: {bad}"
+
+
+def test_required_parameters_are_also_emitted():
+    """必須にする項目は出力仕様にも入っていること（出さないものは必須にできない）。"""
+    emitted = IDF["required_protocol_parameters"]
+    for st, protos in IDF["protocol_parameters_required"].items():
+        for ptype, params in protos.items():
+            have = emitted.get(st, {}).get(ptype, [])
+            missing = sorted(set(params) - set(have))
+            assert not missing, f"required_protocol_parameters['{st}']['{ptype}'] に無い: {missing}"
+
+
+def test_required_protocol_parameters_have_a_column_position():
+    """Protocol Parameters に出す項目は必ず sdrf.column_order にも位置を持つこと。
+
+    登録システムは IDF `Protocol Parameters` を definitions からのみ生成するため、
+    片方だけ更新すると SDRF に列があるのに IDF が宣言せず MB_CR0003
+    （Parameter Value in SDRF is not declared as a Protocol Parameter in IDF）に化ける。
+    実際に LC-DAD-MS の `Resolution` が公式 Excel テンプレにだけ存在して両方から欠けていた。
+    """
+    order = SDRF["column_order"]
+    for st, protos in IDF["required_protocol_parameters"].items():
+        if st not in order:
+            continue
+        cols = set(order[st])
+        missing = sorted({x for params in protos.values() for x in params
+                          if f"Parameter Value[{x}]" not in cols})
+        assert not missing, f"sdrf.column_order['{st}'] に列が無い必須 parameter: {missing}"
+
+
+def test_lc_dad_ms_declares_resolution_as_protocol_parameter():
+    """LC-DAD-MS の Chromatography は Resolution を Protocol Parameters に出すこと。
+
+    このキーは「IDF Protocol Parameters として出力する項目」を規定しており、
+    必須／任意は規定していない（Excel には任意項目として現れる）。
+    公式 Excel テンプレの MB_Study_IDF / Protocol Parameters は
+    `...;Column type;Resolution;Temperature;Guard column;Detector;Signal range` で
+    Resolution は Column type の直後。ここが欠けていると登録システムが IDF に宣言せず、
+    SDRF に列があるのに MB_CR0003 に化ける。
+    """
+    ch = IDF["required_protocol_parameters"]["LC-DAD-MS"]["Chromatography"]
+    assert "Resolution" in ch
+    assert ch.index("Resolution") == ch.index("Column type") + 1

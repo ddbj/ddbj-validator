@@ -271,10 +271,28 @@ def test_nmr_sample_temperature_is_optional():
     assert not any("NMR sample:" in m for m in msgs), msgs
 
 
-def test_ir0018_still_detects_other_missing_parameters():
-    """Temperature を外しても MB_IR0018 自体は他パラメータの欠落を検出できること。"""
-    assert _chroma_missing("LC-MS", "Chromatography instrument") == [
-        "Autosampler model", "Column model", "Column type", "Guard column"]
+def test_ir0018_does_not_require_optional_chromatography_parameters():
+    """Chromatography の parameter は全部任意なので、空でも MB_IR0018 は出ない。
+
+    公式テンプレでは Parameter Value 列 159 個中 157 個が BLUE(optional)。
+    以前は出力仕様のキーを必須として読んでいたため、任意列の未記入がエラーになっていた。
+    """
+    assert _chroma_missing("LC-MS", "") == []
+
+
+def test_ir0018_detects_the_mandatory_msi_parameters():
+    """MB_IR0018 が現に検出するのは MSI の ORANGE(mandatory) 2 列だけ。"""
+    fields = {
+        "Comment[Submission type]": ["MSI"],
+        "Protocol Name": ["P1"],
+        "Protocol Type": ["Data processing"],
+        "Protocol Parameters": ["Data processing software"],   # version が無い
+    }
+    sub = Submission(idf=Idf(fields=fields, field_order=list(fields)),
+                     sdrf=Sdrf(header=["Source Name"], rows=[["s1"]]))
+    msgs = [r["message"] for r in I.MB_IR0018().validate(sub, CTX)]
+    assert len(msgs) == 1 and "Data processing software version" in msgs[0]
+    assert "Data processing software," not in msgs[0]   # 宣言済みの方は挙げない
 
 
 # --- MB_SR0047: Factor Value 列があるのに値が無い ---------------------------

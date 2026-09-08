@@ -233,6 +233,7 @@
           "Autosampler model",
           "Column model",
           "Column type",
+          "Temperature",
           "Guard column"
         ],
         "Mass spectrometry": [
@@ -253,6 +254,8 @@
           "Autosampler model",
           "Column model",
           "Column type",
+          "Resolution",
+          "Temperature",
           "Guard column",
           "Detector",
           "Signal range"
@@ -275,6 +278,7 @@
           "Autosampler model",
           "Column model",
           "Column type",
+          "Temperature",
           "Guard column"
         ],
         "Mass spectrometry": [
@@ -295,9 +299,11 @@
           "Autosampler model",
           "Column model 1",
           "Column type 1",
+          "Temperature 1",
           "Guard column",
           "Column model 2",
-          "Column type 2"
+          "Column type 2",
+          "Temperature 2"
         ],
         "Mass spectrometry": [
           "Scan polarity",
@@ -317,6 +323,7 @@
           "Autosampler model",
           "Column model",
           "Column type",
+          "Temperature",
           "Guard column",
           "Detector"
         ],
@@ -450,7 +457,8 @@
         "NMR sample": [
           "NMR tube type",
           "Solvent",
-          "Sample pH"
+          "Sample pH",
+          "Temperature"
         ],
         "NMR spectroscopy": [
           "Instrument",
@@ -458,6 +466,14 @@
           "Number of transients",
           "Pulse sequence name",
           "Magnetic field strength"
+        ]
+      }
+    },
+    "protocol_parameters_required": {
+      "MSI": {
+        "Data processing": [
+          "Data processing software",
+          "Data processing software version"
         ]
       }
     },
@@ -614,6 +630,7 @@
         "Parameter Value[Autosampler model]",
         "Parameter Value[Column model]",
         "Parameter Value[Column type]",
+        "Parameter Value[Resolution]",
         "Parameter Value[Guard column]",
         "Parameter Value[Detector]",
         "Parameter Value[Signal range]",
