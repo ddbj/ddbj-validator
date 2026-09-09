@@ -12,6 +12,9 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     "MB_IR0013",   # Invalid date format. Use YYYY-MM-DD.
     "MB_IR0017",   # Missing protocol type(s) for the submission type.
     "MB_IR0018",   # Missing protocol parameter(s) for the submission type.
+    # residual（ASCII へ正規化しきれなかった非 ASCII）は error として出る。クラス属性の
+    # level="warning" は既定値にすぎず、mapped=warning / residual=error を結果ごとに
+    # 出し分けているので、warning が ignore に混じっているわけではない。
     "MB_IR0024",   # Non-ASCII characters in an IDF field were normalized to ASCII.
     "MB_IR0037",   # Email address is required for the submitter.（非公開のため reminder）
     # --- SDRF ---
