@@ -46,8 +46,13 @@ def write_text_reports(summary, details, out_dir):
     (d / "validation_report_details.txt").write_text(details, encoding="utf-8")
 
 
-def write_json_report(results, out_dir, fname, version, stats_key="input", include_object=False):
-    """JSON レポート。stats_key は "file"/"input"、include_object 時は messages に object(=sample) を含める。"""
+def write_json_report(results, out_dir, fname, version, stats_key="input", include_object=False,
+                      extra_fields=None):
+    """JSON レポート。stats_key は "file"/"input"、include_object 時は messages に object(=sample) を含める。
+
+    `extra_fields(r) -> dict` を渡すと、各 message にその内容を追加する（app 固有の
+    reference / annotation / detail 等。未指定なら従来どおりの最小構造）。
+    """
     c = counts(results)
 
     def _msg(r):
@@ -62,6 +67,8 @@ def write_json_report(results, out_dir, fname, version, stats_key="input", inclu
         for k in ("line", "assay"):
             if r.get(k) is not None:
                 m[k] = r[k]
+        if extra_fields:
+            m.update(extra_fields(r) or {})
         return m
 
     payload = {

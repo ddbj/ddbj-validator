@@ -22,6 +22,12 @@ def _matches_any(colname, patterns):
     return False
 
 
+def _source_name(sub, row):
+    """行の Source Name 値（Assay Name 列が無い SDRF の annotation 用）。"""
+    idxs = sub.sdrf.col_indices("Source Name") if sub.sdrf else []
+    return row[idxs[0]].strip() if idxs and idxs[0] < len(row) else ""
+
+
 def _assay(sub, row):
     """行の Assay Name 値（レポートの location 用）。Assay Name 列が無ければ空。"""
     idxs = sub.sdrf.col_indices("Assay Name") if sub.sdrf else []
@@ -41,7 +47,10 @@ class MB_SR0003(MbRule):
         singleton = _sdrf_def(context).get("singleton_columns", [])
         header = list(sub.sdrf.header)
         dup = {c for c in singleton if header.count(c) > 1}
-        return [self.result(message=f"{self.description} ({', '.join(sorted(dup))})")] if dup else []
+        if not dup:
+            return []
+        cols = ", ".join(sorted(dup))
+        return [self.result(message=f"{self.description} ({cols})", column=cols)]
 
 
 class MB_SR0024(MbRule):
@@ -51,7 +60,10 @@ class MB_SR0024(MbRule):
     def validate(self, sub, context):
         if not sub.sdrf:
             return []
-        return [self.result()] if any(_empty(h) for h in sub.sdrf.header) else []
+        blank = [i + 1 for i, h in enumerate(sub.sdrf.header) if _empty(h)]
+        if not blank:
+            return []
+        return [self.result(column=", ".join(f"column {i}" for i in blank))]
 
 
 class MB_SR0004(MbRule):
@@ -69,7 +81,9 @@ class MB_SR0004(MbRule):
         exclude = set(_sdrf_def(context).get("required_columns_error_exclude", {}).get(st, []))
         miss = [req for req in _sdrf_def(context).get("required_columns_error", [])
                 if req not in header and req not in exclude]
-        return [self.result(message=f"{self.description} ({', '.join(miss)})")] if miss else []
+        if not miss:
+            return []
+        return [self.result(message=f"{self.description} ({', '.join(miss)})", column=", ".join(miss))]
 
 
 class MB_SR0005(MbRule):
@@ -85,7 +99,9 @@ class MB_SR0005(MbRule):
         for pat in _sdrf_def(context).get("required_columns_warning", []):
             if not any(_matches_any(h, [pat]) for h in header):
                 miss.append(pat)
-        return [self.result(message=f"{self.description} ({', '.join(miss)})")] if miss else []
+        if not miss:
+            return []
+        return [self.result(message=f"{self.description} ({', '.join(miss)})", column=", ".join(miss))]
 
 
 class MB_SR0006(MbRule):
@@ -98,8 +114,10 @@ class MB_SR0006(MbRule):
         if not sub.sdrf:
             return []
         patterns = _sdrf_def(context).get("fields", [])
-        bad = [h for h in sub.sdrf.header if h and not _matches_any(h, patterns)]
-        return [self.result(message=f"{self.description} ({', '.join(sorted(set(bad)))})")] if bad else []
+        bad = sorted({h for h in sub.sdrf.header if h and not _matches_any(h, patterns)})
+        if not bad:
+            return []
+        return [self.result(message=f"{self.description} ({', '.join(bad)})", column=", ".join(bad))]
 
 
 class MB_SR0009(MbRule):
@@ -141,7 +159,9 @@ class MB_SR0009(MbRule):
                 vals = [(row[i] if i < len(row) else "") for i in idxs]
                 if all(_empty(v) or v.strip() in nulls for v in vals):
                     out.append(self.result(message=f"{self.description} ({col}, row {r + 1})",
-                                           assay=_assay(sub, row), line=r + 1))
+                                           assay=_assay(sub, row), line=r + 1,
+                                           column=col, value=vals[0],
+                                           source_name=_source_name(sub, row)))
                     break     # 列ごとに 1 件（最初の該当行）に留める
         return out
 
@@ -154,13 +174,22 @@ class MB_SR0018(MbRule):
         if not sub.sdrf:
             return []
         chars = [h for h in sub.sdrf.header if re.fullmatch(r"Characteristics\[[-_ /A-Za-z0-9.]+\]", h)]
-        return [self.result(message=f"{self.description} (Found: {len(chars)})")] if len(chars) < 2 else []
+        if len(chars) >= 2:
+            return []
+        return [self.result(message=f"{self.description} (Found: {len(chars)})",
+                            column=", ".join(chars))]
+
+
+# Factor Value 列。`[]` の中身が空の `Factor Value[]` も拾う（`.*`）。
+# `.+` だと空名の列を素通しし、MB_SR0006 も sdrf.fields の `Factor Value\[.*\]` に
+# 当たるため誰も指摘しなくなる。
+_FACTOR_VALUE_RE = re.compile(r"Factor Value\[(.*)\]")
 
 
 def _factor_value_columns(sdrf):
-    """SDRF の Factor Value[...] 列を (列名, 全行の値) で返す。"""
+    """SDRF の Factor Value[...] 列を (列名, 全行の値) で返す。空名の列も含む。"""
     for h in sdrf.header:
-        if re.fullmatch(r"Factor Value\[.+\]", h):
+        if _FACTOR_VALUE_RE.fullmatch(h):
             ix = sdrf.col_indices(h)[0]
             yield h, [(row[ix].strip() if ix < len(row) else "") for row in sdrf.rows]
 
@@ -183,7 +212,8 @@ class MB_SR0017(MbRule):
             if _has_no_value(vals, nulls):
                 continue      # 「一定」ではなく「値が無い」。MB_SR0047 が担当する
             if len(set(vals)) == 1:
-                out.append(self.result(message=f"{self.description} ({h})"))
+                out.append(self.result(message=f"{self.description} ({h})",
+                                       column=h, rows=len(vals)))
         return out
 
 
@@ -205,7 +235,8 @@ class MB_SR0047(MbRule):
         out = []
         for h, vals in _factor_value_columns(sub.sdrf):
             if _has_no_value(vals, nulls):
-                out.append(self.result(message=f"{self.description} ({h})"))
+                out.append(self.result(message=f"{self.description} ({h})",
+                                       column=h, rows=len(vals)))
         return out
 
 
@@ -224,7 +255,9 @@ class MB_SR0019(MbRule):
                 for i in idxs:
                     v = row[i] if i < len(row) else ""
                     if v and v.strip() and not re.fullmatch(pat, v.strip()):
-                        out.append(self.result(message=f"{self.description} ({col}: '{v}')", assay=_assay(sub, row), line=r + 1))
+                        out.append(self.result(message=f"{self.description} ({col}: '{v}')",
+                                               assay=_assay(sub, row), line=r + 1,
+                                               column=col, value=v, source_name=_source_name(sub, row)))
         return out
 
 
@@ -261,7 +294,8 @@ class MB_SR0026(MbRule):
             # 見つからなくても次へ（任意列があるため厳密チェックはしない）
         # 厳密な順序違反判定は複雑なため、ここでは Source Name が先頭かの最低限のみ error 化
         if seq and seq[0] != "Source Name":
-            return [self.result(message=f"{self.description} (first column: '{sub.sdrf.header[0]}', expected 'Source Name')")]
+            return [self.result(message=f"{self.description} (first column: '{sub.sdrf.header[0]}', expected 'Source Name')",
+                                column=sub.sdrf.header[0])]
         return []
 
 
@@ -278,7 +312,9 @@ class MB_SR0033(MbRule):
         out = []
         for r, row in enumerate(sub.sdrf.rows):
             if all(_empty(row[i]) if i < len(row) else True for i in idxs):
-                out.append(self.result(message=f"{self.description} (row {r + 1})", assay=_assay(sub, row), line=r + 1))
+                out.append(self.result(message=f"{self.description} (row {r + 1})",
+                                       assay=_assay(sub, row), line=r + 1,
+                                       column="Protocol REF", source_name=_source_name(sub, row)))
         return out
 
 
@@ -303,16 +339,21 @@ class MB_SR0030(MbRule):
             where = f"{fx['where']}, row {line}"
             if fx["mapped"]:
                 out.append(self.result(message=fix_warning_message(where, fx["mapped"]),
-                                       level="warning", assay=_assay(sub, row), line=line))
+                                       level="warning", assay=_assay(sub, row), line=line,
+                                       column=fx["where"], value="".join(sorted(fx["mapped"])),
+                                       source_name=_source_name(sub, row)))
             if fx["residual"]:
                 out.append(self.result(message=residual_error_message(where, fx["residual"]),
-                                       level="error", assay=_assay(sub, row), line=line))
+                                       level="error", assay=_assay(sub, row), line=line,
+                                       column=fx["where"], value="".join(sorted(fx["residual"])),
+                                       source_name=_source_name(sub, row)))
         # (2) 制御文字（ord<32・タブ除く）は残存非 ASCII と同様に error
         for r, row in enumerate(rows):
             ctrl = {ch for cell in row for ch in cell if ord(ch) < 32 and ch != "\t"}
             if ctrl:
                 out.append(self.result(message=residual_error_message(f"row {r + 1}", ctrl),
-                                       level="error", assay=_assay(sub, row), line=r + 1))
+                                       level="error", assay=_assay(sub, row), line=r + 1,
+                                       value="".join(sorted(ctrl)), source_name=_source_name(sub, row)))
         return out
 
 
@@ -329,7 +370,9 @@ class _SdrfCvBase(MbRule):
                 for i in idxs:
                     v = row[i] if i < len(row) else ""
                     if v and v.strip() and v.strip() not in allowed:
-                        out.append(self.result(message=f"{self.description} ({col}: '{v}')", assay=_assay(sub, row), line=r + 1))
+                        out.append(self.result(message=f"{self.description} ({col}: '{v}')",
+                                               assay=_assay(sub, row), line=r + 1,
+                                               column=col, value=v, source_name=_source_name(sub, row)))
         return out
 
 
@@ -386,7 +429,8 @@ class MB_SR0034(MbRule):
         for i, types in _protocol_types_per_ref_column(sub):
             if len(types) > 1:
                 out.append(self.result(
-                    message=f"{self.description} (Protocol REF at column {i + 1}: {', '.join(types)})"))
+                    message=f"{self.description} (Protocol REF at column {i + 1}: {', '.join(types)})",
+                    column=f"Protocol REF (column {i + 1})", value=", ".join(types)))
         return out
 
 
@@ -402,7 +446,7 @@ class MB_SR0035(MbRule):
         dup = sorted({t for t in rep if rep.count(t) > 1})
         if not dup:
             return []
-        return [self.result(message=f"{self.description} ({', '.join(dup)})")]
+        return [self.result(message=f"{self.description} ({', '.join(dup)})", column=", ".join(dup))]
 
 
 # --- データファイル名・ディレクトリ名の禁則文字（MB_SR0036 / MB_SR0037）--------
@@ -451,7 +495,8 @@ class MB_SR0036(MbRule):
             _, filename = _split_path(path)
             if filename and not _VALID_FILENAME.fullmatch(filename):
                 out.append(self.result(message=f"{self.description} ('{filename}')",
-                                       assay=_assay(sub, row), line=line))
+                                       assay=_assay(sub, row), line=line,
+                                       value=filename, source_name=_source_name(sub, row)))
         return out
 
 
@@ -469,5 +514,6 @@ class MB_SR0037(MbRule):
             if dirname and dirname not in seen and not _VALID_DIRNAME.fullmatch(dirname):
                 seen.add(dirname)
                 out.append(self.result(message=f"{self.description} ('{dirname}')",
-                                       assay=_assay(sub, row), line=line))
+                                       assay=_assay(sub, row), line=line,
+                                       value=dirname, source_name=_source_name(sub, row)))
         return out

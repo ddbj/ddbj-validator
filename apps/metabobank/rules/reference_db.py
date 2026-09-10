@@ -37,7 +37,8 @@ class MB_IR0040(MbRule):
         citable = {str(x).strip().upper() for x in citable}
         refs = sorted({v.strip().upper() for v in sub.idf.get("Comment[BioProject]") if v.strip()})
         # agg_noun を付けると summary で「'first' etc, N Nouns」に集約される（details は全件）。
-        return [self.result(message=f"{self.description} (BioProject: '{bp}')", agg_noun="BioProjects")
+        return [self.result(message=f"{self.description} (BioProject: '{bp}')", agg_noun="BioProjects",
+                            field="Comment[BioProject]", value=bp)
                 for bp in refs if re.match(r"^(PRJDB|PSUB)", bp) and bp not in citable]
 
 
@@ -56,5 +57,6 @@ class MB_IR0041(MbRule):
         refs = sorted({s.strip().upper()
                        for s in _bs.referenced_samds(sub, _bs.ref_columns(context, default=_REF_DEFAULT))
                        if s.strip()})
-        return [self.result(message=f"{self.description} (BioSample: '{s}')", agg_noun="BioSamples")
+        return [self.result(message=f"{self.description} (BioSample: '{s}')", agg_noun="BioSamples",
+                            field="BioSample", value=s)
                 for s in refs if s.startswith("SAMD") and s not in citable]
