@@ -348,3 +348,15 @@ def test_unit_column_names_match_their_anchor_parameter():
             assert anchor in expected, f"column_order['{st}']: {c} の直前が想定外の {anchor}"
             assert c == expected[anchor], \
                 f"column_order['{st}']: {anchor} の直後は {expected[anchor]} のはずが {c}"
+
+
+def test_required_value_error_columns_are_not_existence_required():
+    """`required_value_error` の列は存在必須にしないこと（列の有無と値の必須は別）。
+
+    Raw Data File は raw を持たない投稿では列そのものを書かないのが正規なので、
+    存在は required_columns_warning どまり。ただし列があるなら値は必須（MB_SR0009）。
+    """
+    for col in SDRF["required_value_error"]:
+        assert col not in SDRF["required_columns_error"], f"{col} が存在必須になっている"
+        assert any(col == p or col in p for p in SDRF["required_columns_warning"]), \
+            f"{col} が推奨列にも無い（存在チェックが誰にも拾われない）"

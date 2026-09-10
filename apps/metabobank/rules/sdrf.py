@@ -106,20 +106,43 @@ class MB_SR0009(MbRule):
     rule_id = "MB_SR0009"; level = "error"; target = "SDRF"
     description = "Missing or null value for a required column."
 
+    # Protocol REF は列名が重複する順序付き列で、値の欠落は MB_SR0033 が行単位で見ている。
+    # ここで扱うと二重報告になるので除外する。
+    _VALUE_CHECK_EXCLUDE = ("Protocol REF",)
+
     def validate(self, sub, context):
+        """必須列の「存在」ではなく「値」を見る。
+
+        対象は 2 つ。
+        - `required_columns_error`: MB_SR0004（存在チェック）と同じ集合。submission type
+          ごとの `required_columns_error_exclude` も同じように効かせる
+          （MSI は抽出工程が無く Extract Name 列そのものが無いので対象外になる）。
+        - `required_value_error`: 列の存在は必須でないが、**列があるなら値は必須**の列。
+          `Raw Data File` がこれ。無くても警告どまり（required_columns_warning）なので、
+          raw が無い投稿は列そのものを書かないのが正規の書き方になる。
+
+        同名の列が複数ある場合は、その行の同名列が全部空/null value のときだけ欠落とみなす。
+        """
         if not sub.sdrf:
             return []
         nulls = null_values(context)
+        sdef = _sdrf_def(context)
+        st = sub.idf.submission_type if sub.idf else None
+        exclude = set(sdef.get("required_columns_error_exclude", {}).get(st, []))
+        targets = list(sdef.get("required_columns_error", [])) + list(sdef.get("required_value_error", []))
         out = []
-        for col in ("Characteristics[organism]", "Characteristics[taxonomy_id]", "Source Name"):
+        for col in targets:
+            if col in self._VALUE_CHECK_EXCLUDE or col in exclude:
+                continue
             idxs = sub.sdrf.col_indices(col)
             if not idxs:
-                continue
+                continue      # 列そのものが無いのは MB_SR0004 の担当
             for r, row in enumerate(sub.sdrf.rows):
-                v = row[idxs[0]] if idxs[0] < len(row) else ""
-                if _empty(v) or v.strip() in nulls:
-                    out.append(self.result(message=f"{self.description} ({col}, row {r + 1})", assay=_assay(sub, row), line=r + 1))
-                    break
+                vals = [(row[i] if i < len(row) else "") for i in idxs]
+                if all(_empty(v) or v.strip() in nulls for v in vals):
+                    out.append(self.result(message=f"{self.description} ({col}, row {r + 1})",
+                                           assay=_assay(sub, row), line=r + 1))
+                    break     # 列ごとに 1 件（最初の該当行）に留める
         return out
 
 
