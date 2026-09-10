@@ -8,6 +8,9 @@ services:
     build:
       context: ..
       dockerfile: deploy/Containerfile.web
+      args:
+        # compose.sh が git から入れる。GET /definitions が返す commit になる。
+        DDBJ_COMMIT: ${DDBJ_COMMIT:-}
     image: ddbj-validator-web:${DDBJ_ENV:-development}
     restart: unless-stopped
     environment:
