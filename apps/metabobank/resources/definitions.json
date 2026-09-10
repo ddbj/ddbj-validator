@@ -549,6 +549,9 @@
         "Extract Name"
       ]
     },
+    "required_value_error": [
+      "Raw Data File"
+    ],
     "required_columns_warning": [
       "Comment\\[BioSample\\]",
       "Comment\\[sample_title\\]",
