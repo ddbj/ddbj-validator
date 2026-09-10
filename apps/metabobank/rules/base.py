@@ -33,6 +33,83 @@ def is_internal_ignore(rule_id):
     return rule_id in INTERNAL_IGNORE_RULE_IDS
 
 
+# --- 結果 JSON の annotation パターン（rule_id -> パターン名）------------------
+#
+# BS と同じ骨格（message は rule の固定文、個別情報は annotation 配列）にするための表。
+# reporter がこの表を見て annotation を組む。パターンごとに rule 側が供給する追加キー:
+#
+#   sdrf_cell    行単位の値の問題。line / assay ＋ column / value
+#                （MB_SR0023 は samd / bs_value、MB_SR0030 は new_value も）
+#   sdrf_column  列の有無・列全体の問題。column（＋ rows）
+#   idf_field    IDF 項目の問題。field / value
+#   idf_protocol submission type ごとの protocol 要件。protocol_type / param
+#   idf_sdrf     IDF↔SDRF の突合。idf_only / sdrf_only
+#   general      個別情報を持たない（annotation なし。文だけ）
+ANNOTATION_PATTERNS = {
+    # --- SDRF: 行単位の値 ---
+    "MB_SR0009": "sdrf_cell",
+    "MB_SR0019": "sdrf_cell",
+    "MB_SR0021": "sdrf_cell",
+    "MB_SR0022": "sdrf_cell",
+    "MB_SR0023": "sdrf_cell",
+    "MB_SR0030": "sdrf_cell",
+    "MB_SR0033": "sdrf_cell",
+    "MB_SR0036": "sdrf_cell",
+    "MB_SR0037": "sdrf_cell",
+    "MB_SR0045": "sdrf_cell",
+    "MB_SR0046": "sdrf_cell",
+    # --- SDRF: 列単位 ---
+    "MB_SR0003": "sdrf_column",
+    "MB_SR0004": "sdrf_column",
+    "MB_SR0005": "sdrf_column",
+    "MB_SR0006": "sdrf_column",
+    "MB_SR0017": "sdrf_column",
+    "MB_SR0018": "sdrf_column",
+    "MB_SR0024": "sdrf_column",
+    "MB_SR0026": "sdrf_column",
+    "MB_SR0034": "sdrf_column",
+    "MB_SR0035": "sdrf_column",
+    "MB_SR0047": "sdrf_column",
+    # --- IDF: 項目単位 ---
+    "MB_IR0003": "idf_field",
+    "MB_IR0004": "idf_field",
+    "MB_IR0005": "idf_field",
+    "MB_IR0006": "idf_field",
+    "MB_IR0007": "idf_field",
+    "MB_IR0008": "idf_field",
+    "MB_IR0009": "idf_field",
+    "MB_IR0010": "idf_field",
+    "MB_IR0011": "idf_field",
+    "MB_IR0013": "idf_field",
+    "MB_IR0015": "idf_field",
+    "MB_IR0016": "idf_field",
+    "MB_IR0023": "idf_field",
+    "MB_IR0024": "idf_field",
+    "MB_IR0025": "idf_field",
+    "MB_IR0033": "idf_field",
+    "MB_IR0034": "idf_field",
+    "MB_IR0038": "idf_field",
+    "MB_IR0040": "idf_field",
+    "MB_IR0041": "idf_field",
+    # --- IDF: protocol 要件 ---
+    "MB_IR0017": "idf_protocol",
+    "MB_IR0018": "idf_protocol",
+    # --- IDF↔SDRF ---
+    "MB_CR0001": "idf_sdrf",
+    "MB_CR0002": "idf_sdrf",
+    "MB_CR0003": "idf_sdrf",
+    "MB_CR0004": "idf_sdrf",
+    # --- 個別情報なし ---
+    "MB_IR0020": "general",
+    "MB_IR0037": "general",
+}
+
+
+def annotation_pattern(rule_id):
+    """rule_id の annotation パターン名。表に無ければ "general"（annotation なし）。"""
+    return ANNOTATION_PATTERNS.get(rule_id, "general")
+
+
 def null_values(context):
     nv = (context.definitions or {}).get("null_values", {})
     return set(nv.get("accepted", []))
@@ -40,3 +117,15 @@ def null_values(context):
 
 class MbRule(SimpleRule):
     rule_id = "MB_RXXXX"
+
+    def result(self, message=None, level=None, target=None, **extra):
+        """SimpleRule.result に `desc`（rule の固定文）を必ず載せる。
+
+        結果 JSON では `message` を rule の固定文にし、括弧書きの個別情報は annotation に
+        移す（同じ文で束ねられるようにするため）。内部 dict の `message` は従来どおり
+        1 行形式のまま残し（テキストレポートと CLI がこれを使う）、reporter が JSON を
+        組むときに `desc` を message、従来の `message` を `detail` に写す。
+        """
+        r = super().result(message=message, level=level, target=target, **extra)
+        r.setdefault("desc", self.description)
+        return r

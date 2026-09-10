@@ -23,7 +23,8 @@ class MB_IR0003(MbRule):
     def validate(self, sub, context):
         if not sub.idf or not sub.idf.duplicate_fields:
             return []
-        return [self.result(message=f"{self.description} ({', '.join(sorted(set(sub.idf.duplicate_fields)))})")]
+        dup = ", ".join(sorted(set(sub.idf.duplicate_fields)))
+        return [self.result(message=f"{self.description} ({dup})", field=dup)]
 
 
 class MB_IR0004(MbRule):
@@ -36,7 +37,9 @@ class MB_IR0004(MbRule):
             return []
         allowed = set(_idf(context).get("fields", []))
         bad = [n for n in sub.idf.field_order if n not in allowed]
-        return [self.result(message=f"{self.description} ({', '.join(bad)})")] if bad else []
+        if not bad:
+            return []
+        return [self.result(message=f"{self.description} ({', '.join(bad)})", field=", ".join(bad))]
 
 
 class _RequiredBase(MbRule):
@@ -47,7 +50,9 @@ class _RequiredBase(MbRule):
         req = _idf(context).get(self._key, [])
         ignore = set(_idf(context).get("required_ignore_error", []))
         miss = [f for f in req if f not in ignore and _empty(" ".join(sub.idf.get(f)))]
-        return [self.result(message=f"{self.description} ({', '.join(miss)})")] if miss else []
+        if not miss:
+            return []
+        return [self.result(message=f"{self.description} ({', '.join(miss)})", field=", ".join(miss))]
 
 
 class MB_IR0005(_RequiredBase):
@@ -73,7 +78,10 @@ class MB_IR0007(MbRule):
             vals = sub.idf.get(f)
             if vals and all(_empty(v) or v.strip() in nulls for v in vals):
                 bad.append(f)
-        return [self.result(message=f"{self.description} ({', '.join(bad)})")] if bad else []
+        if not bad:
+            return []
+        return [self.result(message=f"{self.description} ({', '.join(bad)})", field=", ".join(bad),
+                            value=", ".join(sorted({v.strip() for f in bad for v in sub.idf.get(f) if v.strip()})))]
 
 
 class _GroupBase(MbRule):
@@ -87,7 +95,8 @@ class _GroupBase(MbRule):
             present = [f for f in fields_ if not _empty(" ".join(sub.idf.get(f)))]
             if present and len(present) < len(fields_):
                 miss = [f for f in fields_ if _empty(" ".join(sub.idf.get(f)))]
-                out.append(self.result(message=f"{self.description} ({gname}: {', '.join(miss)})"))
+                out.append(self.result(message=f"{self.description} ({gname}: {', '.join(miss)})",
+                                       field=", ".join(miss), value=gname))
         return out
 
 
@@ -110,7 +119,9 @@ class MB_IR0010(MbRule):
             return []
         single = _idf(context).get("single_value", [])
         bad = [f for f in single if len(sub.idf.get(f)) > 1]
-        return [self.result(message=f"{self.description} ({', '.join(bad)})")] if bad else []
+        if not bad:
+            return []
+        return [self.result(message=f"{self.description} ({', '.join(bad)})", field=", ".join(bad))]
 
 
 class MB_IR0011(MbRule):
@@ -122,7 +133,8 @@ class MB_IR0011(MbRule):
             return []
         desc = sub.idf.first("Study Description")
         if desc and len(desc.strip()) < 100:
-            return [self.result(message=f"{self.description} (Found: {len(desc.strip())} chars)")]
+            return [self.result(message=f"{self.description} (Found: {len(desc.strip())} chars)",
+                                field="Study Description", value=f"{len(desc.strip())} chars")]
         return []
 
 
@@ -137,7 +149,7 @@ class MB_IR0013(MbRule):
         for f in _DATE_FIELDS:
             v = sub.idf.first(f).strip()
             if v and not _DATE_OK.match(v):
-                out.append(self.result(message=f"{self.description} ({f}: '{v}')"))
+                out.append(self.result(message=f"{self.description} ({f}: '{v}')", field=f, value=v))
         return out
 
 
@@ -158,7 +170,7 @@ class MB_IR0033(MbRule):
                 try:
                     d = datetime.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
                     if d > today:
-                        out.append(self.result(message=f"{self.description} ({f}: {v})"))
+                        out.append(self.result(message=f"{self.description} ({f}: {v})", field=f, value=v))
                 except ValueError:
                     pass
         return out
@@ -174,7 +186,8 @@ class _CvBase(MbRule):
         for field_name, allowed in cv.items():
             for v in sub.idf.get(field_name):
                 if v and v.strip() and v.strip() not in allowed:
-                    out.append(self.result(message=f"{self.description} ({field_name}: '{v}')"))
+                    out.append(self.result(message=f"{self.description} ({field_name}: '{v}')",
+                                           field=field_name, value=v))
         return out
 
 
@@ -201,7 +214,10 @@ class MB_IR0017(MbRule):
             return []
         have = set(sub.idf.get("Protocol Type"))
         miss = [t for t in req if t not in have]
-        return [self.result(message=f"{self.description} ({st}: {', '.join(miss)})")] if miss else []
+        if not miss:
+            return []
+        return [self.result(message=f"{self.description} ({st}: {', '.join(miss)})",
+                            protocol_type=", ".join(miss))]
 
 
 class MB_IR0018(MbRule):
@@ -234,7 +250,8 @@ class MB_IR0018(MbRule):
             have = set((p["Protocol Parameters"].split(";") if p else []))
             miss = [x for x in params if x not in have]
             if miss:
-                out.append(self.result(message=f"{self.description} ({st} {ptype}: {', '.join(miss)})"))
+                out.append(self.result(message=f"{self.description} ({st} {ptype}: {', '.join(miss)})",
+                                       protocol_type=ptype, param=", ".join(miss)))
         return out
 
 
@@ -251,7 +268,10 @@ class MB_IR0034(MbRule):
             return []
         have = set(sub.idf.get("Comment[Experiment type]"))
         miss = [t for t in req if t not in have]
-        return [self.result(message=f"{self.description} ({st}: {', '.join(miss)})")] if miss else []
+        if not miss:
+            return []
+        return [self.result(message=f"{self.description} ({st}: {', '.join(miss)})",
+                            field="Comment[Experiment type]", value=", ".join(miss))]
 
 
 class MB_IR0020(MbRule):
@@ -292,7 +312,8 @@ class MB_IR0025(MbRule):
         out = []
         for v in sub.idf.get("PubMed ID"):
             if v and v.strip() and v.strip() not in nulls and not re.match(r"^\d+$", v.strip()):
-                out.append(self.result(message=f"{self.description} (PubMed ID: '{v}')"))
+                out.append(self.result(message=f"{self.description} (PubMed ID: '{v}')",
+                                       field="PubMed ID", value=v))
         return out
 
 
@@ -307,7 +328,8 @@ class MB_IR0038(MbRule):
         out = []
         for v in sub.idf.get("Comment[Related study]"):
             if v and v.strip() and v.strip() not in nulls and not re.match(r"^MTBKS\d+$", v.strip()):
-                out.append(self.result(message=f"{self.description} (Comment[Related study]: '{v}')"))
+                out.append(self.result(message=f"{self.description} (Comment[Related study]: '{v}')",
+                                       field="Comment[Related study]", value=v))
         return out
 
 
@@ -326,7 +348,7 @@ class MB_IR0023(MbRule):
                 continue
             for v in sub.idf.get(f):
                 if v.strip() in nulls:
-                    out.append(self.result(message=f"{self.description} ({f}: '{v}')"))
+                    out.append(self.result(message=f"{self.description} ({f}: '{v}')", field=f, value=v))
                     break
         return out
 
@@ -347,8 +369,10 @@ class MB_IR0024(MbRule):
                 continue
             if fx["mapped"]:
                 out.append(self.result(
-                    message=fix_warning_message(fx["where"], fx["mapped"]), level="warning"))
+                    message=fix_warning_message(fx["where"], fx["mapped"]), level="warning",
+                    field=fx["where"], value="".join(sorted(fx["mapped"]))))
             if fx["residual"]:
                 out.append(self.result(
-                    message=residual_error_message(fx["where"], fx["residual"]), level="error"))
+                    message=residual_error_message(fx["where"], fx["residual"]), level="error",
+                    field=fx["where"], value="".join(sorted(fx["residual"]))))
         return out

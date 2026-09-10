@@ -355,3 +355,45 @@ def test_sr0047_is_internal_ignore():
     移っても管理システム側の扱いは変わらない。
     """
     assert is_internal_ignore("MB_SR0047")
+
+
+# --- 名前の無い Factor Value[] ---------------------------------------------
+
+def _unnamed_sub(idf_name=None, values=("a", "b")):
+    """`Factor Value[]`（[] の中身が空）を持つ SDRF。"""
+    fields = {"Comment[Submission type]": ["LC-MS"]}
+    if idf_name:
+        fields["Experimental Factor Name"] = [idf_name]
+    return Submission(idf=Idf(fields=fields, field_order=list(fields)),
+                      sdrf=Sdrf(header=["Source Name", "Factor Value[]"],
+                                rows=[["s1", v] for v in values]))
+
+
+def test_unnamed_factor_value_column_is_reported():
+    """`Factor Value[]`（空名）を素通しせずに指摘すること。
+
+    正規表現が `Factor Value\\[.+\\]` だと空名を拾えず、MB_SR0006 も sdrf.fields の
+    `Factor Value\\[.*\\]` に当たるため誰も指摘しない状態になっていた。
+    """
+    msgs = _msgs(_unnamed_sub(), C.MB_CR0001())
+    assert any("only in SDRF: (unnamed)" in m for m in msgs), msgs
+
+
+def test_unnamed_factor_value_never_matches_an_idf_name():
+    """IDF の factor name は必ず非空なので、空名は照合で必ず余る（両方向とも出る）。"""
+    msgs = _msgs(_unnamed_sub(idf_name="treatment"), C.MB_CR0001())
+    assert len(msgs) == 2
+    assert any("only in SDRF: (unnamed)" in m for m in msgs)
+    assert any("only in IDF: treatment" in m for m in msgs)
+
+
+def test_unnamed_factor_value_without_values_is_also_caught_by_sr0047():
+    """空名かつ全行空なら MB_SR0047 も拾う（列名は Factor Value[] のまま出す）。"""
+    msgs = _msgs(_unnamed_sub(values=("", "")), S.MB_SR0047())
+    assert len(msgs) == 1 and "Factor Value[]" in msgs[0]
+
+
+def test_unnamed_factor_value_with_constant_value_is_caught_by_sr0017():
+    """空名でも値が全行一定なら MB_SR0017 の対象になる（抽出漏れが無いこと）。"""
+    msgs = _msgs(_unnamed_sub(values=("a", "a")), S.MB_SR0017())
+    assert len(msgs) == 1 and "Factor Value[]" in msgs[0]

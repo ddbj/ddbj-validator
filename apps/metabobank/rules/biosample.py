@@ -26,7 +26,8 @@ class MB_SR0021(MbRule):
         # summary は属性でまとめる（SAMD の違いは集約）→ agg_by_attr / desc を付与
         return [self.result(message=f"{self.description} ({samd}: '{attr}')",
                             line=ri + 1, assay=_bs.assay_name(sub, ri),
-                            samd=samd, attr=attr, agg_by_attr=True, desc=self.description)
+                            samd=samd, attr=attr, column=f"Characteristics[{attr}]",
+                            agg_by_attr=True, desc=self.description)
                 for samd, attr, ri in _bs.iter_missing_attrs(sub, context, attrs, _cols(context))]
 
 
@@ -58,5 +59,7 @@ class MB_SR0023(MbRule):
             out.append(self.result(message=f"{self.description} ({samd} {attr}: SDRF:'{sdrf_v}', BioSample:'{bs_v}')",
                                     line=ri + 1, assay=_bs.assay_name(sub, ri),
                                     autofix=True, samd=samd, attr=attr,
+                                    column=f"Characteristics[{attr}]", value=sdrf_v,
+                                    new_value=bs_v, target_key="Value",
                                     sdrf_value=sdrf_v, bs_value=bs_v))
         return out
