@@ -65,11 +65,13 @@ def _classify_user_defined(sub, context):
     - 許容種別で既定列集合に無い                  → ユーザ定義（MB_SR0006）
     既定列集合が引けない（submission type 不明）ときは比較できないので、ユーザ定義側は空にする。
 
-    ただし sdrf.user_defined_warning_exclude_kinds の種別（＝Characteristics）は
-    ユーザ定義側に入れない。Characteristics は登録者が自由に足すのが普通で、既定列と
-    比べると全投稿で warning が出て煩いうえ、内容の妥当性は BioSample 突合
-    （MB_SR0021 / MB_SR0022 / MB_SR0023）が別途見ているため。
-    名前の無い `Characteristics[]` は種別に関わらず不正側に残す。
+    ただし sdrf.user_defined_warning_exclude_kinds の種別は ユーザ定義側に入れない。
+    - Characteristics — 登録者が自由に足すのが普通で、既定列と比べると全投稿で warning が
+      出て煩いうえ、内容の妥当性は BioSample 突合（MB_SR0021 / MB_SR0023）が別途見ている。
+    - Factor Value — 実験要因は投稿ごとに名前が変わるのが当然で、既定列に無いのは異常ではない。
+      名前と値の妥当性は MB_SR0047（値の欠落）と MB_CR0001（IDF の
+      Experimental Factor Name との突合）が見ている。
+    名前の無い `Kind[]` は種別に関わらず不正側（MB_SR0007）に残す。
     """
     sdef = _sdrf_def(context)
     kinds = set(sdef.get("user_defined_column_kinds", []))
@@ -186,6 +188,8 @@ class MB_SR0005(MbRule):
 class MB_SR0006(MbRule):
     # 登録者が名前を決めてよいのは sdrf.user_defined_column_kinds の 5 種だけ。
     # そのうち submission type の既定列に無いものを「足された列」として warning で知らせる。
+    # Characteristics / Factor Value は名前が自由なのが前提なので対象外
+    # （sdrf.user_defined_warning_exclude_kinds）。
     # Name: User-defined column
     rule_id = "MB_SR0006"; level = "warning"; target = "SDRF"
     description = "User-defined columns are added."

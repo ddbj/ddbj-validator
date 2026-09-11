@@ -201,13 +201,30 @@ def test_unnamed_characteristics_is_still_sr0007():
     assert len(msgs) == 1 and "Characteristics[]" in msgs[0]
 
 
-def test_parameter_value_and_factor_value_are_allowed_kinds():
-    """Parameter Value / Factor Value も許容種別（MB_SR0007 ではなく MB_SR0006）。"""
-    sub = _udc_sub(["Parameter Value[my param]", "Factor Value[dose]"])
+def test_parameter_value_is_an_allowed_kind():
+    """Parameter Value は許容種別（MB_SR0007 ではなく MB_SR0006）。"""
+    sub = _udc_sub(["Parameter Value[my param]"])
     assert S.MB_SR0007().validate(sub, CTX) == []
     msgs = [r["message"] for r in S.MB_SR0006().validate(sub, CTX)]
-    assert len(msgs) == 1
-    assert "Parameter Value[my param]" in msgs[0] and "Factor Value[dose]" in msgs[0]
+    assert len(msgs) == 1 and "Parameter Value[my param]" in msgs[0]
+
+
+def test_factor_value_is_excluded_from_sr0006_warning():
+    """Factor Value は許容種別だが MB_SR0006 の warning 対象外。
+
+    実験要因は投稿ごとに名前が変わるのが当然で、既定列に無いこと自体は異常ではない。
+    名前と値は MB_SR0047 / MB_CR0001 が見る（sdrf.user_defined_warning_exclude_kinds）。
+    """
+    sub = _udc_sub(["Factor Value[dose]"])
+    assert S.MB_SR0006().validate(sub, CTX) == []
+    assert S.MB_SR0007().validate(sub, CTX) == []
+
+
+def test_unnamed_factor_value_is_still_sr0007():
+    """warning 対象外でも、名前の無い `Factor Value[]` は MB_SR0007 で拾う。"""
+    sub = _udc_sub(["Factor Value[]"])
+    msgs = [r["message"] for r in S.MB_SR0007().validate(sub, CTX)]
+    assert len(msgs) == 1 and "Factor Value[]" in msgs[0]
 
 
 def test_unknown_column_name_is_sr0007():

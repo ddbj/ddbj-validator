@@ -21,44 +21,45 @@ DATA = HERE / "data"
 # -l（DB 非依存）での期待発火 rule_id（ignore 含む）。conf 由来の既知発火。
 #
 # MB_SR0006（User-defined columns are added.）は、submission type の既定列
-# （sdrf.column_order）に無い列を登録者が足したときに出る。Characteristics は
-# user_defined_warning_exclude_kinds で warning 対象外なので、実データで効くのは
-# 主に名前付きの Factor Value 列。MB_SR0007（許容種別以外の列名・無名の Kind[]）は
-# 実データに該当が無いので、期待集合に入らないことが「誤検知していない」担保になる。
+# （sdrf.column_order）に無い列を登録者が足したときに出る。Characteristics と
+# Factor Value は user_defined_warning_exclude_kinds で warning 対象外なので、
+# 実データで効くのは Comment[...] / Unit[...] / Parameter Value[...] の追加のみ。
+# 実際に残るのは MTBKS_dupcol（Unit[mass unit]）だけで、他 study は Factor Value 以外の
+# 追加列を持たない。MB_SR0007（許容種別以外の列名・無名の Kind[]）は実データに該当が
+# 無いので、期待集合に入らないことが「誤検知していない」担保になる。
 EXPECTED = {
     # 実データ 3 studies は ° / µ / × 等を含むため MB_IR0024（正規化 warning）が発火する。
-    "MTBKS210": {"MB_IR0024", "MB_IR0037", "MB_SR0006"},
+    "MTBKS210": {"MB_IR0024", "MB_IR0037"},
     # MTBKS230 は IDF factor name/type が "missing"。factor 任意化に伴い null value は不許可に
     # したので、Name は MB_IR0007（error/ignore）、Type は MB_IR0023（任意項目の null warning）
     # で受ける。Factor Value 列が無いことは MB_SR0005 の対象外になった（任意化）。
     # MB_IR0018 は LC-MS Chromatography: Temperature を必須から外したので出なくなった
     # （両 study とも LC-MS。MB_IR0018 自体は LC-DAD-MS 等で現役。担保は unit 側）。
-    # ユーザ定義列が Characteristics だけなので MB_SR0006 は出ない（他 study は
-    # Factor Value[...] を持つので出る）。
+    # ユーザ定義列が Characteristics / Factor Value だけなので MB_SR0006 は出ない。
     "MTBKS230": {"MB_IR0007", "MB_IR0023", "MB_IR0024", "MB_IR0037", "MB_SR0046"},
-    "MTBKS240": {"MB_IR0024", "MB_IR0037", "MB_SR0006"},
+    "MTBKS240": {"MB_IR0024", "MB_IR0037"},
     # 非 ASCII 正規化 autofix ＋ 残存 error の合成ケース（IDF=MB_IR0024 / SDRF=MB_SR0030）。
-    "MTBKS_charnorm": {"MB_IR0024", "MB_IR0037", "MB_SR0006", "MB_SR0030"},
+    "MTBKS_charnorm": {"MB_IR0024", "MB_IR0037", "MB_SR0030"},
     # MB_SR0003（列名重複）は singleton_columns のみが対象。Unit[...] のような修飾列は
     # 同名で複数回現れても発火しない（Sample Name の重複だけが検出される）。
     "MTBKS_dupcol": {"MB_IR0024", "MB_IR0037", "MB_SR0003", "MB_SR0006"},
     # Protocol REF の type 参照（MB_SR0034/0035）とデータファイル名・ディレクトリ名の
     # 禁則文字（MB_SR0036/0037）。実データには違反が無いため合成ケースで担保する。
-    "MTBKS_protofile": {"MB_IR0024", "MB_IR0037", "MB_SR0006", "MB_SR0034", "MB_SR0035", "MB_SR0036", "MB_SR0037"},
+    "MTBKS_protofile": {"MB_IR0024", "MB_IR0037", "MB_SR0034", "MB_SR0035", "MB_SR0036", "MB_SR0037"},
     # MSI（imaging）は抽出工程が無く投稿テンプレートにも Extract Name 列が無いため、
     # 必須列から除外される（MB_SR0004 が出ない）。実データ MTBKS212 をそのまま使用。
-    "MTBKS_msi": {"MB_IR0024", "MB_IR0037", "MB_SR0006", "MB_SR0046"},
+    "MTBKS_msi": {"MB_IR0024", "MB_IR0037", "MB_SR0046"},
     # 同じ SDRF でも MSI 以外（FIA-MS）で Extract Name が無ければ MB_SR0004 は出る。
-    "MTBKS_noextract": {"MB_IR0024", "MB_IR0037", "MB_SR0004", "MB_SR0006"},
+    "MTBKS_noextract": {"MB_IR0024", "MB_IR0037", "MB_SR0004"},
     # MB_CR0001 の双方向照合。IDF が dose のみ・SDRF が Factor Value[tissue] のみなので
     # only in IDF と only in SDRF の 2 件が出る（rule_id 集合では 1 件に畳まれるため、
     # 件数と向きの担保は tests/unit/test_metabobank_factor.py 側）。
     # Experimental Factor Type は値なし＝任意・無検証なので何も出ない。
-    "MTBKS_factor": {"MB_CR0001", "MB_IR0024", "MB_IR0037", "MB_SR0006"},
+    "MTBKS_factor": {"MB_CR0001", "MB_IR0024", "MB_IR0037"},
     # Factor Value[tissue] 列はあるが全行空。任意列になったので factor が無いなら列自体を
     # 書かなければよく、列だけ作って値が無いのは MB_SR0047。MB_SR0017（全行で一定）は
     # 同じ列を二重に指摘しないよう抑止されるので、期待集合に入らないことが担保になる。
-    "MTBKS_factorval": {"MB_IR0024", "MB_IR0037", "MB_SR0006", "MB_SR0047"},
+    "MTBKS_factorval": {"MB_IR0024", "MB_IR0037", "MB_SR0047"},
 }
 
 

@@ -139,6 +139,18 @@ def test_attrs_not_fetched_skips_the_attribute_check():
     assert res == []
 
 
+def test_sr0023_is_warning_and_not_internal_ignore():
+    """MB_SR0023（Characteristics と BioSample 属性の不一致）は warning。
+
+    BioSample を正として SDRF を直す autofix を出すのが本旨で、登録を止める性質ではない。
+    error ignore（管理システムが無視する error）から warning へ変更した。
+    """
+    from apps.metabobank.rules.base import is_internal_ignore
+    from apps.metabobank.rules.biosample import MB_SR0023
+    assert MB_SR0023.level == "warning"
+    assert not is_internal_ignore("MB_SR0023")
+
+
 def test_sr0022_is_deprecated_and_unregistered():
     from apps.metabobank.rules.biosample import MB_SR0022
     assert getattr(MB_SR0022, "deprecated", False) is True

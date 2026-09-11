@@ -26,7 +26,6 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     "MB_SR0009",   # Missing or null value for a required column.
     "MB_SR0019",   # Invalid value format.
     "MB_SR0017",   # Factor value is constant across all rows.
-    "MB_SR0023",   # Characteristics value and BioSample attribute value do not match.
     "MB_SR0030",   # Non-ASCII or control characters in an SDRF cell.
     "MB_SR0047",   # Experimental factor value is missing.
     # --- IDF↔SDRF ---
