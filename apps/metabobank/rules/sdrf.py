@@ -22,6 +22,79 @@ def _matches_any(colname, patterns):
     return False
 
 
+def _bracket_kind(colname):
+    """`Kind[name]` 形式の列名を (種別, 名前) に分解する。括弧形式でなければ None。"""
+    m = re.fullmatch(r"([^\[\]]+)\[(.*)\]", colname or "")
+    return (m.group(1).strip(), m.group(2).strip()) if m else None
+
+
+def _default_columns(sub, context):
+    """submission type ごとの既定列集合（literal な列名）。引けなければ None。
+
+    MB_SR0006 が「登録者が足した列」を判定するための基準。素は sdrf.column_order だが、
+    `Characteristics[]` / `Factor Value[]` のような種別プレースホルダは名前を持たないので
+    既定列には数えない（これらは登録者が名前を決める列＝ユーザ定義扱いにする）。
+    """
+    sdef = _sdrf_def(context)
+    st = sub.idf.submission_type if sub.idf else None
+    order = sdef.get("column_order", {}).get(st)
+    if not order:
+        return None
+    cols = set()
+    for o in order:
+        o = "Protocol REF" if o.startswith("Protocol REF") else o
+        b = _bracket_kind(o)
+        if b and not b[1]:
+            continue
+        cols.add(o)
+    cols |= set(sdef.get("required_columns_error", []))
+    # required_columns_warning は正規表現表記（`Comment\[BioSample\]`）なのでエスケープを外す
+    cols |= {re.sub(r"\\(.)", r"\1", p) for p in sdef.get("required_columns_warning", [])}
+    # 括弧を持たない既知列（Source Name / Raw Data File 等）も既定
+    cols |= {f for f in sdef.get("fields", []) if not _bracket_kind(f)}
+    return cols
+
+
+def _classify_user_defined(sub, context):
+    """ヘッダーを (許容種別のユーザ定義列, 不正なユーザ定義列) に分けて返す。
+
+    許容種別は sdrf.user_defined_column_kinds（Characteristics / Parameter Value /
+    Comment / Unit / Factor Value）。MAGE-TAB として登録者が名前を決めてよいのはこの 5 種だけ。
+    - 定義パターン（sdrf.fields）に当たらない列   → 不正（MB_SR0007）
+    - 許容種別だが名前が空（`Kind[]`）            → 不正（MB_SR0007）
+    - 許容種別で既定列集合に無い                  → ユーザ定義（MB_SR0006）
+    既定列集合が引けない（submission type 不明）ときは比較できないので、ユーザ定義側は空にする。
+
+    ただし sdrf.user_defined_warning_exclude_kinds の種別（＝Characteristics）は
+    ユーザ定義側に入れない。Characteristics は登録者が自由に足すのが普通で、既定列と
+    比べると全投稿で warning が出て煩いうえ、内容の妥当性は BioSample 突合
+    （MB_SR0021 / MB_SR0022 / MB_SR0023）が別途見ているため。
+    名前の無い `Characteristics[]` は種別に関わらず不正側に残す。
+    """
+    sdef = _sdrf_def(context)
+    kinds = set(sdef.get("user_defined_column_kinds", []))
+    warn_exclude = set(sdef.get("user_defined_warning_exclude_kinds", []))
+    patterns = sdef.get("fields", [])
+    defaults = _default_columns(sub, context)
+    user_defined, invalid = [], []
+    for h in sub.sdrf.header:
+        if _empty(h):
+            continue                                  # 無名列は MB_SR0024 の担当
+        if not _matches_any(h, patterns):
+            invalid.append(h)
+            continue
+        b = _bracket_kind(h)
+        if b is None or b[0] not in kinds:
+            continue                                  # 定義済みの literal 列
+        if not b[1]:
+            invalid.append(h)                         # `Kind[]`（名前が無い）
+        elif b[0] in warn_exclude:
+            continue                                  # warning の対象外種別
+        elif defaults is not None and h not in defaults:
+            user_defined.append(h)
+    return sorted(set(user_defined)), sorted(set(invalid))
+
+
 def _source_name(sub, row):
     """行の Source Name 値（Assay Name 列が無い SDRF の annotation 用）。"""
     idxs = sub.sdrf.col_indices("Source Name") if sub.sdrf else []
@@ -87,7 +160,13 @@ class MB_SR0004(MbRule):
 
 
 class MB_SR0005(MbRule):
-    # required_columns_warning は正規表現パターン（Comment\[BioSample\] 等）＝regex で判定。
+    r"""**deprecated**（validator に登録しない）。
+
+    推奨列（Comment[BioSample] / Comment[sample_title] / Raw Data File）は MB_SR0004 の
+    必須列へ統合する方針になったため廃止した。クラスは既存テストの参照のために残す。
+    required_columns_warning は正規表現パターン（Comment\[BioSample\] 等）＝regex で判定。
+    """
+    deprecated = True
     rule_id = "MB_SR0005"; level = "warning"; target = "SDRF"
     description = "Missing recommended column(s)."
 
@@ -105,19 +184,37 @@ class MB_SR0005(MbRule):
 
 
 class MB_SR0006(MbRule):
-    # MAGE-TAB は仕様上、列を自由に追加できるため warning（MB_IR0004 と同じ理由）。
+    # 登録者が名前を決めてよいのは sdrf.user_defined_column_kinds の 5 種だけ。
+    # そのうち submission type の既定列に無いものを「足された列」として warning で知らせる。
     # Name: User-defined column
     rule_id = "MB_SR0006"; level = "warning"; target = "SDRF"
-    description = "User-defined columns are used."
+    description = "User-defined columns are added."
 
     def validate(self, sub, context):
         if not sub.sdrf:
             return []
-        patterns = _sdrf_def(context).get("fields", [])
-        bad = sorted({h for h in sub.sdrf.header if h and not _matches_any(h, patterns)})
-        if not bad:
+        user_defined, _ = _classify_user_defined(sub, context)
+        if not user_defined:
             return []
-        return [self.result(message=f"{self.description} ({', '.join(bad)})", column=", ".join(bad))]
+        return [self.result(message=f"{self.description} ({', '.join(user_defined)})",
+                            column=", ".join(user_defined))]
+
+
+class MB_SR0007(MbRule):
+    # 許容種別（Characteristics / Parameter Value / Comment / Unit / Factor Value）以外の
+    # 列名、および名前の無い `Kind[]` は登録者が足してよい形ではないので error。
+    # 管理システム側は登録後に列を足し得るため internal ignore にする。
+    rule_id = "MB_SR0007"; level = "error"; target = "SDRF"
+    description = "Invalid user-defined columns are added."
+
+    def validate(self, sub, context):
+        if not sub.sdrf:
+            return []
+        _, invalid = _classify_user_defined(sub, context)
+        if not invalid:
+            return []
+        return [self.result(message=f"{self.description} ({', '.join(invalid)})",
+                            column=", ".join(invalid))]
 
 
 class MB_SR0009(MbRule):
@@ -147,7 +244,9 @@ class MB_SR0009(MbRule):
         sdef = _sdrf_def(context)
         st = sub.idf.submission_type if sub.idf else None
         exclude = set(sdef.get("required_columns_error_exclude", {}).get(st, []))
-        targets = list(sdef.get("required_columns_error", [])) + list(sdef.get("required_value_error", []))
+        # 同じ列が両方のリストに載っていても 1 回だけ見る（順序は定義順を保つ）
+        targets = list(dict.fromkeys(list(sdef.get("required_columns_error", []))
+                                     + list(sdef.get("required_value_error", []))))
         out = []
         for col in targets:
             if col in self._VALUE_CHECK_EXCLUDE or col in exclude:
@@ -167,14 +266,16 @@ class MB_SR0009(MbRule):
 
 
 class MB_SR0018(MbRule):
+    # サンプルを特徴づける属性が少なすぎる投稿を拾う。閾値は 2 → 3 に強化した
+    # （organism / taxonomy_id が必須なので 2 では実質「素の必須のみ」を通してしまう）。
     rule_id = "MB_SR0018"; level = "warning"; target = "SDRF"
-    description = "Less than 2 characteristic attributes."
+    description = "Less than 3 characteristic attributes."
 
     def validate(self, sub, context):
         if not sub.sdrf:
             return []
         chars = [h for h in sub.sdrf.header if re.fullmatch(r"Characteristics\[[-_ /A-Za-z0-9.]+\]", h)]
-        if len(chars) >= 2:
+        if len(chars) >= 3:
             return []
         return [self.result(message=f"{self.description} (Found: {len(chars)})",
                             column=", ".join(chars))]
@@ -222,21 +323,64 @@ class MB_SR0047(MbRule):
     description = "Experimental factor value is missing."
 
     def validate(self, sub, context):
-        """Factor Value[...] 列があるのに、どの行にも値が無い場合のエラー。
+        """Factor Value[...] 列があるのに factor の値が成立していない場合のエラー。
 
         Factor Value は任意列になったので、factor が無いなら列そのものを書かなければよい。
         列だけ作って値を入れないと MB_SR0017 が「全行で一定」と報告してしまい、
         実際の問題（値が無い）が伝わらないため、こちらで受ける。
         MB_SR0017 と違って行数の下限は設けない（1 行でも値が無いことは問題）。
+
+        次の 2 つを同じ error で受ける。
+        - どの行にも値が無い（空 or null value のみ）
+        - **列名が null value**（`Factor Value[missing]`）。値が入っていても factor として
+          成立していない。MB_CR0001 を name マッチ限定にした際にこちらへ委譲した。
         """
         if not sub.sdrf:
             return []
         nulls = null_values(context)
         out = []
         for h, vals in _factor_value_columns(sub.sdrf):
-            if _has_no_value(vals, nulls):
+            name = (_FACTOR_VALUE_RE.fullmatch(h).group(1) or "").strip()
+            if _has_no_value(vals, nulls) or name in nulls:
                 out.append(self.result(message=f"{self.description} ({h})",
                                        column=h, rows=len(vals)))
+        return out
+
+
+class MB_SR0048(MbRule):
+    rule_id = "MB_SR0048"; level = "warning"; target = "SDRF"
+    description = "Raw data file is missing."
+
+    # raw データが無い投稿を通すための **magic word**。INSDC の null value
+    # （missing / not applicable / not collected / not provided / restricted access）は
+    # 「値が不明・非該当」を表す語彙で役割が違うため流用しない。専用語として `none` を使う。
+    # null value ではないので MB_SR0009（必須列の値の欠落）は発火せず、この warning だけが出る。
+    _MAGIC_WORD = "none"
+
+    def validate(self, sub, context):
+        """Raw Data File に magic word `none` が書かれている行を知らせる。
+
+        raw データを伴わない投稿は、列そのものを消すのではなく `none` を書くのが
+        正規の書き方（列の存在は MB_SR0004 が必須列として見る）。書き方としては正しいので
+        error にはせず、「raw が無い投稿である」ことを登録者とキュレータに気づかせる warning。
+
+        `None` / `NONE` のような大文字混じりを実ファイル名として扱ってしまうと気づけないため、
+        判定は大文字小文字を区別しない。
+        空セルは対象外（値が無いことは MB_SR0009 の担当）。null value（missing 等）も対象外で、
+        そちらは MB_SR0009 が error で受ける＝magic word でない値では通らない。
+        同名列が複数あってもセル単位で判定し、該当セルごとに 1 件報告する。
+        """
+        if not sub.sdrf:
+            return []
+        out = []
+        for i in sub.sdrf.col_indices("Raw Data File"):
+            for r, row in enumerate(sub.sdrf.rows):
+                v = (row[i] if i < len(row) else "").strip()
+                if v.lower() == self._MAGIC_WORD:
+                    out.append(self.result(
+                        message=f"{self.description} (Raw Data File: '{v}', row {r + 1})",
+                        assay=_assay(sub, row), line=r + 1,
+                        column="Raw Data File", value=v, source_name=_source_name(sub, row)))
         return out
 
 
@@ -266,37 +410,40 @@ class MB_SR0026(MbRule):
     description = "Invalid column order."
 
     def validate(self, sub, context):
+        """骨格列（sdrf.column_order_skeleton）の相対順序だけを検査する。
+
+        `sdrf.column_order` の全列突合はしない。Protocol REF / Comment[...] / Unit[...] は
+        同名で複数回現れるのが MAGE-TAB として正しく、Unit 列は直前の Parameter Value に
+        紐づく相対列（MSI では `Unit[length]` が 6 箇所に出る）なので、列名だけでは
+        位置を一意に決められず誤検知が避けられない。
+
+        骨格列は `singleton_columns` 側で重複が禁じられている列なので厳密に判定できる:
+        Source Name → Sample Name → Extract Name → Assay Name
+        → Raw Data File → Processed Data File → Metabolite Assignment File
+
+        存在しない骨格列は飛ばす（Extract Name は MSI に無い、Processed Data File /
+        Metabolite Assignment File は任意）。列の有無は MB_SR0004 の担当。
+        同名の骨格列が複数あれば最初の出現位置で評価する。
+        """
         if not sub.sdrf:
             return []
-        st = sub.idf.submission_type if sub.idf else None
-        order = _sdrf_def(context).get("column_order", {}).get(st)
-        if not order:
+        skeleton = _sdrf_def(context).get("column_order_skeleton", [])
+        if not skeleton:
             return []
-        # order の「素の列種別」列（Characteristics[] や Protocol REF:x を種別に正規化）に対する相対順序をチェック
-        def kind(h):
-            m = re.match(r"^(Characteristics|Comment|Parameter Value|Factor Value|Unit)\[", h)
-            return (m.group(1) + "[]") if m else h
-        seq = [kind(h) for h in sub.sdrf.header]
-        # order 中の Protocol REF:xxx は Protocol REF に丸め、種別列も丸める
-        norm_order = []
-        for o in order:
-            norm_order.append("Protocol REF" if o.startswith("Protocol REF") else o)
-        # header 側の Protocol REF は複数だが順序上は出現順で評価。ここでは「必須種別が定義順に現れるか」を緩く検査。
-        pos = 0
-        for o in norm_order:
-            found = False
-            while pos < len(seq):
-                if seq[pos] == o or (o == "Characteristics[]" and seq[pos] == "Characteristics[]"):
-                    found = True
-                    pos += 1
-                    break
-                pos += 1
-            # 見つからなくても次へ（任意列があるため厳密チェックはしない）
-        # 厳密な順序違反判定は複雑なため、ここでは Source Name が先頭かの最低限のみ error 化
-        if seq and seq[0] != "Source Name":
-            return [self.result(message=f"{self.description} (first column: '{sub.sdrf.header[0]}', expected 'Source Name')",
-                                column=sub.sdrf.header[0])]
-        return []
+        # 存在する骨格列を (列名, 最初の出現位置) で拾う
+        present = []
+        for col in skeleton:
+            idxs = sub.sdrf.col_indices(col)
+            if idxs:
+                present.append((col, idxs[0]))
+        out = []
+        for (prev_col, prev_i), (col, i) in zip(present, present[1:]):
+            if i < prev_i:
+                out.append(self.result(
+                    message=f"{self.description} ('{col}' (column {i + 1}) must come after "
+                            f"'{prev_col}' (column {prev_i + 1}))",
+                    column=col))
+        return out
 
 
 class MB_SR0033(MbRule):

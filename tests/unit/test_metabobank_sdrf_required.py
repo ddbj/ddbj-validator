@@ -147,3 +147,232 @@ def test_sr0009_is_internal_ignore():
     """
     from apps.metabobank.rules.base import is_internal_ignore
     assert is_internal_ignore("MB_SR0009")
+
+
+# --- MB_SR0006 / MB_SR0007: ユーザ定義列の切り分け -------------------------
+#
+# 登録者が名前を決めてよいのは sdrf.user_defined_column_kinds の 5 種
+# （Characteristics / Parameter Value / Comment / Unit / Factor Value）だけ。
+# 既定列（submission type ごとの sdrf.column_order ＋ 必須/推奨列）との差分を
+# MB_SR0006（warning）、それ以外の列名と無名 `Kind[]` を MB_SR0007（error/ignore）で受ける。
+
+def _udc_sub(extra_cols):
+    """LC-MS の最小 SDRF に列を足した submission を作る。"""
+    header = ["Source Name", "Sample Name", "Characteristics[organism]",
+              "Characteristics[taxonomy_id]"] + list(extra_cols)
+    rows = [["s1", "s1", "Homo sapiens", "9606"] + ["v"] * len(extra_cols)]
+    idf = Idf(fields={"Comment[Submission type]": ["LC-MS"]},
+              field_order=["Comment[Submission type]"])
+    return Submission(idf=idf, sdrf=Sdrf(header=header, rows=rows))
+
+
+def test_default_columns_are_not_user_defined():
+    """必須列だけの SDRF では MB_SR0006 / MB_SR0007 とも発火しない。"""
+    sub = _udc_sub([])
+    assert S.MB_SR0006().validate(sub, CTX) == []
+    assert S.MB_SR0007().validate(sub, CTX) == []
+
+
+def test_allowed_kind_beyond_default_is_sr0006():
+    """許容種別で既定列に無い列は MB_SR0006（warning）。"""
+    sub = _udc_sub(["Unit[my unit]", "Comment[my note]"])
+    msgs = [r["message"] for r in S.MB_SR0006().validate(sub, CTX)]
+    assert len(msgs) == 1
+    assert "Unit[my unit]" in msgs[0] and "Comment[my note]" in msgs[0]
+    assert S.MB_SR0007().validate(sub, CTX) == []
+
+
+def test_characteristics_are_excluded_from_sr0006_warning():
+    """Characteristics は MB_SR0006 の warning 対象外。
+
+    登録者が自由に足すのが普通で全投稿で warning が出て煩く、内容の妥当性は
+    BioSample 突合（MB_SR0021/0022/0023）が別途見ているため
+    （sdrf.user_defined_warning_exclude_kinds）。
+    """
+    sub = _udc_sub(["Characteristics[tissue]", "Characteristics[sex]"])
+    assert S.MB_SR0006().validate(sub, CTX) == []
+    assert S.MB_SR0007().validate(sub, CTX) == []
+
+
+def test_unnamed_characteristics_is_still_sr0007():
+    """warning 対象外でも、名前の無い `Characteristics[]` は MB_SR0007 で拾う。"""
+    sub = _udc_sub(["Characteristics[]"])
+    msgs = [r["message"] for r in S.MB_SR0007().validate(sub, CTX)]
+    assert len(msgs) == 1 and "Characteristics[]" in msgs[0]
+
+
+def test_parameter_value_and_factor_value_are_allowed_kinds():
+    """Parameter Value / Factor Value も許容種別（MB_SR0007 ではなく MB_SR0006）。"""
+    sub = _udc_sub(["Parameter Value[my param]", "Factor Value[dose]"])
+    assert S.MB_SR0007().validate(sub, CTX) == []
+    msgs = [r["message"] for r in S.MB_SR0006().validate(sub, CTX)]
+    assert len(msgs) == 1
+    assert "Parameter Value[my param]" in msgs[0] and "Factor Value[dose]" in msgs[0]
+
+
+def test_unknown_column_name_is_sr0007():
+    """許容種別でもない列名は MB_SR0007（error / internal ignore）。"""
+    sub = _udc_sub(["My Column", "Foo[bar]"])
+    msgs = [r["message"] for r in S.MB_SR0007().validate(sub, CTX)]
+    assert len(msgs) == 1
+    assert "My Column" in msgs[0] and "Foo[bar]" in msgs[0]
+
+
+def test_unnamed_bracket_column_is_sr0007():
+    """名前の無い `Kind[]` は MB_SR0007。既定列の `Characteristics[]` は種別プレースホルダ
+    であって列名ではないので、既定列集合には数えない。"""
+    sub = _udc_sub(["Characteristics[]"])
+    msgs = [r["message"] for r in S.MB_SR0007().validate(sub, CTX)]
+    assert len(msgs) == 1 and "Characteristics[]" in msgs[0]
+
+
+def test_sr0007_is_internal_ignore():
+    from apps.metabobank.rules.base import is_internal_ignore
+    assert is_internal_ignore("MB_SR0007")
+
+
+# --- MB_SR0004 / MB_SR0009: 推奨列 3 つの必須化 ----------------------------
+#
+# Raw Data File / Comment[sample_title] / Comment[BioSample] を required_columns_error に
+# 移したので、列の存在は MB_SR0004、値の空欄は MB_SR0009 が見る。
+# raw が無い投稿は列を消すのではなく null value（CV term）を書く運用に合わせた変更。
+
+_NEW_REQUIRED = ["Raw Data File", "Comment[sample_title]", "Comment[BioSample]"]
+
+
+def _sub_with_new_required(overrides=None, drop=()):
+    ov = dict(overrides or {})
+    header = [c for c in list(_COLS) + _NEW_REQUIRED if c not in drop]
+    filled = dict(_FILLED, **{"Raw Data File": "f.raw", "Comment[sample_title]": "t",
+                              "Comment[BioSample]": "SAMD00000001"})
+    rows = [[ov.get(c, filled.get(c, "v")) for c in header]]
+    idf = Idf(fields={"Comment[Submission type]": ["LC-MS"]},
+              field_order=["Comment[Submission type]"])
+    return Submission(idf=idf, sdrf=Sdrf(header=header, rows=rows))
+
+
+@pytest.mark.parametrize("col", _NEW_REQUIRED)
+def test_new_required_column_missing_is_sr0004(col):
+    sub = _sub_with_new_required(drop=(col,))
+    msgs = [r["message"] for r in S.MB_SR0004().validate(sub, CTX)]
+    assert len(msgs) == 1 and col in msgs[0]
+
+
+@pytest.mark.parametrize("col", _NEW_REQUIRED)
+def test_new_required_column_empty_value_is_sr0009(col):
+    """列はあるが値が空 → MB_SR0009（波及を承諾済み）。"""
+    sub = _sub_with_new_required(overrides={col: ""})
+    msgs = _msgs(sub)
+    assert len(msgs) == 1 and col in msgs[0]
+
+
+def test_raw_data_file_null_value_is_still_sr0009():
+    """raw が無い場合に書く null value（CV term）も MB_SR0009 の対象（値なし扱い）。"""
+    sub = _sub_with_new_required(overrides={"Raw Data File": "not applicable"})
+    msgs = _msgs(sub)
+    assert len(msgs) == 1 and "Raw Data File" in msgs[0]
+
+
+def test_sr0009_reports_each_required_column_once():
+    """required_value_error を空にしたので Raw Data File が二重報告されないこと。"""
+    sub = _sub_with_new_required(overrides={"Raw Data File": ""})
+    assert len([m for m in _msgs(sub) if "Raw Data File" in m]) == 1
+
+
+# --- MB_SR0026: 骨格列の相対順序 -------------------------------------------
+
+def _order_sub(header):
+    idf = Idf(fields={"Comment[Submission type]": ["LC-MS"]},
+              field_order=["Comment[Submission type]"])
+    return Submission(idf=idf, sdrf=Sdrf(header=header, rows=[["v"] * len(header)]))
+
+
+def test_skeleton_order_ok():
+    sub = _order_sub(["Source Name", "Characteristics[organism]", "Sample Name",
+                      "Extract Name", "Assay Name", "Raw Data File",
+                      "Processed Data File", "Metabolite Assignment File"])
+    assert S.MB_SR0026().validate(sub, CTX) == []
+
+
+def test_skeleton_order_violation_is_reported():
+    """Assay Name が Extract Name より前にあれば error。"""
+    sub = _order_sub(["Source Name", "Sample Name", "Assay Name", "Extract Name",
+                      "Raw Data File"])
+    msgs = [r["message"] for r in S.MB_SR0026().validate(sub, CTX)]
+    assert len(msgs) == 1
+    assert "Extract Name" in msgs[0] and "Assay Name" in msgs[0]
+
+
+def test_missing_skeleton_columns_are_skipped():
+    """存在しない骨格列は飛ばす（MSI の Extract Name / 任意のデータファイル列）。列の有無は MB_SR0004 の担当。"""
+    sub = _order_sub(["Source Name", "Sample Name", "Assay Name", "Raw Data File"])
+    assert S.MB_SR0026().validate(sub, CTX) == []
+
+
+def test_non_skeleton_columns_do_not_affect_order():
+    """Protocol REF / Unit[...] のような重複許容列の位置は見ない（誤検知を避けるため）。"""
+    sub = _order_sub(["Source Name", "Protocol REF", "Sample Name", "Protocol REF",
+                      "Extract Name", "Unit[temperature]", "Assay Name",
+                      "Unit[temperature]", "Raw Data File"])
+    assert S.MB_SR0026().validate(sub, CTX) == []
+
+
+# --- MB_SR0048: Raw Data File に magic word `none` が書かれている -------------
+#
+# raw を伴わない投稿は列を消すのではなく `none` を書くのが正規の書き方。書式としては
+# 正しいので error にはせず、「raw が無い投稿」と気づかせる warning で受ける。
+# INSDC の null value（missing 等）は「値が不明・非該当」を表す別の語彙なので流用しない。
+
+def _sr0048(sub):
+    return [r["message"] for r in S.MB_SR0048().validate(sub, CTX)]
+
+
+def test_sr0048_fires_for_the_magic_word():
+    sub = _sub_with_new_required(overrides={"Raw Data File": "none"})
+    msgs = _sr0048(sub)
+    assert len(msgs) == 1 and "Raw Data File: 'none'" in msgs[0]
+
+
+@pytest.mark.parametrize("v", ["None", "NONE", "None "])
+def test_sr0048_magic_word_is_case_insensitive(v):
+    """`None` / `NONE` を実ファイル名として通してしまうと気づけないので大小文字を区別しない。"""
+    sub = _sub_with_new_required(overrides={"Raw Data File": v})
+    assert len(_sr0048(sub)) == 1
+
+
+@pytest.mark.parametrize("null", ["missing", "not applicable", "not collected",
+                                  "not provided", "restricted access"])
+def test_sr0048_does_not_fire_for_null_values(null):
+    """null value は対象外。magic word ではないので MB_SR0009（error）が受ける。"""
+    sub = _sub_with_new_required(overrides={"Raw Data File": null})
+    assert _sr0048(sub) == []
+    assert len([m for m in _msgs(sub) if "Raw Data File" in m]) == 1
+
+
+def test_magic_word_does_not_trigger_sr0009():
+    """`none` は null value ではないので MB_SR0009 は発火しない（二重報告にならない）。"""
+    sub = _sub_with_new_required(overrides={"Raw Data File": "none"})
+    assert [m for m in _msgs(sub) if "Raw Data File" in m] == []
+
+
+def test_sr0048_silent_for_a_real_file_name():
+    sub = _sub_with_new_required(overrides={"Raw Data File": "sample.raw"})
+    assert _sr0048(sub) == []
+
+
+def test_sr0048_ignores_empty_cell():
+    """空セルは MB_SR0009（値が無い）の担当なので MB_SR0048 は出さない。"""
+    sub = _sub_with_new_required(overrides={"Raw Data File": ""})
+    assert _sr0048(sub) == []
+
+
+def test_sr0048_is_silent_without_the_column():
+    """列が無ければ何も出さない（列の存在は MB_SR0004 の担当）。"""
+    sub = _sub_with_new_required(drop=("Raw Data File",))
+    assert _sr0048(sub) == []
+
+
+def test_sr0048_level_and_not_internal_ignore():
+    from apps.metabobank.rules.base import is_internal_ignore
+    assert S.MB_SR0048.level == "warning"
+    assert not is_internal_ignore("MB_SR0048")

@@ -72,7 +72,7 @@ def test_column_order_entries_are_known_sdrf_fields():
     """`sdrf.column_order`（投稿テンプレートの列順）に載っている列は、すべて
     `sdrf.fields`（既知の列パターン）に当たること。
 
-    当たらないと MB_SR0006「User-defined columns are used.」が
+    当たらないと MB_SR0007「Invalid user-defined columns are added.」（error）が
     **テンプレートどおりに書いた投稿に対して出る**。実際 NMR の
     `Acquisition Parameter Data File` / `Free Induction Decay Data File` がこの状態だった。
     """
@@ -360,3 +360,26 @@ def test_required_value_error_columns_are_not_existence_required():
         assert col not in SDRF["required_columns_error"], f"{col} が存在必須になっている"
         assert any(col == p or col in p for p in SDRF["required_columns_warning"]), \
             f"{col} が推奨列にも無い（存在チェックが誰にも拾われない）"
+
+
+def test_study_type_cv_has_third_party_reanalysis():
+    """`Comment[Study type]` に "Third-party reanalysis" があること。
+
+    第三者による再解析は「どんな測定をしたか」ではなく「どういう研究か」なので
+    Comment[Experiment type]（測定手法の語彙）ではなく Comment[Study type] に置く。
+    MB_IR0015 は strip 後の完全一致（大文字小文字も区別する）なので、この表記でだけ通る。
+    """
+    assert "Third-party reanalysis" in CV_IDF["error"]["Comment[Study type]"]
+    assert "Third-party reanalysis" not in CV_IDF["error"]["Comment[Experiment type]"]
+
+
+def test_publication_group_is_title_author_journal():
+    """Publication group は Title / Author List / Journal の 3 点セット。
+
+    Publication Status は group から外してある。publish 時に unpublished → published へ
+    更新する運用が煩雑になるため（値の更新だけで validator が通らなくなるのを避ける）。
+    MB_IR0008 は「group 内のどれか 1 つでも値があれば全部必須」という判定なので、
+    Status が group に居ると Title/Author List を書いた時点で Status も強制される。
+    """
+    assert IDF["required_group_error"]["Publication"] == [
+        "Publication Title", "Publication Author List", "Publication Journal"]

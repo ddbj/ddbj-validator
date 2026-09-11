@@ -1,28 +1,23 @@
 """IDF↔SDRF 横断ルール（MB_CR）。"""
 import re
-from apps.metabobank.rules.base import MbRule, null_values
+from apps.metabobank.rules.base import MbRule, null_values, mtbks_accession
 
 
 class MB_CR0001(MbRule):
     rule_id = "MB_CR0001"; level = "error"; target = "IDF,SDRF"
     description = "Experimental factor in SDRF does not match IDF Experimental Factor Name."
 
-    # 名前の無い Factor Value[] の表示名（そのまま出すと空文字で読めない）
-    _UNNAMED = "(unnamed)"
-
     def validate(self, sub, context):
-        r"""IDF Experimental Factor Name と SDRF Factor Value[...] を双方向に突き合わせる。
+        r"""IDF Experimental Factor Name と SDRF Factor Value[...] の **名前** を双方向に突き合わせる。
 
         factor 自体は任意項目なので「どちらにも無い」は無指摘。片側にしか無ければ向きを
         添えて指摘する（両方向あれば 2 件に分ける）。
-        IDF 側の null value（missing 等）は集合から除くが、これは無指摘にするためではなく
-        MB_IR0007（required_not_null）が同じ問題を指摘するので二重報告を避けるため。
-        SDRF 側は除かないので Factor Value[missing] は only in SDRF として指摘される。
 
-        `[]` の中身が空の `Factor Value[]` も拾う（正規表現は `.*`）。IDF の factor name は
-        必ず非空なので照合で必ず余り、`only in SDRF: (unnamed)` として出る。`.+` だと
-        素通しし、MB_SR0006 も sdrf.fields の `Factor Value\[.*\]` に当たるため
-        誰も指摘しなくなる。
+        このルールは **名前の一致だけ** を見る。名前として不正な形は両側とも集合から除き、
+        それぞれの担当ルールに委譲する（二重報告を避けるため）。
+        - IDF 側の null value（missing 等） → MB_IR0007（required_not_null）
+        - SDRF 側の null value を名前にした列（`Factor Value[missing]`） → MB_SR0047（値の欠落）
+        - 名前の無い `Factor Value[]` → MB_SR0007（無名のユーザ定義列）
         """
         if not sub.idf or not sub.sdrf:
             return []
@@ -33,7 +28,9 @@ class MB_CR0001(MbRule):
         for h in sub.sdrf.header:
             m = re.fullmatch(r"Factor Value\[(.*)\]", h)
             if m:
-                sdrf_factors.add(m.group(1).strip() or self._UNNAMED)
+                name = m.group(1).strip()
+                if name and name not in nulls:      # 無名・null 名は他ルールへ委譲
+                    sdrf_factors.add(name)
         out = []
         for label, bad in (("only in SDRF", sdrf_factors - idf_factors),
                            ("only in IDF", idf_factors - sdrf_factors)):
@@ -98,7 +95,10 @@ class MB_CR0004(MbRule):
     def validate(self, sub, context):
         if not sub.idf or not sub.sdrf:
             return []
-        idf_re = {v.strip() for v in sub.idf.get("Comment[Related study]") if v.strip()}
+        # IDF 側は `MetaboBank:MTBKS123` とも書けるので accession に正規化して突き合わせる
+        # （MB_IR0038 の仕様。prefix の有無で不一致扱いになるのを避ける）。
+        idf_re = {mtbks_accession(v) or v.strip()
+                  for v in sub.idf.get("Comment[Related study]") if v.strip()}
         sdrf_re = set()
         for i in sub.sdrf.col_indices("Comment[Reanalysis of]"):
             for row in sub.sdrf.rows:
