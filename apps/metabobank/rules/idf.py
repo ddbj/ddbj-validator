@@ -2,7 +2,8 @@
 import datetime
 import re
 from common.jst import today as jst_today
-from apps.metabobank.rules.base import MbRule, null_values
+from apps.metabobank.rules.base import (MbRule, null_values, null_values_not_recommended,
+                                        normalize_null)
 
 _DATE_OK = re.compile(r"^20\d{2}-\d{2}-\d{2}$")
 _DATE_FIELDS = ("Public Release Date", "Comment[Submission Date]", "Comment[Last Update Date]", "Date of Experiment")
@@ -28,9 +29,11 @@ class MB_IR0003(MbRule):
 
 
 class MB_IR0004(MbRule):
-    # MAGE-TAB は仕様上フィールドを自由に追加できるため warning（mb-rules2.txt）。
-    rule_id = "MB_IR0004"; level = "warning"; target = "IDF"
-    description = "Only pre-defined fields are allowed."
+    # MAGE-TAB 仕様上はフィールドを自由に追加できるが、MetaboBank では登録者に
+    # フィールドの追加を許していない（テンプレート固定）ため error。
+    # ただし管理システム側は登録後に追加し得るので internal ignore にする。
+    rule_id = "MB_IR0004"; level = "error"; target = "IDF"
+    description = "User-defined fields cannot be added by submitters."
 
     def validate(self, sub, context):
         if not sub.idf:
@@ -61,6 +64,12 @@ class MB_IR0005(_RequiredBase):
 
 
 class MB_IR0006(_RequiredBase):
+    """**deprecated**（validator に登録しない）。
+
+    参照する `idf.required_warning` が空のままで一度も発火しておらず、推奨項目という
+    区分自体を設けない方針になったため廃止した。クラスは既存テストの参照のために残す。
+    """
+    deprecated = True
     rule_id = "MB_IR0006"; level = "warning"; target = "IDF"; _key = "required_warning"
     description = "IDF has missing mandatory field(s)."
 
@@ -197,8 +206,10 @@ class MB_IR0015(_CvBase):
 
 
 class MB_IR0016(_CvBase):
+    # 対象は Protocol Type のみ。CV 外の値は「登録者が独自の protocol type を足した」
+    # という意味になるので、汎用の CV 文ではなくその旨を伝えるメッセージにする。
     rule_id = "MB_IR0016"; level = "warning"; target = "IDF"; _level_key = "warning"
-    description = "Value is not in controlled terms."
+    description = "A user-defined protocol type was added."
 
 
 class MB_IR0017(MbRule):
@@ -302,7 +313,9 @@ class MB_IR0037(MbRule):
 
 
 class MB_IR0025(MbRule):
-    rule_id = "MB_IR0025"; level = "warning"; target = "IDF"
+    # PubMed ID が数値でないのは書式の誤りなので error。ただし管理システム側は
+    # 登録後に手で直すことがあるため internal ignore にする。
+    rule_id = "MB_IR0025"; level = "error"; target = "IDF"
     description = "Invalid publication identifier (PubMed ID must be numeric)."
 
     def validate(self, sub, context):
@@ -338,18 +351,43 @@ class MB_IR0023(MbRule):
     description = "Null value is provided for an optional field."
 
     def validate(self, sub, context):
+        """任意項目に null value が書かれていないか。補正できる値は autofix 提案として出す。
+
+        必須項目の null は MB_IR0007（error）の担当なので除外する。
+        補正の判定は base.normalize_null に一本化しており、`cli._write_fixed` が fixed/ へ
+        書き出す値と必ず一致する。
+        - `idf.autofix_null_to_empty` の項目（Experimental Factor Name / Type）は値を消す
+          （任意項目に null を書くこと自体が不正で「書かない」が正規の書き方）
+        - それ以外は推奨 null の正規表記へ（`Not Applicable` → `not applicable`、`NA` → `missing`）
+
+        **何をどう直したかを message に入れる**（biosample の BS_R0001 と同じ方針）。
+        暗黙に fixed/ を書き換えるだけだと登録者が次回も同じ書き方をするため。
+        補正対象にならない null（既に正規表記で、消す対象でもない）は従来どおり warning のみ。
+        """
         if not sub.idf:
             return []
-        nulls = null_values(context)
-        required = set(_idf(context).get("required_error", [])) | set(_idf(context).get("required_not_null", []))
+        accepted = null_values(context)
+        not_recommended = null_values_not_recommended(context)
+        idf = _idf(context)
+        required = set(idf.get("required_error", [])) | set(idf.get("required_not_null", []))
+        to_empty = set(idf.get("autofix_null_to_empty", []))
         out = []
         for f in sub.idf.field_order:
             if f in required:
                 continue
             for v in sub.idf.get(f):
-                if v.strip() in nulls:
-                    out.append(self.result(message=f"{self.description} ({f}: '{v}')", field=f, value=v))
-                    break
+                fixed = normalize_null(v, accepted, not_recommended, to_empty=f in to_empty)
+                if fixed is None and v.strip() not in accepted:
+                    continue                      # null value ではない
+                if fixed is None:                 # null だが補正の余地が無い
+                    out.append(self.result(message=f"{self.description} ({f}: '{v}')",
+                                           field=f, value=v))
+                else:
+                    shown = "value removed" if fixed == "" else f"'{fixed}'"
+                    out.append(self.result(
+                        message=f"{self.description} ({f}: '{v}', Suggested: {shown})",
+                        field=f, value=v, autofix=True, old_value=v, new_value=fixed))
+                break
         return out
 
 

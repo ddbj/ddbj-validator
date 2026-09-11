@@ -1,4 +1,4 @@
-"""MB_IR0040 / MB_IR0041（参照オブジェクトのアカウント整合）のユニットテスト。
+"""MB_IR0040 / MB_SR0041（参照オブジェクトのアカウント整合）のユニットテスト。
 
 これらは requires_rdb ＋ requires_auth のため E2E ハーネス（-l 実行）では常にスキップされる。
 DB / API を張らずに挙動を固定するため、citable 集合を注入したコンテキストで直接検証する。
@@ -12,7 +12,7 @@ DB / API を張らずに挙動を固定するため、citable 集合を注入し
 import pytest
 
 from apps.metabobank.context import ValidationContext
-from apps.metabobank.rules.reference_db import MB_IR0040, MB_IR0041
+from apps.metabobank.rules.reference_db import MB_IR0040, MB_SR0041
 from apps.metabobank.validator import Validator
 from common.magetab.model import Idf, Sdrf, Submission
 
@@ -71,37 +71,79 @@ def test_ir0040_skips_when_set_unavailable():
     assert MB_IR0040().validate(_sub(bioprojects=["PRJDB0002"]), _ctx(account_bioprojects=None)) == []
 
 
-# --- MB_IR0041（BioSample）------------------------------------------------
+# --- MB_SR0041（BioSample）------------------------------------------------
 
 def test_ir0041_flags_biosample_outside_account():
     """account が引用できない SAMD は error になる。参照は SDRF 側にある。"""
-    res = MB_IR0041().validate(_sub(biosamples=["SAMD00000001", "SAMD00000002"]),
+    res = MB_SR0041().validate(_sub(biosamples=["SAMD00000001", "SAMD00000002"]),
                                _ctx(account_biosamples={"SAMD00000001"}))
-    assert [r["rule_id"] for r in res] == ["MB_IR0041"]
+    assert [r["rule_id"] for r in res] == ["MB_SR0041"]
     assert "SAMD00000002" in res[0]["message"]
     assert res[0]["level"] == "error" and res[0]["target"] == "SDRF"
 
 
 def test_ir0041_passes_when_owned():
     """引用できるなら発火しない。"""
-    assert MB_IR0041().validate(_sub(biosamples=["SAMD00000001"]),
+    assert MB_SR0041().validate(_sub(biosamples=["SAMD00000001"]),
                                 _ctx(account_biosamples={"SAMD00000001"})) == []
 
 
 def test_ir0041_ignores_non_samd():
     """SAMD 以外（SAMN 等）は対象外。"""
-    assert MB_IR0041().validate(_sub(biosamples=["SAMN00000001"]), _ctx(account_biosamples=set())) == []
+    assert MB_SR0041().validate(_sub(biosamples=["SAMN00000001"]), _ctx(account_biosamples=set())) == []
 
 
 def test_ir0041_skips_when_set_unavailable():
     """判定材料が無い（None）ときはスキップ。"""
-    assert MB_IR0041().validate(_sub(biosamples=["SAMD00000002"]), _ctx(account_biosamples=None)) == []
+    assert MB_SR0041().validate(_sub(biosamples=["SAMD00000002"]), _ctx(account_biosamples=None)) == []
 
 
 def test_ir0041_aggregates_duplicate_rows():
     """同じ SAMD が複数行にあっても 1 件に集約される。"""
-    res = MB_IR0041().validate(_sub(biosamples=["SAMD00000002"] * 5), _ctx(account_biosamples=set()))
+    res = MB_SR0041().validate(_sub(biosamples=["SAMD00000002"] * 5), _ctx(account_biosamples=set()))
     assert len(res) == 1
+
+
+# --- 旧 MB_SR0022 の統合（属性が引けない BioSample）------------------------
+
+def test_citable_but_no_attribute_is_reported():
+    """引用はできるが内部 DB から属性が取れない SAMD も MB_SR0041 が error で拾う。
+
+    旧 MB_SR0022（warning / rdb のみ）を統合したもの。「属性が引けない」は
+    「参照先にできない」と同じ意味なので 1 つの error に寄せた。
+    """
+    res = MB_SR0041().validate(_sub(biosamples=["SAMD00000001"]),
+                               _ctx(account_biosamples={"SAMD00000001"},
+                                    biosample_attrs={"SAMD00000001": {}}))
+    assert len(res) == 1 and "no attribute found" in res[0]["message"]
+
+
+def test_citable_with_attribute_is_silent():
+    res = MB_SR0041().validate(_sub(biosamples=["SAMD00000001"]),
+                               _ctx(account_biosamples={"SAMD00000001"},
+                                    biosample_attrs={"SAMD00000001": {"organism": "Homo sapiens"}}))
+    assert res == []
+
+
+def test_not_citable_takes_precedence_over_no_attribute():
+    """引用不可なら属性の有無に関わらず 1 件（二重に出さない）。"""
+    res = MB_SR0041().validate(_sub(biosamples=["SAMD00000002"]),
+                               _ctx(account_biosamples=set(), biosample_attrs={}))
+    assert len(res) == 1 and "no attribute found" not in res[0]["message"]
+
+
+def test_attrs_not_fetched_skips_the_attribute_check():
+    """biosample_attrs が None（未取得）なら属性チェックはしない。"""
+    res = MB_SR0041().validate(_sub(biosamples=["SAMD00000001"]),
+                               _ctx(account_biosamples={"SAMD00000001"}, biosample_attrs=None))
+    assert res == []
+
+
+def test_sr0022_is_deprecated_and_unregistered():
+    from apps.metabobank.rules.biosample import MB_SR0022
+    assert getattr(MB_SR0022, "deprecated", False) is True
+    ids = {r.rule_id for r in Validator(ValidationContext()).active_rules}
+    assert "MB_SR0022" not in ids
 
 
 # --- モード別スキップ -------------------------------------------------------
@@ -116,7 +158,7 @@ def test_mode_gating(kw, registered):
     """requires_rdb / requires_auth によるモード別の登録・除外。"""
     ids = {r.rule_id for r in Validator(ValidationContext(**kw)).active_rules}
     assert ("MB_IR0040" in ids) is registered
-    assert ("MB_IR0041" in ids) is registered
+    assert ("MB_SR0041" in ids) is registered
 
 
 # --- record-api クライアント（common/record_api）-------------------------

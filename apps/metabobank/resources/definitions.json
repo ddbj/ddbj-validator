@@ -80,11 +80,11 @@
       "Protocol Description",
       "Comment[Study type]",
       "Comment[Experiment type]",
-      "Comment[Submission type]"
+      "Comment[Submission type]",
+      "Comment[BioProject]"
     ],
     "required_warning": [],
     "required_ignore_error": [
-      "Comment[BioProject]",
       "Comment[Submission Date]",
       "Comment[Last Update Date]"
     ],
@@ -515,6 +515,11 @@
     }
   },
   "sdrf": {
+    "column_order_skeleton": ["Source Name", "Sample Name", "Extract Name", "Assay Name",
+                              "Raw Data File", "Processed Data File", "Metabolite Assignment File"],
+    "user_defined_column_kinds": ["Characteristics", "Parameter Value", "Comment",
+                                  "Unit", "Factor Value"],
+    "user_defined_warning_exclude_kinds": ["Characteristics"],
     "fields": [
       "Source Name",
       "Sample Name",
@@ -542,16 +547,17 @@
       "Assay Name",
       "Protocol REF",
       "Characteristics[organism]",
-      "Characteristics[taxonomy_id]"
+      "Characteristics[taxonomy_id]",
+      "Raw Data File",
+      "Comment[sample_title]",
+      "Comment[BioSample]"
     ],
     "required_columns_error_exclude": {
       "MSI": [
         "Extract Name"
       ]
     },
-    "required_value_error": [
-      "Raw Data File"
-    ],
+    "required_value_error": [],
     "required_columns_warning": [
       "Comment\\[BioSample\\]",
       "Comment\\[sample_title\\]",
@@ -1172,7 +1178,7 @@
     }
   },
   "value_formats": {
-    "Characteristics[biosample_accession]": "SAMD\\d{8}",
+    "Characteristics[biosample_accession]": "^SAM([DN]\\d{8}|E[AG]\\d+)$",
     "Comment[Reanalysis of]": "MTBKS\\d{1,}:[^:]+"
   },
   "null_values": {

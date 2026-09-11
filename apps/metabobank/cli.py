@@ -70,7 +70,7 @@ def _fetch_biosample_attrs(context, sub, account):
     """参照 SAMD の BioSample 属性を内部 DB から取得（MB_SR0021/0022/0023 用）。core は common/magetab/biosample。
 
     account が確定していれば allowed（account 所有∪permit）でゲートし、account 外の SAMD は突合しない
-    （account 無しは全参照が対象）。allowed は MB_IR0041 用の account_biosamples とも共有する
+    （account 無しは全参照が対象）。allowed は MB_SR0041 用の account_biosamples とも共有する
     （同一の参照 SAMD 集合なので再クエリを避ける）。
     """
     from common.magetab import biosample as _bs
@@ -103,7 +103,7 @@ def _fetch_account_bioprojects(context, sub, account):
 
     record-api が使えないときのフォールバック。**API と違い umbrella を除けず、
     permitted も DRA permit の分しか見られない**（`docs/record-api-migration.md`）。
-    BioSample 側（MB_IR0041 の account_biosamples）は _fetch_biosample_attrs が解決済み。
+    BioSample 側（MB_SR0041 の account_biosamples）は _fetch_biosample_attrs が解決済み。
     取得に失敗しても None のままにして該当ルールをスキップさせる（他の検証は続行）。
     """
     if not account or not sub.idf:
@@ -133,12 +133,14 @@ def _write_fixed(sub, out_dir):
     from apps.metabobank.defs import load_definitions
     fixed = Path(out_dir) / "fixed"
     fixed.mkdir(parents=True, exist_ok=True)
+    from apps.metabobank.rules.base import normalize_null
     defs = load_definitions()
     nulls_nr = defs.get("null_values", {}).get("not_recommended", [])
     nulls_ok = set(defs.get("null_values", {}).get("accepted", []))
-    # null value を書くこと自体が許されない任意項目（factor は「書かない」が正規の書き方）。
-    # 非推奨 null → missing（MB_IR0021）を全項目に一律適用した上で、二段目としてここに
-    # 挙げた項目だけ null value を空にする。除外項目を持たないので一段目の判定は素のまま。
+    # null value の補正は MB_IR0023 と同じ base.normalize_null に一本化する
+    # （提案として報告した内容と fixed/ の中身が食い違わないようにするため）。
+    # null_to_empty に挙げた項目は null と判定できた時点で値を消す
+    # （任意項目に null value を書くこと自体が不正＝「書かない」が正規の書き方）。
     null_to_empty = set(defs.get("idf", {}).get("autofix_null_to_empty", []))
     written = []
     if sub.idf:
@@ -153,12 +155,11 @@ def _write_fixed(sub, out_dir):
                 m = re.match(r"^(\d{4})/(\d{1,2})/(\d{1,2})$", vv.strip())
                 if m:  # 日付 / → -（MB_IR0013）
                     vv = f"{m.group(1)}-{m.group(2).zfill(2)}-{m.group(3).zfill(2)}"
-                for nr in nulls_nr:
-                    if re.fullmatch(nr, vv.strip()):  # 非推奨 null → missing（MB_IR0021）
-                        vv = "missing"
-                        break
-                if name in null_to_empty and vv.strip() in nulls_ok:
-                    vv = ""      # 二段目: null value なら値を書かない（MB_IR0007 の解消）
+                nf = normalize_null(vv, nulls_ok, nulls_nr, to_empty=name in null_to_empty)
+                if nf is not None:
+                    vv = nf      # 表記揺れ揃え／非推奨 null → missing／null → 空
+                elif name in null_to_empty and vv.strip() in nulls_ok:
+                    vv = ""      # 既に正規表記の null。この項目では値を書かない
                 vals.append(vv)
             while vals and not vals[-1].strip():
                 vals.pop()       # 末尾の空値は列を落とす（項目名だけの行にする）

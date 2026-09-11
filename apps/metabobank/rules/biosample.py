@@ -32,6 +32,13 @@ class MB_SR0021(MbRule):
 
 
 class MB_SR0022(MbRule):
+    """**deprecated**（validator に登録しない）。
+
+    「参照 BioSample の属性が引けない」は「その BioSample を参照先にできない」と同じ意味なので
+    MB_SR0041 に統合した（warning → error に昇格し、依存も rdb から auth/rdb になる）。
+    クラスは既存テストの参照のために残す。
+    """
+    deprecated = True
     rule_id = "MB_SR0022"; level = "warning"; target = "SDRF"; requires_rdb = True
     description = "Referenced BioSample has no attribute (not found in the account/DB)."
 

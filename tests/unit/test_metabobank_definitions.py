@@ -72,7 +72,7 @@ def test_column_order_entries_are_known_sdrf_fields():
     """`sdrf.column_order`（投稿テンプレートの列順）に載っている列は、すべて
     `sdrf.fields`（既知の列パターン）に当たること。
 
-    当たらないと MB_SR0006「User-defined columns are used.」が
+    当たらないと MB_SR0007「Invalid user-defined columns are added.」（error）が
     **テンプレートどおりに書いた投稿に対して出る**。実際 NMR の
     `Acquisition Parameter Data File` / `Free Induction Decay Data File` がこの状態だった。
     """

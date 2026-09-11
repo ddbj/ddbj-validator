@@ -34,6 +34,8 @@ _BASE_IDF = {
     "Comment[Study type]": ["metabolomics"],
     "Comment[Experiment type]": ["untargeted metabolites"],
     "Comment[Submission type]": ["LC-MS"],
+    # MB_IR0005 の必須項目に Comment[BioProject] を追加したので土台に含める
+    "Comment[BioProject]": ["PRJDB00000"],
 }
 
 
@@ -118,10 +120,36 @@ def test_null_factor_type_is_warned_via_ir0023():
     assert len(msgs) == 1 and "Experimental Factor Type" in msgs[0]
 
 
-def test_null_in_sdrf_factor_value_column_is_reported():
-    """SDRF 側の Factor Value[<null value>] は除外しないので only in SDRF として出る。"""
-    msgs = _msgs(_sub(factor_values=["missing"]), C.MB_CR0001())
-    assert len(msgs) == 1 and "only in SDRF: missing" in msgs[0]
+def test_null_in_sdrf_factor_value_column_is_not_reported_by_cr0001():
+    """SDRF 側の Factor Value[<null value>] は MB_CR0001 では出さない（name マッチ限定）。
+
+    IDF 側の null を MB_IR0007 に委譲しているのと対称に、SDRF 側の null も
+    MB_SR0047（値の欠落）へ委譲する。MB_CR0001 は実名どうしの一致だけを見る。
+    """
+    assert _msgs(_sub(factor_values=["missing"]), C.MB_CR0001()) == []
+
+
+def test_null_named_factor_value_is_caught_by_sr0047():
+    """null 名の Factor Value 列は **値が入っていても** MB_SR0047 が受ける。
+
+    列名が null value なら factor として成立していないため。MB_CR0001 を name マッチ
+    限定にした際、この判定を MB_SR0047 へ委譲した。
+    """
+    msgs = _msgs(_sub(factor_values=["missing"]), S.MB_SR0047())
+    assert len(msgs) == 1 and "Factor Value[missing]" in msgs[0]
+
+
+def test_null_named_factor_value_without_values_is_also_caught_by_sr0047():
+    """値も無い場合も同じ 1 件（二重に出さない）。"""
+    sub = _sub(factor_values=["missing"])
+    sub.sdrf.rows = [row[:-1] + [""] for row in sub.sdrf.rows]
+    msgs = _msgs(sub, S.MB_SR0047())
+    assert len(msgs) == 1 and "Factor Value[missing]" in msgs[0]
+
+
+def test_real_named_factor_value_with_values_is_silent_in_sr0047():
+    """実名かつ値があれば MB_SR0047 は無指摘（null 名判定が過剰にならないこと）。"""
+    assert _msgs(_sub(factor_values=["treatment"]), S.MB_SR0047()) == []
 
 
 def test_absent_factor_is_not_a_missing_mandatory_field():
@@ -369,22 +397,22 @@ def _unnamed_sub(idf_name=None, values=("a", "b")):
                                 rows=[["s1", v] for v in values]))
 
 
-def test_unnamed_factor_value_column_is_reported():
-    """`Factor Value[]`（空名）を素通しせずに指摘すること。
+def test_unnamed_factor_value_column_is_reported_by_sr0007():
+    """`Factor Value[]`（空名）は MB_SR0007（不正なユーザ定義列）が指摘する。
 
-    正規表現が `Factor Value\\[.+\\]` だと空名を拾えず、MB_SR0006 も sdrf.fields の
-    `Factor Value\\[.*\\]` に当たるため誰も指摘しない状態になっていた。
+    以前は MB_CR0001 が `only in SDRF: (unnamed)` として拾っていたが、CR0001 を
+    name マッチ限定にしたため、名前が無いこと自体は MB_SR0007 の担当に移した。
+    sdrf.fields の `Factor Value\\[.*\\]` には当たるので MB_SR0006 では拾えない
+    （＝誰も指摘しない状態にならないことをここで固定する）。
     """
-    msgs = _msgs(_unnamed_sub(), C.MB_CR0001())
-    assert any("only in SDRF: (unnamed)" in m for m in msgs), msgs
+    msgs = _msgs(_unnamed_sub(), S.MB_SR0007())
+    assert len(msgs) == 1 and "Factor Value[]" in msgs[0]
 
 
-def test_unnamed_factor_value_never_matches_an_idf_name():
-    """IDF の factor name は必ず非空なので、空名は照合で必ず余る（両方向とも出る）。"""
+def test_unnamed_factor_value_is_not_reported_by_cr0001():
+    """空名は MB_CR0001 の照合集合に入れない（IDF 側に実名があっても片側分だけ出る）。"""
     msgs = _msgs(_unnamed_sub(idf_name="treatment"), C.MB_CR0001())
-    assert len(msgs) == 2
-    assert any("only in SDRF: (unnamed)" in m for m in msgs)
-    assert any("only in IDF: treatment" in m for m in msgs)
+    assert len(msgs) == 1 and "only in IDF: treatment" in msgs[0]
 
 
 def test_unnamed_factor_value_without_values_is_also_caught_by_sr0047():
@@ -397,3 +425,62 @@ def test_unnamed_factor_value_with_constant_value_is_caught_by_sr0017():
     """空名でも値が全行一定なら MB_SR0017 の対象になる（抽出漏れが無いこと）。"""
     msgs = _msgs(_unnamed_sub(values=("a", "a")), S.MB_SR0017())
     assert len(msgs) == 1 and "Factor Value[]" in msgs[0]
+
+
+# --- MB_IR0023: 任意項目の null を autofix 提案として報告する -----------------
+#
+# 暗黙に fixed/ を書き換えるだけでは登録者が次回も同じ書き方をするため、
+# 「何をどう直したか」を message と annotation（Suggested value）に出す（bs の BS_R0001 と同じ）。
+
+def _idf_only(fields):
+    """IDF だけの最小 submission（_BASE_IDF に fields を上書き）。"""
+    f = {k: list(v) for k, v in _BASE_IDF.items()}
+    f.update({k: list(v) for k, v in fields.items()})
+    return Submission(idf=Idf(fields=f, field_order=list(f)))
+
+
+def _ir0023(sub):
+    return I.MB_IR0023().validate(sub, CTX)
+
+
+def test_ir0023_null_to_empty_field_is_autofix():
+    """autofix_null_to_empty の項目（Experimental Factor Type）は値を消す提案になる。"""
+    res = _ir0023(_idf_only({"Experimental Factor Type": ["missing"]}))
+    assert len(res) == 1
+    assert res[0]["autofix"] is True and res[0]["new_value"] == ""
+    assert "value removed" in res[0]["message"]
+
+
+def test_ir0023_not_recommended_null_becomes_missing():
+    """非推奨 null（NA 等）は missing への補正提案。対象は任意項目のみ。"""
+    res = _ir0023(_idf_only({"Comment[Related study]": ["NA"]}))
+    assert len(res) == 1
+    assert res[0]["new_value"] == "missing" and "Suggested: 'missing'" in res[0]["message"]
+
+
+def test_ir0023_normalizes_accepted_null_spelling():
+    """推奨 null の表記揺れ（Not Applicable）も正規表記へ揃える（bs の (a) 相当）。"""
+    res = _ir0023(_idf_only({"Comment[Related study]": ["Not Applicable"]}))
+    assert len(res) == 1
+    assert res[0]["new_value"] == "not applicable"
+
+
+def test_ir0023_already_canonical_null_is_warning_without_autofix():
+    """既に正規表記の null は直すものが無いので warning のみ（autofix は付けない）。"""
+    res = _ir0023(_idf_only({"Comment[Related study]": ["missing"]}))
+    assert len(res) == 1 and not res[0].get("autofix")
+
+
+def test_ir0023_skips_mandatory_fields():
+    """必須項目の null は MB_IR0007（error）の担当なので MB_IR0023 は触らない。"""
+    assert _ir0023(_idf_only({"Study Title": ["missing"]})) == []
+
+
+def test_ir0023_ignores_real_values():
+    assert _ir0023(_idf_only({"Comment[Related study]": ["MTBKS123"]})) == []
+
+
+def test_write_fixed_matches_ir0023_proposal(tmp_path):
+    """fixed/ の値が MB_IR0023 の提案（new_value）と一致すること（判定を共用しているため）。"""
+    got = _write_and_read(tmp_path, ["Comment[Related study]\tNot Applicable"])
+    assert got == ["Comment[Related study]\tnot applicable"]
