@@ -117,7 +117,7 @@
       "Publication": [
         "Publication Title",
         "Publication Author List",
-        "Publication Status"
+        "Publication Journal"
       ],
       "Protocol": [
         "Protocol Name",
@@ -1055,7 +1055,8 @@
           "MicroRNA profiling",
           "chemical library",
           "amino acids",
-          "organic acids"
+          "organic acids",
+          "Third-party reanalysis"
         ],
         "Experimental Design": [
           "case control design",

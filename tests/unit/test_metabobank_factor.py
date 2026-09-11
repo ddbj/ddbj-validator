@@ -484,3 +484,83 @@ def test_write_fixed_matches_ir0023_proposal(tmp_path):
     """fixed/ の値が MB_IR0023 の提案（new_value）と一致すること（判定を共用しているため）。"""
     got = _write_and_read(tmp_path, ["Comment[Related study]\tNot Applicable"])
     assert got == ["Comment[Related study]\tnot applicable"]
+
+
+# --- MB_IR0038 / MB_CR0004: 再解析元 study の参照表記 -----------------------
+#
+# Comment[Related study] は `DB:ID` 形式で書く。MetaboBank の study accession は同じ DB なので
+# `MetaboBank:` prefix を付けても付けなくてもよい（特別扱い）。DB 名の CV 化は未実施で、
+# キュレータが入れる項目なのでチェックは緩く warning 止まり。
+
+def _related(*values):
+    return _idf_only({"Comment[Related study]": list(values)})
+
+
+@pytest.mark.parametrize("v", [
+    "MTBKS123",             # bare の MetaboBank accession
+    "MetaboBank:MTBKS123",  # prefix 付きでも同じ
+    "GEO:GSE12345",         # 他 DB は DB:ID
+    "doi:10.1093/x",        # ID 側に記号が入っても可
+    "MTBKS123:label",       # 緩い判定なので DB:ID として通る
+])
+def test_ir0038_accepts_valid_related_study(v):
+    assert I.MB_IR0038().validate(_related(v), CTX) == []
+
+
+@pytest.mark.parametrize("v", [
+    "E-GEAD-123",   # `:` が無く MTBKS でもない
+    "MTBKSabc",     # MTBKS＋数字でない
+    "mtbks1",       # MetaboBank accession は case-sensitive（`:` も無いので DB:ID でもない）
+    "free text",
+    "foo:",         # ID 側が空
+    ":bar",         # DB 側が空
+])
+def test_ir0038_warns_on_invalid_related_study(v):
+    msgs = [r["message"] for r in I.MB_IR0038().validate(_related(v), CTX)]
+    assert len(msgs) == 1 and "DB:ID" in msgs[0]
+
+
+@pytest.mark.parametrize("v", ["mtbks1", "MetaboBank:mtbks1", "metabobank:MTBKS1"])
+def test_metabobank_accession_is_case_sensitive(v):
+    """MetaboBank accession の特別扱いは case-sensitive。
+
+    `MetaboBank:MTBKS1` / `MTBKS1` の表記でのみ accession として扱う。表記揺れは
+    accession に正規化しないので、MB_CR0004 の突合でも一致扱いにならない。
+    （`:` を含む形は DB:ID として MB_IR0038 は通る。DB 名を CV 化したら弾けるようになる）
+    """
+    from apps.metabobank.rules.base import mtbks_accession
+    assert mtbks_accession(v) is None
+
+
+def test_ir0038_skips_empty_and_null():
+    """空値は任意項目なので素通し。null value は MB_IR0023 の担当。"""
+    assert I.MB_IR0038().validate(_related(""), CTX) == []
+    assert I.MB_IR0038().validate(_related("missing"), CTX) == []
+
+
+def test_ir0038_reports_each_value():
+    res = I.MB_IR0038().validate(_related("MTBKS1", "bad one", "also bad"), CTX)
+    assert len(res) == 2
+
+
+def test_cr0004_matches_prefixed_metabobank_accession():
+    """IDF 側が `MetaboBank:MTBKS123` でも SDRF 側の `MTBKS123:...` と一致扱いになること。
+
+    prefix の有無で不一致と判定されると、正しい書き方をしたのに warning が出てしまう。
+    """
+    fields = {k: list(v) for k, v in _BASE_IDF.items()}
+    fields["Comment[Related study]"] = ["MetaboBank:MTBKS123"]
+    sub = Submission(idf=Idf(fields=fields, field_order=list(fields)),
+                     sdrf=Sdrf(header=["Source Name", "Comment[Reanalysis of]"],
+                               rows=[["s1", "MTBKS123:label"]]))
+    assert C.MB_CR0004().validate(sub, CTX) == []
+
+
+def test_cr0004_still_reports_a_real_mismatch():
+    fields = {k: list(v) for k, v in _BASE_IDF.items()}
+    fields["Comment[Related study]"] = ["MetaboBank:MTBKS123"]
+    sub = Submission(idf=Idf(fields=fields, field_order=list(fields)),
+                     sdrf=Sdrf(header=["Source Name", "Comment[Reanalysis of]"],
+                               rows=[["s1", "MTBKS999:label"]]))
+    msgs = [r["message"] for r in C.MB_CR0004().validate(sub, CTX)]
+    assert len(msgs) == 1 and "MTBKS999" in msgs[0]

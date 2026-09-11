@@ -347,6 +347,43 @@ class MB_SR0047(MbRule):
         return out
 
 
+class MB_SR0048(MbRule):
+    rule_id = "MB_SR0048"; level = "warning"; target = "SDRF"
+    description = "Raw data file is missing."
+
+    # raw データが無い投稿を通すための **magic word**。INSDC の null value
+    # （missing / not applicable / not collected / not provided / restricted access）は
+    # 「値が不明・非該当」を表す語彙で役割が違うため流用しない。専用語として `none` を使う。
+    # null value ではないので MB_SR0009（必須列の値の欠落）は発火せず、この warning だけが出る。
+    _MAGIC_WORD = "none"
+
+    def validate(self, sub, context):
+        """Raw Data File に magic word `none` が書かれている行を知らせる。
+
+        raw データを伴わない投稿は、列そのものを消すのではなく `none` を書くのが
+        正規の書き方（列の存在は MB_SR0004 が必須列として見る）。書き方としては正しいので
+        error にはせず、「raw が無い投稿である」ことを登録者とキュレータに気づかせる warning。
+
+        `None` / `NONE` のような大文字混じりを実ファイル名として扱ってしまうと気づけないため、
+        判定は大文字小文字を区別しない。
+        空セルは対象外（値が無いことは MB_SR0009 の担当）。null value（missing 等）も対象外で、
+        そちらは MB_SR0009 が error で受ける＝magic word でない値では通らない。
+        同名列が複数あってもセル単位で判定し、該当セルごとに 1 件報告する。
+        """
+        if not sub.sdrf:
+            return []
+        out = []
+        for i in sub.sdrf.col_indices("Raw Data File"):
+            for r, row in enumerate(sub.sdrf.rows):
+                v = (row[i] if i < len(row) else "").strip()
+                if v.lower() == self._MAGIC_WORD:
+                    out.append(self.result(
+                        message=f"{self.description} (Raw Data File: '{v}', row {r + 1})",
+                        assay=_assay(sub, row), line=r + 1,
+                        column="Raw Data File", value=v, source_name=_source_name(sub, row)))
+        return out
+
+
 class MB_SR0019(MbRule):
     rule_id = "MB_SR0019"; level = "error"; target = "SDRF"
     description = "Invalid value format."

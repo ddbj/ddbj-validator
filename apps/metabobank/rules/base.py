@@ -64,6 +64,7 @@ ANNOTATION_PATTERNS = {
     "MB_SR0037": "sdrf_cell",
     "MB_SR0045": "sdrf_cell",
     "MB_SR0046": "sdrf_cell",
+    "MB_SR0048": "sdrf_cell",
     # --- SDRF: 列単位 ---
     "MB_SR0003": "sdrf_column",
     "MB_SR0004": "sdrf_column",
@@ -117,6 +118,36 @@ ANNOTATION_PATTERNS = {
 def annotation_pattern(rule_id):
     """rule_id の annotation パターン名。表に無ければ "general"（annotation なし）。"""
     return ANNOTATION_PATTERNS.get(rule_id, "general")
+
+
+# --- 再解析元 study の参照表記（MB_IR0038 / MB_CR0004 で共用）---------------
+#
+# Comment[Related study] は `DB:ID` 形式で書く。ただし MetaboBank の study accession
+# （MTBKS＋自然数）は **同じ DB なので特別扱い**で、`MetaboBank:` prefix を付けても
+# 付けなくてもよい。DB 名の CV 化は未実施で、キュレータが入れる項目なので緩く見る。
+#
+# この特別扱いの判定は **case-sensitive**。`MetaboBank:MTBKS1` / `MTBKS1` の表記でのみ
+# accession として扱う（accession 自体が大文字表記なので揺れを認めない）。
+_MTBKS_RE = re.compile(r"^(?:MetaboBank:)?(MTBKS\d+)$")
+# DB:ID 形式。DB 側は `:` を含まない 1 文字以上、ID 側は 1 文字以上（中身は問わない）。
+DB_ID_RE = re.compile(r"^[^:]+:.+$", re.S)
+
+
+def mtbks_accession(value):
+    """MetaboBank study accession なら prefix を外した `MTBKSnnn` を返す。違えば None。
+
+    `MTBKS123` / `MetaboBank:MTBKS123` のどちらでも同じ値になる（prefix の有無だけを吸収）。
+    判定は **case-sensitive** なので `mtbks123` / `metabobank:MTBKS123` は accession 扱いにしない。
+    MB_CR0004 が IDF 側と SDRF 側の accession を突き合わせるのにも使う。
+    """
+    m = _MTBKS_RE.match((value or "").strip())
+    return m.group(1) if m else None
+
+
+def is_valid_related_study(value):
+    """Comment[Related study] の値として認める形か（MTBKS 形式 または DB:ID 形式）。"""
+    v = (value or "").strip()
+    return bool(v) and (mtbks_accession(v) is not None or bool(DB_ID_RE.match(v)))
 
 
 def null_values(context):

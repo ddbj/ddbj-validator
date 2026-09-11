@@ -3,7 +3,7 @@ import datetime
 import re
 from common.jst import today as jst_today
 from apps.metabobank.rules.base import (MbRule, null_values, null_values_not_recommended,
-                                        normalize_null)
+                                        normalize_null, is_valid_related_study)
 
 _DATE_OK = re.compile(r"^20\d{2}-\d{2}-\d{2}$")
 _DATE_FIELDS = ("Public Release Date", "Comment[Submission Date]", "Comment[Last Update Date]", "Date of Experiment")
@@ -332,17 +332,31 @@ class MB_IR0025(MbRule):
 
 class MB_IR0038(MbRule):
     rule_id = "MB_IR0038"; level = "warning"; target = "IDF"
-    description = "MetaboBank study accession (MTBKS...) should be specified for re-analysis."
+    description = 'Related study should be specified as "DB:ID" or a MetaboBank accession (MTBKSnnn).'
 
     def validate(self, sub, context):
+        """Comment[Related study]（再解析元の study）が参照表記として読める形か。
+
+        認める形は 2 つ（判定は base.is_valid_related_study に集約）。
+        - **MetaboBank の study accession**: `MTBKSnnn`。同じ DB なので `MetaboBank:` prefix は
+          付けても付けなくてもよい（特別扱い）
+        - **DB:ID 形式**: それ以外の DB は `DB:ID` で書く。DB 名の CV 化は未実施なので
+          「`:` の左右が非空」だけを見る緩い判定にしてある
+          （キュレータが入れる項目のため。error ではなく warning に留めるのも同じ理由）
+
+        空値は素通し（Related study は任意項目。再解析でなければ書かない）。
+        null value も素通し（そちらは MB_IR0023 の担当）。値が複数あれば各値ごとに 1 件報告。
+        """
         if not sub.idf:
             return []
         nulls = null_values(context)
         out = []
         for v in sub.idf.get("Comment[Related study]"):
-            if v and v.strip() and v.strip() not in nulls and not re.match(r"^MTBKS\d+$", v.strip()):
-                out.append(self.result(message=f"{self.description} (Comment[Related study]: '{v}')",
-                                       field="Comment[Related study]", value=v))
+            s = v.strip() if v else ""
+            if not s or s in nulls or is_valid_related_study(s):
+                continue
+            out.append(self.result(message=f"{self.description} (Comment[Related study]: '{v}')",
+                                   field="Comment[Related study]", value=v))
         return out
 
 

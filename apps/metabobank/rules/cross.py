@@ -1,6 +1,6 @@
 """IDF↔SDRF 横断ルール（MB_CR）。"""
 import re
-from apps.metabobank.rules.base import MbRule, null_values
+from apps.metabobank.rules.base import MbRule, null_values, mtbks_accession
 
 
 class MB_CR0001(MbRule):
@@ -95,7 +95,10 @@ class MB_CR0004(MbRule):
     def validate(self, sub, context):
         if not sub.idf or not sub.sdrf:
             return []
-        idf_re = {v.strip() for v in sub.idf.get("Comment[Related study]") if v.strip()}
+        # IDF 側は `MetaboBank:MTBKS123` とも書けるので accession に正規化して突き合わせる
+        # （MB_IR0038 の仕様。prefix の有無で不一致扱いになるのを避ける）。
+        idf_re = {mtbks_accession(v) or v.strip()
+                  for v in sub.idf.get("Comment[Related study]") if v.strip()}
         sdrf_re = set()
         for i in sub.sdrf.col_indices("Comment[Reanalysis of]"):
             for row in sub.sdrf.rows:

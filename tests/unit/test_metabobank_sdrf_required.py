@@ -315,3 +315,64 @@ def test_non_skeleton_columns_do_not_affect_order():
                       "Extract Name", "Unit[temperature]", "Assay Name",
                       "Unit[temperature]", "Raw Data File"])
     assert S.MB_SR0026().validate(sub, CTX) == []
+
+
+# --- MB_SR0048: Raw Data File に magic word `none` が書かれている -------------
+#
+# raw を伴わない投稿は列を消すのではなく `none` を書くのが正規の書き方。書式としては
+# 正しいので error にはせず、「raw が無い投稿」と気づかせる warning で受ける。
+# INSDC の null value（missing 等）は「値が不明・非該当」を表す別の語彙なので流用しない。
+
+def _sr0048(sub):
+    return [r["message"] for r in S.MB_SR0048().validate(sub, CTX)]
+
+
+def test_sr0048_fires_for_the_magic_word():
+    sub = _sub_with_new_required(overrides={"Raw Data File": "none"})
+    msgs = _sr0048(sub)
+    assert len(msgs) == 1 and "Raw Data File: 'none'" in msgs[0]
+
+
+@pytest.mark.parametrize("v", ["None", "NONE", "None "])
+def test_sr0048_magic_word_is_case_insensitive(v):
+    """`None` / `NONE` を実ファイル名として通してしまうと気づけないので大小文字を区別しない。"""
+    sub = _sub_with_new_required(overrides={"Raw Data File": v})
+    assert len(_sr0048(sub)) == 1
+
+
+@pytest.mark.parametrize("null", ["missing", "not applicable", "not collected",
+                                  "not provided", "restricted access"])
+def test_sr0048_does_not_fire_for_null_values(null):
+    """null value は対象外。magic word ではないので MB_SR0009（error）が受ける。"""
+    sub = _sub_with_new_required(overrides={"Raw Data File": null})
+    assert _sr0048(sub) == []
+    assert len([m for m in _msgs(sub) if "Raw Data File" in m]) == 1
+
+
+def test_magic_word_does_not_trigger_sr0009():
+    """`none` は null value ではないので MB_SR0009 は発火しない（二重報告にならない）。"""
+    sub = _sub_with_new_required(overrides={"Raw Data File": "none"})
+    assert [m for m in _msgs(sub) if "Raw Data File" in m] == []
+
+
+def test_sr0048_silent_for_a_real_file_name():
+    sub = _sub_with_new_required(overrides={"Raw Data File": "sample.raw"})
+    assert _sr0048(sub) == []
+
+
+def test_sr0048_ignores_empty_cell():
+    """空セルは MB_SR0009（値が無い）の担当なので MB_SR0048 は出さない。"""
+    sub = _sub_with_new_required(overrides={"Raw Data File": ""})
+    assert _sr0048(sub) == []
+
+
+def test_sr0048_is_silent_without_the_column():
+    """列が無ければ何も出さない（列の存在は MB_SR0004 の担当）。"""
+    sub = _sub_with_new_required(drop=("Raw Data File",))
+    assert _sr0048(sub) == []
+
+
+def test_sr0048_level_and_not_internal_ignore():
+    from apps.metabobank.rules.base import is_internal_ignore
+    assert S.MB_SR0048.level == "warning"
+    assert not is_internal_ignore("MB_SR0048")
