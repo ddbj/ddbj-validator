@@ -33,8 +33,9 @@ EXPECTED = {
     # MTBKS230 は IDF factor name/type が "missing"。factor 任意化に伴い null value は不許可に
     # したので、Name は MB_IR0007（error/ignore）、Type は MB_IR0023（任意項目の null warning）
     # で受ける。Factor Value 列が無いことは MB_SR0005 の対象外になった（任意化）。
-    # MB_IR0018 は LC-MS Chromatography: Temperature を必須から外したので出なくなった
-    # （両 study とも LC-MS。MB_IR0018 自体は LC-DAD-MS 等で現役。担保は unit 側）。
+    # MB_IR0018 は必須 protocol parameter が 1 つも無くなったので発火しない（登録は残す）。
+    # 最後に残っていた MSI の Data processing software / version も Excel テンプレ側で
+    # 任意（BLUE）に変更した。担保は unit 側。
     # ユーザ定義列が Characteristics / Factor Value だけなので MB_SR0006 は出ない。
     "MTBKS230": {"MB_IR0007", "MB_IR0023", "MB_IR0024", "MB_IR0037", "MB_SR0046"},
     "MTBKS240": {"MB_IR0024", "MB_IR0037"},

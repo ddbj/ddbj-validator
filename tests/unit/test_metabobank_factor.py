@@ -7,6 +7,8 @@ SDRF=MB_CR0001）ため、境界が崩れていないかをここで固定する
 
 実行: リポジトリルートで `.venv/bin/python -m pytest tests/unit/test_metabobank_factor.py`
 """
+import copy
+
 import pytest
 
 from apps.metabobank.context import ValidationContext
@@ -245,82 +247,62 @@ def test_autofix_null_in_other_field_stays_missing(tmp_path):
     assert got == ["Comment[Sample Description]\tmissing"]
 
 
-# --- MB_IR0018: Chromatography Temperature の任意化 -------------------------
+# --- MB_IR0018: 必須 protocol parameter は現在 0 件 ---------------------------
+#
+# 公式 Excel テンプレで ORANGE(mandatory) だった Parameter Value 列は MSI の
+# Data processing software / version の 2 個だけで、それも他 10 テンプレと揃えて
+# BLUE(optional) にした。結果 idf.protocol_parameters_required が空になり無発火。
+# ただし将来また必須パラメータが出てくる可能性があるので deprecated にはせず、
+# 登録も internal ignore も残す（definitions に足すだけで効く状態を保つ）。
 
-_CHROMA_PARAMS = "Chromatography instrument;Autosampler model;Column model;Column type;Guard column"
 
-
-def _proto_sub(submission_type, chroma_params):
-    """Chromatography プロトコルだけを持つ IDF（MB_IR0018 の判定に必要な最小形）。"""
+def _proto_sub(submission_type, protocol_type, protocol_parameters):
+    """プロトコル 1 つだけを持つ IDF（MB_IR0018 の判定に必要な最小形）。"""
     fields = {
         "Comment[Submission type]": [submission_type],
         "Protocol Name": ["P1"],
-        "Protocol Type": ["Chromatography"],
-        "Protocol Parameters": [chroma_params],
+        "Protocol Type": [protocol_type],
+        "Protocol Parameters": [protocol_parameters],
     }
     return Submission(idf=Idf(fields=fields, field_order=list(fields)),
                       sdrf=Sdrf(header=["Source Name"], rows=[["s1"]]))
 
 
-def _chroma_missing(submission_type, chroma_params):
-    """MB_IR0018 が Chromatography について報告した不足パラメータ名。"""
-    out = []
-    for r in I.MB_IR0018().validate(_proto_sub(submission_type, chroma_params), CTX):
-        if "Chromatography:" not in r["message"]:
-            continue
-        out += [x.strip() for x in r["message"].rsplit("Chromatography:", 1)[1].rstrip(")").split(",")]
-    return out
+def test_ir0018_stays_registered_and_ignored():
+    """無発火でも deprecated にしない（必須パラメータが増えたら定義だけで効くように）。"""
+    from apps.metabobank.context import ValidationContext
+    from apps.metabobank.validator import Validator
+    from apps.metabobank.rules.base import is_internal_ignore
+    assert getattr(I.MB_IR0018, "deprecated", False) is False
+    assert "MB_IR0018" in {r.rule_id for r in Validator(ValidationContext()).active_rules}
+    assert is_internal_ignore("MB_IR0018")
 
 
-@pytest.mark.parametrize("st", ["LC-MS", "GC-MS", "LC-DAD-MS", "GC-FID-MS"])
-def test_chromatography_temperature_is_optional(st):
-    """Chromatography: Temperature は必須ではない（記載負荷が高いため）。
+def test_msi_data_processing_parameters_are_no_longer_required():
+    """旧来 MB_IR0018 が唯一検出していた MSI の 2 パラメータ欠落も、もう出ない。"""
+    assert I.MB_IR0018().validate(_proto_sub("MSI", "Data processing", ""), CTX) == []
+    assert I.MB_IR0018().validate(
+        _proto_sub("MSI", "Data processing", "Data processing software"), CTX) == []
 
-    公開 114 study で MB_IR0018 の発火 92 件は submission type を問わず全部この
-    Temperature が原因だった（他パラメータの欠落は 1 件も無し）。
 
-    submission type ごとに他の必須パラメータ（Detector / Signal range 等）が違うので、
-    「不足なし」ではなく「不足に Temperature が挙がらない」ことを見る。
+def test_chromatography_parameters_are_not_required():
+    """Chromatography の parameter は全部任意（Temperature を含む）。
+
+    以前は出力仕様のキー（required_protocol_parameters）をそのまま必須として読んでいたため、
+    公開 114 study の 81%（92 件）で Temperature の未記入を誤ってエラーにしていた。
     """
-    assert "Temperature" not in _chroma_missing(st, _CHROMA_PARAMS)
+    assert I.MB_IR0018().validate(_proto_sub("LC-MS", "Chromatography", ""), CTX) == []
 
 
-def test_nmr_sample_temperature_is_optional():
-    """NMR sample: Temperature も任意（別プロトコルだが方針を揃える）。"""
-    fields = {
-        "Comment[Submission type]": ["NMR"],
-        "Protocol Name": ["P1"],
-        "Protocol Type": ["NMR sample"],
-        "Protocol Parameters": ["NMR tube type;Solvent;Sample pH"],
-    }
-    sub = Submission(idf=Idf(fields=fields, field_order=list(fields)),
-                     sdrf=Sdrf(header=["Source Name"], rows=[["s1"]]))
-    msgs = [r["message"] for r in I.MB_IR0018().validate(sub, CTX)]
-    assert not any("NMR sample:" in m for m in msgs), msgs
-
-
-def test_ir0018_does_not_require_optional_chromatography_parameters():
-    """Chromatography の parameter は全部任意なので、空でも MB_IR0018 は出ない。
-
-    公式テンプレでは Parameter Value 列 159 個中 157 個が BLUE(optional)。
-    以前は出力仕様のキーを必須として読んでいたため、任意列の未記入がエラーになっていた。
-    """
-    assert _chroma_missing("LC-MS", "") == []
-
-
-def test_ir0018_detects_the_mandatory_msi_parameters():
-    """MB_IR0018 が現に検出するのは MSI の ORANGE(mandatory) 2 列だけ。"""
-    fields = {
-        "Comment[Submission type]": ["MSI"],
-        "Protocol Name": ["P1"],
-        "Protocol Type": ["Data processing"],
-        "Protocol Parameters": ["Data processing software"],   # version が無い
-    }
-    sub = Submission(idf=Idf(fields=fields, field_order=list(fields)),
-                     sdrf=Sdrf(header=["Source Name"], rows=[["s1"]]))
-    msgs = [r["message"] for r in I.MB_IR0018().validate(sub, CTX)]
-    assert len(msgs) == 1 and "Data processing software version" in msgs[0]
-    assert "Data processing software," not in msgs[0]   # 宣言済みの方は挙げない
+def test_ir0018_fires_when_a_required_parameter_is_defined():
+    """定義を足せば効くこと（空定義でルールが壊れていないことの担保）。"""
+    ctx = ValidationContext(skip_db=True, skip_ncbi=True, skip_auth=True)
+    ctx.definitions = copy.deepcopy(ctx.definitions)
+    ctx.definitions["idf"]["protocol_parameters_required"] = {
+        "MSI": {"Data processing": ["Data processing software"]}}
+    msgs = [r["message"]
+            for r in I.MB_IR0018().validate(_proto_sub("MSI", "Data processing", ""), ctx)]
+    assert len(msgs) == 1 and "Data processing software" in msgs[0]
 
 
 # --- MB_SR0047: Factor Value 列があるのに値が無い ---------------------------

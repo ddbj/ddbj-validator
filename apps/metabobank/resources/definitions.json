@@ -469,14 +469,7 @@
         ]
       }
     },
-    "protocol_parameters_required": {
-      "MSI": {
-        "Data processing": [
-          "Data processing software",
-          "Data processing software version"
-        ]
-      }
-    },
+    "protocol_parameters_required": {},
     "required_experiment_types": {
       "LC-MS": [
         "liquid chromatography-mass spectrometry"

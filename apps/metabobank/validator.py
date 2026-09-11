@@ -13,6 +13,8 @@ class Validator:
         available_rules = [
             # --- IDF ---
             # MB_IR0006 は deprecated（required_warning を設けない方針）のため登録しない。
+            # MB_IR0018 は現在 protocol_parameters_required が空で無発火だが、必須パラメータが
+            # 増えたときに定義を足すだけで効くよう登録は残す（deprecated にしない）。
             I.MB_IR0003(), I.MB_IR0004(), I.MB_IR0005(), I.MB_IR0007(),
             I.MB_IR0008(), I.MB_IR0009(), I.MB_IR0010(), I.MB_IR0011(), I.MB_IR0013(),
             I.MB_IR0015(), I.MB_IR0016(), I.MB_IR0017(), I.MB_IR0018(), I.MB_IR0020(),

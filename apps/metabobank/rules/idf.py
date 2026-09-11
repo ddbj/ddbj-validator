@@ -243,10 +243,16 @@ class MB_IR0018(MbRule):
         （登録システムが Excel/IDF の生成に使う。キー名は互換のため変えていない）、
         必須／任意は規定していない。
 
-        公式 Excel テンプレ 11 種の Parameter Value 列 159 個のうち、ORANGE（mandatory）は
-        MSI の Data processing software / version の 2 個だけで、残り 157 個は BLUE（optional）。
-        以前は出力仕様のキーをそのまま必須リストとして読んでいたため、公開 114 study の
-        81%（92 件）で Temperature の未記入を誤ってエラーにしていた。
+        **現在 `protocol_parameters_required` は空なので、このルールは事実上発火しない。**
+        公式 Excel テンプレ 11 種の Parameter Value 列 157 個のうち ORANGE（mandatory）は
+        MSI の Data processing software / version の 2 個だけだったが、それも他 10 テンプレと
+        揃えて BLUE（任意）にしたため必須が 0 になった。
+        ただし将来また必須パラメータが出てくる可能性があるので **deprecated にはせず登録も残す**
+        （definitions に足すだけで効くようにしておく）。
+
+        以前は出力仕様のキー（`required_protocol_parameters`）をそのまま必須リストとして
+        読んでいたため、公開 114 study の 81%（92 件）で Temperature の未記入を誤って
+        エラーにしていた。
         """
         if not sub.idf:
             return []

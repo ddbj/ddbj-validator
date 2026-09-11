@@ -203,17 +203,32 @@ def test_temperature_is_still_emitted_as_a_protocol_parameter():
         assert expected in found, f"{expected} の Temperature が出力対象から消えている"
 
 
-def test_protocol_parameters_required_matches_template_mandatory_columns():
-    """MB_IR0018 が必須と見るのは公式テンプレで ORANGE(mandatory) の 2 列だけであること。
+def test_no_protocol_parameter_is_mandatory():
+    """必須 protocol parameter は現在 1 つも無いこと（MB_IR0018 が無発火である根拠）。
 
-    公式 Excel テンプレ 11 種の Parameter Value 列 159 個を色で判定すると、
-    ORANGE(mandatory) は MSI の Data processing software / version の 2 個のみで、
-    残り 157 個は BLUE(optional)。テンプレは docs/（.gitignore 対象）にあり
+    公式 Excel テンプレ 11 種の Parameter Value 列 157 個を色で判定すると、以前は
+    ORANGE(mandatory) が MSI の Data processing software / version の 2 個だけ
+    （残り 155 個は BLUE=optional）だった。その 2 列も他 10 テンプレと揃えて BLUE に
+    したため、必須は 0 個になった。テンプレは docs/（.gitignore 対象）にあり
     テストから読めないので、判定結果をここに固定する。
+
+    IDF への宣言自体は required_protocol_parameters（出力仕様）側に残っており、
+    test_msi_data_processing_is_still_emitted で担保する。
+
+    空でも MB_IR0018 は deprecated にしていない（将来また必須パラメータが出てくる可能性が
+    あるため、定義を足すだけで効く状態を保つ）。
     """
-    assert IDF["protocol_parameters_required"] == {
-        "MSI": {"Data processing": ["Data processing software",
-                                    "Data processing software version"]}}
+    assert IDF["protocol_parameters_required"] == {}
+
+
+def test_msi_data_processing_is_still_emitted():
+    """任意化しても IDF Protocol Parameters への出力は残すこと。
+
+    出力を止めると登録システムが生成する IDF に宣言が無くなり、SDRF に列を書いた投稿が
+    MB_CR0003（SDRF の Parameter Value が IDF に未宣言）で落ちる。
+    """
+    assert IDF["required_protocol_parameters"]["MSI"]["Data processing"] == [
+        "Data processing software", "Data processing software version"]
 
 
 def test_temperature_is_never_required():
