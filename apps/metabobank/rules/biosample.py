@@ -53,7 +53,9 @@ class MB_SR0022(MbRule):
 
 
 class MB_SR0023(MbRule):
-    rule_id = "MB_SR0023"; level = "error"; target = "SDRF"; requires_rdb = True
+    # error ignore（管理システムが無視する error）ではなく warning にした。
+    # BioSample を正として SDRF を直す autofix を出すのが本旨で、登録を止める性質ではないため。
+    rule_id = "MB_SR0023"; level = "warning"; target = "SDRF"; requires_rdb = True
     description = "Characteristics value and BioSample attribute value do not match."
 
     def validate(self, sub, context):

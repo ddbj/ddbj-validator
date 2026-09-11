@@ -519,7 +519,7 @@
                               "Raw Data File", "Processed Data File", "Metabolite Assignment File"],
     "user_defined_column_kinds": ["Characteristics", "Parameter Value", "Comment",
                                   "Unit", "Factor Value"],
-    "user_defined_warning_exclude_kinds": ["Characteristics"],
+    "user_defined_warning_exclude_kinds": ["Characteristics", "Factor Value"],
     "fields": [
       "Source Name",
       "Sample Name",
