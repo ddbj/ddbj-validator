@@ -7,6 +7,9 @@ from apps.metabobank.rules.base import (MbRule, null_values, null_values_not_rec
 
 _DATE_OK = re.compile(r"^20\d{2}-\d{2}-\d{2}$")
 _DATE_FIELDS = ("Public Release Date", "Comment[Submission Date]", "Comment[Last Update Date]", "Date of Experiment")
+# 未来日判定の対象。Public Release Date は hold 中の公開予定日、Submission/Last Update Date は
+# 登録システムが付ける日付で、いずれも未来日が正当になり得るため実験実施日のみを対象にする。
+_FUTURE_DATE_FIELDS = ("Date of Experiment",)
 
 
 def _idf(context):
@@ -172,7 +175,7 @@ class MB_IR0033(MbRule):
         # 投稿日付は JST。コンテナが UTC だと JST 00:00〜09:00 の間だけ当日が未来日になる
         today = jst_today()
         out = []
-        for f in _DATE_FIELDS:
+        for f in _FUTURE_DATE_FIELDS:
             v = sub.idf.first(f).strip()
             m = re.match(r"^(20\d{2})-(\d{2})-(\d{2})$", v)
             if m:
