@@ -250,6 +250,11 @@ class MB_SR0009(MbRule):
         同名の列が複数ある場合は、その行の同名列が全部空/null value のときだけ欠落とみなす。
         ただし `Raw Data File` の magic word `none` は null value ではなく「raw が無い」ことを
         表す正規の値なので、欠落に数えない（MB_SR0048 が warning で拾う）。
+
+        報告は **該当する行を全部** 出す（2026-09-13 のキュレータテスト指摘）。列ごとに最初の
+        1 行だけにしていると、登録者は 1 行直して上げ直すたびに次の行で弾かれ何度も往復する。
+        件数が増えても登録 web / BSM 側で `rule + 列` にまとめて `Line: 1, 2, 5-8` と
+        1 行に畳んで表示するため、レポートが長くなる心配は無い。
         """
         if not sub.sdrf:
             return []
@@ -277,7 +282,6 @@ class MB_SR0009(MbRule):
                                            assay=_assay(sub, row), line=r + 1,
                                            column=col, value=vals[0],
                                            source_name=_source_name(sub, row)))
-                    break     # 列ごとに 1 件（最初の該当行）に留める
         return out
 
 
