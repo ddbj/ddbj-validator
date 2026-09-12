@@ -46,13 +46,13 @@ def test_today_is_tz_independent(monkeypatch):
     time.tzset()
 
 
-# --- MB_IR0033（未来日）が JST 基準で判定されること ---------------------------
+# --- MB_IR0033（未来日）が JST 基準で判定されること。対象は Date of Experiment のみ ---------------------------
 
-def _mb_sub(public_release_date):
+def _mb_sub(date_of_experiment):
     from common.magetab.model import Idf, Submission
     idf = Idf()
-    idf.fields = {"Public Release Date": [public_release_date]}
-    idf.field_order = ["Public Release Date"]
+    idf.fields = {"Date of Experiment": [date_of_experiment]}
+    idf.field_order = ["Date of Experiment"]
     return Submission(idf=idf, sdrf=None)
 
 
@@ -77,3 +77,23 @@ def test_mb_ir0033_flags_tomorrow():
     """翌日以降は従来どおり error。"""
     res = _mb_fired("2026-09-06", datetime.date(2026, 9, 5))
     assert len(res) == 1 and res[0]["rule_id"] == "MB_IR0033"
+
+
+def test_mb_ir0033_ignores_public_release_date():
+    """Public Release Date は hold 中の公開予定日なので未来日でも error にしない。"""
+    from common.magetab.model import Idf, Submission
+    from apps.metabobank.context import ValidationContext
+    from apps.metabobank.rules import idf as idf_rules
+    idf = Idf()
+    idf.fields = {"Public Release Date": ["2027-01-01"],
+                  "Comment[Submission Date]": ["2027-01-01"],
+                  "Comment[Last Update Date]": ["2027-01-01"]}
+    idf.field_order = list(idf.fields)
+    rule = idf_rules.MB_IR0033()
+    orig = idf_rules.jst_today
+    idf_rules.jst_today = lambda: datetime.date(2026, 9, 5)
+    try:
+        assert rule.validate(Submission(idf=idf, sdrf=None),
+                             ValidationContext(skip_db=True, skip_ncbi=True, skip_auth=True)) == []
+    finally:
+        idf_rules.jst_today = orig

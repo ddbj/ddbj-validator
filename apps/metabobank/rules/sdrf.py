@@ -1,6 +1,7 @@
 """SDRF ルール（MB_SR。metadata 分。ファイル実体/MAF 検証は別ツール＝非対象）。"""
 import re
-from apps.metabobank.rules.base import MbRule, null_values
+from apps.metabobank.rules.base import (MbRule, null_values, is_raw_data_file_none,
+                                        RAW_DATA_FILE_COLUMN)
 
 
 def _sdrf_def(context):
@@ -9,6 +10,12 @@ def _sdrf_def(context):
 
 def _empty(v):
     return v is None or str(v).strip() == ""
+
+
+def _absent(v, nulls):
+    """値が「無い」か。空セルと null value（missing 等）を同じ扱いにする。"""
+    sv = "" if v is None else str(v).strip()
+    return not sv or sv in nulls
 
 
 def _matches_any(colname, patterns):
@@ -241,6 +248,8 @@ class MB_SR0009(MbRule):
           raw が無い投稿は列そのものを書かないのが正規の書き方になる。
 
         同名の列が複数ある場合は、その行の同名列が全部空/null value のときだけ欠落とみなす。
+        ただし `Raw Data File` の magic word `none` は null value ではなく「raw が無い」ことを
+        表す正規の値なので、欠落に数えない（MB_SR0048 が warning で拾う）。
         """
         if not sub.sdrf:
             return []
@@ -260,7 +269,10 @@ class MB_SR0009(MbRule):
                 continue      # 列そのものが無いのは MB_SR0004 の担当
             for r, row in enumerate(sub.sdrf.rows):
                 vals = [(row[i] if i < len(row) else "") for i in idxs]
-                if all(_empty(v) or v.strip() in nulls for v in vals):
+                # Raw Data File の `none` は値ありとして扱う（null value 扱いしない）
+                if any(is_raw_data_file_none(col, v) for v in vals):
+                    continue
+                if all(_absent(v, nulls) for v in vals):
                     out.append(self.result(message=f"{self.description} ({col}, row {r + 1})",
                                            assay=_assay(sub, row), line=r + 1,
                                            column=col, value=vals[0],
@@ -301,7 +313,7 @@ def _factor_value_columns(sdrf):
 
 def _has_no_value(vals, nulls):
     """その列にどの行も値が無い（空 or null value のみ）か。"""
-    return all(not v or v in nulls for v in vals)
+    return all(_absent(v, nulls) for v in vals)
 
 
 class MB_SR0017(MbRule):
@@ -355,11 +367,11 @@ class MB_SR0048(MbRule):
     rule_id = "MB_SR0048"; level = "warning"; target = "SDRF"
     description = "Raw data file is missing."
 
-    # raw データが無い投稿を通すための **magic word**。INSDC の null value
-    # （missing / not applicable / not collected / not provided / restricted access）は
-    # 「値が不明・非該当」を表す語彙で役割が違うため流用しない。専用語として `none` を使う。
-    # null value ではないので MB_SR0009（必須列の値の欠落）は発火せず、この warning だけが出る。
-    _MAGIC_WORD = "none"
+    # raw データが無い投稿を通すための **magic word**（`base.RAW_DATA_FILE_NONE`）。
+    # INSDC の null value（missing / not applicable / not collected / not provided /
+    # restricted access）は「値が不明・非該当」を表す語彙で役割が違うため流用しない。
+    # null value 扱いしないので MB_SR0009（必須列の値の欠落）は発火せず、この warning だけが出る
+    # （MB_SR0009 側も同じ `is_raw_data_file_none` で明示的に除外している）。
 
     def validate(self, sub, context):
         """Raw Data File に magic word `none` が書かれている行を知らせる。
@@ -377,10 +389,10 @@ class MB_SR0048(MbRule):
         if not sub.sdrf:
             return []
         out = []
-        for i in sub.sdrf.col_indices("Raw Data File"):
+        for i in sub.sdrf.col_indices(RAW_DATA_FILE_COLUMN):
             for r, row in enumerate(sub.sdrf.rows):
                 v = (row[i] if i < len(row) else "").strip()
-                if v.lower() == self._MAGIC_WORD:
+                if is_raw_data_file_none(RAW_DATA_FILE_COLUMN, v):
                     out.append(self.result(
                         message=f"{self.description} (Raw Data File: '{v}', row {r + 1})",
                         assay=_assay(sub, row), line=r + 1,
@@ -466,6 +478,81 @@ class MB_SR0033(MbRule):
                 out.append(self.result(message=f"{self.description} (row {r + 1})",
                                        assay=_assay(sub, row), line=r + 1,
                                        column="Protocol REF", source_name=_source_name(sub, row)))
+        return out
+
+
+class MB_SR0049(MbRule):
+    # ルール表の名前: Absent Protocol REF
+    rule_id = "MB_SR0049"; level = "error"; target = "SDRF"
+    description = "Protocol REF is missing from all SDRF rows."
+
+    def validate(self, sub, context):
+        """`Protocol REF` 列を **列単位** で見て、どの行にも値が無い列を error にする。
+
+        MB_SR0033（行単位＝その行の Protocol REF が全部空）との役割分担:
+        - 行の欠落 → MB_SR0033
+        - **列の欠落** → このルール。工程が 1 つ丸ごと書かれていない状態を拾う。
+        Protocol REF は同名列が工程の数だけ並ぶ順序付き列なので、1 列だけ全行空でも
+        行単位では他の列に値があり MB_SR0033 が発火せず、これまで無指摘だった。
+
+        値が「無い」は **空セルと null value（missing 等）を同じ扱い** にする
+        （工程が無いなら列そのものを書かないのが正規の書き方で、null value を書いても
+        工程を書いたことにはならないため）。
+        同名列が並ぶため、どの列かは `Protocol REF #n of m`（左から何本目）と
+        SDRF 上の列位置で示す。データ行が 1 行も無い SDRF では何も出さない。
+        """
+        if not sub.sdrf or not sub.sdrf.rows:
+            return []
+        idxs = sub.sdrf.col_indices("Protocol REF")
+        if not idxs:
+            return []      # 列そのものが無いのは MB_SR0004 の担当
+        nulls = null_values(context)
+        out = []
+        for n, i in enumerate(idxs, start=1):
+            vals = [(row[i] if i < len(row) else "") for row in sub.sdrf.rows]
+            if _has_no_value(vals, nulls):
+                out.append(self.result(
+                    message=f"{self.description} (Protocol REF #{n} of {len(idxs)}, column {i + 1})",
+                    column=f"Protocol REF #{n} of {len(idxs)} (column {i + 1})", rows=len(vals)))
+        return out
+
+
+class MB_SR0050(MbRule):
+    # ルール表の名前: Duplicated Assay Name
+    rule_id = "MB_SR0050"; level = "error"; target = "SDRF"
+    description = "Assay Name is not unique."
+
+    def validate(self, sub, context):
+        """`Assay Name` の値が 2 行以上に現れていないか。
+
+        Assay Name は行（＝測定）を一意に指す名前で、レポートの location にも使っている
+        （重複すると指摘がどの行か特定できない）。
+
+        値が「無い」行（空セル・null value）は **対象外**。値が無いことは MB_SR0009 の
+        担当で、空同士・null 同士を重複と数えると二重報告になるため。
+        比較は前後の空白を落とした完全一致（大文字小文字は区別する。別表記は別の名前）。
+        報告は **重複値ごとに 1 件**（行数が多くても件数が膨らまないようにする）。
+        Assay Name は singleton 列なので列自体の重複は MB_SR0003 の担当。ここは 1 列目を見る。
+        """
+        if not sub.sdrf:
+            return []
+        idxs = sub.sdrf.col_indices("Assay Name")
+        if not idxs:
+            return []      # 列そのものが無いのは MB_SR0004 の担当
+        nulls = null_values(context)
+        i = idxs[0]
+        seen = {}
+        for r, row in enumerate(sub.sdrf.rows):
+            v = (row[i] if i < len(row) else "").strip()
+            if _absent(v, nulls):
+                continue
+            seen.setdefault(v, []).append(r + 1)
+        out = []
+        for v, rows in seen.items():
+            if len(rows) > 1:
+                out.append(self.result(
+                    message=f"{self.description} ('{v}', rows {', '.join(str(x) for x in rows)})",
+                    column="Assay Name", value=v, rows=len(rows)))
         return out
 
 

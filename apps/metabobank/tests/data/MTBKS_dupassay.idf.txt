@@ -1,0 +1,41 @@
+MAGE-TAB Version	1.1
+Comment[MetaboBank accession]	MTBKS210
+Study Title	Detection of ALC in royal food
+Study Description	To confirm whether a functional compound with small molecular weight (for example acetyl-L-carnitine) is contained in king food and queen food.
+
+Experimental Design	organism part comparison design
+Experimental Factor Name	tissue
+Experimental Factor Type	tissue
+
+Person Last Name	Mitaka	Sakamoto
+Person First Name	Yuki	Takumi
+Person Mid Initials
+Person Affiliation	Kyoto University	Hamamatsu University School of Medicine
+Person Roles	submitter	submitter
+
+PubMed ID
+Publication DOI	10.1093/pnasnexus/pgad222
+
+Protocol Name	Sample collection	Extraction	Flow injection analysis	Mass spectrometry	Data processing	Metabolite identification
+Protocol Type	Sample collection	Extraction	Flow injection analysis	Mass spectrometry	Data processing	Metabolite identification
+Protocol Description	We opened the window of the glass cell at the moment the worker started feeding the king or queen, pinched the feeding worker between the head and thorax with forceps, and immediately collected the food directly from between the feeding worker's mandibles, labrum, and labium using a picker.	The collected royal food sample was reconstituted in 80 µL of isopropanol: acetonitrile: ultrapure water (1:1:1, v/v/v). Then the whole sample was sonicated at 4 °C for 20 min on ice. The sonicated sample was then centrifuged at 94 x g for 5 min at 4 °C. The supernatant was filtered through 0.2 μm Millex syringe driven filter unit	Ultimate 3000 HPLC system (Thermo Fisher Scientific) was used.  5 µL of sample was injected with a flow rate of 200 µL/min for a total run time of 1 minute.	Sample was directly analyzed using flow injection in the quadrupole Orbitrap mass spectrometer coupled to an electrospray ionization (ESI) source (Q Exactive Hybrid Quadrupole-Orbitrap Mass Spectrometer, Thermo Fisher Scientific Inc., USA). MS spectra in the mass range of m/z 100-1,000 were obtained in positive ion mode. Higher energy collisional dissociation (HCD) 15.0 eV was used in positive ion mode for MS/MS fragmentation of ALC and carnitine.	Data not submitted.	Data not submitted.
+Protocol Parameters		Post extraction;Derivatization	FIA instrument	Scan polarity;Scan m/z range;Instrument;Ion source;Mass analyzer
+Protocol Hardware
+Protocol Software
+
+Public Release Date	2023-07-06
+
+Term Source Name
+Term Source File
+Term Source Version
+
+SDRF File	MTBKS210.sdrf.txt
+
+Comment[Study type]	metabolite target analysis
+Comment[Experiment type]	flow injection analysis-mass spectrometry
+Comment[Submission type]	FIA-MS
+Comment[BioProject]	PRJDB14286
+Comment[Related study]
+Comment[Contributor]	Takumi Sakamoto, A. S. M. Waliullah
+Comment[Submission Date]	2022-10-01
+Comment[Last Update Date]	2023-07-06

@@ -7,6 +7,9 @@ from apps.metabobank.rules.base import (MbRule, null_values, null_values_not_rec
 
 _DATE_OK = re.compile(r"^20\d{2}-\d{2}-\d{2}$")
 _DATE_FIELDS = ("Public Release Date", "Comment[Submission Date]", "Comment[Last Update Date]", "Date of Experiment")
+# 未来日判定の対象。Public Release Date は hold 中の公開予定日、Submission/Last Update Date は
+# 登録システムが付ける日付で、いずれも未来日が正当になり得るため実験実施日のみを対象にする。
+_FUTURE_DATE_FIELDS = ("Date of Experiment",)
 
 
 def _idf(context):
@@ -172,7 +175,7 @@ class MB_IR0033(MbRule):
         # 投稿日付は JST。コンテナが UTC だと JST 00:00〜09:00 の間だけ当日が未来日になる
         today = jst_today()
         out = []
-        for f in _DATE_FIELDS:
+        for f in _FUTURE_DATE_FIELDS:
             v = sub.idf.first(f).strip()
             m = re.match(r"^(20\d{2})-(\d{2})-(\d{2})$", v)
             if m:
@@ -243,10 +246,16 @@ class MB_IR0018(MbRule):
         （登録システムが Excel/IDF の生成に使う。キー名は互換のため変えていない）、
         必須／任意は規定していない。
 
-        公式 Excel テンプレ 11 種の Parameter Value 列 159 個のうち、ORANGE（mandatory）は
-        MSI の Data processing software / version の 2 個だけで、残り 157 個は BLUE（optional）。
-        以前は出力仕様のキーをそのまま必須リストとして読んでいたため、公開 114 study の
-        81%（92 件）で Temperature の未記入を誤ってエラーにしていた。
+        **現在 `protocol_parameters_required` は空なので、このルールは事実上発火しない。**
+        公式 Excel テンプレ 11 種の Parameter Value 列 157 個のうち ORANGE（mandatory）は
+        MSI の Data processing software / version の 2 個だけだったが、それも他 10 テンプレと
+        揃えて BLUE（任意）にしたため必須が 0 になった。
+        ただし将来また必須パラメータが出てくる可能性があるので **deprecated にはせず登録も残す**
+        （definitions に足すだけで効くようにしておく）。
+
+        以前は出力仕様のキー（`required_protocol_parameters`）をそのまま必須リストとして
+        読んでいたため、公開 114 study の 81%（92 件）で Temperature の未記入を誤って
+        エラーにしていた。
         """
         if not sub.idf:
             return []
