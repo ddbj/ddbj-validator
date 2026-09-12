@@ -28,6 +28,8 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     "MB_SR0017",   # Factor value is constant across all rows.
     "MB_SR0030",   # Non-ASCII or control characters in an SDRF cell.
     "MB_SR0047",   # Experimental factor value is missing.
+    "MB_SR0049",   # Protocol REF is missing from all SDRF rows.
+    "MB_SR0050",   # Assay Name is not unique.
     # --- IDF↔SDRF ---
     "MB_CR0001",   # Experimental factor in SDRF does not match IDF Experimental Factor Name.
 })
@@ -77,6 +79,8 @@ ANNOTATION_PATTERNS = {
     "MB_SR0034": "sdrf_column",
     "MB_SR0035": "sdrf_column",
     "MB_SR0047": "sdrf_column",
+    "MB_SR0049": "sdrf_column",
+    "MB_SR0050": "sdrf_column",
     # --- IDF: 項目単位 ---
     "MB_IR0003": "idf_field",
     "MB_IR0004": "idf_field",
@@ -152,6 +156,24 @@ def is_valid_related_study(value):
 def null_values(context):
     nv = (context.definitions or {}).get("null_values", {})
     return set(nv.get("accepted", []))
+
+
+# `Raw Data File` 列の magic word。raw データを伴わない投稿は列そのものを消すのではなく
+# `none` と書くのが正規の書き方（MB_SR0048 が warning で「raw が無い投稿」と知らせる）。
+# INSDC の null value（missing / not applicable ...）は「値が不明・非該当」を表す別の語彙なので、
+# `none` は **null value として扱わない**＝MB_SR0009 の「必須列の値なし」に数えない。
+RAW_DATA_FILE_COLUMN = "Raw Data File"
+RAW_DATA_FILE_NONE = "none"
+
+
+def is_raw_data_file_none(column, value):
+    """`Raw Data File` 列に書かれた magic word `none` か。
+
+    特別扱いするのは Raw Data File 列の値のときだけで、他の列の `none` は素の値のまま
+    （必須列に `none` と書いても値ありとして通る点は従来どおり）。
+    `None` / `NONE` を実ファイル名として扱ってしまうと気づけないため大文字小文字は区別しない。
+    """
+    return column == RAW_DATA_FILE_COLUMN and (value or "").strip().lower() == RAW_DATA_FILE_NONE
 
 
 def null_values_not_recommended(context):

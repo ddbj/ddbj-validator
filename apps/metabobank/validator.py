@@ -26,6 +26,7 @@ class Validator:
             S.MB_SR0017(), S.MB_SR0018(), S.MB_SR0019(), S.MB_SR0024(), S.MB_SR0026(),
             S.MB_SR0030(), S.MB_SR0033(), S.MB_SR0034(), S.MB_SR0035(), S.MB_SR0036(),
             S.MB_SR0037(), S.MB_SR0045(), S.MB_SR0046(), S.MB_SR0047(), S.MB_SR0048(),
+            S.MB_SR0049(), S.MB_SR0050(),
             # --- cross ---
             C.MB_CR0001(), C.MB_CR0002(), C.MB_CR0003(), C.MB_CR0004(),
             # --- BioSample DB 整合 ---

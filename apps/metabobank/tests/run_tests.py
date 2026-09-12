@@ -61,6 +61,14 @@ EXPECTED = {
     # 書かなければよく、列だけ作って値が無いのは MB_SR0047。MB_SR0017（全行で一定）は
     # 同じ列を二重に指摘しないよう抑止されるので、期待集合に入らないことが担保になる。
     "MTBKS_factorval": {"MB_IR0024", "MB_IR0037", "MB_SR0047"},
+    # Protocol REF の **列単位** の欠落（MB_SR0049）。6 本ある Protocol REF のうち
+    # #1 を全行空、#2 を全行 null value にした合成ケース。行単位の MB_SR0033 は
+    # 他の列に値があるため発火せず（期待集合に無いことが担保）、列単位の MB_SR0049 だけが出る。
+    # null value（missing）は IDF の Protocol Name に無い値でもあるため MB_CR0002 も出る。
+    "MTBKS_prorefcol": {"MB_CR0002", "MB_IR0024", "MB_IR0037", "MB_SR0049"},
+    # Assay Name の重複（MB_SR0050）。2 行を同じ Assay Name にした合成ケース。
+    # Assay Name は singleton 列なので列名の重複（MB_SR0003）とは別物。
+    "MTBKS_dupassay": {"MB_IR0024", "MB_IR0037", "MB_SR0050"},
 }
 
 

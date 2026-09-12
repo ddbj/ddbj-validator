@@ -290,6 +290,45 @@ def test_raw_data_file_null_value_is_still_sr0009():
     assert len(msgs) == 1 and "Raw Data File" in msgs[0]
 
 
+# --- MB_SR0009: Raw Data File の magic word `none` は null value 扱いしない -----
+# raw データを伴わない投稿は列を消さずに `none` と書く。MB_SR0048 が warning で拾うので、
+# MB_SR0009 の「必須列の値なし」には数えない（特別扱いは Raw Data File 列の値のときだけ）。
+
+
+@pytest.mark.parametrize("value", ["none", "None", "NONE", " none "])
+def test_raw_data_file_none_is_not_sr0009(value):
+    sub = _sub_with_new_required(overrides={"Raw Data File": value})
+    assert _msgs(sub) == []
+
+
+def test_raw_data_file_none_is_reported_as_sr0048_warning():
+    """error にはならないが、raw が無い投稿であることは warning で伝える。"""
+    sub = _sub_with_new_required(overrides={"Raw Data File": "none"})
+    res = S.MB_SR0048().validate(sub, CTX)
+    assert len(res) == 1 and res[0]["rule_id"] == "MB_SR0048" and res[0]["level"] == "warning"
+
+
+def test_none_in_another_required_column_is_not_special_cased():
+    """特別扱いは Raw Data File 列だけ。他の必須列の `none` は素の値のまま通る。"""
+    sub = _sub_with_new_required(overrides={"Comment[sample_title]": "none"})
+    assert _msgs(sub) == []
+
+
+def test_none_is_not_added_to_the_null_value_vocabulary():
+    """`none` を null value 語彙に足したわけではないこと（他ルールへ波及させない）。"""
+    from apps.metabobank.rules.base import null_values
+    assert "none" not in null_values(CTX)
+
+
+def test_raw_data_file_none_in_one_of_duplicated_columns_is_enough():
+    """同名列が複数あるとき、どれか 1 つが `none` なら値ありとして扱う。"""
+    sub = _sub_with_new_required()
+    sub.sdrf.header.append("Raw Data File")
+    sub.sdrf.rows[0][sub.sdrf.header.index("Raw Data File")] = ""
+    sub.sdrf.rows[0].append("none")
+    assert [m for m in _msgs(sub) if "Raw Data File" in m] == []
+
+
 def test_sr0009_reports_each_required_column_once():
     """required_value_error を空にしたので Raw Data File が二重報告されないこと。"""
     sub = _sub_with_new_required(overrides={"Raw Data File": ""})
