@@ -102,11 +102,25 @@ def test_duplicated_column_needs_all_copies_empty():
     assert len(msgs) == 1 and "Sample Name" in msgs[0]
 
 
-def test_one_finding_per_column_not_per_row():
-    """同じ列で複数行が空でも、報告は列ごとに 1 件（最初の該当行）に留める。"""
+def test_every_offending_row_is_reported():
+    """同じ列で複数行が空なら、該当行を全部報告する。
+
+    列ごとに最初の 1 行だけにしていると、登録者は 1 行直して上げ直すたびに次の行で弾かれ
+    何度も往復することになる（2026-09-13 のキュレータテスト指摘）。件数が増えても
+    登録 web / BSM 側で `rule + 列` にまとめて `Line: 1, 2, 5-8` と 1 行に畳んで表示する。
+    """
     sub = _sub(overrides={"Sample Name": ""}, rows=5)
     msgs = _msgs(sub)
-    assert len(msgs) == 1 and "row 1" in msgs[0]
+    assert len(msgs) == 5
+    assert [m.split("row ")[1].rstrip(")") for m in msgs] == ["1", "2", "3", "4", "5"]
+
+
+def test_only_offending_rows_are_reported():
+    """空の行だけが出る（埋まっている行は出さない）。"""
+    sub = _sub(overrides={"Sample Name": ""}, rows=3)
+    sub.sdrf.rows[1][sub.sdrf.header.index("Sample Name")] = "sm2"
+    msgs = _msgs(sub)
+    assert len(msgs) == 2 and "row 1" in msgs[0] and "row 3" in msgs[1]
 
 
 # --- required_value_error: 列があるなら値は必須（Raw Data File） -------------
@@ -330,7 +344,9 @@ def test_raw_data_file_none_in_one_of_duplicated_columns_is_enough():
 
 
 def test_sr0009_reports_each_required_column_once():
-    """required_value_error を空にしたので Raw Data File が二重報告されないこと。"""
+    """required_value_error を空にしたので Raw Data File が二重報告されないこと。
+
+    （1 行のフィクスチャなので、行ごとの報告になっても件数は 1 件のまま。）"""
     sub = _sub_with_new_required(overrides={"Raw Data File": ""})
     assert len([m for m in _msgs(sub) if "Raw Data File" in m]) == 1
 
