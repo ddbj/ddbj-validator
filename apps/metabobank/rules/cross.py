@@ -3,6 +3,23 @@ import re
 from apps.metabobank.rules.base import MbRule, null_values, mtbks_accession
 
 
+def _unmatch_results(rule, sdrf_only, idf_only):
+    """IDF↔SDRF の片側にしか無い名前を、向きを添えた result のリストにする。
+
+    MB_CR0001 / MB_CR0002 / MB_CR0003 で共用。両方向にズレがあれば 2 件に分ける
+    （どちらを直せばよいかが 1 件では分からないため）。annotation は idf_sdrf パターンで、
+    向きに応じて `sdrf_only` / `idf_only` のどちらかだけを載せる。
+    """
+    out = []
+    for label, bad, key in (("only in SDRF", sdrf_only, "sdrf_only"),
+                            ("only in IDF", idf_only, "idf_only")):
+        if bad:
+            joined = ", ".join(sorted(bad))
+            out.append(rule.result(message=f"{rule.description} ({label}: {joined})",
+                                   **{key: joined}))
+    return out
+
+
 class MB_CR0001(MbRule):
     rule_id = "MB_CR0001"; level = "error"; target = "IDF,SDRF"
     description = "Experimental factor in SDRF does not match IDF Experimental Factor Name."
@@ -31,22 +48,29 @@ class MB_CR0001(MbRule):
                 name = m.group(1).strip()
                 if name and name not in nulls:      # 無名・null 名は他ルールへ委譲
                     sdrf_factors.add(name)
-        out = []
-        for label, bad in (("only in SDRF", sdrf_factors - idf_factors),
-                           ("only in IDF", idf_factors - sdrf_factors)):
-            if bad:
-                joined = ", ".join(sorted(bad))
-                side = {"sdrf_only" if label == "only in SDRF" else "idf_only": joined}
-                out.append(self.result(
-                    message=f"{self.description} ({label}: {joined})", **side))
-        return out
+        return _unmatch_results(self, sdrf_factors - idf_factors, idf_factors - sdrf_factors)
 
 
 class MB_CR0002(MbRule):
+    # ルール表の名前: Protocol unmatch
     rule_id = "MB_CR0002"; level = "error"; target = "IDF,SDRF"
-    description = "Protocol referenced in SDRF is not defined in IDF Protocol Name."
+    description = "IDF Protocol and SDRF Protocol REF do not match."
 
     def validate(self, sub, context):
+        """IDF Protocol Name と SDRF Protocol REF の値を **双方向** に突き合わせる。
+
+        ルール表の「IDF の Protocol、及び、SDRF で参照されている Protocol が一致していない」
+        ＝過不足なしの意味なので、片側にしか無いものを向きを添えて指摘する
+        （両方向あれば 2 件に分ける）。MB_CR0001 と同じ形。
+
+        - only in SDRF — SDRF が参照しているのに IDF の Protocol Name に定義が無い。
+        - only in IDF  — IDF で定義したのに SDRF がどの行からも参照していない
+          （工程に対応する Protocol REF 列が消えている／値が別の protocol に化けている）。
+
+        null value（missing 等）は SDRF 側の集合から除かない（従来どおり）。
+        `Protocol REF` に null value を書くと IDF に無い値でもあるため、値の欠落を見る
+        MB_SR0033 / MB_SR0049 と併発する。観点が違うので二重報告のままにしている。
+        """
         if not sub.idf or not sub.sdrf:
             return []
         idf_protocols = {n.strip() for n in sub.idf.get("Protocol Name") if n.strip()}
@@ -57,18 +81,27 @@ class MB_CR0002(MbRule):
                 v = (row[i] if i < len(row) else "").strip()
                 if v:
                     refs.add(v)
-        bad = refs - idf_protocols
-        if not bad:
-            return []
-        return [self.result(message=f"{self.description} ({', '.join(sorted(bad))})",
-                            sdrf_only=", ".join(sorted(bad)))]
+        return _unmatch_results(self, refs - idf_protocols, idf_protocols - refs)
 
 
 class MB_CR0003(MbRule):
+    # ルール表の名前: Protocol parameter unmatch
     rule_id = "MB_CR0003"; level = "error"; target = "IDF,SDRF"
-    description = "Parameter Value in SDRF is not declared as a Protocol Parameter in IDF."
+    description = "IDF and SDRF Protocol Parameters do not match."
 
     def validate(self, sub, context):
+        """IDF Protocol Parameters と SDRF `Parameter Value[...]` 列名を **双方向** に突き合わせる。
+
+        ルール表の「IDF の Protocol Parameter、及び、SDRF の Protocol Parameter が
+        一致していない」＝過不足なしの意味。MB_CR0002 / MB_CR0001 と同じ形。
+
+        - only in SDRF — 列はあるが IDF で宣言されていない。
+        - only in IDF  — IDF で宣言したのに対応する列が SDRF に無い（列が削られている）。
+
+        IDF 側は protocol 横断でフラットな名前集合にして比較する。**どの protocol に
+        属するか** までは見ない（Extraction のパラメータが Mass spectrometry の位置に
+        置かれている、といった取り違えは対象外）。
+        """
         if not sub.idf or not sub.sdrf:
             return []
         idf_params = set()
@@ -81,11 +114,7 @@ class MB_CR0003(MbRule):
             m = re.fullmatch(r"Parameter Value\[(.+)\]", h)
             if m:
                 sdrf_params.add(m.group(1).strip())
-        bad = sdrf_params - idf_params
-        if not bad:
-            return []
-        return [self.result(message=f"{self.description} ({', '.join(sorted(bad))})",
-                            sdrf_only=", ".join(sorted(bad)))]
+        return _unmatch_results(self, sdrf_params - idf_params, idf_params - sdrf_params)
 
 
 class MB_CR0004(MbRule):

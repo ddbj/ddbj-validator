@@ -46,7 +46,11 @@ EXPECTED = {
     "MTBKS_dupcol": {"MB_IR0024", "MB_IR0037", "MB_SR0003", "MB_SR0006"},
     # Protocol REF の type 参照（MB_SR0034/0035）とデータファイル名・ディレクトリ名の
     # 禁則文字（MB_SR0036/0037）。実データには違反が無いため合成ケースで担保する。
-    "MTBKS_protofile": {"MB_IR0024", "MB_IR0037", "MB_SR0034", "MB_SR0035", "MB_SR0036", "MB_SR0037"},
+    # MB_CR0002 は双方向化で加わった（最後の Protocol REF 列の値を Data processing に
+    # 化けさせてあるため、IDF が定義した Metabolite identification を SDRF が一度も
+    # 参照していない＝only in IDF）。
+    "MTBKS_protofile": {"MB_CR0002", "MB_IR0024", "MB_IR0037",
+                        "MB_SR0034", "MB_SR0035", "MB_SR0036", "MB_SR0037"},
     # MSI（imaging）は抽出工程が無く投稿テンプレートにも Extract Name 列が無いため、
     # 必須列から除外される（MB_SR0004 が出ない）。実データ MTBKS212 をそのまま使用。
     "MTBKS_msi": {"MB_IR0024", "MB_IR0037", "MB_SR0046"},

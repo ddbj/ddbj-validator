@@ -32,6 +32,8 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     "MB_SR0050",   # Assay Name is not unique.
     # --- IDF↔SDRF ---
     "MB_CR0001",   # Experimental factor in SDRF does not match IDF Experimental Factor Name.
+    "MB_CR0002",   # IDF Protocol and SDRF Protocol REF do not match.
+    "MB_CR0003",   # IDF and SDRF Protocol Parameters do not match.
 })
 
 
