@@ -258,7 +258,7 @@ def test_required_protocol_parameters_have_a_column_position():
 
     登録システムは IDF `Protocol Parameters` を definitions からのみ生成するため、
     片方だけ更新すると SDRF に列があるのに IDF が宣言せず MB_CR0003
-    （Parameter Value in SDRF is not declared as a Protocol Parameter in IDF）に化ける。
+    （IDF and SDRF Protocol Parameters do not match. の only in SDRF 側）に化ける。
     実際に LC-DAD-MS の `Resolution` が公式 Excel テンプレにだけ存在して両方から欠けていた。
     """
     order = SDRF["column_order"]
