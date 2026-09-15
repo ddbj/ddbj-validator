@@ -3,7 +3,8 @@
 ルールはここに明示列挙して順序を制御する。モード別スキップは能力フラグ（requires_rdb/network/auth）。
 順序: 構造(R0002) → cv(R0039) → content → file → 参照整合 → account/DB。
 """
-from apps.dra.rules.base import is_internal_ignore
+from common.rules.simple import SimpleValidator
+from apps.dra.rules.base import INTERNAL_IGNORE_RULE_IDS
 from apps.dra.rules.structure import DRA_R0002
 from apps.dra.rules.cv import DRA_R0039
 from apps.dra.rules.reference import (
@@ -22,10 +23,13 @@ from apps.dra.rules.account import (
 )
 
 
-class Validator:
-    def __init__(self, context):
-        self.context = context
-        available_rules = [
+class Validator(SimpleValidator):
+    # モード別スキップ・実行・external 付与は common.rules.simple.SimpleValidator。
+    # ここはルールの登録順（手で並べる）と internal ignore 集合だけを持つ。
+    ignore_ids = INTERNAL_IGNORE_RULE_IDS
+
+    def build_rules(self, context):
+        return [
             # --- 構造 / cv（XSD 縮小の代替）---
             DRA_R0002(),   # 必須コンテナの構造チェック
             DRA_R0039(),   # cv_terms（LIBRARY_* / INSTRUMENT_MODEL）
@@ -50,20 +54,3 @@ class Validator:
             DRA_R0041(), DRA_R0042(), DRA_R0043(),  # Experiment BP/BS・Analysis Run が account∪permit
             DRA_R0015(), DRA_R0016(),               # Analysis BP/BS が account∪permit
         ]
-        self.active_rules = []
-        for rule in available_rules:
-            if context.skip_db and getattr(rule, "requires_rdb", False):
-                continue
-            if context.skip_ncbi and getattr(rule, "requires_network", False):
-                continue
-            if context.skip_auth and getattr(rule, "requires_auth", False):
-                continue
-            self.active_rules.append(rule)
-
-    def run(self, submission):
-        results = []
-        for rule in self.active_rules:
-            results.extend(rule.validate(submission, self.context))
-        for r in results:
-            r["external"] = is_internal_ignore(r["rule_id"])
-        return results

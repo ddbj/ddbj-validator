@@ -5,10 +5,7 @@ node の incoming edge に付随する protocol type を graph.py で解決し�
 import re
 from apps.gea.rules.base import GeaRule
 from apps.gea.graph import build_graph
-
-
-def _empty(v):
-    return v is None or str(v).strip() == ""
+from common.text import is_blank as _empty
 
 
 def _graph(sub):

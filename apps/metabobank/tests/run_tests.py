@@ -15,7 +15,7 @@ from apps.metabobank.context import ValidationContext
 from apps.metabobank.validator import Validator
 from apps.metabobank import reader
 
-GREEN, RED, END = "\033[92m", "\033[91m", "\033[0m"
+from common.e2e import run_expected_sets
 DATA = HERE / "data"
 
 # -l（DB 非依存）での期待発火 rule_id（ignore 含む）。conf 由来の既知発火。
@@ -84,21 +84,7 @@ def _fired(study):
 
 
 def main(argv):
-    matched = mismatched = 0
-    for study, expected in EXPECTED.items():
-        fired = _fired(study)
-        ok = fired == expected
-        if ok:
-            matched += 1
-            print(f"  [{GREEN}Matched{END}]  {study}: {sorted(fired)}")
-        else:
-            mismatched += 1
-            print(f"  [{RED}MISMATCH{END}] {study}: fired={sorted(fired)} expected={sorted(expected)}"
-                  f" (+{sorted(fired - expected)} / -{sorted(expected - fired)})")
-    print(f"\n  Matched: {matched}   Mismatched: {mismatched}")
-    if mismatched:
-        print(f"{RED}[FAIL]{END}"); return 1
-    print(f"{GREEN}[SUCCESS] All MetaboBank tests passed.{END}"); return 0
+    return run_expected_sets("MetaboBank", EXPECTED, _fired)
 
 
 if __name__ == "__main__":

@@ -151,9 +151,15 @@ def _fetch_account_refs(context, sub, account):
 def _write_fixed(sub, out_dir, results, context):
     """autofix: fixed/ に IDF/SDRF を書き出す（blank_before 整形＋日付/null 補正＋BioSample 同期）。"""
     from apps.gea.defs import load_definitions
+    from common.insdc_missing import normalize_null_value
     fixed = Path(out_dir) / "fixed"
     fixed.mkdir(parents=True, exist_ok=True)
-    nulls_nr = load_definitions().get("null_values", {}).get("not_recommended", [])
+    defs = load_definitions()
+    nulls_nr = defs.get("null_values", {}).get("not_recommended", [])
+    nulls_ok = set(defs.get("null_values", {}).get("accepted", []))
+    # null value の補正は metabobank と同じ common.insdc_missing.normalize_null_value に揃える
+    # （表記揺れ揃え＋非推奨 null → missing。mb 側で「提案と fixed/ の食い違い」を直した経緯を gea にも適用）。
+    # gea は idf.autofix_null_to_empty を定義していないので to_empty は使わない。
     written = []
     if sub.idf:
         idf = sub.idf
@@ -171,10 +177,9 @@ def _write_fixed(sub, out_dir, results, context):
                 m = re.match(r"^(\d{4})/(\d{1,2})/(\d{1,2})$", vv.strip())
                 if m:  # 日付 / → -
                     vv = f"{m.group(1)}-{m.group(2).zfill(2)}-{m.group(3).zfill(2)}"
-                for nr in nulls_nr:
-                    if re.fullmatch(nr, vv.strip()):  # 非推奨 null → missing
-                        vv = "missing"
-                        break
+                nf = normalize_null_value(vv, nulls_ok, nulls_nr)
+                if nf is not None:
+                    vv = nf      # 表記揺れ揃え／非推奨 null → missing
                 vals.append(vv)
             lines.append("\t".join([name] + vals))
         p = fixed / Path(idf.raw_path).name

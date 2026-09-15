@@ -16,7 +16,7 @@ from apps.gea.context import ValidationContext
 from apps.gea.validator import Validator
 from apps.gea import reader
 
-GREEN, RED, END = "\033[92m", "\033[91m", "\033[0m"
+from common.e2e import run_expected_sets
 DATA = HERE / "data"
 
 # --- ローカル（既定） ---
@@ -89,22 +89,6 @@ def _db_fired(key, account):
     return {r["rule_id"] for r in results if r["rule_id"] in db_ids or r.get("level") == "error"}
 
 
-def _run(expected, fired_fn, header, label_fn=None):
-    print(header)
-    matched = mismatched = 0
-    for key, exp in expected.items():
-        fired = fired_fn(key)
-        if fired == exp:
-            matched += 1
-            print(f"  [{GREEN}Matched{END}]  {key}: {sorted(fired)}")
-        else:
-            mismatched += 1
-            print(f"  [{RED}MISMATCH{END}] {key}: fired={sorted(fired)} expected={sorted(exp)}"
-                  f" (+{sorted(fired - exp)} / -{sorted(exp - fired)})")
-    print(f"  Matched: {matched}   Mismatched: {mismatched}\n")
-    return mismatched
-
-
 def main(argv):
     if "--db" in argv:
         try:
@@ -112,15 +96,9 @@ def main(argv):
             load_dotenv(str(ROOT / ".env"))
         except ImportError:
             pass
-        mm = _run(GEA_DB_EXPECTED, lambda e: _db_fired(e, GEA_DB_ACCOUNT),
-                  "=== GEA DB-mode E2E (opt-in, dradev) ===")
-    else:
-        mm = _run(EXPECTED, _fired, "=== GEA local E2E ===")
-    if mm:
-        print(f"{RED}[FAIL]{END}")
-        return 1
-    print(f"{GREEN}[SUCCESS] All GEA tests passed.{END}")
-    return 0
+        return run_expected_sets("GEA", GEA_DB_EXPECTED, lambda e: _db_fired(e, GEA_DB_ACCOUNT),
+                                 header="=== GEA DB-mode E2E (opt-in, dradev) ===")
+    return run_expected_sets("GEA", EXPECTED, _fired, header="=== GEA local E2E ===")
 
 
 if __name__ == "__main__":

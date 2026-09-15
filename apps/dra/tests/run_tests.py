@@ -17,7 +17,7 @@ from apps.dra.context import ValidationContext
 from apps.dra.validator import Validator
 from apps.dra import xml_reader
 
-GREEN, RED, END = "\033[92m", "\033[91m", "\033[0m"
+from common.e2e import E2ERunner
 
 # DB 依存ルール（R0004/0009/0015/0016）＋ 日付基準（R0006）の決定的 mock。
 MOCK_ORG = "NIG Center"
@@ -46,24 +46,15 @@ def main(argv):
     targets = [a for a in argv if not a.startswith("-")]
     dirs = sorted(d for d in HERE.iterdir() if d.is_dir() and d.name.startswith("DRA_R")
                   and (not targets or any(t in d.name for t in targets)))
-    matched = mismatched = 0
+    runner = E2ERunner("DRA rule")
     for d in dirs:
         # ディレクトリ名: DRA_R00xx_n.pass / DRA_R00xx_n.fail
         parts = d.name.split(".")
         if parts[-1] not in ("pass", "fail"):
             continue
         rid = parts[0].split("_")[0] + "_" + parts[0].split("_")[1]  # DRA_R00xx
-        expected = parts[-1]
-        fired = rid in _fired(d)
-        ok = (fired if expected == "fail" else not fired)
-        status = f"{GREEN}Matched{END}" if ok else f"{RED}MISMATCH{END}"
-        print(f"  [{status}] {d.name} ({rid} {'fired' if fired else 'not fired'})")
-        matched += ok
-        mismatched += (not ok)
-    print(f"\n  Matched: {matched}   Mismatched: {mismatched}")
-    if mismatched:
-        print(f"{RED}[FAIL]{END}"); return 1
-    print(f"{GREEN}[SUCCESS] All DRA rule tests passed.{END}"); return 0
+        runner.check_rule(d.name, rid, parts[-1], _fired(d))
+    return runner.finish()
 
 
 if __name__ == "__main__":

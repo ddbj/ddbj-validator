@@ -5,16 +5,13 @@ experiment_type（Both / Micro-array / HTS）は only_type（None/microarray/seq
 """
 import re
 from apps.gea.rules.base import GeaRule, null_values
+from common.text import is_blank as _empty
 
 _DATE_OK = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 def _idf(context):
     return (context.definitions or {}).get("idf", {})
-
-
-def _empty(v):
-    return v is None or str(v).strip() == ""
 
 
 # ---------------- Contact (Person) ----------------

@@ -3,7 +3,8 @@
 ルールはここに明示列挙して順序を制御する（ddbj 同様、手作業で並べる）。
 モード別スキップは能力フラグ（requires_rdb/network/auth）で行う。
 """
-from apps.biosample.rules.base import is_internal_ignore
+from common.rules.simple import SimpleValidator
+from apps.biosample.rules.base import INTERNAL_IGNORE_RULE_IDS
 from apps.biosample.rules.mandatory import BS_R0018, BS_R0020, BS_R0025, BS_R0026, BS_R0027
 from apps.biosample.rules.structure import BS_R0003, BS_R0061, BS_R0126, BS_R0143, BS_R0144
 from apps.biosample.rules.value_format import BS_R0007, BS_R0009, BS_R0011, BS_R0040, BS_R0093, BS_R0101, BS_R0136, BS_R0139
@@ -18,12 +19,27 @@ from apps.biosample.rules.account import BS_R0006, BS_R0129, BS_R0070, BS_R0095,
 from apps.biosample.rules.controlled import BS_R0002, BS_R0138
 
 
-class Validator:
-    def __init__(self, context):
-        self.context = context
-        ctx = context
+class Validator(SimpleValidator):
+    # モード別スキップ・実行・external 付与は common.rules.simple.SimpleValidator。
+    # ここはルールの登録順（手で並べる）と internal ignore 集合だけを持つ。
+    ignore_ids = INTERNAL_IGNORE_RULE_IDS
 
-        available_rules = [
+    def __init__(self, context):
+        super().__init__(context)
+        # BS_R0013(空白正規化) と BS_R0012(特殊文字→推奨表記) は autocleanup（前処理）として
+        # 最初に in-place 実行し、以降のルールは置換済みの値を評価する（通常のルール列には含めない）。
+        # 順序: R0013(空白) → R0012(特殊文字)。これにより ℃ 等は R0058 より先に ASCII 化される。
+        self.cleanup_rule = BS_R0013()
+        self.special_char_rule = BS_R0012()
+
+    def pre_run(self, submission):
+        """autocleanup: BS_R0013(空白正規化) → BS_R0012(特殊文字) の順に in-place 置換。
+        後続ルールは cleaned 値を読む（℃ 等は R0058 より先に ASCII 化される）。"""
+        return (self.cleanup_rule.validate(submission, self.context)
+                + self.special_char_rule.validate(submission, self.context))
+
+    def build_rules(self, context):
+        return [
             # --- フェーズ1: 必須・パッケージ（DB 非依存）---
             BS_R0126(),  # 複数 package
             BS_R0025(),  # Package 欠落
@@ -95,33 +111,3 @@ class Validator:
             BS_R0138(),   # CV に存在しない値（error）
             # 以降 D 残(R0028/0103/0108/0109) / G(JSON 入力) / autofix 適用層
         ]
-
-        # BS_R0013(空白正規化) と BS_R0012(特殊文字→推奨表記) は autocleanup（前処理）として
-        # 最初に in-place 実行し、以降のルールは置換済みの値を評価する（通常のルール列には含めない）。
-        # 順序: R0013(空白) → R0012(特殊文字)。これにより ℃ 等は R0058 より先に ASCII 化される。
-        self.cleanup_rule = BS_R0013()
-        self.special_char_rule = BS_R0012()
-
-        self.active_rules = []
-        for rule in available_rules:
-            if ctx.skip_db and getattr(rule, "requires_rdb", False):
-                continue
-            if ctx.skip_ncbi and getattr(rule, "requires_network", False):
-                continue
-            if ctx.skip_auth and getattr(rule, "requires_auth", False):
-                continue
-            self.active_rules.append(rule)
-
-    def run(self, submission):
-        """submission を全 active_rules で検証し、結果 dict のリストを返す。
-        各結果に internal_ignore（=external）を rule_id 単位で付与する（docs rules.txt 準拠）。"""
-        results = []
-        # autocleanup: BS_R0013(空白正規化) → BS_R0012(特殊文字) の順に in-place 置換。
-        # 後続ルールは cleaned 値を読む（℃ 等は R0058 より先に ASCII 化される）。
-        results.extend(self.cleanup_rule.validate(submission, self.context))
-        results.extend(self.special_char_rule.validate(submission, self.context))
-        for rule in self.active_rules:
-            results.extend(rule.validate(submission, self.context))
-        for r in results:
-            r["external"] = is_internal_ignore(r["rule_id"])
-        return results

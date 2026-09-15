@@ -6,8 +6,7 @@ import defusedxml.ElementTree as ET
 import psycopg2
 import requests
 
-from apps.ddbj.db_metadata import get_expected_transl_table, get_organisms_from_records
-from apps.ddbj.utils.features import get_features
+from common.features import get_expected_transl_table, get_organisms_from_records, get_features
 from common.db_manager import execute_in_query
 from common.ncbi_api import ncbi_identity_params, ncbi_request
 

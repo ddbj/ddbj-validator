@@ -3,6 +3,8 @@
 複数ルールで重複していた定義をここへ集約（Tier 1 リファクタ）。挙動は従来どおり。
 """
 import re
+
+from common.text import is_blank as is_empty  # 空判定は common に一本化
 # INSDC の missing/null 判定は common に一本化（CV は common/resources/definitions.json 単一ソース）。
 # 既存 import 互換のため再エクスポートする。
 from common.insdc_missing import (
@@ -11,11 +13,6 @@ from common.insdc_missing import (
     MISSING_RE,
     MISSING_WITH_TERM_RE,
 )
-
-
-def is_empty(v):
-    """None または空白のみなら True。"""
-    return v is None or str(v).strip() == ""
 
 
 def norm(v):

@@ -3,7 +3,10 @@
 import sys
 import argparse
 
-# 既知のトップレベルサブコマンド（将来サブコマンドが増えたらここに追加）
+# 既知のトップレベルサブコマンド（将来サブコマンドが増えたらここに追加）。
+# app を増やすときは 3 箇所を揃える: (1) この集合と下の add_parser/dispatch、
+# (2) apps/webapi/runner.py の UPLOAD_ROLES と build_args（HTTP のロール名 → CLI 引数）、
+# (3) apps/webapi/definitions.py の DBS（definitions.json を配る DB）。役割が違うので統合はしない。
 KNOWN_COMMANDS = {"ddbj", "biosample", "bioproject", "dra", "metabobank", "mb", "gea"}
 
 def main():

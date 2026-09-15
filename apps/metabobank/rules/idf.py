@@ -4,6 +4,7 @@ import re
 from common.jst import today as jst_today
 from apps.metabobank.rules.base import (MbRule, null_values, null_values_not_recommended,
                                         normalize_null, is_valid_related_study)
+from common.text import is_blank as _empty
 
 _DATE_OK = re.compile(r"^20\d{2}-\d{2}-\d{2}$")
 _DATE_FIELDS = ("Public Release Date", "Comment[Submission Date]", "Comment[Last Update Date]", "Date of Experiment")
@@ -14,10 +15,6 @@ _FUTURE_DATE_FIELDS = ("Date of Experiment",)
 
 def _idf(context):
     return (context.definitions or {}).get("idf", {})
-
-
-def _empty(v):
-    return v is None or str(v).strip() == ""
 
 
 class MB_IR0003(MbRule):
