@@ -184,43 +184,8 @@ def null_values_not_recommended(context):
     return list(nv.get("not_recommended", []))
 
 
-def normalize_null(value, accepted, not_recommended, to_empty=False):
-    r"""null 値の表記揺れ／非推奨表記を正規表記へ補正した値を返す（補正不要なら None）。
-
-    biosample の `common/insdc_missing.normalize_null`（Ruby rule:1 準拠）と同じ二段構え。
-    MB_IR0023 の autofix 提案と `cli._write_fixed` の書き出しを同じ判定で揃えるため、
-    ここに一本化している。
-
-    (a) 推奨 null の表記揺れ揃え: 小文字化＋空白除去して accepted と一致すれば正規表記へ
-        （`Not Applicable` → `not applicable`）
-    (b) 非推奨 null → `missing`: not_recommended の正規表現に値全体が一致（re.fullmatch,
-        大文字小文字無視）したら `missing` へ（`N.A.` → `missing`）
-
-    `to_empty=True`（`idf.autofix_null_to_empty` の項目）なら、null と判定できた時点で `""`
-    にする。任意項目に null 値を書くこと自体が不正で「書かない」が正規の書き方のため。
-    """
-    v = (value or "").strip()
-    if not v:
-        return None
-    fixed = None
-    low_ns = re.sub(r"\s+", "", v.lower())
-    for a in accepted:                                  # (a) 表記揺れ揃え
-        if re.sub(r"\s+", "", a.lower()) == low_ns:
-            fixed = a
-            break
-    if fixed is None:                                   # (b) 非推奨 null → missing
-        for pat in not_recommended:
-            try:
-                if re.fullmatch(pat, v, re.I):
-                    fixed = "missing"
-                    break
-            except re.error:
-                continue
-    if fixed is None:
-        return None
-    if to_empty:
-        fixed = ""
-    return None if fixed == value else fixed
+# normalize_null は gea とも共有するため common/insdc_missing.py へ移した（互換のため名前はそのまま公開）。
+from common.insdc_missing import normalize_null_value as normalize_null  # noqa: E402,F401
 
 
 class MbRule(SimpleRule):

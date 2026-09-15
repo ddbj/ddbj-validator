@@ -2,7 +2,8 @@
 
 only_type（None/microarray/sequencing）により submission type 別にルールを出し分ける。
 """
-from apps.gea.rules.base import is_internal_ignore
+from common.rules.simple import SimpleValidator
+from apps.gea.rules.base import INTERNAL_IGNORE_RULE_IDS
 from apps.gea.rules import idf as I
 from apps.gea.rules import sdrf as S
 from apps.gea.rules import nodes as N
@@ -11,10 +12,13 @@ from apps.gea.rules import biosample as B
 from apps.gea.rules import reference_db as RDB
 
 
-class Validator:
-    def __init__(self, context):
-        self.context = context
-        available_rules = [
+class Validator(SimpleValidator):
+    # モード別スキップ・実行・external 付与は common.rules.simple.SimpleValidator。
+    # ここはルールの登録順（手で並べる）と internal ignore 集合だけを持つ。
+    ignore_ids = INTERNAL_IGNORE_RULE_IDS
+
+    def build_rules(self, context):
+        return [
             # --- IDF ---
             I.GEA_C0001(), I.GEA_C0002(), I.GEA_C0008(),
             I.GEA_COM0001(),
@@ -56,25 +60,11 @@ class Validator:
             # --- DRA/DB 参照整合 ---
             RDB.GEA_REF0002(), RDB.GEA_REF0003(), RDB.GEA_REF0004(), RDB.GEA_REF0005(), RDB.GEA_REF0008(),
         ]
-        self.active_rules = []
-        for rule in available_rules:
-            if context.skip_db and getattr(rule, "requires_rdb", False):
-                continue
-            if context.skip_ncbi and getattr(rule, "requires_network", False):
-                continue
-            if context.skip_auth and getattr(rule, "requires_auth", False):
-                continue
-            self.active_rules.append(rule)
 
-    def run(self, sub):
-        results = []
-        for rule in self.active_rules:
-            try:
-                if not rule.applies(sub, self.context):
-                    continue
-            except Exception:
-                pass
-            results.extend(rule.validate(sub, self.context))
-        for r in results:
-            r["external"] = is_internal_ignore(r["rule_id"])
-        return results
+    def applies(self, rule, sub):
+        """only_type（microarray / sequencing）で限定されたルールは submission type が合うときだけ適用。
+        判定に失敗したら従来どおり適用側に倒す。"""
+        try:
+            return rule.applies(sub, self.context)
+        except Exception:
+            return True

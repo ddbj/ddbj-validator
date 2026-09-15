@@ -16,7 +16,7 @@ from apps.bioproject.context import ValidationContext
 from apps.bioproject.validator import Validator
 from apps.bioproject import xml_reader
 
-GREEN, RED, END = "\033[92m", "\033[91m", "\033[0m"
+from common.e2e import E2ERunner
 
 # 決定的テスト用の mock taxonomy。
 MOCK_TAX = {
@@ -65,7 +65,7 @@ def main(argv):
     targets = [a for a in argv if not a.startswith("-")]
     dirs = sorted(d for d in HERE.iterdir() if d.is_dir() and d.name.startswith("BP_R")
                   and (not targets or d.name in targets))
-    matched = mismatched = 0
+    runner = E2ERunner("BioProject rule")
     for d in dirs:
         rid = d.name
         print(f"Testing: {rid}")
@@ -73,21 +73,8 @@ def main(argv):
             parts = fx.name.split(".")
             if len(parts) < 3 or parts[-2] not in ("pass", "fail"):
                 continue
-            expected = parts[-2]
-            fired = rid in _fired(fx)
-            ok = (fired if expected == "fail" else not fired)
-            if ok:
-                matched += 1
-                print(f"  [{GREEN}Matched{END}]  {fx.name} ({rid} correctly {'triggered' if expected=='fail' else 'not triggered'})")
-            else:
-                mismatched += 1
-                print(f"  [{RED}MISMATCH{END}] {fx.name}: expected {expected}, fired={fired}")
-    print(f"\n  Matched: {matched}   Mismatched: {mismatched}")
-    if mismatched:
-        print(f"{RED}[FAIL]{END}")
-        return 1
-    print(f"{GREEN}[SUCCESS] All BioProject rule tests passed.{END}")
-    return 0
+            runner.check_rule(fx.name, rid, parts[-2], _fired(fx))
+    return runner.finish()
 
 
 if __name__ == "__main__":

@@ -13,6 +13,8 @@ from common import run_event
 logger = logging.getLogger(__name__)
 
 # 受け付けるアップロードのロール（フィールド名）。ruby validator のカテゴリに対応。
+# CLI のサブコマンド表（main.py KNOWN_COMMANDS）とは別物（ここは HTTP ロール名 → CLI 引数の変換）。
+# app を増やすときは main.py 側と apps/webapi/definitions.py の DBS も揃える。
 UPLOAD_ROLES = (
     "biosample", "bioproject",
     "dra_submission", "dra_experiment", "dra_run", "dra_analysis",

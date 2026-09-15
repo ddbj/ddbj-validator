@@ -94,3 +94,41 @@ def normalize_null(val, null_accepted, null_not_recommended, date_or_geo):
     if result is None or result == val:
         return None
     return result
+
+def normalize_null_value(value, accepted, not_recommended, to_empty=False):
+    r"""null 値の表記揺れ／非推奨表記を正規表記へ補正した値を返す（補正不要なら None）。
+
+    同ファイルの `normalize_null`（biosample R0001 用。missing: term の接頭辞照合と date/geo 例外を持つ）
+    とは引数と用途が違うので別名にしている。MAGE-TAB（metabobank / gea）の IDF 値向け:
+    MB_IR0023 の autofix 提案と各 cli の `_write_fixed` の書き出しを同じ判定で揃える。
+
+    (a) 推奨 null の表記揺れ揃え: 小文字化＋空白除去して accepted と一致すれば正規表記へ
+        （`Not Applicable` → `not applicable`）
+    (b) 非推奨 null → `missing`: not_recommended の正規表現に値全体が一致（re.fullmatch,
+        大文字小文字無視）したら `missing` へ（`N.A.` → `missing`）
+
+    `to_empty=True`（`idf.autofix_null_to_empty` の項目）なら、null と判定できた時点で `""`
+    にする。任意項目に null 値を書くこと自体が不正で「書かない」が正規の書き方のため。
+    """
+    v = (value or "").strip()
+    if not v:
+        return None
+    fixed = None
+    low_ns = re.sub(r"\s+", "", v.lower())
+    for a in accepted:                                  # (a) 表記揺れ揃え
+        if re.sub(r"\s+", "", a.lower()) == low_ns:
+            fixed = a
+            break
+    if fixed is None:                                   # (b) 非推奨 null → missing
+        for pat in not_recommended:
+            try:
+                if re.fullmatch(pat, v, re.I):
+                    fixed = "missing"
+                    break
+            except re.error:
+                continue
+    if fixed is None:
+        return None
+    if to_empty:
+        fixed = ""
+    return None if fixed == value else fixed

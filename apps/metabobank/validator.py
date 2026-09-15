@@ -1,5 +1,6 @@
 """MetaboBank ルールの登録と実行。bs/bp/dra と同型。"""
-from apps.metabobank.rules.base import is_internal_ignore
+from common.rules.simple import SimpleValidator
+from apps.metabobank.rules.base import INTERNAL_IGNORE_RULE_IDS
 from apps.metabobank.rules import idf as I
 from apps.metabobank.rules import sdrf as S
 from apps.metabobank.rules import cross as C
@@ -7,10 +8,13 @@ from apps.metabobank.rules import biosample as B
 from apps.metabobank.rules import reference_db as R
 
 
-class Validator:
-    def __init__(self, context):
-        self.context = context
-        available_rules = [
+class Validator(SimpleValidator):
+    # モード別スキップ・実行・external 付与は common.rules.simple.SimpleValidator。
+    # ここはルールの登録順（手で並べる）と internal ignore 集合だけを持つ。
+    ignore_ids = INTERNAL_IGNORE_RULE_IDS
+
+    def build_rules(self, context):
+        return [
             # --- IDF ---
             # MB_IR0006 は deprecated（required_warning を設けない方針）のため登録しない。
             # MB_IR0018 は現在 protocol_parameters_required が空で無発火だが、必須パラメータが
@@ -35,20 +39,3 @@ class Validator:
             # --- 参照オブジェクトのアカウント整合（DB＋認証）---
             R.MB_IR0040(), R.MB_SR0041(),
         ]
-        self.active_rules = []
-        for rule in available_rules:
-            if context.skip_db and getattr(rule, "requires_rdb", False):
-                continue
-            if context.skip_ncbi and getattr(rule, "requires_network", False):
-                continue
-            if context.skip_auth and getattr(rule, "requires_auth", False):
-                continue
-            self.active_rules.append(rule)
-
-    def run(self, sub):
-        results = []
-        for rule in self.active_rules:
-            results.extend(rule.validate(sub, self.context))
-        for r in results:
-            r["external"] = is_internal_ignore(r["rule_id"])
-        return results

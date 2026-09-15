@@ -11,6 +11,15 @@ _WS_RE = re.compile(r"\s+")
 _HTML_RE = re.compile(r"<\s*/?\s*[A-Za-z][^<>]*>")
 
 
+def is_blank(v):
+    """None または空白のみなら True（セル・IDF 値・XML テキストの「空」判定）。
+
+    7 つの rules モジュール（mb/gea/bp/dra）と biosample の _util に同じ 1 行関数があったので
+    ここに寄せた。各モジュールは従来の名前（_empty / is_empty）で import する。
+    """
+    return v is None or str(v).strip() == ""
+
+
 def normalize_data_format(v):
     """連続空白の畳み込み（前後 strip＋タブ/改行/連続空白→半角空白1つ）＋前後を囲む対クオートの除去。
     Ruby v invalid_data_format(String#squish 相当) に準拠。補正不要なら元の値と同じ文字列を返す。"""

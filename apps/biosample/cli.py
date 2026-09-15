@@ -47,37 +47,16 @@ def _build_parser():
 
 
 def _tool_version():
-    """biosample アプリのバージョン（apps/biosample/__init__.py の __version__）。ddbj と独立管理。"""
-    try:
-        from apps.biosample import __version__
-        return __version__
-    except Exception:
-        return "unknown"
+    return cli_modes.tool_version("apps.biosample")
 
 
 def _env_internal_db():
-    """環境変数 DDBJ_VALIDATOR_INTERNAL_DB が truthy かどうか（curator 用の既定モード切替）。"""
-    import os
-    return os.environ.get("DDBJ_VALIDATOR_INTERNAL_DB", "").strip().lower() not in ("", "0", "false", "no")
+    return cli_modes.env_internal_db()
 
 
 def _resolve_modes(args):
-    """実行モードを解決。
-    明示フラグ（-l/-n/-d）が最優先。無ければ環境変数 DDBJ_VALIDATOR_INTERNAL_DB（curator 用）で内部DB、
-    それも無ければ一般ユーザ既定 = NCBI API モード（DB/auth スキップ、taxonomy は NCBI。ddbj v と同じ公開モード）。
-    """
-    if args.local:                       # -l: 完全ローカル（DB/NCBI 無し）
-        skip_db, skip_ncbi = True, True
-    elif args.ncbi_api:                  # -n: NCBI API（DB スキップ）
-        skip_db, skip_ncbi = True, False
-    elif args.internal_db:               # -d: 内部DB（明示）
-        skip_db, skip_ncbi = False, False
-    elif _env_internal_db():             # env: curator 既定 = 内部DB
-        skip_db, skip_ncbi = False, False
-    else:                                # 一般ユーザ既定 = NCBI API
-        skip_db, skip_ncbi = True, False
-    skip_auth = skip_db  # DB が無ければ認証検証不可（ddbj と同じ強制）
-    return skip_db, skip_ncbi, skip_auth
+    """-l / -n / -d / env DDBJ_VALIDATOR_INTERNAL_DB の優先順は common.cli_modes.resolve_modes（他 app と同一）。"""
+    return cli_modes.resolve_modes(args)
 
 
 def _resolve_tsv_meta(tsv_path, arg_sub, arg_pkg):
@@ -136,58 +115,25 @@ def _ssub_from_name(path):
     return m.group(1) if m else None
 
 
-def run(args):
-    started = datetime.datetime.now(_JST)
-    is_tsv = bool(args.tsv)
-    in_path = Path(args.tsv if is_tsv else args.xml)
-    if not in_path.exists():
-        print(f"[ERROR] Input not found: {in_path}", file=sys.stderr)
-        return 2
+def _prepare_input(args, in_path):
+    """検証に渡す XML パスと submission_id を決める。TSV は XML へ変換してから検証する（検証パスは XML 一本）。
 
-    skip_db, skip_ncbi, skip_auth = _resolve_modes(args)
-    # --account は curator（内部DB）モードでのみ有効。他モードでは auth 検証ができないため abort（英語メッセージ）。
-    if args.account and skip_db:
-        print("[ERROR] --account is only valid in curator mode (internal DB). "
-              "Use -d/--internal-db or set DDBJ_VALIDATOR_INTERNAL_DB=1; do not combine --account with -n/-l.",
-              file=sys.stderr)
-        return 2
-    context = ValidationContext(account=args.account, skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
+    戻り値: (xml_for_parse, submission_id, error_message)。error_message が非 None なら中断。"""
+    if not args.tsv:
+        return str(in_path), None, None
+    meta, err = _resolve_tsv_meta(str(in_path), args.submission_id, args.package)
+    if err:
+        return None, None, err
+    submission_id, package = meta
+    xml_text = tsv_to_xml.tsv_to_xml(str(in_path), package=package, submission_id=submission_id)
+    tmp = tempfile.NamedTemporaryFile("w", suffix=".xml", delete=False, encoding="utf-8")
+    tmp.write(xml_text or "")
+    tmp.close()
+    return tmp.name, submission_id, None
 
-    if not args.json:
-        cli_modes.print_found(1, "file")   # BioSample は TSV/XML 1 ファイル
 
-    # TSV は XML へ変換してから検証（検証パスは XML 一本）
-    submission_id = None
-    if is_tsv:
-        meta, err = _resolve_tsv_meta(str(in_path), args.submission_id, args.package)
-        if err:
-            print(f"[ERROR] {err}", file=sys.stderr)
-            return 2
-        submission_id, package = meta
-        xml_text = tsv_to_xml.tsv_to_xml(str(in_path), package=package, submission_id=submission_id)
-        tmp = tempfile.NamedTemporaryFile("w", suffix=".xml", delete=False, encoding="utf-8")
-        tmp.write(xml_text or "")
-        tmp.close()
-        xml_for_parse = tmp.name
-    else:
-        xml_for_parse = str(in_path)
-
-    submission, pre_errors = xml_reader.parse_xml(xml_for_parse, submission_id=submission_id, account=args.account)
-
-    out_dir = args.out_dir or str(in_path.parent)
-    if submission is None:
-        # 整形不正（R0097 等）でパース不可（サンプル 0）
-        counts = _finalize(args, pre_errors, [], in_path, out_dir,
-                           submission_id or _ssub_from_name(in_path), None, started, None)
-        return 1 if counts.get("error") else 0
-
-    # account が --account 未指定でも XML ルートの submitter_id から解決できていれば採用（互換）
-    if not context.account and submission.account:
-        context.account = submission.account
-    # account を特定できない場合は認証系ルール（requires_auth）をスキップ（誤検出防止。ddbj/dra と同方針）
-    if not context.account:
-        context.skip_auth = True
-
+def _fetch_references(context, submission):
+    """モードに応じて外部参照（taxonomy / account・BioProject / 登録済み locus_tag_prefix）を context に載せる。"""
     cli_modes.reset_db_access_log()
     # taxonomy 取得（local では skip。default=内部DB、-n=NCBI API）
     # organism に加え、R0105 用に component_organism も解決対象に含める。
@@ -214,14 +160,60 @@ def run(args):
     if not context.skip_db:
         _fetch_registered_prefixes(context)
 
-    results = pre_errors + Validator(context).run(submission)
 
-    # autofix 全自動適用（対話なし）→ 修正済み XML を fixed/ に出力（先に適用して保存先を確定）。
-    # 入力が TSV でも出力は XML（検証パスと同一の XML を元に修正）。
+def _apply_autofix(in_path, is_tsv, xml_for_parse, results, out_dir):
+    """autofix を全自動適用（対話なし）し、修正済み XML を fixed/ に出力。書いたら保存先パス、無ければ None。
+    入力が TSV でも出力は XML（検証パスと同一の XML を元に修正）。"""
     autofix.clean_fixed_dir(out_dir)
     fixed_name = in_path.name if not is_tsv else (in_path.stem + ".xml")
     n_fixed = autofix.apply_autofix(xml_for_parse, results, out_dir, fixed_name)
-    fixed_path = (Path(out_dir) / "fixed" / fixed_name) if n_fixed else None
+    return (Path(out_dir) / "fixed" / fixed_name) if n_fixed else None
+
+
+def run(args):
+    started = datetime.datetime.now(_JST)
+    is_tsv = bool(args.tsv)
+    in_path = Path(args.tsv if is_tsv else args.xml)
+    if not in_path.exists():
+        print(f"[ERROR] Input not found: {in_path}", file=sys.stderr)
+        return 2
+
+    skip_db, skip_ncbi, skip_auth = _resolve_modes(args)
+    # --account は curator（内部DB）モードでのみ有効。他モードでは auth 検証ができないため abort（英語メッセージ）。
+    if args.account and skip_db:
+        print("[ERROR] --account is only valid in curator mode (internal DB). "
+              "Use -d/--internal-db or set DDBJ_VALIDATOR_INTERNAL_DB=1; do not combine --account with -n/-l.",
+              file=sys.stderr)
+        return 2
+    context = ValidationContext(account=args.account, skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
+
+    if not args.json:
+        cli_modes.print_found(1, "file")   # BioSample は TSV/XML 1 ファイル
+
+    xml_for_parse, submission_id, err = _prepare_input(args, in_path)
+    if err:
+        print(f"[ERROR] {err}", file=sys.stderr)
+        return 2
+
+    submission, pre_errors = xml_reader.parse_xml(xml_for_parse, submission_id=submission_id, account=args.account)
+
+    out_dir = args.out_dir or str(in_path.parent)
+    if submission is None:
+        # 整形不正（R0097 等）でパース不可（サンプル 0）
+        counts = _finalize(args, pre_errors, [], in_path, out_dir,
+                           submission_id or _ssub_from_name(in_path), None, started, None)
+        return 1 if counts.get("error") else 0
+
+    # account が --account 未指定でも XML ルートの submitter_id から解決できていれば採用（互換）
+    if not context.account and submission.account:
+        context.account = submission.account
+    # account を特定できない場合は認証系ルール（requires_auth）をスキップ（誤検出防止。ddbj/dra と同方針）
+    if not context.account:
+        context.skip_auth = True
+
+    _fetch_references(context, submission)
+    results = pre_errors + Validator(context).run(submission)
+    fixed_path = _apply_autofix(in_path, is_tsv, xml_for_parse, results, out_dir)
 
     package = submission.package or (submission.records[0].package if submission.records else None)
     sub_id = submission.submission_id or submission_id or _ssub_from_name(in_path)

@@ -8,10 +8,7 @@
 - DRA_R0020: insert size は 10,000,000 未満。
 """
 from apps.dra.rules.base import DraRule
-
-
-def _empty(v):
-    return v is None or not str(v).strip()
+from common.text import is_blank as _empty
 
 
 class DRA_R0010(DraRule):

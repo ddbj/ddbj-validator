@@ -16,12 +16,9 @@
 import re
 from apps.bioproject.rules.base import BpRule
 from apps.bioproject.defs import formats, compiled
+from common.text import is_blank as _empty
 
 _EMPTY = (None, "")
-
-
-def _empty(v):
-    return v is None or not str(v).strip()
 
 
 def _len_range(context, key, default_min, default_max):

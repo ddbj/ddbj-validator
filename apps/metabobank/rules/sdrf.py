@@ -2,31 +2,18 @@
 import re
 from apps.metabobank.rules.base import (MbRule, null_values, is_raw_data_file_none,
                                         RAW_DATA_FILE_COLUMN)
+from common.text import is_blank as _empty
+from common.magetab.columns import matches_any as _matches_any
 
 
 def _sdrf_def(context):
     return (context.definitions or {}).get("sdrf", {})
 
 
-def _empty(v):
-    return v is None or str(v).strip() == ""
-
-
 def _absent(v, nulls):
     """値が「無い」か。空セルと null value（missing 等）を同じ扱いにする。"""
     sv = "" if v is None else str(v).strip()
     return not sv or sv in nulls
-
-
-def _matches_any(colname, patterns):
-    for p in patterns:
-        try:
-            if re.fullmatch(p, colname) or re.search(p, colname):
-                return True
-        except re.error:
-            if p == colname:
-                return True
-    return False
 
 
 def _bracket_kind(colname):

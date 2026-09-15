@@ -4,6 +4,8 @@
 """
 import re
 from apps.gea.rules.base import GeaRule, null_values
+from common.text import is_blank as _empty
+from common.magetab.columns import matches_any as _matches_any, matches_any_header as _matches_any_header
 
 # 複数回出現が許される列（重複エラーの対象外）
 _REPEATABLE = {"Protocol REF", "Array Data File", "Derived Array Data File",
@@ -16,25 +18,10 @@ def _sdrf_def(context):
     return (context.definitions or {}).get("sdrf", {})
 
 
-def _empty(v):
-    return v is None or str(v).strip() == ""
-
-
 def _kind(h):
     """列名の種別（Characteristics[x]→Characteristics, Protocol REF→Protocol REF 等）。"""
     m = re.match(r"^(Characteristics|Comment|Parameter Value|Factor Value|Unit)\[", h)
     return m.group(1) if m else h
-
-
-def _matches_any(colname, patterns):
-    for p in patterns:
-        try:
-            if re.fullmatch(p, colname):
-                return True
-        except re.error:
-            if p == colname:
-                return True
-    return False
 
 
 def _has_col(sdrf, name):
@@ -376,17 +363,6 @@ class GEA_MAN0012(GeaRule):
         req = _sdrf_def(context).get("required_columns_sequencing", [])
         miss = [p for p in req if not _matches_any_header(sub.sdrf.header, p)]
         return [self.result(message=f"{self.description} ({', '.join(miss)})")] if miss else []
-
-
-def _matches_any_header(header, pattern):
-    for h in header:
-        try:
-            if re.fullmatch(pattern, h):
-                return True
-        except re.error:
-            if pattern == h:
-                return True
-    return False
 
 
 # ---------------- SDRF 形式（Comment 系 accession）----------------
