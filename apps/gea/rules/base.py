@@ -6,6 +6,35 @@ from common.rules.simple import SimpleRule
 # 登録システム側では登録をブロックしない（mb の INTERNAL_IGNORE_RULE_IDS と同じ扱い）。
 INTERNAL_IGNORE_RULE_IDS = frozenset({
     "GEA_REF0008",  # BioSample-Experiment-Run sets are not identical in the DRA submission and SDRF.（2026-09-17）
+    # --- 2026-09-18 追加（error のまま internal ignore）---
+    "GEA_FV0004",  # Values of an experimental variable must vary (for compound+dose at least one must vary).
+    "GEA_LC0001",  # Library source, layout, selection and strategy must be specified.
+    "GEA_DF0001",  # Either one of Array Data File and Array Data Matrix File nodes are required.
+    "GEA_REF0002",  # Referencing object is not registered in this submission account.
+    "GEA_SR0012",  # A source should have a 'sample_title' characteristic/comment.
+    "GEA_EX0001",  # An extract must have name specified.
+    "GEA_SR0002",  # Undefined column exists.
+    #
+    "GEA_PR0010",  # Nucleic acid labeling protocol is required for Micro-array submissions.
+    "GEA_PR0011",  # Nucleic acid hybridization to array protocol is required for Micro-array submissions.
+    "GEA_PR0012",  # Array scanning and feature extraction protocol is required for Micro-array submissions.
+    "GEA_PR0013",  # Sample collection protocol is required for submissions.
+    "GEA_PR0014",  # Nucleic acid extraction protocol is required for submissions.
+    "GEA_PR0015",  # Normalization data transformation protocol is required for submissions.
+    #
+    "GEA_EX0003",  # A nucleic acid extraction protocol must be included.
+    "GEA_AN0004",  # A nucleic acid hybridization to array protocol must be included.
+    "GEA_SR0008",  # A growth, treatment or sample collection protocol must be included.
+    "GEA_LE0005",  # A nucleic acid labeling protocol must be included.
+    #
+    "GEA_DADMN0004",  # A normalization data transformation protocol that describes the analysis methods used to generate the processed data matrix file must be included.
+    #
+    "GEA_DADN0004",  # A normalization data transformation protocol that describes the analysis methods used to generate the processed data file(s) must be included.
+    #
+    "GEA_LE0002",  # A labeled extract must have name specified.
+    "GEA_LE0004",  # A labeled extract must have 'Label' attribute specified.
+    "GEA_AN0006",  # For an array assay the incoming nodes must be 'Labeled Extract' nodes only.
+    "GEA_G0011",  # Array Design File (or Array Design REF) is required for micro-array submissions.
 })
 
 
