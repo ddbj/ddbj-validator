@@ -36,11 +36,13 @@ class Validator(SimpleValidator):
             # --- SDRF ---
             S.GEA_SR0001(), S.GEA_SR0004(), S.GEA_SR0009(), S.GEA_SR0005(), S.GEA_SR0006(), S.GEA_SR0012(),
             S.GEA_EX0001(), S.GEA_EX0002(),
-            S.GEA_AN0001(), S.GEA_AN0002(), S.GEA_TT0001(), S.GEA_AN0005(), S.GEA_AN0009(),
+            # GEA_AN0002 / GEA_AN0005 は deprecated（2026-09-18。Technology Type 列の有無・array assay 強制を廃止）のため登録しない。
+            S.GEA_AN0001(), S.GEA_TT0001(), S.GEA_AN0009(),
             S.GEA_MT0004(),
             S.GEA_LE0002(), S.GEA_LE0004(), S.GEA_LE0001(), S.GEA_AD0001(), S.GEA_AD0004(),
             S.GEA_DF0001(), S.GEA_DF0002(),
-            S.GEA_CN0001(), S.GEA_RC0002(), S.GEA_UNDEF(),
+            # GEA_RC0002 は deprecated（2026-09-17。Comment 列の重複は取込で畳む）のため登録しない。
+            S.GEA_CN0001(), S.GEA_UNDEF(),
             S.GEA_MAN0011(), S.GEA_MAN0012(),
             S.GEA_SDRF_REGEX(),
             # --- SDRF node グラフ / 属性名 ---

@@ -156,6 +156,12 @@ class GEA_AN0001(GeaRule):
 
 
 class GEA_AN0002(GeaRule):
+    """**deprecated**（validator に登録しない。2026-09-18）。
+
+    Technology Type 列の有無を error にしていたが廃止。値の妥当性は TT0001 / AN0009 が引き続き見る。
+    クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "GEA_AN0002"; level = "error"; target = "SDRF/ArrayNode"
     description = "An assay must have a 'Technology Type' attribute specified."
 
@@ -174,11 +180,16 @@ class GEA_TT0001(GeaRule):
             return []
         res = _col_nonempty_all_rows(sub.sdrf, "Technology Type")
         if res is None:
-            return []  # 列自体の不在は AN0002 で扱う
+            return []  # 列自体の不在は報告しない（AN0002 は 2026-09-18 に deprecated）
         return [] if res else [self.result()]
 
 
 class GEA_AN0005(GeaRule):
+    """**deprecated**（validator に登録しない。2026-09-18）。
+
+    microarray で Technology Type = 'array assay' を強制していたが廃止。クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "GEA_AN0005"; level = "error"; target = "SDRF/ArrayNode"; only_type = "microarray"
     description = "'Technology Type' must be equal to 'array assay' in micro-array submissions."
 
@@ -313,6 +324,12 @@ class GEA_CN0001(GeaRule):
 
 
 class GEA_RC0002(GeaRule):
+    """**deprecated**（validator に登録しない。2026-09-17）。
+
+    既定の Comment 列（md5 / LIBRARY_* など）の重複を error にしていたが、新 GEA では md5 列を持たず、重複列は
+    取込・受領時に畳めばよいので廃止した。クラスは既存テストの参照のために残す。
+    """
+    deprecated = True
     rule_id = "GEA_RC0002"; level = "error"; target = "SDRF"
     description = "Predefined comment columns must be unique."
 
