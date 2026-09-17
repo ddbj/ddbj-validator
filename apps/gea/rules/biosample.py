@@ -36,7 +36,7 @@ class GEA_BS0001(GeaRule):
 
 
 class GEA_BS0003(GeaRule):
-    rule_id = "GEA_BS0003"; level = "error"; target = "SDRF"; requires_rdb = True
+    rule_id = "GEA_BS0003"; level = "warning"; target = "SDRF"; requires_rdb = True  # 2026-09-17 error→warning
     description = "Characteristics value and BioSample attribute value do not match."
 
     def validate(self, sub, context):

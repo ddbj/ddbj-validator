@@ -118,7 +118,7 @@
       "Comment[Array Design REF]"
     ],
     "description_min_length": 100,
-    "protocol_description_min_length": 100,
+    "protocol_description_min_length": 30,
     "person_roles": [
       "submitter"
     ]

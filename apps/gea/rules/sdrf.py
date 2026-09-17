@@ -285,7 +285,7 @@ class GEA_DF0001(GeaRule):
 
 
 class GEA_DF0002(GeaRule):
-    rule_id = "GEA_DF0002"; level = "error"; target = "SDRF"
+    rule_id = "GEA_DF0002"; level = "warning"; target = "SDRF"  # 2026-09-17 error→warning
     description = "Either one of Derived Array Data File and Derived Array Data Matrix File nodes are required."
 
     def validate(self, sub, context):

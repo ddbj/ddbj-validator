@@ -253,12 +253,12 @@ class GEA_PR0005(GeaRule):
 
 class GEA_PR0006(GeaRule):
     rule_id = "GEA_PR0006"; level = "warning"; target = "IDF/Protocol"
-    description = "Description of a protocol should be over 100 characters long."
+    description = "Description of a protocol should be over 30 characters long."  # 2026-09-17 100→30
 
     def validate(self, sub, context):
         if not sub.idf:
             return []
-        mn = _idf(context).get("protocol_description_min_length", 100)
+        mn = _idf(context).get("protocol_description_min_length", 30)
         protos = sub.idf.protocols()
         bad = sum(1 for p in protos if p["Protocol Description"] and 0 < len(p["Protocol Description"].strip()) < mn)
         return [self.result(message=f"{self.description} ({bad} Protocol{'s' if bad != 1 else ''})")] if bad else []
