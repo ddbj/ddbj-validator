@@ -178,7 +178,7 @@ class GEA_AN0008(GeaRule):
 # ---------------- Library info（HTS）----------------
 class GEA_LC0001(GeaRule):
     rule_id = "GEA_LC0001"; level = "error"; target = "SDRF/LibraryConstructionAttribute"; only_type = "sequencing"
-    description = "Library source, layout, selection and strategy must be specified for the ENA library info."
+    description = "Library source, layout, selection and strategy must be specified."  # 2026-09-17 文言変更
 
     _cols = ("Comment[LIBRARY_SOURCE]", "Comment[LIBRARY_LAYOUT]",
              "Comment[LIBRARY_SELECTION]", "Comment[LIBRARY_STRATEGY]")

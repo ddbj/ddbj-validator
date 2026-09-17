@@ -23,10 +23,15 @@ DATA = HERE / "data"
 EXPECTED = {
     "E-GEAD-1104": set(),                             # microarray, clean
     "E-GEAD-1114": set(),                             # sequencing, clean
-    "E-GEAD-1117": {"GEA_PR0006"},                    # microarray, protocol desc <100
-    "E-GEAD-1144": {"GEA_G0009", "GEA_PR0006"},       # sequencing, desc <100 + protocol desc <100
+    "E-GEAD-1117": set(),                             # microarray, protocol desc 最短 54 文字（閾値 30 では発火しない）
+    "E-GEAD-1144": set(),                             # sequencing, Experiment Description 68 文字（20〜4,000 の範囲内）、protocol desc 最短 85 文字
     # crafted fixture: SRA_RUN ≠ Array Data File（TSV のみ・DB 不要）→ REF0007 error
     "REF0007-craft": {"GEA_REF0007"},
+    # crafted fixture（E-GEAD-1117 派生）: Protocol Description の 1 つを 30 文字未満にして PR0006 warning を担保
+    "PR0006-craft": {"GEA_PR0006"},
+    # crafted fixture（E-GEAD-1144 派生）: Experiment Description を 19 文字 / 4,001 文字にして G0009 の下限・上限を担保
+    "G0009-short-craft": {"GEA_G0009"},
+    "G0009-long-craft": {"GEA_G0009"},
 }
 
 # --- DB モード（opt-in / dradev） ---
@@ -46,7 +51,7 @@ GEA_DB_EXPECTED = {
     "ESUB002710": {"GEA_REF0002", "GEA_REF0008", "GEA_BS0002", "GEA_LC0001", "GEA_RC0002"},
     # crafted fixture: bogus A-GEAD-999999（自 account 未登録かつ非公開でない）→ REF0005 error
     "REF0005-craft": {"GEA_REF0005"},
-    # crafted fixture（ESUB002710 派生）: sync 対象 collection_date を BS と不一致にして BS0003 error を担保
+    # crafted fixture（ESUB002710 派生）: sync 対象 collection_date を BS と不一致にして BS0003（warning・requires_rdb）を担保
     "BS0003-craft": {"GEA_REF0002", "GEA_REF0008", "GEA_BS0002", "GEA_BS0003", "GEA_LC0001", "GEA_RC0002"},
 }
 

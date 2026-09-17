@@ -2,8 +2,11 @@
 GEA 固有: only_type（submission type 限定）と applies()。"""
 from common.rules.simple import SimpleRule
 
-# 内部無視（external）扱いのルール。現状なし。
-INTERNAL_IGNORE_RULE_IDS = frozenset()
+# 内部無視（external）扱いのルール。error のまま出すが JSON の `external` を True にし、
+# 登録システム側では登録をブロックしない（mb の INTERNAL_IGNORE_RULE_IDS と同じ扱い）。
+INTERNAL_IGNORE_RULE_IDS = frozenset({
+    "GEA_REF0008",  # BioSample-Experiment-Run sets are not identical in the DRA submission and SDRF.（2026-09-17）
+})
 
 
 def is_internal_ignore(rule_id):
