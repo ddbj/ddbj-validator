@@ -91,14 +91,17 @@ class GEA_G0002(GeaRule):
 
 class GEA_G0009(GeaRule):
     rule_id = "GEA_G0009"; level = "warning"; target = "IDF/General"
-    description = "Experiment description should be at least 100 characters long."
+    description = "Experiment description should be between 20 and 4,000 characters including spaces."  # 2026-09-17
 
     def validate(self, sub, context):
         if not sub.idf:
             return []
+        # 文字数は空白を含めて数える（前後の空白のみ除く）。空欄は G0008 の担当なのでここでは対象外。
         desc = sub.idf.first("Experiment Description").strip()
-        mn = _idf(context).get("description_min_length", 100)
-        return [self.result(message=f"{self.description} (Found: {len(desc)})")] if desc and len(desc) < mn else []
+        mn = _idf(context).get("description_min_length", 20)
+        mx = _idf(context).get("description_max_length", 4000)
+        n = len(desc)
+        return [self.result(message=f"{self.description} (Found: {n})")] if desc and (n < mn or n > mx) else []
 
 
 class _DateFormat(GeaRule):

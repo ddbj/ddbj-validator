@@ -24,11 +24,14 @@ EXPECTED = {
     "E-GEAD-1104": set(),                             # microarray, clean
     "E-GEAD-1114": set(),                             # sequencing, clean
     "E-GEAD-1117": set(),                             # microarray, protocol desc 最短 54 文字（閾値 30 では発火しない）
-    "E-GEAD-1144": {"GEA_G0009"},                     # sequencing, desc <100（protocol desc 最短 85 文字は閾値 30 で発火しない）
+    "E-GEAD-1144": set(),                             # sequencing, Experiment Description 68 文字（20〜4,000 の範囲内）、protocol desc 最短 85 文字
     # crafted fixture: SRA_RUN ≠ Array Data File（TSV のみ・DB 不要）→ REF0007 error
     "REF0007-craft": {"GEA_REF0007"},
     # crafted fixture（E-GEAD-1117 派生）: Protocol Description の 1 つを 30 文字未満にして PR0006 warning を担保
     "PR0006-craft": {"GEA_PR0006"},
+    # crafted fixture（E-GEAD-1144 派生）: Experiment Description を 19 文字 / 4,001 文字にして G0009 の下限・上限を担保
+    "G0009-short-craft": {"GEA_G0009"},
+    "G0009-long-craft": {"GEA_G0009"},
 }
 
 # --- DB モード（opt-in / dradev） ---
