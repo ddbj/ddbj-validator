@@ -23,6 +23,9 @@ class ValidationContext:
     dra_submission_biosamples: Any = None
     # DB 依存（GEA_REF0008）: DRR -> {drx, biosample, bioproject} の DRA 実 triple
     dra_run_triples: Any = None
+    # DB 由来の submission type（CV 値。例 "Microarray"）。IDF に Comment[Submission Type] が無いときの
+    # 判定根拠。既存 submission の IDF はこの項目を持たないため（移行で付与する）。None=未取得
+    db_submission_type: Any = None
 
     def __post_init__(self):
         if self.definitions is None:

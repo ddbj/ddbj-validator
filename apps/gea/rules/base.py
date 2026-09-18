@@ -37,6 +37,7 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     "GEA_G0011",  # Array Design File (or Array Design REF) is required for micro-array submissions.
     #
     "GEA_COM0004",  # Value is not in controlled terms.（Comment[tissue_preservation_method]。2026-09-18）
+    "GEA_G0016",  # Experiment Type is not allowed for the specified Submission Type.（2026-09-18）
 })
 
 
@@ -49,10 +50,27 @@ def null_values(context):
     return set(nv.get("accepted", []))
 
 
-def submission_type(sub, context):
-    """microarray / sequencing / other を返す。"""
+def submission_type_value(sub, context):
+    """`Comment[Submission Type]` の値（CV 表記。例 "Microarray"）を返す。
+
+    IDF に無ければ **DB 由来**（`context.db_submission_type`）を使う。既存 submission の IDF は
+    この項目を持たないため（移行で付与する）、DB の数値から解決した値をここで拾う。
+    どちらも無ければ空文字。
+    """
+    v = ""
     try:
-        return sub.submission_type(context.definitions)
+        if sub is not None and getattr(sub, "idf", None):
+            v = (sub.idf.first("Comment[Submission Type]") or "").strip()
+    except Exception:
+        v = ""
+    return v or (getattr(context, "db_submission_type", None) or "")
+
+
+def submission_type(sub, context):
+    """microarray / sequencing / xenium / other を返す（ルールの only_type と突き合わせる内部表記）。"""
+    try:
+        defs = context.definitions or {}
+        return defs.get("submission_type_map", {}).get(submission_type_value(sub, context)) or "other"
     except Exception:
         return "other"
 

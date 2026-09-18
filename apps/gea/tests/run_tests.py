@@ -39,6 +39,9 @@ EXPECTED = {
     "G0015-craft": {"GEA_G0015"},
     # crafted fixture（E-GEAD-1117 派生）: Comment[tissue_preservation_method] を IDF/SDRF 両方 CV 外にして COM0004 を担保
     "COM0004-craft": {"GEA_COM0004"},
+    # crafted fixture（E-GEAD-1104 派生）: Submission Type=Microarray に Sequencing 用の experiment type を
+    # 入れて G0016（sub type と exp type の整合）を担保。語自体は CV 内なので COM0002 は出ない
+    "G0016-craft": {"GEA_G0016"},
 }
 
 # --- DB モード（opt-in / dradev） ---
@@ -82,7 +85,7 @@ def _db_fired(key, account):
     import tempfile
     from common.db_manager import DatabaseManager
     from apps.gea import db_meta
-    from apps.gea.cli import _fetch_account_refs, _fetch_biosample_attrs
+    from apps.gea.cli import _fetch_account_refs, _fetch_biosample_attrs, _fetch_db_submission_type
     if key.startswith("ESUB"):
         gc = DatabaseManager().get_gea_conn()
         idf, sdrf = db_meta.fetch_experiment_metadata(gc, key)
@@ -94,6 +97,9 @@ def _db_fired(key, account):
         ip, sp = DATA / f"{key}.idf.txt", DATA / f"{key}.sdrf.txt"
     sub, pre = reader.parse(str(ip), str(sp), account=account)
     ctx = ValidationContext(account=account, skip_db=False, skip_ncbi=False, skip_auth=False)
+    # dordb の既存 submission は IDF に Comment[Submission Type] を持たない（移行で付与する項目）。
+    # CLI と同じ経路で DB の数値 submission type から補う（type 限定ルールを走らせるため）。
+    _fetch_db_submission_type(ctx, sub, key if key.startswith("ESUB") else None)
     _fetch_biosample_attrs(ctx, sub, account)
     _fetch_account_refs(ctx, sub, account)
     results = list(pre) + Validator(ctx).run(sub)

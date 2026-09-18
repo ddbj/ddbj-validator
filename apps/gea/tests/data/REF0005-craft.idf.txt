@@ -16,4 +16,5 @@ SDRF File	E-GEAD-1288.sdrf.txt
 Comment[Number of channel]	single-channel
 Comment[Array Design REF]	A-GEAD-999999
 Comment[AEExperimentType]	tiling path by array
+Comment[Submission Type]	Microarray
 Comment[BioProject]	PRJDB6833

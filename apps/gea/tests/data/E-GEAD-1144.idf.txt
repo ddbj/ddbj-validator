@@ -15,5 +15,6 @@ Protocol Type	sample collection protocol	nucleic acid extraction protocol	nuclei
 Protocol Description	CD4 T cells derived from ROR gamma t point mutation mice and ROR gamma t -/- mice were differentiated under Th17 cell conditions, and cell pellets were recovered.	The respective polarized Th17 cells were dissolved using TRIzol reagent, and total RNA was extracted according to the manufacturer's instructions.	The library preparation was performed using the QuantSeq 3' mRNA Library Preparation Kit according to the protocol, using 500 ng of total extracted RNA.	The prepared libraries were performed using Illumina's NextSeq 2000 under single-end sequencing conditions.	The acquired RNA sequencing data were normalized by using the number of detected transcripts per million (TPM).	Alignment was performed using STAR v2.7.10a with ensembl GRCm38.102 as the reference.
 SDRF File	E-GEAD-1144.sdrf.txt
 Comment[AEExperimentType]	RNA-seq of coding RNA
+Comment[Submission Type]	Sequencing
 Comment[BioProject]	PRJDB37794
 Comment[Last Update Date]	2025-11-17

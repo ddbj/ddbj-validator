@@ -186,6 +186,32 @@ def fetch_experiment_metadata(gea_conn, esub_or_egead):
         return idf, sdrf
 
 
+def fetch_submission_type(gea_conn, esub_or_egead):
+    """dordb の `mass.submission.submission_type`（数値）を返す。見つからなければ None。
+
+    既存 submission の IDF は `Comment[Submission Type]` を持たないため、IDF に値が無いときの
+    判定根拠として使う。数値の意味は `definitions.json` の `db_submission_type_map` で対応づける。
+    """
+    key = (esub_or_egead or "").strip().upper()
+    if not key:
+        return None
+    with gea_conn.cursor() as cur:
+        if key.startswith("ESUB"):
+            cur.execute("SELECT submission_type FROM mass.submission "
+                        "WHERE submission_id = %s", (int(key[4:]),))
+        else:
+            # E-GEAD-n → accession から alias（ESUBxxxxxx_Experiment_1）を引いて submission_id を得る
+            cur.execute("SELECT split_part(alias, '_', 1) FROM mass.accession "
+                        "WHERE accession = %s AND accession_type = 1", (key,))
+            row = cur.fetchone()
+            if not row or not row[0] or not row[0].upper().startswith("ESUB"):
+                return None
+            cur.execute("SELECT submission_type FROM mass.submission "
+                        "WHERE submission_id = %s", (int(row[0][4:]),))
+        row = cur.fetchone()
+        return row[0] if row else None
+
+
 def fetch_submitter_by_accession(gea_conn, esub_or_egead):
     """ESUB/E-GEAD（Experiment）から submitter_id（account）を dordb で解決。account 自動導出用。失敗時 None。"""
     if not gea_conn or not esub_or_egead:

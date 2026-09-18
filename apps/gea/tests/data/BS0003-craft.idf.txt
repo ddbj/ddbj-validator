@@ -14,4 +14,5 @@ Protocol Type	sample collection protocol	nucleic acid extraction protocol	nuclei
 Protocol Description	ddddddddddddddddddddddddddddddddddd	ddddddddddddddddddddddddddddddddddd	ddddddddddddddddddddddddddddddddddd	ddddddddddddddddddddddddddddddddddd	ddddddddddddddddddddddddddddddddddd
 SDRF File	E-GEAD-1289.sdrf.txt
 Comment[AEExperimentType]	methylation profiling by high throughput sequencing
+Comment[Submission Type]	Sequencing
 Comment[BioProject]	PRJDB5168

@@ -88,6 +88,29 @@ def _account_from_gea_accession(egead):
         return None
 
 
+def _fetch_db_submission_type(context, sub, gea_accession):
+    """IDF に `Comment[Submission Type]` が無いとき、dordb の数値 submission type から補う。
+
+    既存 submission の IDF はこの項目を持たない（移行で付与する）ため、DB の値を判定根拠にする。
+    数値 → CV 値の対応は `definitions.json` の `db_submission_type_map`。
+    対応が無い数値（現状 3 / 4）は補わない＝`other` 扱いのままにする。
+    """
+    if sub is None or not gea_accession:
+        return
+    try:
+        if sub.idf and (sub.idf.first("Comment[Submission Type]") or "").strip():
+            return                                   # IDF の値があればそちらが優先
+        from common.db_manager import DatabaseManager
+        from apps.gea import db_meta as gea_db
+        num = gea_db.fetch_submission_type(DatabaseManager().get_gea_conn(), gea_accession)
+        if num is None:
+            return
+        mapping = (context.definitions or {}).get("db_submission_type_map", {})
+        context.db_submission_type = mapping.get(str(num))
+    except Exception as e:
+        print(f"[WARN] gea submission type fetch from DB failed: {e}", file=sys.stderr)
+
+
 def _fetch_biosample_attrs(context, sub, account):
     """参照 SAMD の BioSample 属性を内部 DB から取得（GEA_BS0001/0002/0003 用）。core は common/magetab/biosample。
 
@@ -227,6 +250,7 @@ def run(args):
         cli_modes.print_found(1, "file set")   # idf+sdrf = 1 set
     if not context.skip_db:
         cli_modes.reset_db_access_log()
+        _fetch_db_submission_type(context, sub, gea_accession)   # IDF に無ければ DB の submission type
         _fetch_biosample_attrs(context, sub, account)            # BS 突合（requires_rdb）
         if not context.skip_auth:                                # 認証系 REF は auth 有効時のみ
             _fetch_account_refs(context, sub, account)
@@ -240,7 +264,8 @@ def run(args):
     # ヘッダ用: 参照 SAMD の重複排除数 ＋ submission type（Microarray/Sequencing）
     from common.magetab import biosample as _bs
     sample_count = len(_bs.referenced_samds(sub, _bs.ref_columns(context))) if sub.sdrf else None
-    sub_type = sub.submission_type(context.definitions).capitalize()
+    from apps.gea.rules.base import submission_type as _sub_type
+    sub_type = _sub_type(sub, context).capitalize()
     summary = build_summary(results, label, version, when, elapsed, sample_count, sub_type)
     if args.json:
         write_json_report(results, out_dir, label, version)

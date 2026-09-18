@@ -25,7 +25,7 @@ class Validator(SimpleValidator):
             I.GEA_G0001(), I.GEA_G0002(), I.GEA_G0009(), I.GEA_G0004(), I.GEA_G0006(),
             I.GEA_G0015(),
             # GEA_G0013 は deprecated（2026-09-18。additional file 廃止で検査対象が無い）のため登録しない。
-            I.GEA_G0007(), I.GEA_G0012(),
+            I.GEA_G0007(), I.GEA_G0012(), I.GEA_G0016(),
             I.GEA_ED0001(), I.GEA_EF0001(), I.GEA_EF0003(),
             I.GEA_PB0002(),
             I.GEA_PR0001(), I.GEA_PR0002(), I.GEA_PR0003(), I.GEA_PR0005(), I.GEA_PR0006(),

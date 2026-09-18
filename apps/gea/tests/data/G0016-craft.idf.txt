@@ -16,7 +16,7 @@ Protocol Description	The study population consisted of subjects who had been dia
 SDRF File	E-GEAD-1104.sdrf.txt
 Comment[Number of channel]	dual-channel
 Comment[Array Design REF]	A-GEAD-17
-Comment[AEExperimentType]	transcription profiling by array
+Comment[AEExperimentType]	RNA-seq of coding RNA
 Comment[Submission Type]	Microarray
 Comment[BioProject]	PRJDB35617
 Comment[Last Update Date]	2025-11-10
