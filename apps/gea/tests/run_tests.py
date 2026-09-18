@@ -42,6 +42,12 @@ EXPECTED = {
     # crafted fixture（E-GEAD-1104 派生）: Submission Type=Microarray に Sequencing 用の experiment type を
     # 入れて G0016（sub type と exp type の整合）を担保。語自体は CV 内なので COM0002 は出ない
     "G0016-craft": {"GEA_G0016"},
+    # crafted fixture（E-GEAD-1114 派生）: Sequencing の必須 protocol から Sequencing protocol を落として
+    # COM0005（sub type ごとの必須 protocol）を担保。AN0003（SDRF の node に protocol が繋がっているか）は
+    # 別の観点なので同時に出る＝集約しても node 側の検査は残ることの確認も兼ねる
+    "COM0005-craft": {"GEA_COM0005", "GEA_AN0003"},
+    # crafted fixture（E-GEAD-1104 派生）: Raw Data File を magic word none にして SR0003 を担保
+    "SR0003-craft": {"GEA_SR0003"},
 }
 
 # --- DB モード（opt-in / dradev） ---
@@ -79,6 +85,20 @@ def _db_rule_ids():
             if getattr(r, "requires_rdb", False) or getattr(r, "requires_auth", False)}
 
 
+def _migrate_sdrf_header(sdrf_text):
+    """dordb の SDRF ヘッダを**移行後の列名**に直す（test 専用）。
+
+    新 GEA の SDRF は raw データ列を MetaboBank と同じ `Raw Data File` にし、旧名 `Array Data File` は
+    移行で変換する。dordb には変換前のデータしか無いので、ここで列名だけ移行後の姿にしてから検証する
+    （変換しないと GEA_DF0001 等が「raw 列が無い」として出てしまい、テストの意味が無くなる）。
+    """
+    if not sdrf_text:
+        return sdrf_text
+    head, sep, rest = sdrf_text.partition("\n")
+    cells = ["Raw Data File" if c.strip() == "Array Data File" else c for c in head.split("\t")]
+    return "\t".join(cells) + sep + rest
+
+
 def _db_fired(key, account):
     """key が ESUB… は dordb から取得、それ以外は DATA/<key>.idf.txt/.sdrf.txt（crafted fixture）を DB モード検証。
     「DB 依存ルール ∪ error 級」の発火 rule_id を返す。"""
@@ -92,7 +112,7 @@ def _db_fired(key, account):
         td = Path(tempfile.mkdtemp())
         ip, sp = td / f"{key}.idf.txt", td / f"{key}.sdrf.txt"
         ip.write_text(idf or "", encoding="utf-8")
-        sp.write_text(sdrf or "", encoding="utf-8")
+        sp.write_text(_migrate_sdrf_header(sdrf or ""), encoding="utf-8")
     else:
         ip, sp = DATA / f"{key}.idf.txt", DATA / f"{key}.sdrf.txt"
     sub, pre = reader.parse(str(ip), str(sp), account=account)

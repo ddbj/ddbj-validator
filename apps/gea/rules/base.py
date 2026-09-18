@@ -9,18 +9,14 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     # --- 2026-09-18 追加（error のまま internal ignore）---
     "GEA_FV0004",  # Values of an experimental variable must vary (for compound+dose at least one must vary).
     "GEA_LC0001",  # Library source, layout, selection and strategy must be specified.
-    "GEA_DF0001",  # Either one of Array Data File and Array Data Matrix File nodes are required.
+    "GEA_DF0001",  # Either one of Raw Data File and Array Data Matrix File nodes are required.
     "GEA_REF0002",  # Referencing object is not registered in this submission account.
     "GEA_SR0012",  # A source should have a 'sample_title' characteristic/comment.
     "GEA_EX0001",  # An extract must have name specified.
     "GEA_SR0002",  # Undefined column exists.
     #
-    "GEA_PR0010",  # Nucleic acid labeling protocol is required for Micro-array submissions.
-    "GEA_PR0011",  # Nucleic acid hybridization to array protocol is required for Micro-array submissions.
-    "GEA_PR0012",  # Array scanning and feature extraction protocol is required for Micro-array submissions.
-    "GEA_PR0013",  # Sample collection protocol is required for submissions.
-    "GEA_PR0014",  # Nucleic acid extraction protocol is required for submissions.
-    "GEA_PR0015",  # Normalization data transformation protocol is required for submissions.
+    # GEA_PR0010-0015（submission type ごとの必須 protocol）は GEA_COM0005 に集約した（2026-09-18）。
+    "GEA_COM0005",  # Required Protocol Type is missing for the specified Submission Type.
     #
     "GEA_EX0003",  # An Extraction protocol must be included.
     "GEA_AN0004",  # A Hybridization protocol must be included.

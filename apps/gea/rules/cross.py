@@ -48,14 +48,14 @@ class GEA_REF0006(GeaRule):
 
 class GEA_REF0007(GeaRule):
     rule_id = "GEA_REF0007"; level = "error"; target = "SDRF"; only_type = "sequencing"
-    description = "Runs referenced in SDRF and Array Data File are not identical."
+    description = "Runs referenced in SDRF and Raw Data File are not identical."
 
     def validate(self, sub, context):
         if not sub.sdrf:
             return []
         runs = {v.strip().upper() for v in sub.sdrf.values("Comment[SRA_RUN]") if v.strip()}
-        # Array Data File のうち DRR 形式のものを Run 参照として抽出
-        adf = {v.strip().upper() for v in sub.sdrf.values("Array Data File")
+        # Raw Data File のうち DRR 形式のものを Run 参照として抽出
+        adf = {v.strip().upper() for v in sub.sdrf.values("Raw Data File")
                if re.match(r"^DRR\d+$", v.strip().upper())}
         if not runs or not adf:
             return []

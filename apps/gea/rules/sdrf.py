@@ -8,7 +8,7 @@ from common.text import is_blank as _empty
 from common.magetab.columns import matches_any as _matches_any, matches_any_header as _matches_any_header
 
 # 複数回出現が許される列（重複エラーの対象外）
-_REPEATABLE = {"Protocol REF", "Array Data File", "Derived Array Data File",
+_REPEATABLE = {"Protocol REF", "Raw Data File", "Array Data File", "Derived Array Data File",
                "Array Data Matrix File", "Derived Array Data Matrix File",
                "Parameter Value", "Comment", "Unit", "Term Source REF", "Term Accession Number",
                "Performer", "Date", "Factor Value"}
@@ -298,7 +298,7 @@ class GEA_AD0001(GeaRule):
 # ---------------- Data files ----------------
 class GEA_DF0001(GeaRule):
     rule_id = "GEA_DF0001"; level = "error"; target = "SDRF"
-    description = "Either one of Array Data File and Array Data Matrix File nodes are required."
+    description = "Either one of Raw Data File and Array Data Matrix File nodes are required."
 
     def validate(self, sub, context):
         if not sub.sdrf:
@@ -355,6 +355,41 @@ class GEA_RC0002(GeaRule):
                     dup.add(h)
                 seen.add(h)
         return [self.result(message=f"{self.description} ({', '.join(sorted(dup))})")] if dup else []
+
+
+#: raw データを伴わない投稿を通すための magic word。MetaboBank の `Raw Data File` と同じ書き方で、
+#: 列そのものを消すのではなく `none` と書く。`None` / `NONE` を実ファイル名として扱ってしまうと
+#: 気づけないため大文字小文字は区別しない。
+RAW_NONE_MAGIC_WORD = "none"
+
+
+class GEA_SR0003(GeaRule):
+    """raw data file に magic word `none` が書かれている行を知らせる（2026-09-18）。
+
+    raw データを伴わない投稿は正規の書き方なので error にはせず、「raw が無い投稿である」ことを
+    登録者とキュレータに気づかせる **warning**（MetaboBank の MB_SR0048 と同じ扱い・同じ message）。
+
+    対象列は `sdrf.raw_none_columns`（= `Raw Data File`）。旧名 `Array Data File` は移行で `Raw Data File` に
+    変換されるので対象にしない（変換後の列を見る）。
+    空セルは対象外（値が無いこと自体は別のルールの担当）。同名列が複数あってもセル単位で判定する。
+    """
+    rule_id = "GEA_SR0003"; level = "warning"; target = "SDRF"
+    description = "Raw data file is missing."
+
+    def validate(self, sub, context):
+        if not sub.sdrf:
+            return []
+        from common.magetab.biosample import assay_name
+        out = []
+        for col in _sdrf_def(context).get("raw_none_columns", []):
+            for i in sub.sdrf.col_indices(col):
+                for ri, row in enumerate(sub.sdrf.rows):
+                    v = (row[i] if i < len(row) else "").strip()
+                    if v.lower() == RAW_NONE_MAGIC_WORD:
+                        out.append(self.result(
+                            message=f"{self.description} ({col}: '{v}', row {ri + 1})",
+                            line=ri + 1, assay=assay_name(sub, ri)))
+        return out
 
 
 class GEA_UNDEF(GeaRule):
