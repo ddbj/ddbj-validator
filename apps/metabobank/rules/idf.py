@@ -283,12 +283,12 @@ class MB_IR0034(MbRule):
         req = _idf(context).get("required_experiment_types", {}).get(st)
         if not req:
             return []
-        have = set(sub.idf.get("Comment[Experiment type]"))
+        have = set(sub.idf.get("Comment[Experiment Type]"))
         miss = [t for t in req if t not in have]
         if not miss:
             return []
         return [self.result(message=f"{self.description} ({st}: {', '.join(miss)})",
-                            field="Comment[Experiment type]", value=", ".join(miss))]
+                            field="Comment[Experiment Type]", value=", ".join(miss))]
 
 
 class MB_IR0020(MbRule):
@@ -341,7 +341,7 @@ class MB_IR0038(MbRule):
     description = 'Related study should be specified as "DB:ID" or a MetaboBank accession (MTBKSnnn).'
 
     def validate(self, sub, context):
-        """Comment[Related study]（再解析元の study）が参照表記として読める形か。
+        """Comment[Related Study]（再解析元の study）が参照表記として読める形か。
 
         認める形は 2 つ（判定は base.is_valid_related_study に集約）。
         - **MetaboBank の study accession**: `MTBKSnnn`。同じ DB なので `MetaboBank:` prefix は
@@ -357,12 +357,12 @@ class MB_IR0038(MbRule):
             return []
         nulls = null_values(context)
         out = []
-        for v in sub.idf.get("Comment[Related study]"):
+        for v in sub.idf.get("Comment[Related Study]"):
             s = v.strip() if v else ""
             if not s or s in nulls or is_valid_related_study(s):
                 continue
-            out.append(self.result(message=f"{self.description} (Comment[Related study]: '{v}')",
-                                   field="Comment[Related study]", value=v))
+            out.append(self.result(message=f"{self.description} (Comment[Related Study]: '{v}')",
+                                   field="Comment[Related Study]", value=v))
         return out
 
 

@@ -61,7 +61,7 @@ class GEA_C0008(GeaRule):
 # ---------------- Comment / General ----------------
 class GEA_COM0001(GeaRule):
     rule_id = "GEA_COM0001"; level = "error"; target = "IDF/Comment"
-    description = "Non-empty value for 'Comment[AEExperimentType]' must be provided in IDF."
+    description = "Non-empty value for 'Comment[Experiment Type]' must be provided in IDF."
 
     def validate(self, sub, context):
         if not sub.idf:
@@ -123,6 +123,12 @@ class GEA_G0006(_DateFormat):
     description = "Experiment public release date must be in 'YYYY-MM-DD' format."
 
 
+class GEA_G0015(_DateFormat):
+    # Comment[Submission Date] も Public Release Date と同じ日付形式で検査する（2026-09-18）。
+    rule_id = "GEA_G0015"; level = "error"; target = "IDF/General"; _field = "Comment[Submission Date]"
+    description = "Submission date must be in 'YYYY-MM-DD' format."
+
+
 class GEA_G0007(GeaRule):
     rule_id = "GEA_G0007"; level = "error"; target = "IDF/General"
     description = "Reference to the SDRF file must be specified."
@@ -144,6 +150,12 @@ class GEA_G0012(GeaRule):
 
 
 class GEA_G0013(GeaRule):
+    """**deprecated**（validator に登録しない。2026-09-18）。
+
+    additional file（`Comment[AdditionalFile:TXT]`）の仕組みを新 GEA で廃止したため、検査対象が無くなった。
+    本番 DB の利用実績はテストアカウント dradev の 2 件のみだった。クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "GEA_G0013"; level = "error"; target = "IDF/General"
     description = "An additional file name must only contain alphanumeric characters, underscores, hyphens and dots."
 
@@ -280,42 +292,42 @@ class _ProtocolRequired(GeaRule):
 
 
 class GEA_PR0013(_ProtocolRequired):
-    rule_id = "GEA_PR0013"; _ptype = "sample collection protocol"
+    rule_id = "GEA_PR0013"; _ptype = "Sample collection protocol"
     description = "Sample collection protocol is required for submissions."
 
 
 class GEA_PR0014(_ProtocolRequired):
-    rule_id = "GEA_PR0014"; _ptype = "nucleic acid extraction protocol"
-    description = "Nucleic acid extraction protocol is required for submissions."
+    rule_id = "GEA_PR0014"; _ptype = "Extraction protocol"
+    description = "Extraction protocol is required for submissions."
 
 
 class GEA_PR0015(_ProtocolRequired):
-    rule_id = "GEA_PR0015"; _ptype = "normalization data transformation protocol"
-    description = "Normalization data transformation protocol is required for submissions."
+    rule_id = "GEA_PR0015"; _ptype = "Data processing protocol"
+    description = "Data processing protocol is required for submissions."
 
 
 class GEA_PR0010(_ProtocolRequired):
-    rule_id = "GEA_PR0010"; only_type = "microarray"; _ptype = "nucleic acid labeling protocol"
-    description = "Nucleic acid labeling protocol is required for Micro-array submissions."
+    rule_id = "GEA_PR0010"; only_type = "microarray"; _ptype = "Labeling protocol"
+    description = "Labeling protocol is required for Micro-array submissions."
 
 
 class GEA_PR0011(_ProtocolRequired):
-    rule_id = "GEA_PR0011"; only_type = "microarray"; _ptype = "nucleic acid hybridization to array protocol"
-    description = "Nucleic acid hybridization to array protocol is required for Micro-array submissions."
+    rule_id = "GEA_PR0011"; only_type = "microarray"; _ptype = "Hybridization protocol"
+    description = "Hybridization protocol is required for Micro-array submissions."
 
 
 class GEA_PR0012(_ProtocolRequired):
-    rule_id = "GEA_PR0012"; only_type = "microarray"; _ptype = "array scanning and feature extraction protocol"
-    description = "Array scanning and feature extraction protocol is required for Micro-array submissions."
+    rule_id = "GEA_PR0012"; only_type = "microarray"; _ptype = "Scanning protocol"
+    description = "Scanning protocol is required for Micro-array submissions."
 
 
 class GEA_PR0008(_ProtocolRequired):
-    rule_id = "GEA_PR0008"; only_type = "sequencing"; _ptype = "nucleic acid library construction protocol"
+    rule_id = "GEA_PR0008"; only_type = "sequencing"; _ptype = "Library construction protocol"
     description = "Library construction protocol is required for HTS submissions."
 
 
 class GEA_PR0009(_ProtocolRequired):
-    rule_id = "GEA_PR0009"; only_type = "sequencing"; _ptype = "nucleic acid sequencing protocol"
+    rule_id = "GEA_PR0009"; only_type = "sequencing"; _ptype = "Sequencing protocol"
     description = "Sequencing protocol is required for HTS submissions."
 
 
@@ -367,6 +379,29 @@ class GEA_CV_WARN(_CvBase):
     description = "Value is not in controlled terms."
 
 
+class GEA_COM0004(GeaRule):
+    """IDF と SDRF の両方に現れる項目の統制語彙（現在は Comment[tissue_preservation_method]）。
+
+    CV は `controlled_terms.idf_sdrf.error` に置く。`controlled_terms.idf.error`（GEA_COM0002 が全キーを回す）
+    に置くと同じ違反が COM0002 と二重に出てしまうため、スコープを分けている。
+    IDF はフィールド値、SDRF は同名の列の値を見る。どちら側で見つけたかを message に付ける。
+    """
+    rule_id = "GEA_COM0004"; level = "error"; target = "IDF/SDRF"
+    description = "Value is not in controlled terms."
+
+    def validate(self, sub, context):
+        cv = ((context.definitions or {}).get("controlled_terms", {})
+              .get("idf_sdrf", {}).get("error", {}))
+        out = []
+        for field_name, allowed in cv.items():
+            for where, values in (("IDF", sub.idf.get(field_name) if sub.idf else []),
+                                  ("SDRF", sub.sdrf.values(field_name) if sub.sdrf else [])):
+                bad = sorted({v.strip() for v in values if v.strip() and v.strip() not in allowed})
+                for v in bad:
+                    out.append(self.result(message=f"{self.description} ({where} {field_name}: '{v}')"))
+        return out
+
+
 class _IdfRegex(GeaRule):
     """value_formats のうち IDF 側フィールドの形式検査。"""
     rule_id = "GEA_REGEX0001"; level = "error"; target = "IDF"
@@ -390,8 +425,8 @@ class _IdfRegex(GeaRule):
 
 
 class GEA_REGEX0001(_IdfRegex):
-    rule_id = "GEA_REGEX0001"; _fields = ("Comment[GEAAccession]",)
-    description = "Format Error 'Comment[GEAAccession]'"
+    rule_id = "GEA_REGEX0001"; _fields = ("Comment[GEA Accession]",)
+    description = "Format Error 'Comment[GEA Accession]'"
 
 
 class GEA_REGEX0002(_IdfRegex):

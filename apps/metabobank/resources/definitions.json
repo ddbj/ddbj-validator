@@ -2,7 +2,7 @@
   "idf": {
     "fields": [
       "MAGE-TAB Version",
-      "Comment[MetaboBank accession]",
+      "Comment[MetaboBank Accession]",
       "Study Title",
       "Study Description",
       "Experimental Design",
@@ -31,26 +31,26 @@
       "Term Source File",
       "Term Source Version",
       "SDRF File",
-      "Comment[Study type]",
-      "Comment[Experiment type]",
-      "Comment[Submission type]",
+      "Comment[Study Type]",
+      "Comment[Experiment Type]",
+      "Comment[Submission Type]",
       "Comment[BioProject]",
       "Comment[Reanalysis of]",
       "Comment[Reanalyzed by]",
-      "Comment[Related study]",
+      "Comment[Related Study]",
       "Comment[Contributor]",
       "Comment[Submission Date]",
       "Comment[Last Update Date]"
     ],
     "single_value": [
       "MAGE-TAB Version",
-      "Comment[MetaboBank accession]",
+      "Comment[MetaboBank Accession]",
       "Study Title",
       "Study Description",
       "Date of Experiment",
       "Public Release Date",
       "SDRF File",
-      "Comment[Submission type]",
+      "Comment[Submission Type]",
       "Comment[BioProject]",
       "Comment[Contributor]",
       "Comment[Submission Date]",
@@ -64,7 +64,7 @@
       "Public Release Date",
       "Term Source Name",
       "SDRF File",
-      "Comment[Study type]"
+      "Comment[Study Type]"
     ],
     "required_error": [
       "MAGE-TAB Version",
@@ -78,9 +78,9 @@
       "Protocol Name",
       "Protocol Type",
       "Protocol Description",
-      "Comment[Study type]",
-      "Comment[Experiment type]",
-      "Comment[Submission type]",
+      "Comment[Study Type]",
+      "Comment[Experiment Type]",
+      "Comment[Submission Type]",
       "Comment[BioProject]"
     ],
     "required_warning": [],
@@ -99,9 +99,9 @@
       "Person Roles",
       "Protocol Name",
       "Protocol Type",
-      "Comment[Study type]",
-      "Comment[Experiment type]",
-      "Comment[Submission type]"
+      "Comment[Study Type]",
+      "Comment[Experiment Type]",
+      "Comment[Submission Type]"
     ],
     "autofix_null_to_empty": [
       "Experimental Factor Name",
@@ -1025,7 +1025,7 @@
         "MAGE-TAB Version": [
           "1.1"
         ],
-        "Comment[Study type]": [
+        "Comment[Study Type]": [
           "targeted metabolite profiling",
           "untargeted metabolite profiling",
           "metabolic fingerprinting",
@@ -1090,7 +1090,7 @@
           "replicate design",
           "software variation design"
         ],
-        "Comment[Experiment type]": [
+        "Comment[Experiment Type]": [
           "capillary electrophoresis-mass spectrometry",
           "data-dependent acquisition",
           "data-independent acquisition",
@@ -1125,7 +1125,7 @@
           "three-dimensional nuclear magnetic resonance spectroscopy",
           "two-dimensional nuclear magnetic resonance spectroscopy"
         ],
-        "Comment[Submission type]": [
+        "Comment[Submission Type]": [
           "LC-MS",
           "LC-DAD-MS",
           "GC-MS",

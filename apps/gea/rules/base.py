@@ -22,19 +22,21 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     "GEA_PR0014",  # Nucleic acid extraction protocol is required for submissions.
     "GEA_PR0015",  # Normalization data transformation protocol is required for submissions.
     #
-    "GEA_EX0003",  # A nucleic acid extraction protocol must be included.
-    "GEA_AN0004",  # A nucleic acid hybridization to array protocol must be included.
-    "GEA_SR0008",  # A growth, treatment or sample collection protocol must be included.
-    "GEA_LE0005",  # A nucleic acid labeling protocol must be included.
+    "GEA_EX0003",  # An Extraction protocol must be included.
+    "GEA_AN0004",  # A Hybridization protocol must be included.
+    "GEA_SR0008",  # A Growth, Treatment or Sample collection protocol must be included.
+    "GEA_LE0005",  # A Labeling protocol must be included.
     #
-    "GEA_DADMN0004",  # A normalization data transformation protocol that describes the analysis methods used to generate the processed data matrix file must be included.
+    "GEA_DADMN0004",  # A Data processing protocol that describes the analysis methods used to generate the processed data matrix file must be included.
     #
-    "GEA_DADN0004",  # A normalization data transformation protocol that describes the analysis methods used to generate the processed data file(s) must be included.
+    "GEA_DADN0004",  # A Data processing protocol that describes the analysis methods used to generate the processed data file(s) must be included.
     #
     "GEA_LE0002",  # A labeled extract must have name specified.
     "GEA_LE0004",  # A labeled extract must have 'Label' attribute specified.
     "GEA_AN0006",  # For an array assay the incoming nodes must be 'Labeled Extract' nodes only.
     "GEA_G0011",  # Array Design File (or Array Design REF) is required for micro-array submissions.
+    #
+    "GEA_COM0004",  # Value is not in controlled terms.（Comment[tissue_preservation_method]。2026-09-18）
 })
 
 

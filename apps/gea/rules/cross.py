@@ -25,6 +25,11 @@ class GEA_REF0001(GeaRule):
 
 
 class GEA_REF0006(GeaRule):
+    """IDF と SDRF の array design の突き合わせ。
+
+    **IDF の `Comment[Array Design REF]` は 2026-09-18 に廃止**（array design は SDRF の列だけ）。
+    旧い submission にはまだ両方あるので、**IDF 側に値があるときだけ**比べる（新しい形では何も出ない）。
+    """
     rule_id = "GEA_REF0006"; level = "error"; target = "IDF/SDRF"; only_type = "microarray"
     description = "Array designs referenced in IDF and SDRF are not identical."
 
@@ -32,9 +37,9 @@ class GEA_REF0006(GeaRule):
         if not sub.idf or not sub.sdrf:
             return []
         idf_ad = {v.strip() for v in sub.idf.get("Comment[Array Design REF]") if v.strip()}
-        sdrf_ad = {v.strip() for v in sub.sdrf.values("Array Design REF") if v.strip()}
-        if not idf_ad and not sdrf_ad:
+        if not idf_ad:                                   # 新しい形（IDF に array design が無い）は対象外
             return []
+        sdrf_ad = {v.strip() for v in sub.sdrf.values("Array Design REF") if v.strip()}
         if idf_ad != sdrf_ad:
             diff = (idf_ad ^ sdrf_ad)
             return [self.result(message=f"{self.description} ({', '.join(sorted(diff))})")]

@@ -1,5 +1,5 @@
 MAGE-TAB Version	1.1
-Comment[MetaboBank accession]	MTBKS240
+Comment[MetaboBank Accession]	MTBKS240
 Study Title	A mass spectrometric method for quantifying tyrosine of wild type flies and infertile flies upon tyrosine restriction
 Study Description	Female flies (Drosophila melanogaster) were fed with complete holidic medium or tyrosine restricted medium for 9 days. Then whole body metabolites were extracted to analyze how tyrosine was affected.
 
@@ -32,11 +32,11 @@ Term Source Version
 
 SDRF File	MTBKS240.sdrf.txt
 
-Comment[Study type]	targeted metabolite profiling
-Comment[Experiment type]	liquid chromatography-mass spectrometry
-Comment[Submission type]	LC-MS
+Comment[Study Type]	targeted metabolite profiling
+Comment[Experiment Type]	liquid chromatography-mass spectrometry
+Comment[Submission Type]	LC-MS
 Comment[BioProject]	PRJDB18093
-Comment[Related study]
+Comment[Related Study]
 Comment[Contributor]
 Comment[Submission Date]	2024-05-21
 Comment[Last Update Date]	2024-05-24

@@ -33,9 +33,9 @@ _BASE_IDF = {
     "Protocol Name": ["P1"],
     "Protocol Type": ["Extraction"],
     "Protocol Description": ["desc"],
-    "Comment[Study type]": ["metabolomics"],
-    "Comment[Experiment type]": ["untargeted metabolites"],
-    "Comment[Submission type]": ["LC-MS"],
+    "Comment[Study Type]": ["metabolomics"],
+    "Comment[Experiment Type]": ["untargeted metabolites"],
+    "Comment[Submission Type]": ["LC-MS"],
     # MB_IR0005 の必須項目に Comment[BioProject] を追加したので土台に含める
     "Comment[BioProject]": ["PRJDB00000"],
 }
@@ -259,7 +259,7 @@ def test_autofix_null_in_other_field_stays_missing(tmp_path):
 def _proto_sub(submission_type, protocol_type, protocol_parameters):
     """プロトコル 1 つだけを持つ IDF（MB_IR0018 の判定に必要な最小形）。"""
     fields = {
-        "Comment[Submission type]": [submission_type],
+        "Comment[Submission Type]": [submission_type],
         "Protocol Name": ["P1"],
         "Protocol Type": [protocol_type],
         "Protocol Parameters": [protocol_parameters],
@@ -309,7 +309,7 @@ def test_ir0018_fires_when_a_required_parameter_is_defined():
 
 def _fv_sub(rows_of_values):
     """Factor Value[treatment] 列を持つ SDRF（値は行ごとに指定）。"""
-    fields = {"Comment[Submission type]": ["LC-MS"],
+    fields = {"Comment[Submission Type]": ["LC-MS"],
               "Experimental Factor Name": ["treatment"]}
     header = ["Source Name", "Factor Value[treatment]"]
     rows = [[f"s{i + 1}", v] for i, v in enumerate(rows_of_values)]
@@ -371,7 +371,7 @@ def test_sr0047_is_internal_ignore():
 
 def _unnamed_sub(idf_name=None, values=("a", "b")):
     """`Factor Value[]`（[] の中身が空）を持つ SDRF。"""
-    fields = {"Comment[Submission type]": ["LC-MS"]}
+    fields = {"Comment[Submission Type]": ["LC-MS"]}
     if idf_name:
         fields["Experimental Factor Name"] = [idf_name]
     return Submission(idf=Idf(fields=fields, field_order=list(fields)),
@@ -435,21 +435,21 @@ def test_ir0023_null_to_empty_field_is_autofix():
 
 def test_ir0023_not_recommended_null_becomes_missing():
     """非推奨 null（NA 等）は missing への補正提案。対象は任意項目のみ。"""
-    res = _ir0023(_idf_only({"Comment[Related study]": ["NA"]}))
+    res = _ir0023(_idf_only({"Comment[Related Study]": ["NA"]}))
     assert len(res) == 1
     assert res[0]["new_value"] == "missing" and "Suggested: 'missing'" in res[0]["message"]
 
 
 def test_ir0023_normalizes_accepted_null_spelling():
     """推奨 null の表記揺れ（Not Applicable）も正規表記へ揃える（bs の (a) 相当）。"""
-    res = _ir0023(_idf_only({"Comment[Related study]": ["Not Applicable"]}))
+    res = _ir0023(_idf_only({"Comment[Related Study]": ["Not Applicable"]}))
     assert len(res) == 1
     assert res[0]["new_value"] == "not applicable"
 
 
 def test_ir0023_already_canonical_null_is_warning_without_autofix():
     """既に正規表記の null は直すものが無いので warning のみ（autofix は付けない）。"""
-    res = _ir0023(_idf_only({"Comment[Related study]": ["missing"]}))
+    res = _ir0023(_idf_only({"Comment[Related Study]": ["missing"]}))
     assert len(res) == 1 and not res[0].get("autofix")
 
 
@@ -459,23 +459,23 @@ def test_ir0023_skips_mandatory_fields():
 
 
 def test_ir0023_ignores_real_values():
-    assert _ir0023(_idf_only({"Comment[Related study]": ["MTBKS123"]})) == []
+    assert _ir0023(_idf_only({"Comment[Related Study]": ["MTBKS123"]})) == []
 
 
 def test_write_fixed_matches_ir0023_proposal(tmp_path):
     """fixed/ の値が MB_IR0023 の提案（new_value）と一致すること（判定を共用しているため）。"""
-    got = _write_and_read(tmp_path, ["Comment[Related study]\tNot Applicable"])
-    assert got == ["Comment[Related study]\tnot applicable"]
+    got = _write_and_read(tmp_path, ["Comment[Related Study]\tNot Applicable"])
+    assert got == ["Comment[Related Study]\tnot applicable"]
 
 
 # --- MB_IR0038 / MB_CR0004: 再解析元 study の参照表記 -----------------------
 #
-# Comment[Related study] は `DB:ID` 形式で書く。MetaboBank の study accession は同じ DB なので
+# Comment[Related Study] は `DB:ID` 形式で書く。MetaboBank の study accession は同じ DB なので
 # `MetaboBank:` prefix を付けても付けなくてもよい（特別扱い）。DB 名の CV 化は未実施で、
 # キュレータが入れる項目なのでチェックは緩く warning 止まり。
 
 def _related(*values):
-    return _idf_only({"Comment[Related study]": list(values)})
+    return _idf_only({"Comment[Related Study]": list(values)})
 
 
 @pytest.mark.parametrize("v", [
@@ -531,7 +531,7 @@ def test_cr0004_matches_prefixed_metabobank_accession():
     prefix の有無で不一致と判定されると、正しい書き方をしたのに warning が出てしまう。
     """
     fields = {k: list(v) for k, v in _BASE_IDF.items()}
-    fields["Comment[Related study]"] = ["MetaboBank:MTBKS123"]
+    fields["Comment[Related Study]"] = ["MetaboBank:MTBKS123"]
     sub = Submission(idf=Idf(fields=fields, field_order=list(fields)),
                      sdrf=Sdrf(header=["Source Name", "Comment[Reanalysis of]"],
                                rows=[["s1", "MTBKS123:label"]]))
@@ -540,7 +540,7 @@ def test_cr0004_matches_prefixed_metabobank_accession():
 
 def test_cr0004_still_reports_a_real_mismatch():
     fields = {k: list(v) for k, v in _BASE_IDF.items()}
-    fields["Comment[Related study]"] = ["MetaboBank:MTBKS123"]
+    fields["Comment[Related Study]"] = ["MetaboBank:MTBKS123"]
     sub = Submission(idf=Idf(fields=fields, field_order=list(fields)),
                      sdrf=Sdrf(header=["Source Name", "Comment[Reanalysis of]"],
                                rows=[["s1", "MTBKS999:label"]]))

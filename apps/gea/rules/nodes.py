@@ -53,45 +53,45 @@ class _IncomingProtocol(GeaRule):
 
 class GEA_EX0003(_IncomingProtocol):
     rule_id = "GEA_EX0003"; level = "error"; target = "SDRF/ExtractNode"; only_type = "microarray"
-    _node = "Extract Name"; _ptypes = ("nucleic acid extraction protocol",)
-    description = "A nucleic acid extraction protocol must be included."
+    _node = "Extract Name"; _ptypes = ("Extraction protocol",)
+    description = "An Extraction protocol must be included."
 
 
 class GEA_EX0004(_IncomingProtocol):
     rule_id = "GEA_EX0004"; level = "error"; target = "SDRF/ExtractNode"; only_type = "sequencing"
-    _node = "Extract Name"; _ptypes = ("nucleic acid library construction protocol",)
-    description = "A nucleic acid library construction protocol must be included."
+    _node = "Extract Name"; _ptypes = ("Library construction protocol",)
+    description = "A Library construction protocol must be included."
 
 
 class GEA_LE0005(_IncomingProtocol):
     rule_id = "GEA_LE0005"; level = "error"; target = "SDRF/LabeledExtractNode"; only_type = "microarray"
-    _node = "Labeled Extract Name"; _ptypes = ("nucleic acid labeling protocol",)
-    description = "A nucleic acid labeling protocol must be included."
+    _node = "Labeled Extract Name"; _ptypes = ("Labeling protocol",)
+    description = "A Labeling protocol must be included."
 
 
 class GEA_AN0003(_IncomingProtocol):
     rule_id = "GEA_AN0003"; level = "error"; target = "SDRF/ArrayNode"; only_type = "sequencing"
-    _node = "Assay Name"; _ptypes = ("nucleic acid sequencing protocol",)
-    description = "A nucleic acid sequencing protocol must be included."
+    _node = "Assay Name"; _ptypes = ("Sequencing protocol",)
+    description = "A Sequencing protocol must be included."
 
 
 class GEA_AN0004(_IncomingProtocol):
     rule_id = "GEA_AN0004"; level = "error"; target = "SDRF/ArrayNode"; only_type = "microarray"
-    _node = "Assay Name"; _ptypes = ("nucleic acid hybridization to array protocol",)
-    description = "A nucleic acid hybridization to array protocol must be included."
+    _node = "Assay Name"; _ptypes = ("Hybridization protocol",)
+    description = "A Hybridization protocol must be included."
 
 
 class GEA_DADN0004(_IncomingProtocol):
     rule_id = "GEA_DADN0004"; level = "error"; target = "SDRF/DerivedArrayDataNode"
-    _node = "Derived Array Data File"; _ptypes = ("normalization data transformation protocol", "high throughput sequence alignment protocol")
-    description = ("A normalization data transformation protocol that describes the analysis methods "
+    _node = "Derived Array Data File"; _ptypes = ("Data processing protocol",)
+    description = ("A Data processing protocol that describes the analysis methods "
                    "used to generate the processed data file(s) must be included.")
 
 
 class GEA_DADMN0004(_IncomingProtocol):
     rule_id = "GEA_DADMN0004"; level = "error"; target = "SDRF/DerivedArrayDataMatrixNode"
-    _node = "Derived Array Data Matrix File"; _ptypes = ("normalization data transformation protocol", "high throughput sequence alignment protocol")
-    description = ("A normalization data transformation protocol that describes the analysis methods "
+    _node = "Derived Array Data Matrix File"; _ptypes = ("Data processing protocol",)
+    description = ("A Data processing protocol that describes the analysis methods "
                    "used to generate the processed data matrix file must be included.")
 
 
@@ -221,17 +221,19 @@ class GEA_FV0004(GeaRule):
 
 # ---------------- Array Design File 必須（microarray）----------------
 class GEA_G0011(GeaRule):
-    rule_id = "GEA_G0011"; level = "error"; target = "IDF/General"; only_type = "microarray"
+    """array design は **SDRF の `Array Design REF` 列**で宣言する（2026-09-18。IDF の `Comment[Array Design REF]` は新規では書かない）。
+
+    旧い submission は IDF 側にしか持たないことがあるので、**どちらかにあれば可**（後方互換）。
+    """
+    rule_id = "GEA_G0011"; level = "error"; target = "SDRF"; only_type = "microarray"
     description = "Array Design File (or Array Design REF) is required for micro-array submissions."
 
     def validate(self, sub, context):
-        if not sub.idf:
+        sdrf_ad = any(not _empty(v) for v in sub.sdrf.values("Array Design REF")) if sub.sdrf else False
+        legacy_idf_ad = any(not _empty(v) for v in sub.idf.get("Comment[Array Design REF]")) if sub.idf else False
+        if not sub.sdrf and not sub.idf:
             return []
-        idf_ad = any(not _empty(v) for v in sub.idf.get("Comment[Array Design REF]"))
-        sdrf_ad = False
-        if sub.sdrf:
-            sdrf_ad = any(not _empty(v) for v in sub.sdrf.values("Array Design REF"))
-        return [] if (idf_ad or sdrf_ad) else [self.result()]
+        return [] if (sdrf_ad or legacy_idf_ad) else [self.result()]
 
 
 # ---------------- 属性名（attribute should have name）----------------
@@ -339,8 +341,8 @@ class GEA_DADMN0001(_ColPresentButEmpty):
 # ---------------- Source に growth/treatment/sample collection protocol ----------------
 class GEA_SR0008(GeaRule):
     rule_id = "GEA_SR0008"; level = "error"; target = "SDRF/SourceNode"
-    description = "A growth, treatment or sample collection protocol must be included."
-    _accept = ("growth protocol", "treatment protocol", "sample collection protocol")
+    description = "A Growth, Treatment or Sample collection protocol must be included."
+    _accept = ("Growth protocol", "Treatment protocol", "Sample collection protocol")
 
     def validate(self, sub, context):
         if not sub.idf:

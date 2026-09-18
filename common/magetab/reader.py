@@ -71,11 +71,27 @@ def parse_sdrf(path, sdrf_cls=Sdrf):
     return sdrf
 
 
+
+def rename_idf_fields(idf, mapping):
+    """旧い IDF フィールド名を今の名前に読み替える（in-place）。
+
+    MAGE-TAB のフィールド名を GEA / MetaboBank で揃えた（2026-09-18）。**既に登録されている
+    IDF は旧名のまま**なので、読んだ直後にここで名前だけ差し替える。値・並び・空行の情報は保つ。
+    """
+    if idf is None or not mapping:
+        return idf
+    ren = lambda n: mapping.get(n, n)                                   # noqa: E731
+    idf.fields = {ren(k): v for k, v in idf.fields.items()}
+    idf.field_order = [ren(n) for n in idf.field_order]
+    idf.blank_before = {ren(n) for n in idf.blank_before}
+    idf.duplicate_fields = [ren(n) for n in idf.duplicate_fields]
+    return idf
+
 # DB 種別（flavor）判定用の IDF 特徴フィールド。accession Comment に加え、accession 未採番の
 # 新規 submission でも判別できるよう title/description の構造フィールドも含める。
 _FLAVOR_MARKERS = {
-    "gea": {"Comment[GEAAccession]", "Investigation Title", "Experiment Description"},
-    "metabobank": {"Comment[MetaboBank accession]", "Study Title", "Study Description"},
+    "gea": {"Comment[GEA Accession]", "Investigation Title", "Experiment Description"},
+    "metabobank": {"Comment[MetaboBank Accession]", "Study Title", "Study Description"},
 }
 _FLAVOR_LABEL = {"gea": "GEA", "metabobank": "MetaboBank"}
 

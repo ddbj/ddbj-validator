@@ -23,7 +23,9 @@ class Validator(SimpleValidator):
             I.GEA_C0001(), I.GEA_C0002(), I.GEA_C0008(),
             I.GEA_COM0001(),
             I.GEA_G0001(), I.GEA_G0002(), I.GEA_G0009(), I.GEA_G0004(), I.GEA_G0006(),
-            I.GEA_G0007(), I.GEA_G0012(), I.GEA_G0013(),
+            I.GEA_G0015(),
+            # GEA_G0013 は deprecated（2026-09-18。additional file 廃止で検査対象が無い）のため登録しない。
+            I.GEA_G0007(), I.GEA_G0012(),
             I.GEA_ED0001(), I.GEA_EF0001(), I.GEA_EF0003(),
             I.GEA_PB0002(),
             I.GEA_PR0001(), I.GEA_PR0002(), I.GEA_PR0003(), I.GEA_PR0005(), I.GEA_PR0006(),
@@ -31,13 +33,14 @@ class Validator(SimpleValidator):
             I.GEA_PR0010(), I.GEA_PR0011(), I.GEA_PR0012(),
             I.GEA_PR0008(), I.GEA_PR0009(),
             I.GEA_RC0001(), I.GEA_MAN0001(),
-            I.GEA_CV_ERR(), I.GEA_CV_WARN(),
+            I.GEA_CV_ERR(), I.GEA_CV_WARN(), I.GEA_COM0004(),
             I.GEA_REGEX0001(), I.GEA_REGEX0002(), I.GEA_REGEX0003(), I.GEA_REGEX0004(),
             # --- SDRF ---
             S.GEA_SR0001(), S.GEA_SR0004(), S.GEA_SR0009(), S.GEA_SR0005(), S.GEA_SR0006(), S.GEA_SR0012(),
             S.GEA_EX0001(), S.GEA_EX0002(),
             # GEA_AN0002 / GEA_AN0005 は deprecated（2026-09-18。Technology Type 列の有無・array assay 強制を廃止）のため登録しない。
-            S.GEA_AN0001(), S.GEA_TT0001(), S.GEA_AN0009(),
+            # GEA_TT0001 / GEA_AN0009 は deprecated（2026-09-18。SDRF Technology Type 廃止）のため登録しない。
+            S.GEA_AN0001(),
             S.GEA_MT0004(),
             S.GEA_LE0002(), S.GEA_LE0004(), S.GEA_LE0001(), S.GEA_AD0001(), S.GEA_AD0004(),
             S.GEA_DF0001(), S.GEA_DF0002(),

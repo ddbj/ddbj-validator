@@ -21,8 +21,8 @@ _HEADER = ["Source Name", "Protocol REF", "Extract Name", "Protocol REF", "Assay
 
 
 def _sub(rows):
-    idf = Idf(fields={"Comment[Submission type]": ["LC-MS"]},
-              field_order=["Comment[Submission type]"])
+    idf = Idf(fields={"Comment[Submission Type]": ["LC-MS"]},
+              field_order=["Comment[Submission Type]"])
     return Submission(idf=idf, sdrf=Sdrf(header=list(_HEADER), rows=[list(r) for r in rows]))
 
 
@@ -88,8 +88,8 @@ def test_no_data_row_is_silent():
 
 
 def test_absent_protocol_ref_column_is_left_to_sr0004():
-    idf = Idf(fields={"Comment[Submission type]": ["LC-MS"]},
-              field_order=["Comment[Submission type]"])
+    idf = Idf(fields={"Comment[Submission Type]": ["LC-MS"]},
+              field_order=["Comment[Submission Type]"])
     sub = Submission(idf=idf, sdrf=Sdrf(header=["Source Name", "Assay Name"],
                                         rows=[["s1", "a1"]]))
     assert _sr0049(sub) == []
@@ -154,8 +154,8 @@ def test_null_value_and_real_name_are_not_duplicates():
 
 
 def test_absent_assay_name_column_is_left_to_sr0004():
-    idf = Idf(fields={"Comment[Submission type]": ["LC-MS"]},
-              field_order=["Comment[Submission type]"])
+    idf = Idf(fields={"Comment[Submission Type]": ["LC-MS"]},
+              field_order=["Comment[Submission Type]"])
     sub = Submission(idf=idf, sdrf=Sdrf(header=["Source Name", "Protocol REF"],
                                         rows=[["s1", "P1"], ["s1", "P1"]]))
     assert _sr0050(sub) == []

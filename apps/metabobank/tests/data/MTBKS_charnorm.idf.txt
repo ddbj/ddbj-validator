@@ -1,5 +1,5 @@
 MAGE-TAB Version	1.1
-Comment[MetaboBank accession]	MTBKS210
+Comment[MetaboBank Accession]	MTBKS210
 Study Title	Detection of ALC in royal food
 Study Description	To confirm whether a functional compound with small molecular weight (for example acetyl-L-carnitine) is contained in king food and queen food.
 
@@ -31,11 +31,11 @@ Term Source Version
 
 SDRF File	MTBKS210.sdrf.txt
 
-Comment[Study type]	metabolite target analysis
-Comment[Experiment type]	flow injection analysis-mass spectrometry
-Comment[Submission type]	FIA-MS
+Comment[Study Type]	metabolite target analysis
+Comment[Experiment Type]	flow injection analysis-mass spectrometry
+Comment[Submission Type]	FIA-MS
 Comment[BioProject]	PRJDB14286
-Comment[Related study]
+Comment[Related Study]
 Comment[Contributor]	Takumi Sakamoto, A. S. M. Waliullah
 Comment[Submission Date]	2022-10-01
 Comment[Last Update Date]	2023-07-06

@@ -127,7 +127,7 @@ def annotation_pattern(rule_id):
 
 # --- 再解析元 study の参照表記（MB_IR0038 / MB_CR0004 で共用）---------------
 #
-# Comment[Related study] は `DB:ID` 形式で書く。ただし MetaboBank の study accession
+# Comment[Related Study] は `DB:ID` 形式で書く。ただし MetaboBank の study accession
 # （MTBKS＋自然数）は **同じ DB なので特別扱い**で、`MetaboBank:` prefix を付けても
 # 付けなくてもよい。DB 名の CV 化は未実施で、キュレータが入れる項目なので緩く見る。
 #
@@ -150,7 +150,7 @@ def mtbks_accession(value):
 
 
 def is_valid_related_study(value):
-    """Comment[Related study] の値として認める形か（MTBKS 形式 または DB:ID 形式）。"""
+    """Comment[Related Study] の値として認める形か（MTBKS 形式 または DB:ID 形式）。"""
     v = (value or "").strip()
     return bool(v) and (mtbks_accession(v) is not None or bool(DB_ID_RE.match(v)))
 

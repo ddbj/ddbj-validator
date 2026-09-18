@@ -1,5 +1,5 @@
 MAGE-TAB Version	1.1
-Comment[MetaboBank accession]	MTBKS230
+Comment[MetaboBank Accession]	MTBKS230
 Study Title	A mass spectrometric method for quantifying methionine related metabolites in hemolymph of Canton-S flies
 Study Description	Female flies (Drosophila melanogaster) of Canton-S were fed with normal yeast based diet. Then hemolymph metabolites were extracted to analyze the level of methionine and methionine sulfoxide.
 
@@ -32,11 +32,11 @@ Term Source Version
 
 SDRF File	MTBKS230.sdrf.txt
 
-Comment[Study type]	targeted metabolite profiling
-Comment[Experiment type]	liquid chromatography-mass spectrometry
-Comment[Submission type]	LC-MS
+Comment[Study Type]	targeted metabolite profiling
+Comment[Experiment Type]	liquid chromatography-mass spectrometry
+Comment[Submission Type]	LC-MS
 Comment[BioProject]	PRJDB16683
-Comment[Related study]
+Comment[Related Study]
 Comment[Contributor]
 Comment[Submission Date]	2023-10-04
 Comment[Last Update Date]	2023-10-20
