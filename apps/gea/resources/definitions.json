@@ -968,5 +968,9 @@
     "Sequencing": "sequencing",
     "Xenium": "xenium",
     "Other": "other"
+  },
+  "db_submission_type_map": {
+    "1": "Microarray",
+    "2": "Sequencing"
   }
 }

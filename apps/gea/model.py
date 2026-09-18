@@ -27,23 +27,21 @@ class Idf(BaseIdf):
 
 class GeaSubmission(Submission):
     def submission_type(self, definitions):
-        """microarray / sequencing / xenium / other を判定。次の順に見る（2026-09-18）。
+        """microarray / sequencing / xenium / other を判定。
 
-        1. IDF の `Comment[Submission Type]`（submission_type_map）
-        2. 無ければ IDF の `Comment[Experiment Type]`（experiment_types の technology）
-           ＝ `Comment[Submission Type]` を持たない旧 IDF のための後方互換
+        判定根拠は **IDF の `Comment[Submission Type]` だけ**（`submission_type_map` で変換）。
+        値が無い・CV 外なら `other` を返す。
 
-        SDRF の `Technology Type` は廃止した（2026-09-18）。submission type は IDF 側だけで決める。
+        - SDRF の `Technology Type` は廃止した（2026-09-18）。
+        - `Comment[Experiment Type]` からの**推定はしない**（2026-09-18）。推定すると、移行で
+          submission type を付け忘れた submission が experiment type 次第で microarray / sequencing と
+          みなされ、本来と違うルール群で検査されてしまう。付いていなければ `other`（= Common の
+          ルールだけ）に倒すほうが安全。
         """
         defs = definitions or {}
         if self.idf:
-            # 1. Comment[Submission Type]（IDF）
             smap = defs.get("submission_type_map", {})
             st = (self.idf.first("Comment[Submission Type]") or "").strip()
             if smap.get(st):
                 return smap[st]
-            # 2. Comment[Experiment Type]（IDF）＝旧 IDF 互換
-            info = defs.get("experiment_types", {}).get(self.idf.ae_experiment_type)
-            if info and info.get("technology"):
-                return info["technology"]
         return "other"

@@ -15,5 +15,6 @@ Protocol Type	sample collection protocol	nucleic acid extraction protocol	nuclei
 Protocol Description	Arabidopsis hypocotyl explants were excised from 12-day-old seedlings and cultured on callus-inducing medium (CIM) for 0, 12, 24, and 48 hours under continuous light at 28 degrees C. Samples were harvested at each time point and immediately frozen in liquid nitrogen.	Total RNA was extracted using the RNeasy Plant Mini Kit (Qiagen) according to the manufacturer's protocol.	RNA-seq libraries were constructed using the NEBNext Ultra II Directional RNA Library Prep Kit for Illumina (New England Biolabs) according to the manufacturer's instructions, including poly(A) mRNA enrichment.	The libraries were sequenced on an Illumina NovaSeq 6000 platform to generate 150-bp paired-end reads.	Raw read counts were generated using featureCounts (v2.0.3). TPM values were used for normalization.
 SDRF File	E-GEAD-1114.sdrf.txt
 Comment[AEExperimentType]	RNA-seq of coding RNA
+Comment[Submission Type]	Sequencing
 Comment[BioProject]	PRJDB35886
 Comment[Last Update Date]	2025-10-01

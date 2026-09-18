@@ -4,7 +4,7 @@ definitions.json の idf.* / value_formats を data 駆動で参照。
 experiment_type（Both / Micro-array / HTS）は only_type（None/microarray/sequencing）で表現。
 """
 import re
-from apps.gea.rules.base import GeaRule, null_values
+from apps.gea.rules.base import GeaRule, submission_type_value, null_values
 from common.text import is_blank as _empty
 
 _DATE_OK = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -167,6 +167,30 @@ class GEA_G0013(GeaRule):
             if v and v.strip() and not re.fullmatch(r"[A-Za-z0-9._-]+", v.strip()):
                 out.append(self.result(message=f"{self.description} ('{v}')"))
         return out
+
+
+class GEA_G0016(GeaRule):
+    """`Comment[Submission Type]` と `Comment[Experiment Type]` の整合。
+
+    submission type ごとに選べる experiment type は `idf.allowed_experiment_types` に定義してある。
+    submission type が分からない（IDF にも DB にも無い）ときや、その type の選択肢が定義されていない
+    ときは検査しない（投稿者に直しようが無いため）。
+    """
+    rule_id = "GEA_G0016"; level = "error"; target = "IDF"
+    description = "Experiment Type is not allowed for the specified Submission Type."
+
+    def validate(self, sub, context):
+        if not sub.idf:
+            return []
+        st = submission_type_value(sub, context)
+        allowed = ((context.definitions or {}).get("idf", {})
+                   .get("allowed_experiment_types", {}) or {}).get(st)
+        if not st or not allowed:
+            return []
+        return [self.result(message=f"{self.description} "
+                                    f"(Submission Type: '{st}', Experiment Type: '{v.strip()}')")
+                for v in sub.idf.get("Comment[Experiment Type]")
+                if v.strip() and v.strip() not in allowed]
 
 
 # ---------------- Experimental design / variable ----------------
