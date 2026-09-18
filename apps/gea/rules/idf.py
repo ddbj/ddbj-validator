@@ -61,7 +61,7 @@ class GEA_C0008(GeaRule):
 # ---------------- Comment / General ----------------
 class GEA_COM0001(GeaRule):
     rule_id = "GEA_COM0001"; level = "error"; target = "IDF/Comment"
-    description = "Non-empty value for 'Comment[AEExperimentType]' must be provided in IDF."
+    description = "Non-empty value for 'Comment[Experiment Type]' must be provided in IDF."
 
     def validate(self, sub, context):
         if not sub.idf:
@@ -121,6 +121,12 @@ class GEA_G0004(_DateFormat):
 class GEA_G0006(_DateFormat):
     rule_id = "GEA_G0006"; level = "error"; target = "IDF/General"; _field = "Public Release Date"
     description = "Experiment public release date must be in 'YYYY-MM-DD' format."
+
+
+class GEA_G0015(_DateFormat):
+    # Comment[Submission Date] も Public Release Date と同じ日付形式で検査する（2026-09-18）。
+    rule_id = "GEA_G0015"; level = "error"; target = "IDF/General"; _field = "Comment[Submission Date]"
+    description = "Submission date must be in 'YYYY-MM-DD' format."
 
 
 class GEA_G0007(GeaRule):
@@ -390,8 +396,8 @@ class _IdfRegex(GeaRule):
 
 
 class GEA_REGEX0001(_IdfRegex):
-    rule_id = "GEA_REGEX0001"; _fields = ("Comment[GEAAccession]",)
-    description = "Format Error 'Comment[GEAAccession]'"
+    rule_id = "GEA_REGEX0001"; _fields = ("Comment[GEA Accession]",)
+    description = "Format Error 'Comment[GEA Accession]'"
 
 
 class GEA_REGEX0002(_IdfRegex):

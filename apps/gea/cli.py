@@ -66,9 +66,9 @@ def _resolve_inputs(args):
 
 
 def _gea_accession(sub, path):
-    """ESUB/E-GEAD を IDF Comment[GEAAccession] 優先、無ければファイル名から取得（account 自動導出用）。"""
+    """ESUB/E-GEAD を IDF Comment[GEA Accession] 優先、無ければファイル名から取得（account 自動導出用）。"""
     if sub is not None and sub.idf:
-        for v in sub.idf.get("Comment[GEAAccession]"):
+        for v in sub.idf.get("Comment[GEA Accession]"):
             if v and v.strip():
                 return v.strip()
     m = re.search(r"(E-GEAD-\d+|ESUB\d+)", Path(path or "").name, re.IGNORECASE)
@@ -215,7 +215,7 @@ def run(args):
         return 2
     out_dir = args.out_dir or str(Path(idf_path or sdrf_path).parent)
 
-    # account 未指定なら ESUB/E-GEAD（IDF Comment[GEAAccession] 優先、無ければファイル名）から自動導出
+    # account 未指定なら ESUB/E-GEAD（IDF Comment[GEA Accession] 優先、無ければファイル名）から自動導出
     gea_accession = _gea_accession(sub, idf_path or sdrf_path)
     account = args.account or (_account_from_gea_accession(gea_accession) if not skip_db else None)
     # account 未確定なら認証系ルール（GEA_REF0002-0004）をスキップ（誤検出防止。ddbj/dra と同方針）

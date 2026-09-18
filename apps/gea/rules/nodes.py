@@ -221,17 +221,19 @@ class GEA_FV0004(GeaRule):
 
 # ---------------- Array Design File 必須（microarray）----------------
 class GEA_G0011(GeaRule):
-    rule_id = "GEA_G0011"; level = "error"; target = "IDF/General"; only_type = "microarray"
+    """array design は **SDRF の `Array Design REF` 列**で宣言する（2026-09-18。IDF の `Comment[Array Design REF]` は新規では書かない）。
+
+    旧い submission は IDF 側にしか持たないことがあるので、**どちらかにあれば可**（後方互換）。
+    """
+    rule_id = "GEA_G0011"; level = "error"; target = "SDRF"; only_type = "microarray"
     description = "Array Design File (or Array Design REF) is required for micro-array submissions."
 
     def validate(self, sub, context):
-        if not sub.idf:
+        sdrf_ad = any(not _empty(v) for v in sub.sdrf.values("Array Design REF")) if sub.sdrf else False
+        legacy_idf_ad = any(not _empty(v) for v in sub.idf.get("Comment[Array Design REF]")) if sub.idf else False
+        if not sub.sdrf and not sub.idf:
             return []
-        idf_ad = any(not _empty(v) for v in sub.idf.get("Comment[Array Design REF]"))
-        sdrf_ad = False
-        if sub.sdrf:
-            sdrf_ad = any(not _empty(v) for v in sub.sdrf.values("Array Design REF"))
-        return [] if (idf_ad or sdrf_ad) else [self.result()]
+        return [] if (sdrf_ad or legacy_idf_ad) else [self.result()]
 
 
 # ---------------- 属性名（attribute should have name）----------------

@@ -8,7 +8,7 @@ from common.magetab.model import Idf as BaseIdf, Sdrf, Submission
 class Idf(BaseIdf):
     @property
     def submission_type(self):
-        return (self.first("Comment[Submission type]") or "").strip()
+        return (self.first("Comment[Submission Type]") or "").strip()
 
     @property
     def bioproject(self):

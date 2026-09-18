@@ -32,6 +32,11 @@ EXPECTED = {
     # crafted fixture（E-GEAD-1144 派生）: Experiment Description を 19 文字 / 4,001 文字にして G0009 の下限・上限を担保
     "G0009-short-craft": {"GEA_G0009"},
     "G0009-long-craft": {"GEA_G0009"},
+    # crafted fixture（E-GEAD-1117 派生）: Comment[Submission Type] を CV 外（小文字 microarray）にして
+    # CV チェック（GEA_COM0002）を担保。専用ルール GEA_G0014 は 2026-09-18 に廃止し COM0002 に統合した
+    "COM0002-craft": {"GEA_COM0002"},
+    # crafted fixture（E-GEAD-1117 派生）: Comment[Submission Date] を YYYY/MM/DD にして G0015 を担保
+    "G0015-craft": {"GEA_G0015"},
 }
 
 # --- DB モード（opt-in / dradev） ---

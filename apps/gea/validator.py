@@ -23,6 +23,7 @@ class Validator(SimpleValidator):
             I.GEA_C0001(), I.GEA_C0002(), I.GEA_C0008(),
             I.GEA_COM0001(),
             I.GEA_G0001(), I.GEA_G0002(), I.GEA_G0009(), I.GEA_G0004(), I.GEA_G0006(),
+            I.GEA_G0015(),
             I.GEA_G0007(), I.GEA_G0012(), I.GEA_G0013(),
             I.GEA_ED0001(), I.GEA_EF0001(), I.GEA_EF0003(),
             I.GEA_PB0002(),

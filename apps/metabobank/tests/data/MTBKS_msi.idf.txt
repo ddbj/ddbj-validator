@@ -1,5 +1,5 @@
 MAGE-TAB Version	1.1
-Comment[MetaboBank accession]	MTBKS212
+Comment[MetaboBank Accession]	MTBKS212
 Study Title	Imaging of ALC and PI in the bodies of termite queens and workers
 Study Description	To investigate the distribution of 13C-labelled acetyl-L-carnitine and phosphatidylinositol in the bodies of queens and workers.
 
@@ -31,11 +31,11 @@ Term Source Version
 
 SDRF File	MTBKS212.sdrf.txt
 
-Comment[Study type]	metabolite target analysis
-Comment[Experiment type]	mass spectrometry imaging
-Comment[Submission type]	MSI
+Comment[Study Type]	metabolite target analysis
+Comment[Experiment Type]	mass spectrometry imaging
+Comment[Submission Type]	MSI
 Comment[BioProject]	PRJDB14286
-Comment[Related study]
+Comment[Related Study]
 Comment[Contributor]	Takumi Sakamoto, A. S. M. Waliullah, Zinat Tamannaa
 Comment[Submission Date]	2022-10-01
 Comment[Last Update Date]	2023-07-06

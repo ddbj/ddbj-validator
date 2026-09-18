@@ -30,8 +30,8 @@ def _sub(submission_type="LC-MS", overrides=None, extra_cols=(), rows=1):
     body = []
     for _ in range(rows):
         body.append([ov.get(c, _FILLED.get(c, "v")) for c in header])
-    idf = Idf(fields={"Comment[Submission type]": [submission_type]},
-              field_order=["Comment[Submission type]"])
+    idf = Idf(fields={"Comment[Submission Type]": [submission_type]},
+              field_order=["Comment[Submission Type]"])
     return Submission(idf=idf, sdrf=Sdrf(header=header, rows=body))
 
 
@@ -175,8 +175,8 @@ def _udc_sub(extra_cols):
     header = ["Source Name", "Sample Name", "Characteristics[organism]",
               "Characteristics[taxonomy_id]"] + list(extra_cols)
     rows = [["s1", "s1", "Homo sapiens", "9606"] + ["v"] * len(extra_cols)]
-    idf = Idf(fields={"Comment[Submission type]": ["LC-MS"]},
-              field_order=["Comment[Submission type]"])
+    idf = Idf(fields={"Comment[Submission Type]": ["LC-MS"]},
+              field_order=["Comment[Submission Type]"])
     return Submission(idf=idf, sdrf=Sdrf(header=header, rows=rows))
 
 
@@ -277,8 +277,8 @@ def _sub_with_new_required(overrides=None, drop=()):
     filled = dict(_FILLED, **{"Raw Data File": "f.raw", "Comment[sample_title]": "t",
                               "Comment[BioSample]": "SAMD00000001"})
     rows = [[ov.get(c, filled.get(c, "v")) for c in header]]
-    idf = Idf(fields={"Comment[Submission type]": ["LC-MS"]},
-              field_order=["Comment[Submission type]"])
+    idf = Idf(fields={"Comment[Submission Type]": ["LC-MS"]},
+              field_order=["Comment[Submission Type]"])
     return Submission(idf=idf, sdrf=Sdrf(header=header, rows=rows))
 
 
@@ -354,8 +354,8 @@ def test_sr0009_reports_each_required_column_once():
 # --- MB_SR0026: 骨格列の相対順序 -------------------------------------------
 
 def _order_sub(header):
-    idf = Idf(fields={"Comment[Submission type]": ["LC-MS"]},
-              field_order=["Comment[Submission type]"])
+    idf = Idf(fields={"Comment[Submission Type]": ["LC-MS"]},
+              field_order=["Comment[Submission Type]"])
     return Submission(idf=idf, sdrf=Sdrf(header=header, rows=[["v"] * len(header)]))
 
 

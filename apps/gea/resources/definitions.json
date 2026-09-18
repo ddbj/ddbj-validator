@@ -2,6 +2,7 @@
   "idf": {
     "fields": [
       "MAGE-TAB Version",
+      "Comment[GEA Accession]",
       "Investigation Title",
       "Experiment Description",
       "Experimental Design",
@@ -19,31 +20,39 @@
       "Protocol Name",
       "Protocol Type",
       "Protocol Description",
+      "Protocol Software",
       "SDRF File",
-      "Comment[GEAAccession]",
-      "Comment[AEExperimentType]",
+      "Comment[Experiment Type]",
+      "Comment[Submission Type]",
       "Comment[Number of channel]",
-      "Comment[Array Design REF]",
       "Comment[BioProject]",
       "Comment[SecondaryAccession]",
-      "Comment[Related study]",
+      "Comment[Related Study]",
       "Comment[DBCLS]",
       "Comment[AdditionalFile:TXT]",
-      "Comment[Public Release Date]",
+      "Comment[Submission Date]",
       "Comment[Last Update Date]"
+    ],
+    "legacy_fields": [
+      "Comment[GEAAccession]",
+      "Comment[AEExperimentType]",
+      "Comment[Related study]",
+      "Comment[Public Release Date]",
+      "Comment[Array Design REF]"
     ],
     "single_value": [
       "MAGE-TAB Version",
+      "Comment[GEA Accession]",
       "Investigation Title",
       "Experiment Description",
       "Date of Experiment",
       "Public Release Date",
       "SDRF File",
-      "Comment[GEAAccession]",
-      "Comment[AEExperimentType]",
+      "Comment[Experiment Type]",
+      "Comment[Submission Type]",
       "Comment[Number of channel]",
-      "Comment[Array Design REF]",
       "Comment[BioProject]",
+      "Comment[Submission Date]",
       "Comment[Last Update Date]"
     ],
     "blank_before": [
@@ -53,7 +62,7 @@
       "Protocol Name",
       "Public Release Date",
       "SDRF File",
-      "Comment[GEAAccession]"
+      "Comment[Experiment Type]"
     ],
     "required_error": [
       "MAGE-TAB Version",
@@ -66,7 +75,7 @@
       "Protocol Name",
       "Protocol Type",
       "SDRF File",
-      "Comment[AEExperimentType]"
+      "Comment[Experiment Type]"
     ],
     "required_warning": [
       "Person First Name",
@@ -74,7 +83,7 @@
       "Protocol Description"
     ],
     "required_ignore_error": [
-      "Comment[GEAAccession]",
+      "Comment[GEA Accession]",
       "Comment[BioProject]",
       "Comment[Last Update Date]"
     ],
@@ -87,7 +96,7 @@
       "Person Roles",
       "Protocol Name",
       "Protocol Type",
-      "Comment[AEExperimentType]"
+      "Comment[Experiment Type]"
     ],
     "required_group_error": {
       "Experimental Factor": [
@@ -114,8 +123,7 @@
     },
     "required_microarray": [
       "Experimental Design",
-      "Comment[Number of channel]",
-      "Comment[Array Design REF]"
+      "Comment[Number of channel]"
     ],
     "description_min_length": 20,
     "description_max_length": 4000,
@@ -222,6 +230,12 @@
         "Comment[Number of channel]": [
           "single-channel",
           "dual-channel"
+        ],
+        "Comment[Submission Type]": [
+          "Microarray",
+          "Sequencing",
+          "Xenium",
+          "Other"
         ]
       },
       "warning": {
@@ -321,7 +335,6 @@
     }
   },
   "value_formats": {
-    "Comment[GEAAccession]": "(E-GEAD-\\d+|ESUB\\d{6,}_Experiment_1)",
     "Comment[BioProject]": "(PRJDB\\d+|PSUB\\d{6,})",
     "Comment[SecondaryAccession]": "[A-Za-z0-9:_.-]+",
     "Comment[BioSample]": "(SAMD\\d{8}|SSUB\\d{6,})",
@@ -343,7 +356,8 @@
     "Public Release Date": "\\d{4}-\\d{2}-\\d{2}",
     "Date of Experiment": "\\d{4}-\\d{2}-\\d{2}",
     "Date": "\\d{4}-\\d{2}-\\d{2}",
-    "AdditionalFile": "[A-Za-z0-9._-]+"
+    "AdditionalFile": "[A-Za-z0-9._-]+",
+    "Comment[GEA Accession]": "(E-GEAD-\\d+|ESUB\\d{6,}_Experiment_1)"
   },
   "null_values": {
     "accepted": [
@@ -721,5 +735,11 @@
     "vega_hs",
     "vega_mm",
     "wormbase"
-  ]
+  ],
+  "submission_type_map": {
+    "Microarray": "microarray",
+    "Sequencing": "sequencing",
+    "Xenium": "other",
+    "Other": "other"
+  }
 }

@@ -26,6 +26,10 @@ def _sdrf_col_values(sub, col):
 
 
 def _idf_array_designs(sub):
+    """参照している array design。正は **SDRF の `Array Design REF` 列**（2026-09-18）。
+
+    旧い submission は IDF の `Comment[Array Design REF]` にも持つので、後方互換で両方から集める。
+    """
     out = set()
     if sub.idf:
         out |= {v.strip().upper() for v in sub.idf.get("Comment[Array Design REF]") if v.strip()}

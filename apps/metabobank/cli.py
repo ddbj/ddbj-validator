@@ -219,7 +219,7 @@ def run(args):
     elapsed = str(datetime.timedelta(seconds=int((now - started).total_seconds())))
     version = _tool_version()
     label = f"{Path(idf_path).name if idf_path else ''} {Path(sdrf_path).name if sdrf_path else ''}".strip()
-    # ヘッダ用: 参照 SAMD の重複排除数 ＋ submission type（Comment[Submission type]）
+    # ヘッダ用: 参照 SAMD の重複排除数 ＋ submission type（Comment[Submission Type]）
     from common.magetab import biosample as _bs
     _cols = _bs.ref_columns(context, default=("Comment[BioSample]", "Characteristics[biosample_accession]"))
     sample_count = len(_bs.referenced_samds(sub, _cols)) if sub.sdrf else None

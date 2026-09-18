@@ -2,7 +2,7 @@
 
 ルール実装は正しくても定義ファイル内の参照が食い違うと、投稿者がどうやっても通せない
 組み合わせが生まれる。実際に `required_experiment_types` の MALDI-MS が要求する語が
-`Comment[Experiment type]` の CV に無く、MB_IR0034（語が必要）と MB_IR0015（CV 外は error）が
+`Comment[Experiment Type]` の CV に無く、MB_IR0034（語が必要）と MB_IR0015（CV 外は error）が
 相互に矛盾する状態になっていた。同種の取りこぼしを検出するための整合テスト。
 
 実行: リポジトリルートで `.venv/bin/python -m pytest`
@@ -18,7 +18,7 @@ IDF = DEFS["idf"]
 SDRF = DEFS["sdrf"]
 CV_IDF = DEFS["controlled_terms"]["idf"]
 
-# submission type をキーに持つ定義（キーは Comment[Submission type] の CV に無ければならない）
+# submission type をキーに持つ定義（キーは Comment[Submission Type] の CV に無ければならない）
 _SUBMISSION_TYPE_KEYED = [
     ("idf.required_protocol_types", IDF["required_protocol_types"]),
     ("idf.required_protocol_parameters", IDF["required_protocol_parameters"]),
@@ -29,14 +29,14 @@ _SUBMISSION_TYPE_KEYED = [
 
 
 def test_required_experiment_types_are_in_controlled_terms():
-    """required_experiment_types の語は全部 Comment[Experiment type] の CV に入っていること。
+    """required_experiment_types の語は全部 Comment[Experiment Type] の CV に入っていること。
 
     入っていないと MB_IR0034 が要求する語を MB_IR0015 が CV 外として弾き、その submission type は
     どんな値でも通せなくなる。
     """
-    cv = set(CV_IDF["error"]["Comment[Experiment type]"])
+    cv = set(CV_IDF["error"]["Comment[Experiment Type]"])
     missing = sorted({t for terms in IDF["required_experiment_types"].values() for t in terms} - cv)
-    assert not missing, f"controlled_terms.idf.error['Comment[Experiment type]'] に不足: {missing}"
+    assert not missing, f"controlled_terms.idf.error['Comment[Experiment Type]'] に不足: {missing}"
 
 
 def test_required_protocol_types_are_in_controlled_terms():
@@ -49,11 +49,11 @@ def test_required_protocol_types_are_in_controlled_terms():
 @pytest.mark.parametrize("name, mapping", _SUBMISSION_TYPE_KEYED,
                          ids=[n for n, _ in _SUBMISSION_TYPE_KEYED])
 def test_submission_type_keys_are_in_controlled_terms(name, mapping):
-    """submission type をキーにする定義のキーは Comment[Submission type] の CV に入っていること。
+    """submission type をキーにする定義のキーは Comment[Submission Type] の CV に入っていること。
 
     タイポや廃止済みの type が残っていると、その定義は永久に参照されない死んだ設定になる。
     """
-    cv = set(CV_IDF["error"]["Comment[Submission type]"])
+    cv = set(CV_IDF["error"]["Comment[Submission Type]"])
     unknown = sorted(set(mapping) - cv)
     assert not unknown, f"{name} に未知の submission type: {unknown}"
 
@@ -378,14 +378,14 @@ def test_required_value_error_columns_are_not_existence_required():
 
 
 def test_study_type_cv_has_third_party_reanalysis():
-    """`Comment[Study type]` に "Third-party reanalysis" があること。
+    """`Comment[Study Type]` に "Third-party reanalysis" があること。
 
     第三者による再解析は「どんな測定をしたか」ではなく「どういう研究か」なので
-    Comment[Experiment type]（測定手法の語彙）ではなく Comment[Study type] に置く。
+    Comment[Experiment Type]（測定手法の語彙）ではなく Comment[Study Type] に置く。
     MB_IR0015 は strip 後の完全一致（大文字小文字も区別する）なので、この表記でだけ通る。
     """
-    assert "Third-party reanalysis" in CV_IDF["error"]["Comment[Study type]"]
-    assert "Third-party reanalysis" not in CV_IDF["error"]["Comment[Experiment type]"]
+    assert "Third-party reanalysis" in CV_IDF["error"]["Comment[Study Type]"]
+    assert "Third-party reanalysis" not in CV_IDF["error"]["Comment[Experiment Type]"]
 
 
 def test_publication_group_is_title_author_journal():
