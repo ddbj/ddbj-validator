@@ -53,45 +53,45 @@ class _IncomingProtocol(GeaRule):
 
 class GEA_EX0003(_IncomingProtocol):
     rule_id = "GEA_EX0003"; level = "error"; target = "SDRF/ExtractNode"; only_type = "microarray"
-    _node = "Extract Name"; _ptypes = ("nucleic acid extraction protocol",)
-    description = "A nucleic acid extraction protocol must be included."
+    _node = "Extract Name"; _ptypes = ("Extraction protocol",)
+    description = "An Extraction protocol must be included."
 
 
 class GEA_EX0004(_IncomingProtocol):
     rule_id = "GEA_EX0004"; level = "error"; target = "SDRF/ExtractNode"; only_type = "sequencing"
-    _node = "Extract Name"; _ptypes = ("nucleic acid library construction protocol",)
-    description = "A nucleic acid library construction protocol must be included."
+    _node = "Extract Name"; _ptypes = ("Library construction protocol",)
+    description = "A Library construction protocol must be included."
 
 
 class GEA_LE0005(_IncomingProtocol):
     rule_id = "GEA_LE0005"; level = "error"; target = "SDRF/LabeledExtractNode"; only_type = "microarray"
-    _node = "Labeled Extract Name"; _ptypes = ("nucleic acid labeling protocol",)
-    description = "A nucleic acid labeling protocol must be included."
+    _node = "Labeled Extract Name"; _ptypes = ("Labeling protocol",)
+    description = "A Labeling protocol must be included."
 
 
 class GEA_AN0003(_IncomingProtocol):
     rule_id = "GEA_AN0003"; level = "error"; target = "SDRF/ArrayNode"; only_type = "sequencing"
-    _node = "Assay Name"; _ptypes = ("nucleic acid sequencing protocol",)
-    description = "A nucleic acid sequencing protocol must be included."
+    _node = "Assay Name"; _ptypes = ("Sequencing protocol",)
+    description = "A Sequencing protocol must be included."
 
 
 class GEA_AN0004(_IncomingProtocol):
     rule_id = "GEA_AN0004"; level = "error"; target = "SDRF/ArrayNode"; only_type = "microarray"
-    _node = "Assay Name"; _ptypes = ("nucleic acid hybridization to array protocol",)
-    description = "A nucleic acid hybridization to array protocol must be included."
+    _node = "Assay Name"; _ptypes = ("Hybridization protocol",)
+    description = "A Hybridization protocol must be included."
 
 
 class GEA_DADN0004(_IncomingProtocol):
     rule_id = "GEA_DADN0004"; level = "error"; target = "SDRF/DerivedArrayDataNode"
-    _node = "Derived Array Data File"; _ptypes = ("normalization data transformation protocol", "high throughput sequence alignment protocol")
-    description = ("A normalization data transformation protocol that describes the analysis methods "
+    _node = "Derived Array Data File"; _ptypes = ("Data processing protocol",)
+    description = ("A Data processing protocol that describes the analysis methods "
                    "used to generate the processed data file(s) must be included.")
 
 
 class GEA_DADMN0004(_IncomingProtocol):
     rule_id = "GEA_DADMN0004"; level = "error"; target = "SDRF/DerivedArrayDataMatrixNode"
-    _node = "Derived Array Data Matrix File"; _ptypes = ("normalization data transformation protocol", "high throughput sequence alignment protocol")
-    description = ("A normalization data transformation protocol that describes the analysis methods "
+    _node = "Derived Array Data Matrix File"; _ptypes = ("Data processing protocol",)
+    description = ("A Data processing protocol that describes the analysis methods "
                    "used to generate the processed data matrix file must be included.")
 
 
@@ -341,8 +341,8 @@ class GEA_DADMN0001(_ColPresentButEmpty):
 # ---------------- Source に growth/treatment/sample collection protocol ----------------
 class GEA_SR0008(GeaRule):
     rule_id = "GEA_SR0008"; level = "error"; target = "SDRF/SourceNode"
-    description = "A growth, treatment or sample collection protocol must be included."
-    _accept = ("growth protocol", "treatment protocol", "sample collection protocol")
+    description = "A Growth, Treatment or Sample collection protocol must be included."
+    _accept = ("Growth protocol", "Treatment protocol", "Sample collection protocol")
 
     def validate(self, sub, context):
         if not sub.idf:

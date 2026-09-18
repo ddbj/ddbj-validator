@@ -37,6 +37,8 @@ EXPECTED = {
     "COM0002-craft": {"GEA_COM0002"},
     # crafted fixture（E-GEAD-1117 派生）: Comment[Submission Date] を YYYY/MM/DD にして G0015 を担保
     "G0015-craft": {"GEA_G0015"},
+    # crafted fixture（E-GEAD-1117 派生）: Comment[tissue_preservation_method] を IDF/SDRF 両方 CV 外にして COM0004 を担保
+    "COM0004-craft": {"GEA_COM0004"},
 }
 
 # --- DB モード（opt-in / dradev） ---

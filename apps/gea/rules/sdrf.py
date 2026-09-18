@@ -172,6 +172,12 @@ class GEA_AN0002(GeaRule):
 
 
 class GEA_TT0001(GeaRule):
+    """**deprecated**（validator に登録しない。2026-09-18）。
+
+    SDRF の `Technology Type` 列を廃止したため（submission type は IDF の `Comment[Submission Type]` で決める）、
+    その非空検査も不要になった。クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "GEA_TT0001"; level = "error"; target = "SDRF/TechnologyType"
     description = "Technology type attribute must have name specified."
 
@@ -202,6 +208,12 @@ class GEA_AN0005(GeaRule):
 
 
 class GEA_AN0009(GeaRule):
+    """**deprecated**（validator に登録しない。2026-09-18）。
+
+    `Technology Type` 廃止に伴い、HTS で `sequencing assay` を強制する検査も不要になった
+    （microarray 側の GEA_AN0005 は既に廃止済み）。クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "GEA_AN0009"; level = "error"; target = "SDRF/ArrayNode"; only_type = "sequencing"
     description = "'Technology Type' must be equal to 'sequencing assay' in HTS submissions."
 
@@ -346,13 +358,19 @@ class GEA_RC0002(GeaRule):
 
 
 class GEA_UNDEF(GeaRule):
+    """SDRF に定義外の列が無いか。
+
+    `sdrf.legacy_fields`（旧 submission にだけある列。例: 2026-09-18 に廃止した `Technology Type`）も
+    許可する。廃止した列を持つ既存 SDRF を「未定義列」として報告しないため。
+    """
     rule_id = "GEA_SR0002"; level = "error"; target = "SDRF"
     description = "Undefined column exists."
 
     def validate(self, sub, context):
         if not sub.sdrf:
             return []
-        patterns = _sdrf_def(context).get("fields", [])
+        sdef = _sdrf_def(context)
+        patterns = list(sdef.get("fields", [])) + list(sdef.get("legacy_fields", []))
         bad = [h for h in sub.sdrf.header if h and not _matches_any(h, patterns)]
         return [self.result(message=f"{self.description} ({', '.join(sorted(set(bad)))})")] if bad else []
 
