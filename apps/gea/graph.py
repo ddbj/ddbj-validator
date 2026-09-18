@@ -10,7 +10,7 @@ import re
 NODE_NAMES = [
     "Source Name", "Sample Name", "Extract Name", "Labeled Extract Name",
     "Assay Name", "Scan Name", "Normalization Name",
-    "Array Data File", "Derived Array Data File",
+    "Raw Data File", "Derived Array Data File",
     "Array Data Matrix File", "Derived Array Data Matrix File",
 ]
 

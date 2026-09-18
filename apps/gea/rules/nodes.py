@@ -111,7 +111,7 @@ class _IncomingAny(GeaRule):
 
 class GEA_ADN0004(_IncomingAny):
     rule_id = "GEA_ADN0004"; level = "error"; target = "SDRF/ArrayDataNode"; only_type = "microarray"
-    _node = "Array Data File"
+    _node = "Raw Data File"
     description = "An array data node (raw data file) should be described by a protocol."
 
 
@@ -319,7 +319,7 @@ class GEA_SM0001(GeaRule):
 
 # ---------------- Data node name（列があるのに全行空＝名前なし）----------------
 class GEA_ADN0001(_ColPresentButEmpty):
-    rule_id = "GEA_ADN0001"; level = "error"; target = "SDRF/ArrayDataNode"; _col = "Array Data File"
+    rule_id = "GEA_ADN0001"; level = "error"; target = "SDRF/ArrayDataNode"; _col = "Raw Data File"
     description = "An array data node (raw data file) must have a name."
 
 

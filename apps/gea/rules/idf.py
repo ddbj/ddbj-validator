@@ -169,6 +169,35 @@ class GEA_G0013(GeaRule):
         return out
 
 
+class GEA_COM0005(GeaRule):
+    """submission type ごとに必須の protocol type が IDF に揃っているか（2026-09-18）。
+
+    必須の一覧は `protocols.dway_defaults[<submission type>].required`（D-way が既定として提示するもの）。
+    これまで「HTS で xx protocol が無い」「Micro-array で xx protocol が無い」を rule 1 本ずつ
+    （GEA_PR0008-0015）で見ていたのを 1 本に集約した。定義に type を足せばルールを増やさず追随できる。
+
+    submission type が分からない（IDF にも DB にも無い）ときや、その type の必須が定義されていない
+    ときは検査しない（投稿者に直しようが無いため）。
+    """
+    rule_id = "GEA_COM0005"; level = "error"; target = "IDF/SDRF"
+    description = "Required Protocol Type is missing for the specified Submission Type."
+
+    def validate(self, sub, context):
+        if not sub.idf:
+            return []
+        st = submission_type_value(sub, context)
+        required = ((context.definitions or {}).get("protocols", {})
+                    .get("dway_defaults", {}) or {}).get(st, {}).get("required")
+        if not st or not required:
+            return []
+        have = {t.strip() for t in sub.idf.get("Protocol Type") if t.strip()}
+        missing = [t for t in required if t not in have]
+        if not missing:
+            return []
+        return [self.result(message=f"{self.description} "
+                                    f"(Submission Type: '{st}', missing: {', '.join(missing)})")]
+
+
 class GEA_G0016(GeaRule):
     """`Comment[Submission Type]` と `Comment[Experiment Type]` の整合。
 
@@ -316,41 +345,89 @@ class _ProtocolRequired(GeaRule):
 
 
 class GEA_PR0013(_ProtocolRequired):
+    """**deprecated**（validator に登録しない。2026-09-18）。
+
+    submission type ごとの必須 protocol type の検査は **GEA_COM0005** に集約した
+    （必須の一覧は `protocols.dway_defaults` にある）。クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "GEA_PR0013"; _ptype = "Sample collection protocol"
     description = "Sample collection protocol is required for submissions."
 
 
 class GEA_PR0014(_ProtocolRequired):
+    """**deprecated**（validator に登録しない。2026-09-18）。
+
+    submission type ごとの必須 protocol type の検査は **GEA_COM0005** に集約した
+    （必須の一覧は `protocols.dway_defaults` にある）。クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "GEA_PR0014"; _ptype = "Extraction protocol"
     description = "Extraction protocol is required for submissions."
 
 
 class GEA_PR0015(_ProtocolRequired):
+    """**deprecated**（validator に登録しない。2026-09-18）。
+
+    submission type ごとの必須 protocol type の検査は **GEA_COM0005** に集約した
+    （必須の一覧は `protocols.dway_defaults` にある）。クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "GEA_PR0015"; _ptype = "Data processing protocol"
     description = "Data processing protocol is required for submissions."
 
 
 class GEA_PR0010(_ProtocolRequired):
+    """**deprecated**（validator に登録しない。2026-09-18）。
+
+    submission type ごとの必須 protocol type の検査は **GEA_COM0005** に集約した
+    （必須の一覧は `protocols.dway_defaults` にある）。クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "GEA_PR0010"; only_type = "microarray"; _ptype = "Labeling protocol"
     description = "Labeling protocol is required for Micro-array submissions."
 
 
 class GEA_PR0011(_ProtocolRequired):
+    """**deprecated**（validator に登録しない。2026-09-18）。
+
+    submission type ごとの必須 protocol type の検査は **GEA_COM0005** に集約した
+    （必須の一覧は `protocols.dway_defaults` にある）。クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "GEA_PR0011"; only_type = "microarray"; _ptype = "Hybridization protocol"
     description = "Hybridization protocol is required for Micro-array submissions."
 
 
 class GEA_PR0012(_ProtocolRequired):
+    """**deprecated**（validator に登録しない。2026-09-18）。
+
+    submission type ごとの必須 protocol type の検査は **GEA_COM0005** に集約した
+    （必須の一覧は `protocols.dway_defaults` にある）。クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "GEA_PR0012"; only_type = "microarray"; _ptype = "Scanning protocol"
     description = "Scanning protocol is required for Micro-array submissions."
 
 
 class GEA_PR0008(_ProtocolRequired):
+    """**deprecated**（validator に登録しない。2026-09-18）。
+
+    submission type ごとの必須 protocol type の検査は **GEA_COM0005** に集約した
+    （必須の一覧は `protocols.dway_defaults` にある）。クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "GEA_PR0008"; only_type = "sequencing"; _ptype = "Library construction protocol"
     description = "Library construction protocol is required for HTS submissions."
 
 
 class GEA_PR0009(_ProtocolRequired):
+    """**deprecated**（validator に登録しない。2026-09-18）。
+
+    submission type ごとの必須 protocol type の検査は **GEA_COM0005** に集約した
+    （必須の一覧は `protocols.dway_defaults` にある）。クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "GEA_PR0009"; only_type = "sequencing"; _ptype = "Sequencing protocol"
     description = "Sequencing protocol is required for HTS submissions."
 

@@ -29,9 +29,8 @@ class Validator(SimpleValidator):
             I.GEA_ED0001(), I.GEA_EF0001(), I.GEA_EF0003(),
             I.GEA_PB0002(),
             I.GEA_PR0001(), I.GEA_PR0002(), I.GEA_PR0003(), I.GEA_PR0005(), I.GEA_PR0006(),
-            I.GEA_PR0013(), I.GEA_PR0014(), I.GEA_PR0015(),
-            I.GEA_PR0010(), I.GEA_PR0011(), I.GEA_PR0012(),
-            I.GEA_PR0008(), I.GEA_PR0009(),
+            # GEA_PR0008-0015（submission type ごとの必須 protocol）は GEA_COM0005 に集約したため登録しない。
+            I.GEA_COM0005(),
             I.GEA_RC0001(), I.GEA_MAN0001(),
             I.GEA_CV_ERR(), I.GEA_CV_WARN(), I.GEA_COM0004(),
             I.GEA_REGEX0001(), I.GEA_REGEX0002(), I.GEA_REGEX0003(), I.GEA_REGEX0004(),
@@ -45,7 +44,7 @@ class Validator(SimpleValidator):
             S.GEA_LE0002(), S.GEA_LE0004(), S.GEA_LE0001(), S.GEA_AD0001(), S.GEA_AD0004(),
             S.GEA_DF0001(), S.GEA_DF0002(),
             # GEA_RC0002 は deprecated（2026-09-17。Comment 列の重複は取込で畳む）のため登録しない。
-            S.GEA_CN0001(), S.GEA_UNDEF(),
+            S.GEA_CN0001(), S.GEA_UNDEF(), S.GEA_SR0003(),
             S.GEA_MAN0011(), S.GEA_MAN0012(),
             S.GEA_SDRF_REGEX(),
             # --- SDRF node グラフ / 属性名 ---
