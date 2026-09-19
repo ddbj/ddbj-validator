@@ -83,12 +83,18 @@ class GEA_AN0004(_IncomingProtocol):
 
 class GEA_DADN0004(_IncomingProtocol):
     rule_id = "GEA_DADN0004"; level = "error"; target = "SDRF/DerivedArrayDataNode"
-    _node = "Derived Array Data File"; _ptypes = ("Data processing protocol",)
+    _node = "Processed Data File"; _ptypes = ("Data processing protocol",)
     description = ("A Data processing protocol that describes the analysis methods "
                    "used to generate the processed data file(s) must be included.")
 
 
 class GEA_DADMN0004(_IncomingProtocol):
+    """**deprecated**（validator に登録しない。2026-09-19）。
+
+    `Derived Array Data Matrix File` を `Processed Data File` に統合したため、
+    `GEA_DADN0004` と同じ検査になった。クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "GEA_DADMN0004"; level = "error"; target = "SDRF/DerivedArrayDataMatrixNode"
     _node = "Derived Array Data Matrix File"; _ptypes = ("Data processing protocol",)
     description = ("A Data processing protocol that describes the analysis methods "
@@ -329,11 +335,17 @@ class GEA_ADMN0001(_ColPresentButEmpty):
 
 
 class GEA_DADN0001(_ColPresentButEmpty):
-    rule_id = "GEA_DADN0001"; level = "error"; target = "SDRF/DerivedArrayDataNode"; _col = "Derived Array Data File"
+    rule_id = "GEA_DADN0001"; level = "error"; target = "SDRF/DerivedArrayDataNode"; _col = "Processed Data File"
     description = "A derived array data node (processed data file) must have name specified."
 
 
 class GEA_DADMN0001(_ColPresentButEmpty):
+    """**deprecated**（validator に登録しない。2026-09-19）。
+
+    `Derived Array Data Matrix File` を `Processed Data File` に統合したため、
+    `GEA_DADN0001` と同じ検査になった。クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "GEA_DADMN0001"; level = "error"; target = "SDRF/DerivedArrayDataMatrixNode"; _col = "Derived Array Data Matrix File"
     description = "A derived array data matrix file must have a name specified."
 

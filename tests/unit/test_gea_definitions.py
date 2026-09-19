@@ -94,12 +94,16 @@ def test_submission_type_cv_is_under_idf_error():
     assert "Comment[Submission Type]" in CV_IDF["error"]
 
 
+#: `controlled_terms` の直下に置けるスコープ。どのルールが読むかが 1 対 1 で決まっている。
+CV_SCOPES = {"idf", "sdrf", "idf_sdrf", "idf_protocol"}
+
+
 def test_controlled_terms_has_only_scope_keys():
-    """`controlled_terms` の直下はスコープ（idf / sdrf / idf_sdrf）だけであること。
+    """`controlled_terms` の直下はスコープだけであること。
 
     フィールド名を直下に置くと、どのルールからも読まれない定義になる。
     """
-    assert set(CT) <= {"idf", "sdrf", "idf_sdrf"}, f"想定外のキー: {sorted(set(CT) - {'idf', 'sdrf', 'idf_sdrf'})}"
+    assert set(CT) <= CV_SCOPES, f"想定外のキー: {sorted(set(CT) - CV_SCOPES)}"
 
 
 def test_submission_type_map_keys_are_in_cv():
@@ -131,18 +135,21 @@ def test_submission_type_map_values_are_known():
 
 # --- GEA_COM0004 用スコープ（二重発火の防止）---------------------------------
 
-def test_idf_sdrf_cv_does_not_overlap_other_scopes():
-    """`idf_sdrf` の CV キーが `idf` / `sdrf` の CV キーと重複しないこと。
+def test_cv_scopes_do_not_overlap():
+    """スコープ間で CV のキーが重複しないこと。
 
-    重複すると同じ違反が GEA_COM0004 と GEA_COM0002（または SDRF 側の CV ルール）で二重に出る。
-    さらに COM0004 は internal ignore だが COM0002 は違うので、ignore が効かなくなる。
+    重複すると同じ違反が 2 本のルールから出る。さらに専用スコープ側（`idf_sdrf` = GEA_COM0004、
+    `idf_protocol` = GEA_PR0020）は internal ignore だが `idf` 側（GEA_COM0002）は違うので、
+    重複させると ignore が効かなくなる。
     """
     def keys(scope):
         return {f for level in CT.get(scope, {}).values() for f in level}
 
-    both = keys("idf_sdrf")
-    assert not both & keys("idf"), f"idf と重複: {sorted(both & keys('idf'))}"
-    assert not both & keys("sdrf"), f"sdrf と重複: {sorted(both & keys('sdrf'))}"
+    scopes = sorted(CV_SCOPES)
+    for i, a in enumerate(scopes):
+        for b in scopes[i + 1:]:
+            dup = sorted(keys(a) & keys(b))
+            assert not dup, f"{a} と {b} で重複: {dup}"
 
 
 # --- 旧フィールド名の読み替え（後方互換）-------------------------------------
@@ -210,7 +217,8 @@ def test_dway_default_protocols_cover_every_submission_type():
 def test_dway_default_protocols_required_and_optional_do_not_overlap():
     """同じ protocol type が required と optional の両方に入っていないこと。"""
     for st, v in DEFS["protocols"]["dway_defaults"].items():
-        overlap = sorted(set(v["required"]) & set(v["optional"]))
+        req = set(v["required"]) | set(v.get("required_with_raw", []))
+        overlap = sorted(req & set(v["optional"]))
         assert not overlap, f"{st}: required と optional が重複 {overlap}"
 
 
@@ -235,7 +243,9 @@ def test_allowed_experiment_types_cover_all_terms():
 
 # --- protocol type の新旧マッピング（2026-09-18 の改名・統合）------------------
 
-PROTOCOL_CV = CV_IDF["warning"]["Protocol Type"]
+#: `Protocol Type` の CV は 2026-09-19 に専用スコープへ移した（GEA_PR0020 が error + ignore で見るため。
+#: `controlled_terms.idf.*` に置くと GEA_COM0002/0003 が拾い、項目単位で level と ignore を決められない）。
+PROTOCOL_CV = CT["idf_protocol"]["error"]["Protocol Type"]
 RENAME_MAP = DEFS["protocols"]["rename_map"]
 
 
@@ -297,3 +307,52 @@ def test_rule_protocol_types_are_in_cv():
             if outside:
                 bad[rid] = outside
     assert not bad, f"CV に無い protocol type を参照しているルール: {bad}"
+
+# --- raw なしのときスキップするルール（skip_conditions）--------------------
+
+def test_skip_conditions_reference_registered_rules():
+    """`skip_conditions["raw-less"]` の rule_id が実在し、validator に登録されていること。
+
+    綴り違いや deprecated 化で存在しない rule_id を書いても**何も起きない**（黙って効かない）ので、
+    ここで検出する。
+    """
+    from apps.gea.validator import Validator
+    from apps.gea.context import ValidationContext
+    registered = {r.rule_id for r in Validator(ValidationContext()).active_rules}
+    listed = set(DEFS.get("skip_conditions", {}).get("raw-less", []))
+    missing = sorted(listed - registered)
+    assert not missing, f"登録されていない rule_id: {missing}"
+
+
+def test_raw_none_columns_are_known_sdrf_fields():
+    """`sdrf.raw_none_columns` が `sdrf.fields` にある列であること。
+
+    定義に無い列名を書くと raw の判定が常に「raw なし」に倒れ、Skip = raw-less の
+    ルールが全部黙って消える。
+    """
+    known = set(DEFS["sdrf"]["fields"]) | set(DEFS["sdrf"].get("legacy_fields", []))
+    missing = sorted(set(DEFS["sdrf"].get("raw_none_columns", [])) - known)
+    assert not missing, f"sdrf.fields に無い列: {missing}"
+
+
+def test_dway_required_and_required_with_raw_do_not_overlap():
+    """同じ protocol type が `required` と `required_with_raw` の両方に入っていないこと。
+
+    両方にあると GEA_PR0018 と GEA_PR0019 が同じ欠落を二重に報告する。
+    """
+    for st, v in DEFS["protocols"]["dway_defaults"].items():
+        overlap = sorted(set(v["required"]) & set(v.get("required_with_raw", [])))
+        assert not overlap, f"{st}: required と required_with_raw が重複 {overlap}"
+
+def test_internal_ignore_ids_are_registered():
+    """`INTERNAL_IGNORE_RULE_IDS` の rule_id が validator に登録されていること。
+
+    deprecated 化したルールの ID を ignore に残すと、**どこからも使われない定義**になる。
+    ルールを外したときに ignore 側を消し忘れるのを検出する。
+    """
+    from apps.gea.validator import Validator
+    from apps.gea.context import ValidationContext
+    from apps.gea.rules.base import INTERNAL_IGNORE_RULE_IDS
+    registered = {r.rule_id for r in Validator(ValidationContext()).active_rules}
+    stale = sorted(set(INTERNAL_IGNORE_RULE_IDS) - registered)
+    assert not stale, f"ignore に残っている未登録の rule_id: {stale}"

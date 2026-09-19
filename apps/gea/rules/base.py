@@ -15,15 +15,10 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     "GEA_EX0001",  # An extract must have name specified.
     "GEA_SR0002",  # Undefined column exists.
     #
-    # GEA_PR0010-0015（submission type ごとの必須 protocol）は GEA_COM0005 に集約した（2026-09-18）。
-    "GEA_COM0005",  # Required Protocol Type is missing for the specified Submission Type.
-    #
     "GEA_EX0003",  # An Extraction protocol must be included.
     "GEA_AN0004",  # A Hybridization protocol must be included.
     "GEA_SR0008",  # A Growth, Treatment or Sample collection protocol must be included.
     "GEA_LE0005",  # A Labeling protocol must be included.
-    #
-    "GEA_DADMN0004",  # A Data processing protocol that describes the analysis methods used to generate the processed data matrix file must be included.
     #
     "GEA_DADN0004",  # A Data processing protocol that describes the analysis methods used to generate the processed data file(s) must be included.
     #
@@ -34,6 +29,13 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     #
     "GEA_COM0004",  # Value is not in controlled terms.（Comment[tissue_preservation_method]。2026-09-18）
     "GEA_G0016",  # Experiment Type is not allowed for the specified Submission Type.（2026-09-18）
+    #
+    # --- 2026-09-19 追加（protocol 系。error のまま internal ignore）---
+    "GEA_PR0007",  # Protocol Type is not used in the specified Submission Type.
+    "GEA_PR0018",  # Required Protocol Type is missing for the specified Submission Type.
+    "GEA_PR0019",  # Protocol Type required for raw data is missing for the specified Submission Type.
+    "GEA_PR0020",  # Value is not in controlled terms.（Protocol Type）
+    "GEA_REF0001",  # IDF Protocol Name and SDRF Protocol REF do not match.（only in SDRF は error）
 })
 
 
@@ -71,11 +73,42 @@ def submission_type(sub, context):
         return "other"
 
 
+def raw_less(sub, context):
+    """raw データを伴わない submission か（2026-09-19）。
+
+    `sdrf.raw_none_columns`（= `Raw Data File`）が **列ごと無い**、または **全行が空 or magic word
+    `none`** なら raw 無しとみなす。新 GEA は「どの submission type でも raw なしを許す」方針なので、
+    raw を前提にしたルール（`skip_conditions["raw-less"]`）はこのとき出さない。
+    """
+    sdrf = getattr(sub, "sdrf", None)
+    if sdrf is None:
+        return False                                   # SDRF が無いときは別のルールの担当
+    cols = ((context.definitions or {}).get("sdrf", {}) or {}).get("raw_none_columns", [])
+    seen = False
+    for col in cols:
+        for i in sdrf.col_indices(col):
+            seen = True
+            for row in sdrf.rows:
+                v = (row[i] if i < len(row) else "").strip()
+                if v and v.lower() != "none":
+                    return False                       # 実ファイル名が 1 つでもあれば raw あり
+    return True if seen or cols else False
+
+
+def skipped_when_raw_less(rule_id, context):
+    """`skip_conditions["raw-less"]` に載っているルールか（ルール表の Skip 列と対応）。"""
+    conds = (context.definitions or {}).get("skip_conditions", {}) or {}
+    return rule_id in (conds.get("raw-less") or [])
+
+
 class GeaRule(SimpleRule):
-    # 適用する submission type（None=Both/全て、"microarray"/"sequencing" で限定）
+    # 適用する submission type（None=Both/全て、"microarray"/"sequencing"/"xenium" で限定）
     only_type = None
 
     def applies(self, sub, context):
+        # raw なしのときに出さないルール（Skip = raw-less）。判定は定義 1 箇所で持つ。
+        if skipped_when_raw_less(self.rule_id, context) and raw_less(sub, context):
+            return False
         if self.only_type is None:
             return True
         return submission_type(sub, context) == self.only_type
