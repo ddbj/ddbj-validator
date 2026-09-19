@@ -988,7 +988,8 @@
   },
   "db_submission_type_map": {
     "1": "Microarray",
-    "2": "Sequencing"
+    "2": "Sequencing",
+    "3": "Other"
   },
   "skip_conditions": {
     "raw-less": [

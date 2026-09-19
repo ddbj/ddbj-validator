@@ -133,6 +133,26 @@ def test_submission_type_map_values_are_known():
     assert not bad, f"未知の submission type: {bad}"
 
 
+def test_db_submission_type_map_keys_are_numeric():
+    """`db_submission_type_map` のキーは DB の数値コードの文字列であること。
+
+    DB から得た値は `str()` してから引くため、キーが数値文字列でないと必ず外れる。
+    """
+    bad = sorted(k for k in DEFS["db_submission_type_map"] if not k.isdigit())
+    assert not bad, f"数値でないキー: {bad}"
+
+
+def test_db_submission_type_map_values_are_in_cv():
+    """`db_submission_type_map` の値は `Comment[Submission Type]` の CV 語であること。
+
+    この値は IDF に Comment[Submission Type] が無いときの代替として
+    `submission_type_map` を引くのに使う。CV 外の値を書くと黙って other に落ちる。
+    """
+    cv = set(CV_IDF["error"]["Comment[Submission Type]"])
+    bad = sorted(set(DEFS["db_submission_type_map"].values()) - cv)
+    assert not bad, f"CV に無い値: {bad}"
+
+
 # --- GEA_COM0004 用スコープ（二重発火の防止）---------------------------------
 
 def test_cv_scopes_do_not_overlap():
