@@ -29,11 +29,13 @@ class Validator(SimpleValidator):
             I.GEA_ED0001(), I.GEA_EF0001(), I.GEA_EF0003(),
             I.GEA_PB0002(),
             I.GEA_PR0001(), I.GEA_PR0002(), I.GEA_PR0003(), I.GEA_PR0005(), I.GEA_PR0006(),
-            # GEA_PR0008-0015（submission type ごとの必須 protocol）は GEA_COM0005 に集約したため登録しない。
-            I.GEA_COM0005(),
+            # GEA_PR0008-0015（submission type ごとの必須 protocol）は GEA_PR0018 / GEA_PR0019 に
+            # 集約したため登録しない。
+            I.GEA_PR0018(), I.GEA_PR0019(), I.GEA_PR0007(), I.GEA_PR0020(),
             I.GEA_RC0001(), I.GEA_MAN0001(),
             I.GEA_CV_ERR(), I.GEA_CV_WARN(), I.GEA_COM0004(),
-            I.GEA_REGEX0001(), I.GEA_REGEX0002(), I.GEA_REGEX0003(), I.GEA_REGEX0004(),
+            # GEA_REGEX0002 は deprecated（2026-09-19。Protocol Name の値形式を廃止）。
+            I.GEA_REGEX0001(), I.GEA_REGEX0003(), I.GEA_REGEX0004(),
             # --- SDRF ---
             S.GEA_SR0001(), S.GEA_SR0004(), S.GEA_SR0009(), S.GEA_SR0005(), S.GEA_SR0006(), S.GEA_SR0012(),
             S.GEA_EX0001(), S.GEA_EX0002(),
@@ -50,8 +52,9 @@ class Validator(SimpleValidator):
             # --- SDRF node グラフ / 属性名 ---
             N.GEA_EX0003(), N.GEA_EX0004(), N.GEA_LE0005(),
             N.GEA_AN0003(), N.GEA_AN0004(), N.GEA_AN0006(), N.GEA_AN0008(),
-            N.GEA_ADN0004(), N.GEA_ADMN0004(), N.GEA_DADN0004(), N.GEA_DADMN0004(),
-            N.GEA_ADN0001(), N.GEA_ADMN0001(), N.GEA_DADN0001(), N.GEA_DADMN0001(),
+            # GEA_DADMN0001 / GEA_DADMN0004 は deprecated（2026-09-19。Processed Data File に統合）。
+            N.GEA_ADN0004(), N.GEA_ADMN0004(), N.GEA_DADN0004(),
+            N.GEA_ADN0001(), N.GEA_ADMN0001(), N.GEA_DADN0001(),
             N.GEA_SM0001(), N.GEA_SM0003(), N.GEA_SC0001(), N.GEA_NN0001(),
             N.GEA_SR0008(), N.GEA_PN0001(), N.GEA_PN0003(),
             N.GEA_LC0001(), N.GEA_FV0004(), N.GEA_G0011(),

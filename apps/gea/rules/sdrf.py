@@ -8,8 +8,8 @@ from common.text import is_blank as _empty
 from common.magetab.columns import matches_any as _matches_any, matches_any_header as _matches_any_header
 
 # 複数回出現が許される列（重複エラーの対象外）
-_REPEATABLE = {"Protocol REF", "Raw Data File", "Array Data File", "Derived Array Data File",
-               "Array Data Matrix File", "Derived Array Data Matrix File",
+_REPEATABLE = {"Protocol REF", "Raw Data File", "Array Data File", "Processed Data File",
+               "Derived Array Data File", "Array Data Matrix File", "Derived Array Data Matrix File",
                "Parameter Value", "Comment", "Unit", "Term Source REF", "Term Accession Number",
                "Performer", "Date", "Factor Value"}
 
@@ -309,7 +309,7 @@ class GEA_DF0001(GeaRule):
 
 class GEA_DF0002(GeaRule):
     rule_id = "GEA_DF0002"; level = "warning"; target = "SDRF"  # 2026-09-17 error→warning
-    description = "Either one of Derived Array Data File and Derived Array Data Matrix File nodes are required."
+    description = "Processed Data File node is required."
 
     def validate(self, sub, context):
         if not sub.sdrf:
@@ -445,7 +445,9 @@ class GEA_SDRF_REGEX(GeaRule):
         "Comment[BioSample]", "Comment[SRA_EXPERIMENT]", "Comment[SRA_RUN]", "Comment[SRA_ANALYSIS]",
         "Comment[JGA_STUDY]", "Comment[JGA_SAMPLE]", "Comment[JGA_EXPERIMENT]", "Comment[JGA_DATA]",
         "Comment[JGA_ANALYSIS]", "Comment[GEO_SAMPLE]", "Comment[GEO_SERIES]",
-        "Comment[ArrayExpress_Experiment]", "Protocol REF",
+        "Comment[ArrayExpress_Experiment]",
+        # `Protocol REF` は 2026-09-19 に対象から外した（値が accession ではなく Protocol Name になったため）。
+        # 名前で参照が解決するかは GEA_REF0001 が見る。
     )
 
     def validate(self, sub, context):

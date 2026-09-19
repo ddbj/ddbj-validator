@@ -7,8 +7,21 @@ from apps.gea.rules.base import GeaRule
 
 
 class GEA_REF0001(GeaRule):
+    """IDF の `Protocol Name` と SDRF の `Protocol REF` を **双方向**に突き合わせる（2026-09-19 に双方向化）。
+
+    2 つは意味も重さも違うので、結果ごとに level を出し分ける。
+
+    - **only in SDRF**（SDRF から参照しているのに IDF に定義が無い）＝ **未解決の参照**。
+      node グラフが protocol type を引けず `GEA_PR0018` / `GEA_PR0019` や node 系ルールが
+      誤発火する原因になるので **error**（internal ignore なので取り込みは止めない）。
+    - **only in IDF**（定義したのに SDRF から使っていない）＝ 従来どおり **warning**。
+
+    `Protocol Name` / `Protocol REF` の値形式検査（`GEA_REGEX0002` / `GEA_REGEX0010`）は
+    2026-09-19 に廃止した（accession ではなく名前になったため）。形式ではなく
+    **名前で参照が解決するか**をこのルールで担保する。MetaboBank の MB_CR0002 と同じ考え方。
+    """
     rule_id = "GEA_REF0001"; level = "warning"; target = "IDF/SDRF"
-    description = "IDF should not contain protocol definitions that are not used in SDRF."
+    description = "IDF Protocol Name and SDRF Protocol REF do not match."
 
     def validate(self, sub, context):
         if not sub.idf or not sub.sdrf:
@@ -20,8 +33,19 @@ class GEA_REF0001(GeaRule):
                 v = (row[i] if i < len(row) else "").strip()
                 if v:
                     refs.add(v)
+        out = []
+        unresolved = refs - defined
+        if unresolved:
+            out.append(self.result(
+                level="error",
+                message=f"{self.description} (only in SDRF: {', '.join(sorted(unresolved))})",
+                sdrf_only=", ".join(sorted(unresolved))))
         unused = defined - refs
-        return [self.result(message=f"{self.description} ({', '.join(sorted(unused))})")] if unused else []
+        if unused:
+            out.append(self.result(
+                message=f"{self.description} (only in IDF: {', '.join(sorted(unused))})",
+                idf_only=", ".join(sorted(unused))))
+        return out
 
 
 class GEA_REF0006(GeaRule):

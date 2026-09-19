@@ -42,10 +42,18 @@ EXPECTED = {
     # crafted fixture（E-GEAD-1104 派生）: Submission Type=Microarray に Sequencing 用の experiment type を
     # 入れて G0016（sub type と exp type の整合）を担保。語自体は CV 内なので COM0002 は出ない
     "G0016-craft": {"GEA_G0016"},
-    # crafted fixture（E-GEAD-1114 派生）: Sequencing の必須 protocol から Sequencing protocol を落として
-    # COM0005（sub type ごとの必須 protocol）を担保。AN0003（SDRF の node に protocol が繋がっているか）は
-    # 別の観点なので同時に出る＝集約しても node 側の検査は残ることの確認も兼ねる
-    "COM0005-craft": {"GEA_COM0005", "GEA_AN0003"},
+    # crafted fixture（E-GEAD-1114 派生）: Sequencing の IDF から Sequencing protocol を落とす。
+    # PR0019（raw があるときだけ必須の protocol）＋ AN0003（SDRF の node に繋がっているか）に加え、
+    # SDRF の Protocol REF が IDF に解決しなくなるので REF0001（only in SDRF = error）も出る。
+    # → 「値形式（旧 REGEX0002/0010）を外しても名前の解決は REF0001 が担保する」ことの確認を兼ねる
+    "PR0019-craft": {"GEA_PR0019", "GEA_AN0003", "GEA_REF0001"},
+    # crafted fixture（E-GEAD-1114 派生）: Extraction protocol を Labeling protocol にすり替える。
+    # PR0007（その sub type では使わない protocol）と PR0018（必須の Extraction が無い）の 2 本
+    "PR0007-craft": {"GEA_PR0007", "GEA_PR0018"},
+    # crafted fixture（E-GEAD-1114 派生）: raw を magic word none にし、SRA 参照列と seq 系 protocol を落とす。
+    # Skip = raw-less が効いていれば PR0019 / EX0004 / AN0003 / MAN0012 は **出ない**。
+    # 残るのは SR0003（raw が none）と PN0001（値が全部空になった Protocol REF 列）だけ
+    "rawless-craft": {"GEA_SR0003", "GEA_PN0001"},
     # crafted fixture（E-GEAD-1104 派生）: Raw Data File を magic word none にして SR0003 を担保
     "SR0003-craft": {"GEA_SR0003"},
 }
@@ -88,14 +96,18 @@ def _db_rule_ids():
 def _migrate_sdrf_header(sdrf_text):
     """dordb の SDRF ヘッダを**移行後の列名**に直す（test 専用）。
 
-    新 GEA の SDRF は raw データ列を MetaboBank と同じ `Raw Data File` にし、旧名 `Array Data File` は
-    移行で変換する。dordb には変換前のデータしか無いので、ここで列名だけ移行後の姿にしてから検証する
+    新 GEA の SDRF は raw データ列を MetaboBank と同じ `Raw Data File`、processed 側を
+    `Processed Data File`（旧 `Derived Array Data File` と `Derived Array Data Matrix File` を統合）にし、
+    旧名は移行で変換する。dordb には変換前のデータしか無いので、ここで列名だけ移行後の姿にしてから検証する
     （変換しないと GEA_DF0001 等が「raw 列が無い」として出てしまい、テストの意味が無くなる）。
     """
     if not sdrf_text:
         return sdrf_text
     head, sep, rest = sdrf_text.partition("\n")
-    cells = ["Raw Data File" if c.strip() == "Array Data File" else c for c in head.split("\t")]
+    ren = {"Array Data File": "Raw Data File",
+           "Derived Array Data File": "Processed Data File",
+           "Derived Array Data Matrix File": "Processed Data File"}
+    cells = [ren.get(c.strip(), c) for c in head.split("\t")]
     return "\t".join(cells) + sep + rest
 
 

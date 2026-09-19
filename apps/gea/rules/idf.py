@@ -169,33 +169,116 @@ class GEA_G0013(GeaRule):
         return out
 
 
-class GEA_COM0005(GeaRule):
-    """submission type ごとに必須の protocol type が IDF に揃っているか（2026-09-18）。
+def _dway(context, sub):
+    """その submission type の protocol 既定（`protocols.dway_defaults[<CV 値>]`）。無ければ None。"""
+    st = submission_type_value(sub, context)
+    if not st:
+        return st, None
+    return st, ((context.definitions or {}).get("protocols", {})
+                .get("dway_defaults", {}) or {}).get(st)
 
-    必須の一覧は `protocols.dway_defaults[<submission type>].required`（D-way が既定として提示するもの）。
-    これまで「HTS で xx protocol が無い」「Micro-array で xx protocol が無い」を rule 1 本ずつ
-    （GEA_PR0008-0015）で見ていたのを 1 本に集約した。定義に type を足せばルールを増やさず追随できる。
 
-    submission type が分からない（IDF にも DB にも無い）ときや、その type の必須が定義されていない
-    ときは検査しない（投稿者に直しようが無いため）。
+def _protocol_types(sub):
+    return {t.strip() for t in sub.idf.get("Protocol Type") if t.strip()}
+
+
+class GEA_PR0018(GeaRule):
+    """submission type ごとに **raw の有無に関係なく必須**の protocol type が IDF に揃っているか。
+
+    一覧は `protocols.dway_defaults[<type>].required`。raw があるときだけ必須のものは
+    `GEA_PR0019` が別に見る（ルール表の Skip 列で管理を分けるため 2 本にしてある）。
+
+    submission type が分からない／その type の定義が無いときは検査しない。
     """
-    rule_id = "GEA_COM0005"; level = "error"; target = "IDF/SDRF"
+    rule_id = "GEA_PR0018"; level = "error"; target = "IDF/Protocol"
     description = "Required Protocol Type is missing for the specified Submission Type."
 
     def validate(self, sub, context):
         if not sub.idf:
             return []
-        st = submission_type_value(sub, context)
-        required = ((context.definitions or {}).get("protocols", {})
-                    .get("dway_defaults", {}) or {}).get(st, {}).get("required")
-        if not st or not required:
+        st, dw = _dway(context, sub)
+        required = (dw or {}).get("required")
+        if not required:
             return []
-        have = {t.strip() for t in sub.idf.get("Protocol Type") if t.strip()}
-        missing = [t for t in required if t not in have]
+        missing = [t for t in required if t not in _protocol_types(sub)]
         if not missing:
             return []
         return [self.result(message=f"{self.description} "
                                     f"(Submission Type: '{st}', missing: {', '.join(missing)})")]
+
+
+class GEA_PR0019(GeaRule):
+    """**raw データがあるときだけ必須**の protocol type が IDF に揃っているか。
+
+    一覧は `protocols.dway_defaults[<type>].required_with_raw`（Microarray の Labeling /
+    Hybridization / Scanning、Sequencing の Library construction / Sequencing）。
+    raw が無い submission では出さない（`skip_conditions["raw-less"]` に登録。判定は `GeaRule.applies`）。
+    Xenium は raw が無い形を想定しないので `required_with_raw` は空＝このルールは何も出さない。
+    """
+    rule_id = "GEA_PR0019"; level = "error"; target = "IDF/Protocol"
+    description = "Protocol Type required for raw data is missing for the specified Submission Type."
+
+    def validate(self, sub, context):
+        if not sub.idf:
+            return []
+        st, dw = _dway(context, sub)
+        required = (dw or {}).get("required_with_raw")
+        if not required:
+            return []
+        missing = [t for t in required if t not in _protocol_types(sub)]
+        if not missing:
+            return []
+        return [self.result(message=f"{self.description} "
+                                    f"(Submission Type: '{st}', missing: {', '.join(missing)})")]
+
+
+class GEA_PR0007(GeaRule):
+    """その submission type では使わない protocol type が IDF に書かれていないか。
+
+    `required + required_with_raw + optional` のどれにも無い値を報告する。
+    - CV 外の値は **除外**（`GEA_PR0020` が別に拾うので二重に出さない）。
+    - `allow_any_protocol` が立っている type（Other。何が来るか分からない）では検査しない。
+    """
+    rule_id = "GEA_PR0007"; level = "error"; target = "SDRF/Protocol"
+    description = "Protocol Type is not used in the specified Submission Type."
+
+    def validate(self, sub, context):
+        if not sub.idf:
+            return []
+        st, dw = _dway(context, sub)
+        if not dw or dw.get("allow_any_protocol"):
+            return []
+        allowed = set(dw.get("required", [])) | set(dw.get("required_with_raw", [])) | set(dw.get("optional", []))
+        cv = set(((context.definitions or {}).get("controlled_terms", {})
+                  .get("idf_protocol", {}).get("error", {}) or {}).get("Protocol Type", []))
+        bad = sorted({t for t in _protocol_types(sub) if t in cv and t not in allowed})
+        if not bad:
+            return []
+        return [self.result(message=f"{self.description} "
+                                    f"(Submission Type: '{st}', Protocol Type: {', '.join(bad)})")]
+
+
+class GEA_PR0020(GeaRule):
+    """`Protocol Type` の統制語彙。
+
+    CV は `controlled_terms.idf_protocol.error` に置く。`controlled_terms.idf.*` に置くと
+    `GEA_COM0002` / `GEA_COM0003` が拾ってしまい、**項目単位で level と internal ignore を
+    決められない**ため（COM0002 は ignore ではないので取り込みを止めてしまう）。
+    """
+    rule_id = "GEA_PR0020"; level = "error"; target = "IDF/Protocol"
+    description = "Value is not in controlled terms."
+
+    def validate(self, sub, context):
+        if not sub.idf:
+            return []
+        cv = ((context.definitions or {}).get("controlled_terms", {})
+              .get("idf_protocol", {}).get("error", {}) or {})
+        out = []
+        for field_name, allowed in cv.items():
+            for v in sub.idf.get(field_name):
+                if v.strip() and v.strip() not in allowed:
+                    out.append(self.result(message=f"{self.description} ({field_name}: '{v.strip()}')"))
+        return out
 
 
 class GEA_G0016(GeaRule):
@@ -347,8 +430,10 @@ class _ProtocolRequired(GeaRule):
 class GEA_PR0013(_ProtocolRequired):
     """**deprecated**（validator に登録しない。2026-09-18）。
 
-    submission type ごとの必須 protocol type の検査は **GEA_COM0005** に集約した
-    （必須の一覧は `protocols.dway_defaults` にある）。クラスは rule 表・参照のために残す。
+    submission type ごとの必須 protocol type の検査は **GEA_PR0018 / GEA_PR0019** に集約した
+    （必須の一覧は `protocols.dway_defaults` の `required` / `required_with_raw`）。
+    2026-09-18 は GEA_COM0005 に集約していたが、2026-09-19 に PR 系へ付け替えた。
+    クラスは rule 表・参照のために残す。
     """
     deprecated = True
     rule_id = "GEA_PR0013"; _ptype = "Sample collection protocol"
@@ -358,8 +443,10 @@ class GEA_PR0013(_ProtocolRequired):
 class GEA_PR0014(_ProtocolRequired):
     """**deprecated**（validator に登録しない。2026-09-18）。
 
-    submission type ごとの必須 protocol type の検査は **GEA_COM0005** に集約した
-    （必須の一覧は `protocols.dway_defaults` にある）。クラスは rule 表・参照のために残す。
+    submission type ごとの必須 protocol type の検査は **GEA_PR0018 / GEA_PR0019** に集約した
+    （必須の一覧は `protocols.dway_defaults` の `required` / `required_with_raw`）。
+    2026-09-18 は GEA_COM0005 に集約していたが、2026-09-19 に PR 系へ付け替えた。
+    クラスは rule 表・参照のために残す。
     """
     deprecated = True
     rule_id = "GEA_PR0014"; _ptype = "Extraction protocol"
@@ -369,8 +456,10 @@ class GEA_PR0014(_ProtocolRequired):
 class GEA_PR0015(_ProtocolRequired):
     """**deprecated**（validator に登録しない。2026-09-18）。
 
-    submission type ごとの必須 protocol type の検査は **GEA_COM0005** に集約した
-    （必須の一覧は `protocols.dway_defaults` にある）。クラスは rule 表・参照のために残す。
+    submission type ごとの必須 protocol type の検査は **GEA_PR0018 / GEA_PR0019** に集約した
+    （必須の一覧は `protocols.dway_defaults` の `required` / `required_with_raw`）。
+    2026-09-18 は GEA_COM0005 に集約していたが、2026-09-19 に PR 系へ付け替えた。
+    クラスは rule 表・参照のために残す。
     """
     deprecated = True
     rule_id = "GEA_PR0015"; _ptype = "Data processing protocol"
@@ -380,8 +469,10 @@ class GEA_PR0015(_ProtocolRequired):
 class GEA_PR0010(_ProtocolRequired):
     """**deprecated**（validator に登録しない。2026-09-18）。
 
-    submission type ごとの必須 protocol type の検査は **GEA_COM0005** に集約した
-    （必須の一覧は `protocols.dway_defaults` にある）。クラスは rule 表・参照のために残す。
+    submission type ごとの必須 protocol type の検査は **GEA_PR0018 / GEA_PR0019** に集約した
+    （必須の一覧は `protocols.dway_defaults` の `required` / `required_with_raw`）。
+    2026-09-18 は GEA_COM0005 に集約していたが、2026-09-19 に PR 系へ付け替えた。
+    クラスは rule 表・参照のために残す。
     """
     deprecated = True
     rule_id = "GEA_PR0010"; only_type = "microarray"; _ptype = "Labeling protocol"
@@ -391,8 +482,10 @@ class GEA_PR0010(_ProtocolRequired):
 class GEA_PR0011(_ProtocolRequired):
     """**deprecated**（validator に登録しない。2026-09-18）。
 
-    submission type ごとの必須 protocol type の検査は **GEA_COM0005** に集約した
-    （必須の一覧は `protocols.dway_defaults` にある）。クラスは rule 表・参照のために残す。
+    submission type ごとの必須 protocol type の検査は **GEA_PR0018 / GEA_PR0019** に集約した
+    （必須の一覧は `protocols.dway_defaults` の `required` / `required_with_raw`）。
+    2026-09-18 は GEA_COM0005 に集約していたが、2026-09-19 に PR 系へ付け替えた。
+    クラスは rule 表・参照のために残す。
     """
     deprecated = True
     rule_id = "GEA_PR0011"; only_type = "microarray"; _ptype = "Hybridization protocol"
@@ -402,8 +495,10 @@ class GEA_PR0011(_ProtocolRequired):
 class GEA_PR0012(_ProtocolRequired):
     """**deprecated**（validator に登録しない。2026-09-18）。
 
-    submission type ごとの必須 protocol type の検査は **GEA_COM0005** に集約した
-    （必須の一覧は `protocols.dway_defaults` にある）。クラスは rule 表・参照のために残す。
+    submission type ごとの必須 protocol type の検査は **GEA_PR0018 / GEA_PR0019** に集約した
+    （必須の一覧は `protocols.dway_defaults` の `required` / `required_with_raw`）。
+    2026-09-18 は GEA_COM0005 に集約していたが、2026-09-19 に PR 系へ付け替えた。
+    クラスは rule 表・参照のために残す。
     """
     deprecated = True
     rule_id = "GEA_PR0012"; only_type = "microarray"; _ptype = "Scanning protocol"
@@ -413,8 +508,10 @@ class GEA_PR0012(_ProtocolRequired):
 class GEA_PR0008(_ProtocolRequired):
     """**deprecated**（validator に登録しない。2026-09-18）。
 
-    submission type ごとの必須 protocol type の検査は **GEA_COM0005** に集約した
-    （必須の一覧は `protocols.dway_defaults` にある）。クラスは rule 表・参照のために残す。
+    submission type ごとの必須 protocol type の検査は **GEA_PR0018 / GEA_PR0019** に集約した
+    （必須の一覧は `protocols.dway_defaults` の `required` / `required_with_raw`）。
+    2026-09-18 は GEA_COM0005 に集約していたが、2026-09-19 に PR 系へ付け替えた。
+    クラスは rule 表・参照のために残す。
     """
     deprecated = True
     rule_id = "GEA_PR0008"; only_type = "sequencing"; _ptype = "Library construction protocol"
@@ -424,8 +521,10 @@ class GEA_PR0008(_ProtocolRequired):
 class GEA_PR0009(_ProtocolRequired):
     """**deprecated**（validator に登録しない。2026-09-18）。
 
-    submission type ごとの必須 protocol type の検査は **GEA_COM0005** に集約した
-    （必須の一覧は `protocols.dway_defaults` にある）。クラスは rule 表・参照のために残す。
+    submission type ごとの必須 protocol type の検査は **GEA_PR0018 / GEA_PR0019** に集約した
+    （必須の一覧は `protocols.dway_defaults` の `required` / `required_with_raw`）。
+    2026-09-18 は GEA_COM0005 に集約していたが、2026-09-19 に PR 系へ付け替えた。
+    クラスは rule 表・参照のために残す。
     """
     deprecated = True
     rule_id = "GEA_PR0009"; only_type = "sequencing"; _ptype = "Sequencing protocol"
@@ -531,6 +630,13 @@ class GEA_REGEX0001(_IdfRegex):
 
 
 class GEA_REGEX0002(_IdfRegex):
+    """**deprecated**（validator に登録しない。2026-09-19）。
+
+    新 GEA は protocol に accession（P-GEAD-n）を発行せず、`Protocol Name` は
+    `Sample collection` のような**名前**になる（MetaboBank と同じ）。`value_formats` から
+    `Protocol Name` を外したので検査対象が無くなった。名前で参照が解決するかは `GEA_REF0001` が見る。
+    """
+    deprecated = True
     rule_id = "GEA_REGEX0002"; _fields = ("Protocol Name",)
     description = "Format Error 'Protocol Name'"
 

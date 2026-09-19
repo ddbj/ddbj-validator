@@ -215,9 +215,8 @@
       "Scan Name",
       "Normalization Name",
       "Raw Data File",
-      "Derived Array Data File",
+      "Processed Data File",
       "Array Data Matrix File",
-      "Derived Array Data Matrix File",
       "Array Design REF",
       "Material Type",
       "Label",
@@ -236,6 +235,8 @@
     ],
     "legacy_fields": [
       "Array Data File",
+      "Derived Array Data File",
+      "Derived Array Data Matrix File",
       "Technology Type"
     ],
     "node_columns": [
@@ -247,9 +248,8 @@
       "Scan Name",
       "Normalization Name",
       "Raw Data File",
-      "Derived Array Data File",
-      "Array Data Matrix File",
-      "Derived Array Data Matrix File"
+      "Processed Data File",
+      "Array Data Matrix File"
     ],
     "required_columns_error": [
       "Source Name",
@@ -288,8 +288,7 @@
         "Array Data Matrix File"
       ],
       "derived": [
-        "Derived Array Data File",
-        "Derived Array Data Matrix File"
+        "Processed Data File"
       ]
     },
     "raw_none_columns": [
@@ -434,21 +433,6 @@
           "software variation design",
           "validation by real time PCR design",
           "validation by reverse transcription PCR design"
-        ],
-        "Protocol Type": [
-          "Conversion protocol",
-          "Data processing protocol",
-          "Dissection protocol",
-          "Extraction protocol",
-          "Growth protocol",
-          "Hybridization protocol",
-          "Labeling protocol",
-          "Library construction protocol",
-          "Sample collection protocol",
-          "Scanning protocol",
-          "Sequencing protocol",
-          "Tissue preparation protocol",
-          "Treatment protocol"
         ]
       }
     },
@@ -474,6 +458,25 @@
           "Other"
         ]
       }
+    },
+    "idf_protocol": {
+      "error": {
+        "Protocol Type": [
+          "Conversion protocol",
+          "Data processing protocol",
+          "Dissection protocol",
+          "Extraction protocol",
+          "Growth protocol",
+          "Hybridization protocol",
+          "Labeling protocol",
+          "Library construction protocol",
+          "Sample collection protocol",
+          "Scanning protocol",
+          "Sequencing protocol",
+          "Tissue preparation protocol",
+          "Treatment protocol"
+        ]
+      }
     }
   },
   "value_formats": {
@@ -491,8 +494,6 @@
     "Comment[GEO_SAMPLE]": "GSM\\d+",
     "Comment[GEO_SERIES]": "GSE\\d+",
     "Comment[ArrayExpress_Experiment]": "E-[A-Z]+-\\d+",
-    "Protocol Name": "(P-GEAD-\\d+|[A-Za-z0-9]+-?\\d*_Protocol_\\d+)",
-    "Protocol REF": "(P-GEAD-\\d+|[A-Za-z0-9]+-?\\d*_Protocol_\\d+)",
     "Array Design REF": "(A-[A-Z]+-\\d+|[-_ A-Za-z0-9.]+)",
     "PubMed ID": "\\d+",
     "Public Release Date": "\\d{4}-\\d{2}-\\d{2}",
@@ -803,10 +804,12 @@
         "required": [
           "Sample collection protocol",
           "Extraction protocol",
+          "Data processing protocol"
+        ],
+        "required_with_raw": [
           "Labeling protocol",
           "Hybridization protocol",
-          "Scanning protocol",
-          "Data processing protocol"
+          "Scanning protocol"
         ],
         "optional": [
           "Growth protocol",
@@ -819,9 +822,11 @@
         "required": [
           "Sample collection protocol",
           "Extraction protocol",
-          "Library construction protocol",
-          "Sequencing protocol",
           "Data processing protocol"
+        ],
+        "required_with_raw": [
+          "Library construction protocol",
+          "Sequencing protocol"
         ],
         "optional": [
           "Growth protocol",
@@ -838,6 +843,7 @@
           "Scanning protocol",
           "Data processing protocol"
         ],
+        "required_with_raw": [],
         "optional": [
           "Growth protocol",
           "Treatment protocol",
@@ -851,12 +857,14 @@
           "Extraction protocol",
           "Data processing protocol"
         ],
+        "required_with_raw": [],
         "optional": [
           "Growth protocol",
           "Treatment protocol",
           "Conversion protocol",
           "Dissection protocol"
-        ]
+        ],
+        "allow_any_protocol": true
       }
     }
   },
@@ -981,5 +989,15 @@
   "db_submission_type_map": {
     "1": "Microarray",
     "2": "Sequencing"
+  },
+  "skip_conditions": {
+    "raw-less": [
+      "GEA_PR0019",
+      "GEA_EX0004",
+      "GEA_AN0003",
+      "GEA_MAN0012",
+      "GEA_AD0001",
+      "GEA_MAN0011"
+    ]
   }
 }
