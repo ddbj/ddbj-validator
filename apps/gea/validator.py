@@ -33,7 +33,7 @@ class Validator(SimpleValidator):
             # 集約したため登録しない。
             I.GEA_PR0018(), I.GEA_PR0019(), I.GEA_PR0007(), I.GEA_PR0020(),
             I.GEA_RC0001(), I.GEA_MAN0001(),
-            I.GEA_CV_ERR(), I.GEA_CV_WARN(), I.GEA_COM0004(),
+            I.GEA_CV_ERR(), I.GEA_CV_WARN(),
             # GEA_REGEX0002 は deprecated（2026-09-19。Protocol Name の値形式を廃止）。
             I.GEA_REGEX0001(), I.GEA_REGEX0003(), I.GEA_REGEX0004(),
             # --- SDRF ---
@@ -42,7 +42,7 @@ class Validator(SimpleValidator):
             # GEA_AN0002 / GEA_AN0005 は deprecated（2026-09-18。Technology Type 列の有無・array assay 強制を廃止）のため登録しない。
             # GEA_TT0001 / GEA_AN0009 は deprecated（2026-09-18。SDRF Technology Type 廃止）のため登録しない。
             S.GEA_AN0001(),
-            S.GEA_MT0004(),
+            S.GEA_COM0004(), S.GEA_MT0004(),
             S.GEA_LE0002(), S.GEA_LE0004(), S.GEA_LE0001(), S.GEA_AD0001(), S.GEA_AD0004(),
             S.GEA_DF0001(), S.GEA_DF0002(),
             # GEA_RC0002 は deprecated（2026-09-17。Comment 列の重複は取込で畳む）のため登録しない。
@@ -53,8 +53,9 @@ class Validator(SimpleValidator):
             N.GEA_EX0003(), N.GEA_EX0004(), N.GEA_LE0005(),
             N.GEA_AN0003(), N.GEA_AN0004(), N.GEA_AN0006(), N.GEA_AN0008(),
             # GEA_DADMN0001 / GEA_DADMN0004 は deprecated（2026-09-19。Processed Data File に統合）。
-            N.GEA_ADN0004(), N.GEA_ADMN0004(), N.GEA_DADN0004(),
-            N.GEA_ADN0001(), N.GEA_ADMN0001(), N.GEA_DADN0001(),
+            # GEA_ADMN0001 / GEA_ADMN0004 も deprecated（2026-09-20。Raw Data File に統合）。
+            N.GEA_ADN0004(), N.GEA_DADN0004(),
+            N.GEA_ADN0001(), N.GEA_DADN0001(),
             N.GEA_SM0001(), N.GEA_SM0003(), N.GEA_SC0001(), N.GEA_NN0001(),
             N.GEA_SR0008(), N.GEA_PN0001(), N.GEA_PN0003(),
             N.GEA_LC0001(), N.GEA_FV0004(), N.GEA_G0011(),

@@ -96,8 +96,9 @@ def _db_rule_ids():
 def _migrate_sdrf_header(sdrf_text):
     """dordb の SDRF ヘッダを**移行後の列名**に直す（test 専用）。
 
-    新 GEA の SDRF は raw データ列を MetaboBank と同じ `Raw Data File`、processed 側を
-    `Processed Data File`（旧 `Derived Array Data File` と `Derived Array Data Matrix File` を統合）にし、
+    新 GEA の SDRF は raw 側を MetaboBank と同じ `Raw Data File`（旧 `Array Data File` と
+    `Array Data Matrix File` を統合）、processed 側を `Processed Data File`
+    （旧 `Derived Array Data File` と `Derived Array Data Matrix File` を統合）にし、
     旧名は移行で変換する。dordb には変換前のデータしか無いので、ここで列名だけ移行後の姿にしてから検証する
     （変換しないと GEA_DF0001 等が「raw 列が無い」として出てしまい、テストの意味が無くなる）。
     """
@@ -105,6 +106,7 @@ def _migrate_sdrf_header(sdrf_text):
         return sdrf_text
     head, sep, rest = sdrf_text.partition("\n")
     ren = {"Array Data File": "Raw Data File",
+           "Array Data Matrix File": "Raw Data File",
            "Derived Array Data File": "Processed Data File",
            "Derived Array Data Matrix File": "Processed Data File"}
     cells = [ren.get(c.strip(), c) for c in head.split("\t")]

@@ -579,29 +579,6 @@ class GEA_CV_WARN(_CvBase):
     description = "Value is not in controlled terms."
 
 
-class GEA_COM0004(GeaRule):
-    """IDF と SDRF の両方に現れる項目の統制語彙（現在は Comment[tissue_preservation_method]）。
-
-    CV は `controlled_terms.idf_sdrf.error` に置く。`controlled_terms.idf.error`（GEA_COM0002 が全キーを回す）
-    に置くと同じ違反が COM0002 と二重に出てしまうため、スコープを分けている。
-    IDF はフィールド値、SDRF は同名の列の値を見る。どちら側で見つけたかを message に付ける。
-    """
-    rule_id = "GEA_COM0004"; level = "error"; target = "IDF/SDRF"
-    description = "Value is not in controlled terms."
-
-    def validate(self, sub, context):
-        cv = ((context.definitions or {}).get("controlled_terms", {})
-              .get("idf_sdrf", {}).get("error", {}))
-        out = []
-        for field_name, allowed in cv.items():
-            for where, values in (("IDF", sub.idf.get(field_name) if sub.idf else []),
-                                  ("SDRF", sub.sdrf.values(field_name) if sub.sdrf else [])):
-                bad = sorted({v.strip() for v in values if v.strip() and v.strip() not in allowed})
-                for v in bad:
-                    out.append(self.result(message=f"{self.description} ({where} {field_name}: '{v}')"))
-        return out
-
-
 class _IdfRegex(GeaRule):
     """value_formats のうち IDF 側フィールドの形式検査。"""
     rule_id = "GEA_REGEX0001"; level = "error"; target = "IDF"
@@ -647,5 +624,5 @@ class GEA_REGEX0003(_IdfRegex):
 
 
 class GEA_REGEX0004(_IdfRegex):
-    rule_id = "GEA_REGEX0004"; _fields = ("Comment[SecondaryAccession]",)
-    description = "Format Error 'Comment[SecondaryAccession]'"
+    rule_id = "GEA_REGEX0004"; _fields = ("Comment[Secondary Accession]",)
+    description = "Format Error 'Comment[Secondary Accession]'"

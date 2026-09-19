@@ -18,5 +18,4 @@ Comment[Number of channel]	single-channel
 Comment[Array Design REF]	A-GEAD-11
 Comment[AEExperimentType]	transcription profiling by array
 Comment[BioProject]	PRJDB35892
-Comment[tissue_preservation_method]	ffpe
 Comment[Last Update Date]	2025-10-27

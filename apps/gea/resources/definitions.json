@@ -25,12 +25,11 @@
       "Comment[Study Type]",
       "Comment[Experiment Type]",
       "Comment[Submission Type]",
-      "Comment[Number of channel]",
+      "Comment[Number of Channel]",
       "Comment[BioProject]",
-      "Comment[SecondaryAccession]",
+      "Comment[Secondary Accession]",
       "Comment[Related Study]",
       "Comment[DBCLS]",
-      "Comment[tissue_preservation_method]",
       "Comment[Submission Date]",
       "Comment[Last Update Date]"
     ],
@@ -39,7 +38,9 @@
       "Comment[AEExperimentType]",
       "Comment[Related study]",
       "Comment[Public Release Date]",
-      "Comment[Array Design REF]"
+      "Comment[Array Design REF]",
+      "Comment[Number of channel]",
+      "Comment[SecondaryAccession]"
     ],
     "single_value": [
       "MAGE-TAB Version",
@@ -51,7 +52,7 @@
       "SDRF File",
       "Comment[Experiment Type]",
       "Comment[Submission Type]",
-      "Comment[Number of channel]",
+      "Comment[Number of Channel]",
       "Comment[BioProject]",
       "Comment[Submission Date]",
       "Comment[Last Update Date]"
@@ -99,32 +100,17 @@
       "Protocol Type",
       "Comment[Experiment Type]"
     ],
-    "required_group_error": {
-      "Experimental Factor": [
-        "Experimental Factor Name",
-        "Experimental Factor Type"
-      ],
-      "Person": [
-        "Person Last Name",
-        "Person First Name",
-        "Person Affiliation",
-        "Person Roles"
-      ],
-      "Protocol": [
-        "Protocol Name",
-        "Protocol Type",
-        "Protocol Description"
-      ]
-    },
-    "required_group_warning": {
-      "Publication": [
-        "PubMed ID",
-        "Publication DOI"
-      ]
-    },
+    "required_group_error": [
+      "Experimental Factor",
+      "Person",
+      "Protocol"
+    ],
+    "required_group_warning": [
+      "Publication"
+    ],
     "required_microarray": [
       "Experimental Design",
-      "Comment[Number of channel]"
+      "Comment[Number of Channel]"
     ],
     "description_min_length": 20,
     "description_max_length": 4000,
@@ -216,7 +202,6 @@
       "Normalization Name",
       "Raw Data File",
       "Processed Data File",
-      "Array Data Matrix File",
       "Array Design REF",
       "Material Type",
       "Label",
@@ -235,6 +220,7 @@
     ],
     "legacy_fields": [
       "Array Data File",
+      "Array Data Matrix File",
       "Derived Array Data File",
       "Derived Array Data Matrix File",
       "Technology Type"
@@ -248,8 +234,7 @@
       "Scan Name",
       "Normalization Name",
       "Raw Data File",
-      "Processed Data File",
-      "Array Data Matrix File"
+      "Processed Data File"
     ],
     "required_columns_error": [
       "Source Name",
@@ -284,8 +269,7 @@
     ],
     "required_data_file_group": {
       "raw": [
-        "Raw Data File",
-        "Array Data Matrix File"
+        "Raw Data File"
       ],
       "derived": [
         "Processed Data File"
@@ -304,7 +288,7 @@
         "Person Roles": [
           "submitter"
         ],
-        "Comment[Number of channel]": [
+        "Comment[Number of Channel]": [
           "single-channel",
           "dual-channel"
         ],
@@ -437,7 +421,13 @@
       }
     },
     "sdrf": {
-      "error": {},
+      "error": {
+        "Comment[tissue_preservation_method]": [
+          "FFPE",
+          "Fresh Frozen",
+          "Other"
+        ]
+      },
       "warning": {
         "Material Type": [
           "total RNA",
@@ -447,15 +437,6 @@
           "genomic DNA",
           "protein",
           "other"
-        ]
-      }
-    },
-    "idf_sdrf": {
-      "error": {
-        "Comment[tissue_preservation_method]": [
-          "FFPE",
-          "Fresh Frozen",
-          "Other"
         ]
       }
     },
@@ -481,7 +462,7 @@
   },
   "value_formats": {
     "Comment[BioProject]": "(PRJDB\\d+|PSUB\\d{6,})",
-    "Comment[SecondaryAccession]": "[A-Za-z0-9:_.-]+",
+    "Comment[Secondary Accession]": "[A-Za-z0-9:_.-]+",
     "Comment[BioSample]": "(SAMD\\d{8}|SSUB\\d{6,})",
     "Comment[SRA_EXPERIMENT]": "(DRX\\d{6,}|[A-Za-z0-9_-]+-\\d{4,}_Experiment_\\d{4,})",
     "Comment[SRA_RUN]": "(DRR\\d{6,}|[A-Za-z0-9_-]+-\\d{4,}_Run_\\d{4,})",
@@ -988,7 +969,8 @@
   },
   "db_submission_type_map": {
     "1": "Microarray",
-    "2": "Sequencing"
+    "2": "Sequencing",
+    "3": "Other"
   },
   "skip_conditions": {
     "raw-less": [

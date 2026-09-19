@@ -9,7 +9,7 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     # --- 2026-09-18 追加（error のまま internal ignore）---
     "GEA_FV0004",  # Values of an experimental variable must vary (for compound+dose at least one must vary).
     "GEA_LC0001",  # Library source, layout, selection and strategy must be specified.
-    "GEA_DF0001",  # Either one of Raw Data File and Array Data Matrix File nodes are required.
+    "GEA_DF0001",  # Raw Data File node is required.
     "GEA_REF0002",  # Referencing object is not registered in this submission account.
     "GEA_SR0012",  # A source should have a 'sample_title' characteristic/comment.
     "GEA_EX0001",  # An extract must have name specified.
@@ -27,7 +27,7 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     "GEA_AN0006",  # For an array assay the incoming nodes must be 'Labeled Extract' nodes only.
     "GEA_G0011",  # Array Design File (or Array Design REF) is required for micro-array submissions.
     #
-    "GEA_COM0004",  # Value is not in controlled terms.（Comment[tissue_preservation_method]。2026-09-18）
+    "GEA_COM0004",  # Value is not in controlled terms.（SDRF の Comment[tissue_preservation_method]。2026-09-18）
     "GEA_G0016",  # Experiment Type is not allowed for the specified Submission Type.（2026-09-18）
     #
     # --- 2026-09-19 追加（protocol 系。error のまま internal ignore）---
