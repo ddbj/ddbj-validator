@@ -18,7 +18,7 @@ class Idf(BaseIdf):
 
     @property
     def number_of_channel(self):
-        return (self.first("Comment[Number of channel]") or "").strip()
+        return (self.first("Comment[Number of Channel]") or "").strip()
 
     def protocols(self):
         """Protocol* の列並列を protocol 単位の dict にまとめて返す（GEA は Name/Type/Description）。"""

@@ -95,7 +95,7 @@ def test_submission_type_cv_is_under_idf_error():
 
 
 #: `controlled_terms` の直下に置けるスコープ。どのルールが読むかが 1 対 1 で決まっている。
-CV_SCOPES = {"idf", "sdrf", "idf_sdrf", "idf_protocol"}
+CV_SCOPES = {"idf", "sdrf", "idf_protocol"}
 
 
 def test_controlled_terms_has_only_scope_keys():
@@ -158,7 +158,7 @@ def test_db_submission_type_map_values_are_in_cv():
 def test_cv_scopes_do_not_overlap():
     """スコープ間で CV のキーが重複しないこと。
 
-    重複すると同じ違反が 2 本のルールから出る。さらに専用スコープ側（`idf_sdrf` = GEA_COM0004、
+    重複すると同じ違反が 2 本のルールから出る。さらに専用スコープ側（`sdrf` = GEA_COM0004 / GEA_MT0004、
     `idf_protocol` = GEA_PR0020）は internal ignore だが `idf` 側（GEA_COM0002）は違うので、
     重複させると ignore が効かなくなる。
     """

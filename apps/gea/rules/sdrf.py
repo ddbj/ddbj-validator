@@ -225,6 +225,35 @@ class GEA_AN0009(GeaRule):
         return [self.result(message=f"{self.description} (Found: {', '.join(sorted(bad))})")] if bad else []
 
 
+# ---------------- SDRF の統制語彙（error）----------------
+class GEA_COM0004(GeaRule):
+    """SDRF の列の統制語彙（現在は `Comment[tissue_preservation_method]`）。
+
+    CV は `controlled_terms.sdrf.error` に置く。`controlled_terms.idf.error`（GEA_COM0002 が全キーを
+    回す）は IDF 専用なので、SDRF の列はこちらに入れる。
+    `Material Type` は warning 扱いで専用ルール GEA_MT0004 が見るため、`sdrf.warning` は読まない。
+
+    2026-09-20 以前は `Comment[tissue_preservation_method]` を IDF にも置いていたため
+    `controlled_terms.idf_sdrf` という専用スコープを IDF/SDRF 両方について見ていた。
+    組織の保存法はサンプルの属性なので IDF から外し、SDRF だけを見る形にした。
+    """
+    rule_id = "GEA_COM0004"; level = "error"; target = "SDRF"
+    description = "Value is not in controlled terms."
+
+    def validate(self, sub, context):
+        if not sub.sdrf:
+            return []
+        cv = ((context.definitions or {}).get("controlled_terms", {})
+              .get("sdrf", {}).get("error", {}))
+        out = []
+        for col, allowed in cv.items():
+            bad = sorted({v.strip() for v in sub.sdrf.values(col)
+                          if v.strip() and v.strip() not in allowed})
+            for v in bad:
+                out.append(self.result(message=f"{self.description} ({col}: '{v}')"))
+        return out
+
+
 # ---------------- Material Type CV ----------------
 class GEA_MT0004(GeaRule):
     rule_id = "GEA_MT0004"; level = "error"; target = "SDRF/MaterialTypeAttribute"

@@ -12,6 +12,9 @@ RENAMED_IDF_FIELDS = {
     "Comment[AEExperimentType]": "Comment[Experiment Type]",
     "Comment[Related study]": "Comment[Related Study]",
     "Comment[Public Release Date]": "Public Release Date",
+    # 2026-09-20 の MB 側依頼。IDF のフィールド名だけ Title Case に揃える
+    "Comment[Number of channel]": "Comment[Number of Channel]",
+    "Comment[SecondaryAccession]": "Comment[Secondary Accession]",
 }
 
 
