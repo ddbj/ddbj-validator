@@ -202,7 +202,6 @@
       "Normalization Name",
       "Raw Data File",
       "Processed Data File",
-      "Array Data Matrix File",
       "Array Design REF",
       "Material Type",
       "Label",
@@ -221,6 +220,7 @@
     ],
     "legacy_fields": [
       "Array Data File",
+      "Array Data Matrix File",
       "Derived Array Data File",
       "Derived Array Data Matrix File",
       "Technology Type"
@@ -234,8 +234,7 @@
       "Scan Name",
       "Normalization Name",
       "Raw Data File",
-      "Processed Data File",
-      "Array Data Matrix File"
+      "Processed Data File"
     ],
     "required_columns_error": [
       "Source Name",
@@ -270,8 +269,7 @@
     ],
     "required_data_file_group": {
       "raw": [
-        "Raw Data File",
-        "Array Data Matrix File"
+        "Raw Data File"
       ],
       "derived": [
         "Processed Data File"

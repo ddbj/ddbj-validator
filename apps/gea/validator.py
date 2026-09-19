@@ -53,8 +53,9 @@ class Validator(SimpleValidator):
             N.GEA_EX0003(), N.GEA_EX0004(), N.GEA_LE0005(),
             N.GEA_AN0003(), N.GEA_AN0004(), N.GEA_AN0006(), N.GEA_AN0008(),
             # GEA_DADMN0001 / GEA_DADMN0004 は deprecated（2026-09-19。Processed Data File に統合）。
-            N.GEA_ADN0004(), N.GEA_ADMN0004(), N.GEA_DADN0004(),
-            N.GEA_ADN0001(), N.GEA_ADMN0001(), N.GEA_DADN0001(),
+            # GEA_ADMN0001 / GEA_ADMN0004 も deprecated（2026-09-20。Raw Data File に統合）。
+            N.GEA_ADN0004(), N.GEA_DADN0004(),
+            N.GEA_ADN0001(), N.GEA_DADN0001(),
             N.GEA_SM0001(), N.GEA_SM0003(), N.GEA_SC0001(), N.GEA_NN0001(),
             N.GEA_SR0008(), N.GEA_PN0001(), N.GEA_PN0003(),
             N.GEA_LC0001(), N.GEA_FV0004(), N.GEA_G0011(),

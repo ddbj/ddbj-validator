@@ -122,6 +122,12 @@ class GEA_ADN0004(_IncomingAny):
 
 
 class GEA_ADMN0004(_IncomingAny):
+    """**deprecated**（validator に登録しない。2026-09-20）。
+
+    `Array Data Matrix File` を `Raw Data File` に統合したため、`GEA_ADN0004` と同じ検査になった。
+    クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "GEA_ADMN0004"; level = "error"; target = "SDRF/ArrayDataMatrixNode"; only_type = "microarray"
     _node = "Array Data Matrix File"
     description = "An array data matrix file should be described by a protocol."
@@ -330,6 +336,12 @@ class GEA_ADN0001(_ColPresentButEmpty):
 
 
 class GEA_ADMN0001(_ColPresentButEmpty):
+    """**deprecated**（validator に登録しない。2026-09-20）。
+
+    `Array Data Matrix File` を `Raw Data File` に統合したため、`GEA_ADN0001` と同じ検査になった。
+    クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "GEA_ADMN0001"; level = "error"; target = "SDRF/ArrayDataMatrixNode"; _col = "Array Data Matrix File"
     description = "An array data matrix file must have name specified."
 

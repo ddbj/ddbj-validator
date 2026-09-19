@@ -376,3 +376,72 @@ def test_internal_ignore_ids_are_registered():
     registered = {r.rule_id for r in Validator(ValidationContext()).active_rules}
     stale = sorted(set(INTERNAL_IGNORE_RULE_IDS) - registered)
     assert not stale, f"ignore に残っている未登録の rule_id: {stale}"
+
+
+# --- SDRF の列定義の整合（2026-09-20 の Raw Data File 統合で足した）------------
+
+def _sdrf():
+    return DEFS["sdrf"]
+
+
+def test_sdrf_fields_and_legacy_fields_do_not_overlap():
+    """現行列と旧名が重ならないこと。
+
+    両方に書くと「旧名なのに必須判定に数える」ことになり、統合したつもりの列が生き残る。
+    """
+    overlap = sorted(set(_sdrf()["fields"]) & set(_sdrf()["legacy_fields"]))
+    assert not overlap, f"fields と legacy_fields の重複: {overlap}"
+
+
+def test_sdrf_node_columns_are_current_fields():
+    """`sdrf.node_columns` は現行列であること。
+
+    旧名を node 列に残すと、統合したはずの列が node グラフ上で別ノードとして生き続ける。
+    """
+    bad = sorted(set(_sdrf()["node_columns"]) - set(_sdrf()["fields"]))
+    assert not bad, f"現行列でない node 列: {bad}"
+
+
+def test_graph_node_names_match_node_columns():
+    """`apps/gea/graph.py` の `NODE_NAMES` が `sdrf.node_columns` と一致すること。
+
+    graph 側は列名をコードに直書きしているので、定義だけ直すと両者がずれる。
+    """
+    from apps.gea.graph import NODE_NAMES
+    assert list(NODE_NAMES) == list(_sdrf()["node_columns"])
+
+
+def test_required_data_file_group_columns_are_current_fields():
+    """`required_data_file_group` の列が現行列であること。
+
+    旧名を残すと、旧名の列だけで必須判定（GEA_DF0001 / GEA_DF0002）が満たされてしまう。
+    """
+    cols = {c for group in _sdrf()["required_data_file_group"].values() for c in group}
+    bad = sorted(cols - set(_sdrf()["fields"]))
+    assert not bad, f"現行列でない必須列: {bad}"
+
+
+def test_registered_node_rule_columns_are_current_fields():
+    """登録されているノード系ルールが見る列（`_col` / `_node`）が現行列であること。
+
+    列を統合したのにルールを deprecated にし忘れると、**決して発火しないルール**が残る。
+    """
+    from apps.gea.validator import Validator
+    from apps.gea.context import ValidationContext
+    fields = set(_sdrf()["fields"])
+    bad = {}
+    for r in Validator(ValidationContext()).active_rules:
+        for attr in ("_col", "_node"):
+            col = getattr(r, attr, None)
+            if isinstance(col, str) and col not in fields:
+                bad[f"{r.rule_id}.{attr}"] = col
+    assert not bad, f"現行列でない列を見ているルール: {bad}"
+
+
+def test_deprecated_rules_are_not_registered():
+    """`deprecated = True` のルールが validator に登録されていないこと。"""
+    from apps.gea.validator import Validator
+    from apps.gea.context import ValidationContext
+    bad = sorted({r.rule_id for r in Validator(ValidationContext()).active_rules
+                  if getattr(r, "deprecated", False)})
+    assert not bad, f"deprecated なのに登録されている: {bad}"

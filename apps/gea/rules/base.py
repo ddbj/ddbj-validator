@@ -9,7 +9,7 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     # --- 2026-09-18 追加（error のまま internal ignore）---
     "GEA_FV0004",  # Values of an experimental variable must vary (for compound+dose at least one must vary).
     "GEA_LC0001",  # Library source, layout, selection and strategy must be specified.
-    "GEA_DF0001",  # Either one of Raw Data File and Array Data Matrix File nodes are required.
+    "GEA_DF0001",  # Raw Data File node is required.
     "GEA_REF0002",  # Referencing object is not registered in this submission account.
     "GEA_SR0012",  # A source should have a 'sample_title' characteristic/comment.
     "GEA_EX0001",  # An extract must have name specified.

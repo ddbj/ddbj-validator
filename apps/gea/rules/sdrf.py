@@ -327,7 +327,7 @@ class GEA_AD0001(GeaRule):
 # ---------------- Data files ----------------
 class GEA_DF0001(GeaRule):
     rule_id = "GEA_DF0001"; level = "error"; target = "SDRF"
-    description = "Either one of Raw Data File and Array Data Matrix File nodes are required."
+    description = "Raw Data File node is required."
 
     def validate(self, sub, context):
         if not sub.sdrf:
@@ -398,7 +398,7 @@ class GEA_SR0003(GeaRule):
     raw データを伴わない投稿は正規の書き方なので error にはせず、「raw が無い投稿である」ことを
     登録者とキュレータに気づかせる **warning**（MetaboBank の MB_SR0048 と同じ扱い・同じ message）。
 
-    対象列は `sdrf.raw_none_columns`（= `Raw Data File`）。旧名 `Array Data File` は移行で `Raw Data File` に
+    対象列は `sdrf.raw_none_columns`（= `Raw Data File`）。旧名 `Array Data File` / `Array Data Matrix File` は移行で `Raw Data File` に
     変換されるので対象にしない（変換後の列を見る）。
     空セルは対象外（値が無いこと自体は別のルールの担当）。同名列が複数あってもセル単位で判定する。
     """
