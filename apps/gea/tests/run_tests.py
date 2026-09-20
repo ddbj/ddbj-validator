@@ -53,8 +53,8 @@ EXPECTED = {
     # → 「値形式（旧 REGEX0002/0010）を外しても名前の解決は REF0001 が担保する」ことの確認を兼ねる
     "PR0019-craft": {"GEA_PR0019", "GEA_AN0003", "GEA_REF0001"},
     # crafted fixture（E-GEAD-1114 派生）: Extraction protocol を Labeling protocol にすり替える。
-    # PR0007（その sub type では使わない protocol）と PR0018（必須の Extraction が無い）の 2 本
-    "PR0007-craft": {"GEA_PR0007", "GEA_PR0018"},
+    # PR0017（その sub type では使わない protocol）と PR0018（必須の Extraction が無い）の 2 本
+    "PR0017-craft": {"GEA_PR0017", "GEA_PR0018"},
     # crafted fixture（E-GEAD-1114 派生）: raw を magic word none にし、SRA 参照列と seq 系 protocol を落とす。
     # Skip = raw-less が効いていれば PR0019 / EX0004 / AN0003 / MAN0012 は **出ない**。
     # 残るのは SR0003（raw が none）と PN0001（値が全部空になった Protocol REF 列）だけ

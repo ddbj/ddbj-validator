@@ -1,6 +1,8 @@
 """BioSample 整合ルール（GEA_BS0001/0002/0003）。DB 参照（内部 DB）。core は common/magetab/biosample。
 
 SDRF の Characteristics[attr] を、参照 BioSample（Comment[BioSample]=SAMD）の DB 属性と突合。
+いずれも **account が分からないと判定できない**（`allowed_biosamples` = その account が参照してよい SAMD)
+ため `requires_auth = True`（2026-09-20）。
 context.biosample_attrs（SAMD -> {attr: value}）が None（未取得＝skip_db 等）ならスキップ。
 ※これらは legacy rules.txt に無い GEA 追加ルール（MB_SR0021-0023 相当）。
 """
@@ -9,7 +11,7 @@ from common.magetab import biosample as _bs
 
 
 class GEA_BS0002(GeaRule):
-    rule_id = "GEA_BS0002"; level = "warning"; target = "SDRF"; requires_rdb = True
+    rule_id = "GEA_BS0002"; level = "warning"; target = "SDRF"; requires_rdb = True; requires_auth = True
     description = "Referenced BioSample is not found in the account/DB."
 
     def validate(self, sub, context):
@@ -23,7 +25,7 @@ class GEA_BS0002(GeaRule):
 
 
 class GEA_BS0001(GeaRule):
-    rule_id = "GEA_BS0001"; level = "warning"; target = "SDRF"; requires_rdb = True
+    rule_id = "GEA_BS0001"; level = "warning"; target = "SDRF"; requires_rdb = True; requires_auth = True
     description = "BioSample attribute referenced in Characteristics is missing in the BioSample."
 
     def validate(self, sub, context):
@@ -36,7 +38,7 @@ class GEA_BS0001(GeaRule):
 
 
 class GEA_BS0003(GeaRule):
-    rule_id = "GEA_BS0003"; level = "warning"; target = "SDRF"; requires_rdb = True  # 2026-09-17 error→warning
+    rule_id = "GEA_BS0003"; level = "warning"; target = "SDRF"; requires_rdb = True; requires_auth = True  # 2026-09-17 error→warning
     description = "Characteristics value and BioSample attribute value do not match."
 
     def validate(self, sub, context):
