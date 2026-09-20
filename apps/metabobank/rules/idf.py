@@ -338,7 +338,7 @@ class MB_IR0025(MbRule):
 
 class MB_IR0038(MbRule):
     rule_id = "MB_IR0038"; level = "warning"; target = "IDF"
-    description = "MetaboBank study accession(s) should be specified for re-analysis."
+    description = 'Related study should be specified as a MetaboBank accession (MTBKSnnn) or as "DB:ID" for another database.'
 
     def validate(self, sub, context):
         """Comment[Related Study]（再解析元の study）が参照表記として読める形か。

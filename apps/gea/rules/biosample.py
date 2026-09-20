@@ -33,6 +33,14 @@ class GEA_BS0002(GeaRule):
 
 
 class GEA_BS0001(GeaRule):
+    """**deprecated**（validator に登録しない。2026-09-20）。
+
+    突合の中核 `common/magetab/biosample.py:iter_missing_attrs` が何も yield しないため
+    **決して発火しない**。「SDRF 値あり × BS 空/不在」は値不一致として `GEA_BS0003` が拾い、
+    「SDRF 空 × BS 空/不在」は両方 not present なので報告しない、という整理になっているため。
+    MetaboBank の対応物 `MB_SR0021` も同じ理由で deprecated。クラスは rule 表のために残す。
+    """
+    deprecated = True
     rule_id = "GEA_BS0001"; level = "warning"; target = "SDRF"; requires_rdb = True; requires_auth = True
     description = "BioSample attribute referenced in Characteristics is missing in the BioSample."
 

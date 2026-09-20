@@ -16,9 +16,20 @@ def _cols(context):
 
 
 class MB_SR0021(MbRule):
+    """**deprecated**（validator に登録しない。2026-09-20）。
+
+    突合の中核 `common/magetab/biosample.py:iter_missing_attrs` が何も yield しないため
+    **決して発火しない**。「SDRF 値あり × BS 空/不在」は値不一致として `MB_SR0023` が拾い、
+    「SDRF 空 × BS 空/不在」は両方 not present なので報告しない、という整理になっているため。
+    `GEA_BS0001` も同じ理由で deprecated。クラスは rule 表・参照のために残す。
+
+    なお文面は **SDRF が参照する属性が BioSample 側に無い**という向きに直した（2026-09-20）。
+    ルール表の `BioSample attribute is missing in SDRF characteristics.` は向きが逆だった。
+    """
+    deprecated = True
     rule_id = "MB_SR0021"; level = "warning"; target = "SDRF"; requires_rdb = True; requires_auth = True
     # SDRF が参照する Characteristics 属性が BioSample 側に存在しない（BS が持っていない）ケース。
-    description = "BioSample attribute is missing in SDRF characteristics."
+    description = 'Attribute referenced in SDRF Characteristics is not present in the BioSample.'
 
     def validate(self, sub, context):
         attrs = getattr(context, "biosample_attrs", None)

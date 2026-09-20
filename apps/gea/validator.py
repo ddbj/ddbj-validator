@@ -68,7 +68,8 @@ class Validator(SimpleValidator):
             C.GEA_REF0001(), C.GEA_REF0006(), C.GEA_REF0007(),
             # --- BioSample DB 整合 ---
             # GEA_BS0002 は deprecated（2026-09-20。account ゲートで発火せず GEA_REF0002 と重複）。
-            B.GEA_BS0001(), B.GEA_BS0003(),
+            # GEA_BS0001 は deprecated（2026-09-20。iter_missing_attrs が発火しないため）。
+            B.GEA_BS0003(),
             # --- DRA/DB 参照整合 ---
             RDB.GEA_REF0009(), RDB.GEA_REF0002(), RDB.GEA_REF0003(), RDB.GEA_REF0004(), RDB.GEA_REF0005(), RDB.GEA_REF0008(),
         ]
