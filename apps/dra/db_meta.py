@@ -109,6 +109,59 @@ def _ssub_to_samd(bs_conn, ssubs):
     return out
 
 
+# ---- accession が「実在するか」だけを見る（アカウントと無関係）----------------
+# 「打ち間違いで存在しない番号」と「実在するが他アカウントのもの」を区別するために使う。
+# 前者は登録をブロックすべきで、後者は外部参照許可で解決できるので扱いが違う（GEA_REF0009 / GEA_REF0002）。
+# status（private/public/suppressed 等）は見ない。suppressed でも accession は実在する。
+
+def fetch_existing_bioprojects(bp_conn, ref_prjdbs):
+    """参照 PRJDB のうち DB に実在するもの。引けなければ None（＝判定しない）。"""
+    nums = sorted({int(p[5:]) for p in ref_prjdbs
+                   if str(p).upper().startswith("PRJDB") and str(p)[5:].isdigit()})
+    if not bp_conn or not nums:
+        return set() if bp_conn else None
+    try:
+        with bp_conn.cursor() as cur:
+            cur.execute("SELECT 'PRJDB' || project_id_counter FROM mass.project "
+                        "WHERE project_id_counter = ANY(%s)", (nums,))
+            return {str(a).strip().upper() for (a,) in cur.fetchall() if a}
+    except Exception:
+        return None
+
+
+def fetch_existing_biosamples(bs_conn, ref_samds):
+    """参照 SAMD のうち DB に実在するもの。引けなければ None（＝判定しない）。"""
+    samds = sorted({str(s).strip().upper() for s in ref_samds
+                    if str(s).strip().upper().startswith("SAMD")})
+    if not bs_conn or not samds:
+        return set() if bs_conn else None
+    try:
+        with bs_conn.cursor() as cur:
+            cur.execute("SELECT accession_id FROM mass.accession WHERE accession_id = ANY(%s)", (samds,))
+            return {str(a).strip().upper() for (a,) in cur.fetchall() if a}
+    except Exception:
+        return None
+
+
+def fetch_existing_runs(dra_conn, ref_drrs):
+    """参照 DRR のうち DB に実在するもの。引けなければ None（＝判定しない）。
+
+    削除済み（`is_delete`）は実在しない扱い。所有集合を引く `_accession_entity` と揃える。
+    """
+    nums = sorted({int(r[3:]) for r in (str(x).strip().upper() for x in ref_drrs)
+                   if r.startswith("DRR") and r[3:].isdigit()})
+    if not dra_conn or not nums:
+        return set() if dra_conn else None
+    try:
+        with dra_conn.cursor() as cur:
+            cur.execute("SELECT acc_no FROM mass.accession_entity "
+                        "WHERE acc_type = 'DRR' AND acc_no = ANY(%s) "
+                        "AND (is_delete IS NULL OR is_delete = false)", (nums,))
+            return {a for a in (_acc_from_no("DRR", n) for (n,) in cur.fetchall()) if a}
+    except Exception:
+        return None
+
+
 def fetch_account_bioprojects(bp_conn, dra_conn, account, ref_prjdbs):
     """参照 PRJDB のうち account 所有 ∪ DRA permit の集合（DRA_R0041/0015）。"""
     owned = set()

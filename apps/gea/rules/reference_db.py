@@ -1,4 +1,4 @@
-"""DRA/DB 参照整合ルール（GEA_REF0002）。内部 DB＋アカウント権限が必要。
+"""DRA/DB 参照整合ルール（GEA_REF0002 / GEA_REF0009）。内部 DB が必要。
 
 GEA が参照する BioProject（IDF Comment[BioProject]）/ BioSample（SDRF Comment[BioSample]）/
 Run（SDRF Comment[SRA_RUN]）が、そのアカウントで登録済み（所有 or DRA permit）かを検証する。
@@ -38,30 +38,83 @@ def _idf_array_designs(sub):
     return out
 
 
+#: 参照の種類。(ラベル, 集約名, 所有集合の属性, 実在集合の属性, 参照 accession の先頭, 実在判定する先頭, 参照値の取り方)
+#: 実在判定は accession（PRJDB/SAMD/DRR）だけが対象。`PSUB` / `SSUB` は submission ID で
+#: 実在判定のテーブルが別なので対象外（従来どおり GEA_REF0002 だけで見る）。
+_REF_KINDS = (
+    ("BioProject", "BioProjects", "account_bioprojects", "existing_bioprojects",
+     r"^(PRJDB|PSUB)", r"^PRJDB", lambda sub: _idf_bps(sub)),
+    ("BioSample", "BioSamples", "account_biosamples", "existing_biosamples",
+     r"^SAMD", r"^SAMD", lambda sub: _sdrf_col_values(sub, "Comment[BioSample]")),
+    ("Run", "Runs", "account_runs", "existing_runs",
+     r"^DRR", r"^DRR", lambda sub: _sdrf_col_values(sub, "Comment[SRA_RUN]")),
+)
+
+
+def _missing_refs(sub, context):
+    """**DB に実在しない**参照 accession を yield する（label, agg_noun, accession）。
+
+    アカウントとは無関係に見る（存在しない番号は誰のものでもない）。
+    実在集合が未取得（None）の種類はスキップ＝判定しない。
+    """
+    for label, agg, _owned, exist_attr, _pat, exist_pat, getter in _REF_KINDS:
+        existing = getattr(context, exist_attr, None)
+        if existing is None:
+            continue
+        existing_u = {x.upper() for x in existing}
+        for acc in sorted(getter(sub)):
+            if acc and re.match(exist_pat, acc) and acc.upper() not in existing_u:
+                yield label, agg, acc
+
+
+def _unowned_refs(sub, context):
+    """**実在するが account の所有 ∪ permit に無い**参照を yield する（label, agg_noun, accession）。
+
+    実在しないものは GEA_REF0009 の担当なので除く。実在集合が取れていないときは
+    除外対象が空になり、従来どおり「所有していない参照」を全部返す（graceful degrade）。
+    """
+    missing = {acc.upper() for _l, _a, acc in _missing_refs(sub, context)}
+    for label, agg, owned_attr, _exist, pat, _ep, getter in _REF_KINDS:
+        owned = getattr(context, owned_attr, None)
+        if owned is None:
+            continue
+        owned_u = {x.upper() for x in owned}
+        for acc in sorted(getter(sub)):
+            if acc and re.match(pat, acc) and acc.upper() not in owned_u and acc.upper() not in missing:
+                yield label, agg, acc
+
+
 class GEA_REF0002(GeaRule):
+    """実在するが、このアカウントの所有でも外部参照許可でもない accession。
+
+    **実在しない accession は `GEA_REF0009`** が見る。外部参照許可を出せば解決するので
+    internal ignore（登録はブロックしない）のままにしている。
+    """
     rule_id = "GEA_REF0002"; level = "error"; target = "IDF/SDRF"
     requires_rdb = True; requires_auth = True
     description = "Referencing object is not registered in this submission account."
 
     def validate(self, sub, context):
-        out = []
-        bps_owned = getattr(context, "account_bioprojects", None)
-        bs_owned = getattr(context, "account_biosamples", None)
-        runs_owned = getattr(context, "account_runs", None)
         # agg_noun を付けると summary で「'first' etc, N Nouns」に件数集約される（details は全件）。
-        if bps_owned is not None:
-            for bp in sorted(_idf_bps(sub)):
-                if bp and re.match(r"^(PRJDB|PSUB)", bp) and bp not in {x.upper() for x in bps_owned}:
-                    out.append(self.result(message=f"{self.description} (BioProject: '{bp}')", agg_noun="BioProjects"))
-        if bs_owned is not None:
-            for s in sorted(_sdrf_col_values(sub, "Comment[BioSample]")):
-                if s and re.match(r"^SAMD", s) and s not in {x.upper() for x in bs_owned}:
-                    out.append(self.result(message=f"{self.description} (BioSample: '{s}')", agg_noun="BioSamples"))
-        if runs_owned is not None:
-            for r in sorted(_sdrf_col_values(sub, "Comment[SRA_RUN]")):
-                if r and re.match(r"^DRR", r) and r not in {x.upper() for x in runs_owned}:
-                    out.append(self.result(message=f"{self.description} (Run: '{r}')", agg_noun="Runs"))
-        return out
+        return [self.result(message=f"{self.description} ({label}: '{acc}')", agg_noun=agg)
+                for label, agg, acc in _unowned_refs(sub, context)]
+
+
+class GEA_REF0009(GeaRule):
+    """DB に実在しない accession を参照している（打ち間違い・ダミー）。
+
+    `GEA_REF0002`（実在するが他アカウントのもの）と分けている理由は、直し方が違うため。
+    あちらは外部参照許可で解決できるので internal ignore だが、**こちらは番号自体が誤りなので
+    登録をブロックする**（ignore を付けない）。
+    アカウントを見ないので `requires_auth` は付けない（`--skip-auth` でも働く）。
+    """
+    rule_id = "GEA_REF0009"; level = "error"; target = "IDF/SDRF"
+    requires_rdb = True
+    description = "Referenced accession does not exist."
+
+    def validate(self, sub, context):
+        return [self.result(message=f"{self.description} ({label}: '{acc}')", agg_noun=agg)
+                for label, agg, acc in _missing_refs(sub, context)]
 
 
 class GEA_REF0003(GeaRule):
