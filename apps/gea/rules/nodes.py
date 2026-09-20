@@ -82,7 +82,7 @@ class GEA_AN0004(_IncomingProtocol):
 
 
 class GEA_DADN0004(_IncomingProtocol):
-    rule_id = "GEA_DADN0004"; level = "error"; target = "SDRF/DerivedArrayDataNode"
+    rule_id = "GEA_DADN0004"; level = "error"; target = "SDRF/ProcessedDataFile"
     _node = "Processed Data File"; _ptypes = ("Data processing protocol",)
     description = ("A Data processing protocol that describes the analysis methods "
                    "used to generate the processed data file(s) must be included.")
@@ -95,7 +95,7 @@ class GEA_DADMN0004(_IncomingProtocol):
     `GEA_DADN0004` と同じ検査になった。クラスは rule 表・参照のために残す。
     """
     deprecated = True
-    rule_id = "GEA_DADMN0004"; level = "error"; target = "SDRF/DerivedArrayDataMatrixNode"
+    rule_id = "GEA_DADMN0004"; level = "error"; target = "SDRF/ProcessedDataFile"
     _node = "Derived Array Data Matrix File"; _ptypes = ("Data processing protocol",)
     description = ("A Data processing protocol that describes the analysis methods "
                    "used to generate the processed data matrix file must be included.")
@@ -116,9 +116,9 @@ class _IncomingAny(GeaRule):
 
 
 class GEA_ADN0004(_IncomingAny):
-    rule_id = "GEA_ADN0004"; level = "error"; target = "SDRF/ArrayDataNode"; only_type = "microarray"
+    rule_id = "GEA_ADN0004"; level = "error"; target = "SDRF/RawDataFile"; only_type = "microarray"
     _node = "Raw Data File"
-    description = "An array data node (raw data file) should be described by a protocol."
+    description = "A raw data file should be described by a protocol."
 
 
 class GEA_ADMN0004(_IncomingAny):
@@ -128,7 +128,7 @@ class GEA_ADMN0004(_IncomingAny):
     クラスは rule 表・参照のために残す。
     """
     deprecated = True
-    rule_id = "GEA_ADMN0004"; level = "error"; target = "SDRF/ArrayDataMatrixNode"; only_type = "microarray"
+    rule_id = "GEA_ADMN0004"; level = "error"; target = "SDRF/RawDataFile"; only_type = "microarray"
     _node = "Array Data Matrix File"
     description = "An array data matrix file should be described by a protocol."
 
@@ -358,9 +358,13 @@ class GEA_SM0001(GeaRule):
 
 
 # ---------------- Data node name（列があるのに全行空＝名前なし）----------------
+# 2026-09-20 に SDRF の列を `Raw Data File` / `Processed Data File` の 2 本へ統合したのに伴い、
+# target を `SDRF/RawDataFile` / `SDRF/ProcessedDataFile` に、message から旧列名を落とした（2026-09-21）。
+# rule ID の ADN / ADMN / DADN / DADMN は旧 MAGE-TAB の node 名（ArrayData / DerivedArrayData …）由来で、
+# 既に配布済みなので**そのまま**。deprecated な ADMN / DADMN の message は当時の検査内容の記録として残す。
 class GEA_ADN0001(_ColPresentButEmpty):
-    rule_id = "GEA_ADN0001"; level = "error"; target = "SDRF/ArrayDataNode"; _col = "Raw Data File"
-    description = "An array data node (raw data file) must have a name."
+    rule_id = "GEA_ADN0001"; level = "error"; target = "SDRF/RawDataFile"; _col = "Raw Data File"
+    description = "A raw data file must have a name."
 
 
 class GEA_ADMN0001(_ColPresentButEmpty):
@@ -370,13 +374,13 @@ class GEA_ADMN0001(_ColPresentButEmpty):
     クラスは rule 表・参照のために残す。
     """
     deprecated = True
-    rule_id = "GEA_ADMN0001"; level = "error"; target = "SDRF/ArrayDataMatrixNode"; _col = "Array Data Matrix File"
+    rule_id = "GEA_ADMN0001"; level = "error"; target = "SDRF/RawDataFile"; _col = "Array Data Matrix File"
     description = "An array data matrix file must have name specified."
 
 
 class GEA_DADN0001(_ColPresentButEmpty):
-    rule_id = "GEA_DADN0001"; level = "error"; target = "SDRF/DerivedArrayDataNode"; _col = "Processed Data File"
-    description = "A derived array data node (processed data file) must have name specified."
+    rule_id = "GEA_DADN0001"; level = "error"; target = "SDRF/ProcessedDataFile"; _col = "Processed Data File"
+    description = "A processed data file must have a name."
 
 
 class GEA_DADMN0001(_ColPresentButEmpty):
@@ -386,7 +390,7 @@ class GEA_DADMN0001(_ColPresentButEmpty):
     `GEA_DADN0001` と同じ検査になった。クラスは rule 表・参照のために残す。
     """
     deprecated = True
-    rule_id = "GEA_DADMN0001"; level = "error"; target = "SDRF/DerivedArrayDataMatrixNode"; _col = "Derived Array Data Matrix File"
+    rule_id = "GEA_DADMN0001"; level = "error"; target = "SDRF/ProcessedDataFile"; _col = "Derived Array Data Matrix File"
     description = "A derived array data matrix file must have a name specified."
 
 
