@@ -11,6 +11,14 @@ from common.magetab import biosample as _bs
 
 
 class GEA_BS0002(GeaRule):
+    """**deprecated**（validator に登録しない。2026-09-20）。
+
+    `allowed_biosamples`（account 所有 ∪ permit）でゲートしているため、**account 外の SAMD では
+    決して発火しない**。account 外の参照は `GEA_REF0002` が報告しており、役割が重複していた。
+    残っていた出番は「allowed に入っているのに属性が 1 つも無い」という狭い場合だけで、
+    Characteristics で参照している属性の欠落は `GEA_BS0001` が見る。クラスは rule 表のために残す。
+    """
+    deprecated = True
     rule_id = "GEA_BS0002"; level = "warning"; target = "SDRF"; requires_rdb = True; requires_auth = True
     description = "Referenced BioSample is not found in the account/DB."
 
