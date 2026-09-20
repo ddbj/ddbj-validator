@@ -66,6 +66,7 @@ class ExternalFetchMixin:
                     # =========================================================
                     # ★ ゲートキーパー: アカウント権限の事前チェック
                     # =========================================================
+                    auth_prjs = auth_sams = auth_drrs = None
                     if not self.is_curator_mode and self.account_id:
                         print(f"\n[Auth Check] Verifying access rights for account: '{self.account_id}'...")
                         from apps.ddbj.db_auth import fetch_authorized_accessions
@@ -75,15 +76,8 @@ class ExternalFetchMixin:
                             db_manager.get_dra_conn(),
                             self.account_id
                         )
-
-                        self.unauthorized_accs["bioproject"] = all_projects - auth_prjs
-                        self.unauthorized_accs["biosample"] = all_samds - auth_sams
-                        self.unauthorized_accs["sra"] = all_drrs - auth_drrs
-
-                        # 権限がないアクセッションが含まれていれば、以後の認証必須ルールをスキップする
-                        if any(self.unauthorized_accs.values()):
-                            logger.warning("Unauthorized accession numbers referenced. Disable rules requiring account authorization.")
-                            self.skip_auth = True
+                        # unauthorized の確定は DB メタ取得の後（下の「アカウント権限の確定」）。
+                        # 実在しない accession を権限エラーに混ぜないため、実在集合が要る。
 
                     if all_organisms or all_samds or all_projects or all_drrs:
                         print("\nChecking Internal DB...")
@@ -131,6 +125,28 @@ class ExternalFetchMixin:
                                 psub_to_prjdb = fetch_prjdb_by_psub(db_manager.get_bp_conn(), list(dra_psubs))
                             if dra_smps:
                                 smp_id_to_samd = fetch_samd_by_smp_id(db_manager.get_bs_conn(), list(dra_smps))
+
+                    # =========================================================
+                    # アカウント権限の確定（実在しない accession は除く）
+                    # =========================================================
+                    # 単純な集合差にすると、**打ち間違いで存在しない accession も「権限が無い」に落ちる**。
+                    # 存在しないことは ANN0420 / ANN0460 / ANN0480 が別に報告しているので、
+                    # ここで混ぜると (1) 同じ番号が 2 つのルールから出る
+                    # (2) 打ち間違い 1 件で skip_auth が立ち認証必須ルールが全部止まる、の 2 つが起きる。
+                    # 除外条件は上記 3 ルールの判定式と同じにしてある（PSUB / SSUB のように
+                    # 実在判定できないものは除外せず、従来どおり権限エラーとして扱う）。
+                    if auth_prjs is not None:
+                        missing_prjs = {p for p in all_projects if p.startswith("PRJDB") and p not in bp_psubs}
+                        missing_sams = {s for s in all_samds if s.startswith("SAMD") and s not in bs_smp_ids}
+                        missing_drrs = {d for d in all_drrs if d.startswith("DRR") and d not in dra_refs}
+                        self.unauthorized_accs["bioproject"] = (all_projects - auth_prjs) - missing_prjs
+                        self.unauthorized_accs["biosample"] = (all_samds - auth_sams) - missing_sams
+                        self.unauthorized_accs["sra"] = (all_drrs - auth_drrs) - missing_drrs
+
+                        # 権限がないアクセッションが含まれていれば、以後の認証必須ルールをスキップする
+                        if any(self.unauthorized_accs.values()):
+                            logger.warning("Unauthorized accession numbers referenced. Disable rules requiring account authorization.")
+                            self.skip_auth = True
                 except Exception as e:
                     logger.error(f"Database connection failed: {e}", exc_info=True)
                 finally:

@@ -35,7 +35,8 @@ class Validator(SimpleValidator):
             C.MB_CR0001(), C.MB_CR0002(), C.MB_CR0003(), C.MB_CR0004(),
             # --- BioSample DB 整合 ---
             # MB_SR0022 は deprecated（MB_SR0041 に統合）のため登録しない。
-            B.MB_SR0021(), B.MB_SR0023(),
+            # MB_SR0021 は deprecated（2026-09-20。iter_missing_attrs が発火しないため）。
+            B.MB_SR0023(),
             # --- 参照オブジェクトのアカウント整合（DB＋認証）---
-            R.MB_IR0040(), R.MB_SR0041(),
+            R.MB_IR0042(), R.MB_SR0051(), R.MB_IR0040(), R.MB_SR0041(),
         ]

@@ -79,6 +79,34 @@ def _fetch_biosample_attrs(context, sub, account):
                           share_account_biosamples=True)
 
 
+def _fetch_existing_refs(context, sub):
+    """MB_IR0042 / MB_SR0051 用: 参照 accession が **そもそも内部 DB に在るか**。
+
+    `citable`（引用できるか）とは別物。citable が偽になる理由は「他アカウント」「umbrella」
+    「未採番」「存在しない」の 4 つあり、最後の 1 つだけを切り出すのに実在集合が要る。
+    **account を見ないので `skip_auth` でも取得する。** 取れなければ None のままにして
+    該当ルールをスキップさせる（誤検知を出さない）。
+    """
+    from common.db_manager import DatabaseManager
+    from apps.dra import db_meta
+    from common.magetab import biosample as _bs
+
+    ref_bp = {v.strip() for v in (sub.idf.get("Comment[BioProject]") if sub.idf else []) if v.strip()}
+    cols = _bs.ref_columns(context, default=("Comment[BioSample]", "Characteristics[biosample_accession]"))
+    ref_bs = {s.strip() for s in _bs.referenced_samds(sub, cols) if s.strip()} if sub.sdrf else set()
+    if not ref_bp and not ref_bs:
+        return
+    dm = DatabaseManager()
+    if ref_bp:
+        context.existing_bioprojects = cli_modes.warn_none(
+            "bp_exist", lambda: db_meta.fetch_existing_bioprojects(dm.get_bp_conn(), ref_bp),
+            "metabobank BioProject existence fetch failed")
+    if ref_bs:
+        context.existing_biosamples = cli_modes.warn_none(
+            "bs_exist", lambda: db_meta.fetch_existing_biosamples(dm.get_bs_conn(), ref_bs),
+            "metabobank BioSample existence fetch failed")
+
+
 def _fetch_citable_from_api(context, account):
     """MB_IR0040/0041 用: record-api から「その account が引用できる ID」を取得する。
 
@@ -205,6 +233,8 @@ def run(args):
     if not context.skip_db:
         cli_modes.reset_db_access_log()
         _fetch_biosample_attrs(context, sub, args.account)
+        # 実在判定（MB_IR0042 / MB_SR0051）は account を見ないので skip_auth でも取る。
+        _fetch_existing_refs(context, sub)
         if not context.skip_auth:
             # 引用可否（MB_IR0040/0041）は record-api があればそちらを使う。
             # umbrella 除外と permitted を API 側が解決してくれるため。

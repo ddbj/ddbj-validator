@@ -103,6 +103,9 @@ ANNOTATION_PATTERNS = {
     "MB_IR0034": "idf_field",
     "MB_IR0038": "idf_field",
     "MB_IR0040": "idf_field",
+    # MB_IR0042 / MB_SR0051（存在しない accession）は MB_IR0040 / MB_SR0041 と同じ報告単位。
+    "MB_IR0042": "idf_field",
+    "MB_SR0051": "idf_field",
     # MB_SR0041（旧 MB_IR0041）は SDRF の BioSample 参照だが、報告単位は列でも行でもなく
     # 「参照した accession」なので idf_field（field / value）の形をそのまま使う。
     "MB_SR0041": "idf_field",

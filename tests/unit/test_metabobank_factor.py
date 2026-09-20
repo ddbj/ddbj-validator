@@ -498,8 +498,10 @@ def test_ir0038_accepts_valid_related_study(v):
     ":bar",         # DB 側が空
 ])
 def test_ir0038_warns_on_invalid_related_study(v):
+    # message 本文はルール表を正として同期している（2026-09-20）。本文を直書きすると
+    # 表を直すたびにテストが落ちるので、ルールの description と一致することだけ見る。
     msgs = [r["message"] for r in I.MB_IR0038().validate(_related(v), CTX)]
-    assert len(msgs) == 1 and "DB:ID" in msgs[0]
+    assert len(msgs) == 1 and msgs[0].startswith(I.MB_IR0038.description)
 
 
 @pytest.mark.parametrize("v", ["mtbks1", "MetaboBank:mtbks1", "metabobank:MTBKS1"])

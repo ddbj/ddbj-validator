@@ -132,6 +132,12 @@ class GEA_EX0001(GeaRule):
 
 
 class GEA_EX0002(GeaRule):
+    """**deprecated**（validator に登録しない。2026-09-20）。
+
+    `Material Type` を全必須（error）にしたので `GEA_MT0002` に含まれる。
+    列の有無だけを warning で見る作りだった。クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "GEA_EX0002"; level = "warning"; target = "SDRF/ExtractNode"
     description = "An extract should have a 'Material Type' attribute specified."
 

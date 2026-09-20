@@ -232,14 +232,14 @@ class GEA_PR0019(GeaRule):
                                     f"(Submission Type: '{st}', missing: {', '.join(missing)})")]
 
 
-class GEA_PR0007(GeaRule):
+class GEA_PR0017(GeaRule):
     """その submission type では使わない protocol type が IDF に書かれていないか。
 
     `required + required_with_raw + optional` のどれにも無い値を報告する。
     - CV 外の値は **除外**（`GEA_PR0020` が別に拾うので二重に出さない）。
     - `allow_any_protocol` が立っている type（Other。何が来るか分からない）では検査しない。
     """
-    rule_id = "GEA_PR0007"; level = "error"; target = "SDRF/Protocol"
+    rule_id = "GEA_PR0017"; level = "error"; target = "SDRF/Protocol"
     description = "Protocol Type is not used in the specified Submission Type."
 
     def validate(self, sub, context):
@@ -256,6 +256,17 @@ class GEA_PR0007(GeaRule):
             return []
         return [self.result(message=f"{self.description} "
                                     f"(Submission Type: '{st}', Protocol Type: {', '.join(bad)})")]
+
+
+class GEA_PR0007(GEA_PR0017):
+    """**deprecated**（validator に登録しない。2026-09-20）。
+
+    実装時に `GEA_PR0007` を割り当てたが、ルール表では同じ検査に `GEA_PR0017` が
+    採番されていた。GEA 側の指示で **`GEA_PR0017` に統一**し、こちらは deprecated にした。
+    クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
+    rule_id = "GEA_PR0007"
 
 
 class GEA_PR0020(GeaRule):

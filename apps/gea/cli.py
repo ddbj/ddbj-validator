@@ -156,6 +156,11 @@ def _fetch_account_refs(context, sub, account):
     if getattr(context, "account_biosamples", None) is None:
         context.account_biosamples = _try("bs", lambda: db_meta.fetch_account_biosamples(dm.get_bs_conn(), dra_conn, account, ref_bs))
     context.account_runs = _try("runs", lambda: db_meta.fetch_account_runs(dra_conn, account, ref_drr))
+    # GEA_REF0009 用: 参照 accession が「そもそも DB に在るか」。所有集合と別に引く
+    # （所有集合だけだと「他アカウントのもの」と「存在しない番号」を区別できないため）。
+    context.existing_bioprojects = _try("bp_exist", lambda: db_meta.fetch_existing_bioprojects(dm.get_bp_conn(), ref_bp))
+    context.existing_biosamples = _try("bs_exist", lambda: db_meta.fetch_existing_biosamples(dm.get_bs_conn(), ref_bs))
+    context.existing_runs = _try("run_exist", lambda: db_meta.fetch_existing_runs(dra_conn, ref_drr))
 
     # GEA 固有 DB メタ（REF0005 ADF / REF0003・0004 DRA linkage）。GEA DB は .env の GEA_DB_NAME から。
     from apps.gea import db_meta as gea_db

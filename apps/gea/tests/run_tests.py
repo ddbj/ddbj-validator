@@ -37,6 +37,11 @@ EXPECTED = {
     "COM0002-craft": {"GEA_COM0002"},
     # crafted fixture（E-GEAD-1117 派生）: Comment[Submission Date] を YYYY/MM/DD にして G0015 を担保
     "G0015-craft": {"GEA_G0015"},
+    # crafted fixture（E-GEAD-1104 派生）: Material Type 全必須（2026-09-20）の 2 分岐。
+    # ① 列ごと無い（旧 GEA_EX0002 の担当範囲）② 列はあるが 1 行だけ空
+    # ②は旧 GEA_MT0001 が「全行空」しか見なかったため**何も出なかった**ケース。ここが MT0002 の主眼。
+    "MT0002-craft": {"GEA_MT0002"},
+    "MT0002-blank-craft": {"GEA_MT0002"},
     # crafted fixture（E-GEAD-1117 派生）: Comment[tissue_preservation_method] を IDF/SDRF 両方 CV 外にして COM0004 を担保
     "COM0004-craft": {"GEA_COM0004"},
     # crafted fixture（E-GEAD-1104 派生）: Submission Type=Microarray に Sequencing 用の experiment type を
@@ -48,8 +53,8 @@ EXPECTED = {
     # → 「値形式（旧 REGEX0002/0010）を外しても名前の解決は REF0001 が担保する」ことの確認を兼ねる
     "PR0019-craft": {"GEA_PR0019", "GEA_AN0003", "GEA_REF0001"},
     # crafted fixture（E-GEAD-1114 派生）: Extraction protocol を Labeling protocol にすり替える。
-    # PR0007（その sub type では使わない protocol）と PR0018（必須の Extraction が無い）の 2 本
-    "PR0007-craft": {"GEA_PR0007", "GEA_PR0018"},
+    # PR0017（その sub type では使わない protocol）と PR0018（必須の Extraction が無い）の 2 本
+    "PR0017-craft": {"GEA_PR0017", "GEA_PR0018"},
     # crafted fixture（E-GEAD-1114 派生）: raw を magic word none にし、SRA 参照列と seq 系 protocol を落とす。
     # Skip = raw-less が効いていれば PR0019 / EX0004 / AN0003 / MAN0012 は **出ない**。
     # 残るのは SR0003（raw が none）と PN0001（値が全部空になった Protocol REF 列）だけ
@@ -70,13 +75,16 @@ GEA_DB_EXPECTED = {
     "ESUB002706": set(),                              # sequencing, DRA Run ref ext-permit all OK（重複列なし）
     "ESUB002705": {"GEA_REF0003", "GEA_REF0004", "GEA_LC0001"},  # partial ＋ 重複列
     "ESUB002704": {"GEA_LC0001"},       # DRA Run ref OK ＋ 重複列
-    # 存在しない SAMD00000000（正規表現通過・未登録）→ REF0002＋BS0002、triple 不一致で REF0008、重複列で LC0001/RC0002
+    # 存在しない SAMD00000000（正規表現は通るが DB に無い）→ REF0009、triple 不一致で REF0008、重複列で LC0001
     # ※ sync 属性を ddbj biosample_sync（common）に絞ったため sample_name 不一致では BS0003 は発火しない（→ BS0003-craft で担保）
-    "ESUB002710": {"GEA_REF0002", "GEA_REF0008", "GEA_BS0002", "GEA_LC0001"},
+    "ESUB002710": {"GEA_REF0009", "GEA_REF0008", "GEA_LC0001"},
     # crafted fixture: bogus A-GEAD-999999（自 account 未登録かつ非公開でない）→ REF0005 error
     "REF0005-craft": {"GEA_REF0005"},
     # crafted fixture（ESUB002710 派生）: sync 対象 collection_date を BS と不一致にして BS0003（warning・requires_rdb）を担保
-    "BS0003-craft": {"GEA_REF0002", "GEA_REF0008", "GEA_BS0002", "GEA_BS0003", "GEA_LC0001"},
+    "BS0003-craft": {"GEA_REF0009", "GEA_REF0008", "GEA_BS0003", "GEA_LC0001"},
+    # crafted fixture（BS0003-craft 派生）: SAMD00000000 → **実在するが dradev 所有でない** SAMD00000002 に差し替え。
+    # REF0009（存在しない）と REF0002（存在するが account 外）の**切り分け**を担保する。
+    "REF0002-craft": {"GEA_REF0002", "GEA_REF0008", "GEA_BS0003", "GEA_LC0001"},
 }
 
 
