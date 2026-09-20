@@ -124,7 +124,7 @@ class MB_SR0003(MbRule):
 
 class MB_SR0024(MbRule):
     rule_id = "MB_SR0024"; level = "error"; target = "SDRF"
-    description = "Column without a name exists."
+    description = "Each of Characteristic, Factor value, Parameter Value and Unit should have a name specified."
 
     def validate(self, sub, context):
         if not sub.sdrf:
@@ -140,7 +140,7 @@ class MB_SR0004(MbRule):
     # submission type によって存在しない列は required_columns_error_exclude で除外する
     # （例: MSI は imaging のため抽出工程が無く、投稿テンプレートに Extract Name 列が無い）。
     rule_id = "MB_SR0004"; level = "error"; target = "SDRF"
-    description = "Missing required column(s)."
+    description = "SDRF has missing mandatory column(s). If you do not have information for the required column(s), please provide value as either 'not collected', 'not applicable' or 'missing'."
 
     def validate(self, sub, context):
         if not sub.sdrf:
@@ -164,7 +164,7 @@ class MB_SR0005(MbRule):
     """
     deprecated = True
     rule_id = "MB_SR0005"; level = "warning"; target = "SDRF"
-    description = "Missing recommended column(s)."
+    description = "SDRF has missing mandatory column(s). If you do not have information for the required column(s), please provide value as either 'not collected', 'not applicable' or 'missing'."
 
     def validate(self, sub, context):
         if not sub.sdrf:
@@ -186,7 +186,7 @@ class MB_SR0006(MbRule):
     # （sdrf.user_defined_warning_exclude_kinds）。
     # Name: User-defined column
     rule_id = "MB_SR0006"; level = "warning"; target = "SDRF"
-    description = "User-defined columns are added."
+    description = "User-defined columns are used."
 
     def validate(self, sub, context):
         if not sub.sdrf:
@@ -217,7 +217,7 @@ class MB_SR0007(MbRule):
 
 class MB_SR0009(MbRule):
     rule_id = "MB_SR0009"; level = "error"; target = "SDRF"
-    description = "Missing or null value for a required column."
+    description = "SDRF has missing mandatory column(s). Please provide value(s) other than null values, 'not collected', 'not applicable' or 'missing'."
 
     # Protocol REF は列名が重複する順序付き列で、値の欠落は MB_SR0033 が行単位で見ている。
     # ここで扱うと二重報告になるので除外する。
@@ -276,7 +276,7 @@ class MB_SR0018(MbRule):
     # サンプルを特徴づける属性が少なすぎる投稿を拾う。閾値は 2 → 3 に強化した
     # （organism / taxonomy_id が必須なので 2 では実質「素の必須のみ」を通してしまう）。
     rule_id = "MB_SR0018"; level = "warning"; target = "SDRF"
-    description = "Less than 3 characteristic attributes."
+    description = "A source should have more than 2 characteristic attributes."
 
     def validate(self, sub, context):
         if not sub.sdrf:
@@ -309,7 +309,7 @@ def _has_no_value(vals, nulls):
 
 class MB_SR0017(MbRule):
     rule_id = "MB_SR0017"; level = "error"; target = "SDRF"
-    description = "Factor value is constant across all rows."
+    description = "Values of an experimental variable must vary, for compound+dose at least one must vary."
 
     def validate(self, sub, context):
         if not sub.sdrf or len(sub.sdrf.rows) < 2:
@@ -393,7 +393,7 @@ class MB_SR0048(MbRule):
 
 class MB_SR0019(MbRule):
     rule_id = "MB_SR0019"; level = "error"; target = "SDRF"
-    description = "Invalid value format."
+    description = "Invalid format value(s) is provided."
 
     def validate(self, sub, context):
         if not sub.sdrf:
@@ -414,7 +414,7 @@ class MB_SR0019(MbRule):
 
 class MB_SR0026(MbRule):
     rule_id = "MB_SR0026"; level = "error"; target = "SDRF"
-    description = "Invalid column order."
+    description = "SDRF column order is invalid."
 
     def validate(self, sub, context):
         """骨格列（sdrf.column_order_skeleton）の相対順序だけを検査する。
@@ -455,7 +455,7 @@ class MB_SR0026(MbRule):
 
 class MB_SR0033(MbRule):
     rule_id = "MB_SR0033"; level = "error"; target = "SDRF"
-    description = "Missing protocol reference (Protocol REF value)."
+    description = "Protocol name is not referenced in Protocol REF."
 
     def validate(self, sub, context):
         if not sub.sdrf:

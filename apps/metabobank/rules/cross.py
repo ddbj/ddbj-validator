@@ -22,7 +22,7 @@ def _unmatch_results(rule, sdrf_only, idf_only):
 
 class MB_CR0001(MbRule):
     rule_id = "MB_CR0001"; level = "error"; target = "IDF,SDRF"
-    description = "Experimental factor in SDRF does not match IDF Experimental Factor Name."
+    description = "IDF Experimental Factor Name and SDRF Factor Value name do not match."
 
     def validate(self, sub, context):
         r"""IDF Experimental Factor Name と SDRF Factor Value[...] の **名前** を双方向に突き合わせる。
@@ -119,7 +119,7 @@ class MB_CR0003(MbRule):
 
 class MB_CR0004(MbRule):
     rule_id = "MB_CR0004"; level = "warning"; target = "IDF,SDRF"
-    description = "Re-analysis accession differs between IDF and SDRF."
+    description = "Re-analysis MetaboBank study accessions are different between IDF and SDRF."
 
     def validate(self, sub, context):
         if not sub.idf or not sub.sdrf:

@@ -1,7 +1,8 @@
 """BioSample 整合ルール（MB_SR0021/0022/0023）。DB 参照（内部 DB）。core は common/magetab/biosample。
 
 SDRF の Characteristics[attr] を、参照 BioSample（Comment[BioSample] / Characteristics[biosample_accession] = SAMD）の
-DB 属性と突合。context.biosample_attrs（SAMD -> {attr: value}）が None（未取得＝skip_db 等）ならスキップ。
+DB 属性と突合。突合に使う属性は `fetch_attrs_gated` が **account 所有 ∪ permit** でゲートして取るため、
+3 本とも `requires_auth = True`（2026-09-20。gea の GEA_BS0001-0003 と同じ扱い）。context.biosample_attrs（SAMD -> {attr: value}）が None（未取得＝skip_db 等）ならスキップ。
 """
 from apps.metabobank.rules.base import MbRule
 from common.magetab import biosample as _bs
@@ -15,9 +16,9 @@ def _cols(context):
 
 
 class MB_SR0021(MbRule):
-    rule_id = "MB_SR0021"; level = "warning"; target = "SDRF"; requires_rdb = True
+    rule_id = "MB_SR0021"; level = "warning"; target = "SDRF"; requires_rdb = True; requires_auth = True
     # SDRF が参照する Characteristics 属性が BioSample 側に存在しない（BS が持っていない）ケース。
-    description = "Attribute referenced in SDRF Characteristics is not present in the BioSample."
+    description = "BioSample attribute is missing in SDRF characteristics."
 
     def validate(self, sub, context):
         attrs = getattr(context, "biosample_attrs", None)
@@ -39,8 +40,8 @@ class MB_SR0022(MbRule):
     クラスは既存テストの参照のために残す。
     """
     deprecated = True
-    rule_id = "MB_SR0022"; level = "warning"; target = "SDRF"; requires_rdb = True
-    description = "Referenced BioSample has no attribute (not found in the account/DB)."
+    rule_id = "MB_SR0022"; level = "warning"; target = "SDRF"; requires_rdb = True; requires_auth = True
+    description = "SDRF characteristics are not in BioSample attributes."
 
     def validate(self, sub, context):
         attrs = getattr(context, "biosample_attrs", None)
@@ -55,8 +56,8 @@ class MB_SR0022(MbRule):
 class MB_SR0023(MbRule):
     # error ignore（管理システムが無視する error）ではなく warning にした。
     # BioSample を正として SDRF を直す autofix を出すのが本旨で、登録を止める性質ではないため。
-    rule_id = "MB_SR0023"; level = "warning"; target = "SDRF"; requires_rdb = True
-    description = "Characteristics value and BioSample attribute value do not match."
+    rule_id = "MB_SR0023"; level = "warning"; target = "SDRF"; requires_rdb = True; requires_auth = True
+    description = "SDRF characteristics and BioSample attributes are different."
 
     def validate(self, sub, context):
         attrs = getattr(context, "biosample_attrs", None)

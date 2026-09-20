@@ -33,7 +33,7 @@ class MB_IR0004(MbRule):
     # フィールドの追加を許していない（テンプレート固定）ため error。
     # ただし管理システム側は登録後に追加し得るので internal ignore にする。
     rule_id = "MB_IR0004"; level = "error"; target = "IDF"
-    description = "User-defined fields cannot be added by submitters."
+    description = "Only pre-defined fields are allowed."
 
     def validate(self, sub, context):
         if not sub.idf:
@@ -60,7 +60,7 @@ class _RequiredBase(MbRule):
 
 class MB_IR0005(_RequiredBase):
     rule_id = "MB_IR0005"; level = "error"; target = "IDF"; _key = "required_error"
-    description = "IDF has missing mandatory field(s)."
+    description = "IDF has missing mandatory field(s). If you do not have information for the required field(s), please provide value as either 'not collected', 'not applicable' or 'missing'."
 
 
 class MB_IR0006(_RequiredBase):
@@ -71,12 +71,12 @@ class MB_IR0006(_RequiredBase):
     """
     deprecated = True
     rule_id = "MB_IR0006"; level = "warning"; target = "IDF"; _key = "required_warning"
-    description = "IDF has missing mandatory field(s)."
+    description = "IDF has missing mandatory field(s). If you do not have information for the required field(s), please provide value as either 'not collected', 'not applicable' or 'missing'."
 
 
 class MB_IR0007(MbRule):
     rule_id = "MB_IR0007"; level = "error"; target = "IDF"
-    description = "IDF has null value(s) for mandatory field(s)."
+    description = "IDF has missing mandatory field(s). Please provide value(s) other than null values, 'not collected', 'not applicable' or 'missing'."
 
     def validate(self, sub, context):
         if not sub.idf:
@@ -111,17 +111,17 @@ class _GroupBase(MbRule):
 
 class MB_IR0008(_GroupBase):
     rule_id = "MB_IR0008"; level = "error"; target = "IDF"; _key = "required_group_error"
-    description = "All fields are required for the field group."
+    description = "IDF has missing field(s). All fields are required for the field group."
 
 
 class MB_IR0009(_GroupBase):
     rule_id = "MB_IR0009"; level = "warning"; target = "IDF"; _key = "required_group_warning"
-    description = "All fields are required for the field group."
+    description = "IDF has missing field(s). All fields are required for the field group."
 
 
 class MB_IR0010(MbRule):
     rule_id = "MB_IR0010"; level = "error"; target = "IDF"
-    description = "Multiple values are provided for a single-value field."
+    description = "Multiple values are entered in fields which allow only single value."
 
     def validate(self, sub, context):
         if not sub.idf:
@@ -149,7 +149,7 @@ class MB_IR0011(MbRule):
 
 class MB_IR0013(MbRule):
     rule_id = "MB_IR0013"; level = "error"; target = "IDF"
-    description = "Invalid date format. Use YYYY-MM-DD."
+    description = 'Invalid date format. Enter as "YYYY-mm-dd".'
 
     def validate(self, sub, context):
         if not sub.idf:
@@ -164,7 +164,7 @@ class MB_IR0013(MbRule):
 
 class MB_IR0033(MbRule):
     rule_id = "MB_IR0033"; level = "error"; target = "IDF"
-    description = "Future date is not allowed."
+    description = "Submission or last update date is a future date, please specify a date from the past."
 
     def validate(self, sub, context):
         if not sub.idf:
@@ -209,12 +209,12 @@ class MB_IR0016(_CvBase):
     # 対象は Protocol Type のみ。CV 外の値は「登録者が独自の protocol type を足した」
     # という意味になるので、汎用の CV 文ではなくその旨を伝えるメッセージにする。
     rule_id = "MB_IR0016"; level = "warning"; target = "IDF"; _level_key = "warning"
-    description = "A user-defined protocol type was added."
+    description = "Value is not in controlled terms."
 
 
 class MB_IR0017(MbRule):
     rule_id = "MB_IR0017"; level = "error"; target = "IDF"
-    description = "Missing protocol type(s) for the submission type."
+    description = "Missing protocol type for submission type."
 
     def validate(self, sub, context):
         if not sub.idf:
@@ -233,7 +233,7 @@ class MB_IR0017(MbRule):
 
 class MB_IR0018(MbRule):
     rule_id = "MB_IR0018"; level = "error"; target = "IDF"
-    description = "Missing protocol parameter(s) for the submission type."
+    description = "Missing protocol parameter for submission type."
 
     def validate(self, sub, context):
         """submission type ごとに、必須の protocol parameter が宣言されているかを見る。
@@ -274,7 +274,7 @@ class MB_IR0018(MbRule):
 
 class MB_IR0034(MbRule):
     rule_id = "MB_IR0034"; level = "error"; target = "IDF"
-    description = "Missing experiment type for the submission type."
+    description = "Missing experiment type for submission type."
 
     def validate(self, sub, context):
         if not sub.idf:
@@ -304,7 +304,7 @@ class MB_IR0020(MbRule):
 
 class MB_IR0037(MbRule):
     rule_id = "MB_IR0037"; level = "error"; target = "IDF"
-    description = "Email address is required for the submitter."
+    description = "Every submitter should have an email address. The email address is not displayed publicly. If the persons are not appropriate for submitter, please list them in the Comment[Contributor] field as free-tetxt."
 
     def validate(self, sub, context):
         if not sub.idf:
@@ -322,7 +322,7 @@ class MB_IR0025(MbRule):
     # PubMed ID が数値でないのは書式の誤りなので error。ただし管理システム側は
     # 登録後に手で直すことがあるため internal ignore にする。
     rule_id = "MB_IR0025"; level = "error"; target = "IDF"
-    description = "Invalid publication identifier (PubMed ID must be numeric)."
+    description = "Invalid publication identifier, enter valid pubmed id(s)."
 
     def validate(self, sub, context):
         if not sub.idf:
@@ -338,7 +338,7 @@ class MB_IR0025(MbRule):
 
 class MB_IR0038(MbRule):
     rule_id = "MB_IR0038"; level = "warning"; target = "IDF"
-    description = 'Related study should be specified as "DB:ID" or a MetaboBank accession (MTBKSnnn).'
+    description = "MetaboBank study accession(s) should be specified for re-analysis."
 
     def validate(self, sub, context):
         """Comment[Related Study]（再解析元の study）が参照表記として読める形か。
@@ -368,7 +368,7 @@ class MB_IR0038(MbRule):
 
 class MB_IR0023(MbRule):
     rule_id = "MB_IR0023"; level = "warning"; target = "IDF"
-    description = "Null value is provided for an optional field."
+    description = "Null values are not neccesary for optional fields. Leave values empty when there is no information."
 
     def validate(self, sub, context):
         """任意項目に null value が書かれていないか。補正できる値は autofix 提案として出す。
