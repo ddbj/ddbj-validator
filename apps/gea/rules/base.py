@@ -40,6 +40,7 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     # --- 2026-09-20 追加 ---
     "GEA_MT0002",  # A material type must be specified.（Material Type 全必須化）
     "GEA_MAN0012",  # Mandatory node (column) is required.（Sequencing の SRA_RUN / SRA_EXPERIMENT）
+    "GEA_EX0004",  # A Library construction protocol must be included.
 })
 
 
