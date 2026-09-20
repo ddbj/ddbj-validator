@@ -298,8 +298,36 @@ class GEA_L0001(_ColPresentButEmpty):
 
 
 class GEA_MT0001(_ColPresentButEmpty):
+    """**deprecated**（validator に登録しない。2026-09-20）。
+
+    `Material Type` を全必須（error）にしたので `GEA_MT0002` に含まれる。
+    こちらは「列はあるが**全行**空」のときだけ warning を出す作りで、
+    一部の行だけ空の場合を拾えなかった。クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "GEA_MT0001"; level = "warning"; target = "SDRF/MaterialTypeAttribute"; _col = "Material Type"
     description = "A material type attribute should have a name specified."
+
+
+class GEA_MT0002(GeaRule):
+    """`Material Type` は全必須（2026-09-20）。列が無い／1 行でも空なら error。
+
+    旧 `GEA_EX0002`（列が無い＝warning）と旧 `GEA_MT0001`（全行空＝warning）を置き換える。
+    実装は `GEA_EX0001`（Extract Name）と同じ形で、列が無いときだけ message を差し替える。
+    """
+    rule_id = "GEA_MT0002"; level = "error"; target = "SDRF/MaterialTypeAttribute"
+    description = "A material type must be specified."
+
+    def validate(self, sub, context):
+        if not sub.sdrf:
+            return []
+        idxs = sub.sdrf.col_indices("Material Type")
+        if not idxs:
+            return [self.result(message="Material Type column is missing.")]
+        for row in sub.sdrf.rows:
+            if _empty(row[idxs[0]] if idxs[0] < len(row) else ""):
+                return [self.result()]
+        return []
 
 
 class GEA_SC0001(_ColPresentButEmpty):

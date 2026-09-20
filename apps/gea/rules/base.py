@@ -36,6 +36,9 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     "GEA_PR0019",  # Protocol Type required for raw data is missing for the specified Submission Type.
     "GEA_PR0020",  # Value is not in controlled terms.（Protocol Type）
     "GEA_REF0001",  # IDF Protocol Name and SDRF Protocol REF do not match.（only in SDRF は error）
+    #
+    # --- 2026-09-20 追加 ---
+    "GEA_MT0002",  # A material type must be specified.（Material Type 全必須化）
 })
 
 

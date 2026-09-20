@@ -37,6 +37,11 @@ EXPECTED = {
     "COM0002-craft": {"GEA_COM0002"},
     # crafted fixture（E-GEAD-1117 派生）: Comment[Submission Date] を YYYY/MM/DD にして G0015 を担保
     "G0015-craft": {"GEA_G0015"},
+    # crafted fixture（E-GEAD-1104 派生）: Material Type 全必須（2026-09-20）の 2 分岐。
+    # ① 列ごと無い（旧 GEA_EX0002 の担当範囲）② 列はあるが 1 行だけ空
+    # ②は旧 GEA_MT0001 が「全行空」しか見なかったため**何も出なかった**ケース。ここが MT0002 の主眼。
+    "MT0002-craft": {"GEA_MT0002"},
+    "MT0002-blank-craft": {"GEA_MT0002"},
     # crafted fixture（E-GEAD-1117 派生）: Comment[tissue_preservation_method] を IDF/SDRF 両方 CV 外にして COM0004 を担保
     "COM0004-craft": {"GEA_COM0004"},
     # crafted fixture（E-GEAD-1104 派生）: Submission Type=Microarray に Sequencing 用の experiment type を
