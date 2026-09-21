@@ -213,16 +213,133 @@ class GEA_LC0001(GeaRule):
 class GEA_LC0002(GeaRule):
     """`Comment[INSTRUMENT_MODEL]` 列が無い（2026-09-21 追加）。
 
-    `GEA_LC0001`（library の 4 項目。error）と同じ target・同じ sequencing 限定だが、
-    **必須にはしない**方針なので warning。書かなくても登録は通る。
+    `GEA_LC0001`（library の 4 項目）と同じ扱い（error ＋ internal ignore、raw-less でスキップ）。
+    error として出るが登録はブロックしない。
     """
-    rule_id = "GEA_LC0002"; level = "warning"; target = "SDRF/LibraryConstruction"; only_type = "sequencing"
+    rule_id = "GEA_LC0002"; level = "error"; target = "SDRF/LibraryConstruction"; only_type = "sequencing"
     description = "Instrument model should be specified."
 
     def validate(self, sub, context):
         if not sub.sdrf:
             return []
         return [] if sub.sdrf.col_indices("Comment[INSTRUMENT_MODEL]") else [self.result()]
+
+
+#: SDRF の Comment 列 → DRA の cv_terms のキー。**語彙は DRA の definitions.json を共通で参照する**
+#: （`apps/dra/resources/definitions.json`。DRA と GEA で同じ値集合を使うため、二重管理しない）。
+#: `INSTRUMENT_MODEL` は platform 別に分かれているので全 platform の和をとる。
+#: `LIBRARY_LAYOUT` だけは DRA が XML の要素名（SINGLE / PAIRED）で表していて cv_terms に無いため、
+#: GEA 側の `sdrf.library_layout_terms` から引く。
+_LIB_CV_KEYS = {
+    "Comment[LIBRARY_SOURCE]": "library_source",
+    "Comment[LIBRARY_SELECTION]": "library_selection",
+    "Comment[LIBRARY_STRATEGY]": "library_strategy",
+}
+
+
+def _library_cv(context):
+    """列名 → 許容値集合。取れなければその列は検査しない（空集合は「未定義」扱い）。"""
+    from apps.dra.defs import cv_terms
+    try:
+        cv = cv_terms() or {}
+    except Exception:
+        return {}
+    out = {col: set(cv.get(key) or []) for col, key in _LIB_CV_KEYS.items()}
+    models = set()
+    for lst in (cv.get("instrument_model_by_platform") or {}).values():
+        models.update(lst)
+    out["Comment[INSTRUMENT_MODEL]"] = models
+    layout = ((context.definitions or {}).get("sdrf", {}) or {}).get("library_layout_terms") or []
+    out["Comment[LIBRARY_LAYOUT]"] = set(layout)
+    return {k: v for k, v in out.items() if v}
+
+
+def _cv_key(v):
+    """大文字小文字と区切り（`_` / `-` / 空白）の違いを無視した比較キー。
+
+    GEA の SDRF は DRA の語彙を **大文字＋アンダースコア**に変形した綴りで持っている
+    （`RNA_SEQ` ↔ DRA `RNA-Seq`、`TRANSCRIPTOMIC_SINGLE_CELL` ↔ `TRANSCRIPTOMIC SINGLE CELL`）。
+    移行対象 991 件を調べたところ、語彙外 6,819 延べのうち **6,806 がこの綴り違いだけ**で、
+    厳密一致にすると 9 割が誤検知になる。綴りの統一は移行 converter の仕事なので、
+    ここでは**語そのものが未知かどうか**だけを見る。
+    """
+    return v.lower().replace("_", "").replace("-", "").replace(" ", "")
+
+
+class GEA_LC0003(GeaRule):
+    """library 4 項目と instrument model の**値**が管理語彙にあるか（2026-09-21 追加）。
+
+    語彙は DRA の `cv_terms` を共通参照する（`DRA_R0039` と同じ値集合）。
+    比較は `_cv_key` で正規化して行う（上記の綴り違いを誤検知にしないため）。
+    error ＋ internal ignore、raw-less ではスキップ。
+    """
+    rule_id = "GEA_LC0003"; level = "error"; target = "SDRF/LibraryConstruction"; only_type = "sequencing"
+    description = "Value is not in controlled terms."
+
+    def validate(self, sub, context):
+        if not sub.sdrf:
+            return []
+        out = []
+        for col, allowed in _library_cv(context).items():
+            keys = {_cv_key(a) for a in allowed}
+            bad = sorted({v.strip() for v in sub.sdrf.values(col)
+                          if v.strip() and _cv_key(v.strip()) not in keys})
+            for v in bad:
+                out.append(self.result(message=f"{self.description} ({col}: '{v}')",
+                                       column=col, value=v))
+        return out
+
+
+class GEA_LC0004(GeaRule):
+    """参照している DRX（`Comment[SRA_EXPERIMENT]`）に登録済みの値と一致するか（2026-09-21 追加）。
+
+    BioSample の `GEA_BS0003`（Characteristics と BioSample 属性の突合）と同じ考え方で、
+    **DRA に既に登録されている Experiment の値を正**として SDRF と突き合わせる。
+    比較は `_cv_key` で正規化する（`GEA_LC0003` と同じ理由。綴り違いは不一致にしない）。
+    warning、raw-less ではスキップ。`context.dra_experiment_library` が無ければ何もしない
+    （`--skip-db` 等で未取得）。
+    """
+    rule_id = "GEA_LC0004"; level = "warning"; target = "SDRF/LibraryConstruction"; only_type = "sequencing"
+    requires_rdb = True
+    description = "Value does not match the referenced DRA Experiment."
+
+    #: SDRF の列 → DRA Experiment のフィールド名
+    _FIELDS = (("Comment[LIBRARY_SOURCE]", "library_source"),
+               ("Comment[LIBRARY_SELECTION]", "library_selection"),
+               ("Comment[LIBRARY_STRATEGY]", "library_strategy"),
+               ("Comment[LIBRARY_LAYOUT]", "library_layout"),
+               ("Comment[INSTRUMENT_MODEL]", "instrument_model"))
+
+    def validate(self, sub, context):
+        meta = getattr(context, "dra_experiment_library", None)
+        if not meta or not sub.sdrf:
+            return []
+        drx_idx = sub.sdrf.col_indices("Comment[SRA_EXPERIMENT]")
+        if not drx_idx:
+            return []
+        out = []
+        seen = set()
+        for ri, row in enumerate(sub.sdrf.rows):
+            drx = (row[drx_idx[0]] if drx_idx[0] < len(row) else "").strip().upper()
+            if not drx or drx not in meta:
+                continue
+            for col, field in self._FIELDS:
+                idxs = sub.sdrf.col_indices(col)
+                if not idxs:
+                    continue
+                sv = (row[idxs[0]] if idxs[0] < len(row) else "").strip()
+                dv = (meta[drx].get(field) or "").strip()
+                # 綴りの違い（`RNA_SEQ` ↔ `RNA-Seq`）は不一致に数えない。統一は移行 converter の仕事。
+                if not sv or not dv or _cv_key(sv) == _cv_key(dv):
+                    continue
+                key = (drx, col, sv, dv)
+                if key in seen:
+                    continue
+                seen.add(key)
+                out.append(self.result(
+                    message=f"{self.description} ({drx} {col}: SDRF:'{sv}', DRA:'{dv}')",
+                    line=ri + 1, column=col, value=sv, drx=drx, dra_value=dv))
+        return out
 
 
 # ---------------- Factor value が変動するか ----------------

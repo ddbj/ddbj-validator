@@ -60,7 +60,7 @@ class Validator(SimpleValidator):
             N.GEA_ADN0001(), N.GEA_DADN0001(),
             N.GEA_SM0001(), N.GEA_SM0003(), N.GEA_SC0001(), N.GEA_NN0001(),
             N.GEA_SR0008(), N.GEA_PN0001(), N.GEA_PN0003(),
-            N.GEA_LC0001(), N.GEA_LC0002(), N.GEA_FV0004(), N.GEA_G0011(),
+            N.GEA_LC0001(), N.GEA_LC0002(), N.GEA_LC0003(), N.GEA_LC0004(), N.GEA_FV0004(), N.GEA_G0011(),
             N.GEA_CA0001(), N.GEA_PV0001(), N.GEA_UA0001(), N.GEA_FV0001(), S.GEA_FV0002(),
             # GEA_MT0001 は deprecated（2026-09-20。同上）。
             N.GEA_L0001(), N.GEA_MT0002(),

@@ -174,6 +174,10 @@ def _fetch_account_refs(context, sub, account):
         if runs_bs:
             context.dra_submission_runs, context.dra_submission_biosamples = runs_bs
         context.dra_run_triples = _try("dra_triples", lambda: gea_db.fetch_dra_run_triples(dra_conn, ref_drr))
+        # GEA_LC0004 用: 参照 DRX に登録済みの library メタデータ（SDRF と突合する）
+        ref_drx = _sdrf_vals("Comment[SRA_EXPERIMENT]")
+        context.dra_experiment_library = _try(
+            "dra_exp_lib", lambda: gea_db.fetch_dra_experiment_library(dra_conn, ref_drx))
 
 
 def _write_fixed(sub, out_dir, results, context):

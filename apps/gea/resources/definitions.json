@@ -264,6 +264,10 @@
     },
     "raw_none_columns": [
       "Raw Data File"
+    ],
+    "library_layout_terms": [
+      "SINGLE",
+      "PAIRED"
     ]
   },
   "controlled_terms": {
@@ -961,12 +965,16 @@
   },
   "skip_conditions": {
     "raw-less": [
-      "GEA_PR0019",
-      "GEA_EX0004",
-      "GEA_AN0003",
-      "GEA_MAN0012",
       "GEA_AD0001",
-      "GEA_MAN0011"
+      "GEA_AN0003",
+      "GEA_EX0004",
+      "GEA_LC0001",
+      "GEA_LC0002",
+      "GEA_LC0003",
+      "GEA_LC0004",
+      "GEA_MAN0011",
+      "GEA_MAN0012",
+      "GEA_PR0019"
     ]
   }
 }

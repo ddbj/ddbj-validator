@@ -159,6 +159,51 @@ def fetch_dra_run_triples(dra_conn, ref_drrs):
     return out
 
 
+def fetch_dra_experiment_library(dra_conn, ref_drxs):
+    """参照 DRX の library メタデータを DRA DB から取る（GEA_LC0004 用）。
+
+    `{DRX000123: {library_source, library_selection, library_strategy, library_layout,
+    instrument_model}}` を返す。取れなければ None（＝ルールをスキップ）。
+
+    値は Experiment の XML から xpath で抜く（ddbj の `fetch_dra_library_metadata` と同じ形）。
+    `LIBRARY_LAYOUT` だけは値ではなく**子要素名**（`SINGLE` / `PAIRED`）なので `name()` で取る。
+    同じ acc_id に複数版あるので `meta_version` の最大だけを見る。
+    """
+    nums = sorted({int(x[3:]) for x in (str(v).strip().upper() for v in ref_drxs)
+                   if x.startswith("DRX") and x[3:].isdigit()})
+    if not dra_conn or not nums:
+        return {} if dra_conn else None
+    query = """
+        SELECT ent.acc_no,
+               (xpath('//LIBRARY_SOURCE/text()',     m.content::xml))[1]::text,
+               (xpath('//LIBRARY_SELECTION/text()',  m.content::xml))[1]::text,
+               (xpath('//LIBRARY_STRATEGY/text()',   m.content::xml))[1]::text,
+               (xpath('name(//LIBRARY_LAYOUT/*[1])', m.content::xml))[1]::text,
+               (xpath('//INSTRUMENT_MODEL/text()',   m.content::xml))[1]::text
+        FROM mass.accession_entity ent
+        JOIN mass.meta_entity m ON ent.acc_id = m.acc_id
+        WHERE ent.acc_type = 'DRX' AND ent.acc_no = ANY(%s)
+          AND (ent.is_delete IS NULL OR ent.is_delete = false)
+          AND m.meta_version = (SELECT MAX(meta_version) FROM mass.meta_entity WHERE acc_id = ent.acc_id)
+    """
+    try:
+        out = {}
+        with dra_conn.cursor() as cur:
+            cur.execute(query, (nums,))
+            for no, src, sel, strat, layout, model in cur.fetchall():
+                acc = _acc_from_no("DRX", no)
+                if not acc:
+                    continue
+                out[acc] = {"library_source": (src or "").strip(),
+                            "library_selection": (sel or "").strip(),
+                            "library_strategy": (strat or "").strip(),
+                            "library_layout": (layout or "").strip(),
+                            "instrument_model": (model or "").strip()}
+        return out
+    except Exception:
+        return None
+
+
 def fetch_experiment_metadata(gea_conn, esub_or_egead):
     """dordb から Experiment の IDF/SDRF テキストを取得。(idf_text, sdrf_text) を返す。
 
