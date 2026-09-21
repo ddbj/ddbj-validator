@@ -174,6 +174,13 @@ def _fetch_account_refs(context, sub, account):
         if runs_bs:
             context.dra_submission_runs, context.dra_submission_biosamples = runs_bs
         context.dra_run_triples = _try("dra_triples", lambda: gea_db.fetch_dra_run_triples(dra_conn, ref_drr))
+        # GEA_REF0002 用: 参照 DRA submission から引き写した Run / BioSample / BioProject。
+        # 登録 web の DRA タブで選んだ submission の中身は所有していなくても引用してよい。
+        cit = _try("dra_citable", lambda: gea_db.fetch_citable_dra_objects(
+            dra_conn, dm.get_bs_conn(), dm.get_bp_conn(), account, ref_drr))
+        if cit:
+            (context.dra_citable_runs, context.dra_citable_biosamples,
+             context.dra_citable_bioprojects) = cit
         # GEA_LC0004 用: 参照 DRX に登録済みの library メタデータ（SDRF と突合する）
         ref_drx = _sdrf_vals("Comment[SRA_EXPERIMENT]")
         context.dra_experiment_library = _try(

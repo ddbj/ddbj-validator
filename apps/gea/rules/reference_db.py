@@ -38,15 +38,19 @@ def _idf_array_designs(sub):
     return out
 
 
-#: 参照の種類。(ラベル, 集約名, 所有集合の属性, 実在集合の属性, 参照 accession の先頭, 実在判定する先頭, 参照値の取り方)
+#: 参照の種類。(ラベル, 集約名, 所有集合の属性, 実在集合の属性, 引用可能集合の属性,
+#:              参照 accession の先頭, 実在判定する先頭, 参照値の取り方)
 #: 実在判定は accession（PRJDB/SAMD/DRR）だけが対象。`PSUB` / `SSUB` は submission ID で
 #: 実在判定のテーブルが別なので対象外（従来どおり GEA_REF0002 だけで見る）。
+#: 引用可能集合 = 参照している DRA submission（**その account が引用してよいもの**）から辿れる
+#: Run / BioSample / BioProject。登録 web の DRA タブで選んだ submission の中身を引き写すので、
+#: 所有していなくても参照してよい（2026-09-21）。
 _REF_KINDS = (
-    ("BioProject", "BioProjects", "account_bioprojects", "existing_bioprojects",
+    ("BioProject", "BioProjects", "account_bioprojects", "existing_bioprojects", "dra_citable_bioprojects",
      r"^(PRJDB|PSUB)", r"^PRJDB", lambda sub: _idf_bps(sub)),
-    ("BioSample", "BioSamples", "account_biosamples", "existing_biosamples",
+    ("BioSample", "BioSamples", "account_biosamples", "existing_biosamples", "dra_citable_biosamples",
      r"^SAMD", r"^SAMD", lambda sub: _sdrf_col_values(sub, "Comment[BioSample]")),
-    ("Run", "Runs", "account_runs", "existing_runs",
+    ("Run", "Runs", "account_runs", "existing_runs", "dra_citable_runs",
      r"^DRR", r"^DRR", lambda sub: _sdrf_col_values(sub, "Comment[SRA_RUN]")),
 )
 
@@ -57,7 +61,7 @@ def _missing_refs(sub, context):
     アカウントとは無関係に見る（存在しない番号は誰のものでもない）。
     実在集合が未取得（None）の種類はスキップ＝判定しない。
     """
-    for label, agg, _owned, exist_attr, _pat, exist_pat, getter in _REF_KINDS:
+    for label, agg, _owned, exist_attr, _cit, _pat, exist_pat, getter in _REF_KINDS:
         existing = getattr(context, exist_attr, None)
         if existing is None:
             continue
@@ -74,13 +78,15 @@ def _unowned_refs(sub, context):
     除外対象が空になり、従来どおり「所有していない参照」を全部返す（graceful degrade）。
     """
     missing = {acc.upper() for _l, _a, acc in _missing_refs(sub, context)}
-    for label, agg, owned_attr, _exist, pat, _ep, getter in _REF_KINDS:
+    for label, agg, owned_attr, _exist, cit_attr, pat, _ep, getter in _REF_KINDS:
         owned = getattr(context, owned_attr, None)
         if owned is None:
             continue
-        owned_u = {x.upper() for x in owned}
+        ok = {x.upper() for x in owned}
+        # 参照してよい DRA submission から引き写したものも「参照してよい」に含める
+        ok |= {x.upper() for x in (getattr(context, cit_attr, None) or ())}
         for acc in sorted(getter(sub)):
-            if acc and re.match(pat, acc) and acc.upper() not in owned_u and acc.upper() not in missing:
+            if acc and re.match(pat, acc) and acc.upper() not in ok and acc.upper() not in missing:
                 yield label, agg, acc
 
 

@@ -104,6 +104,78 @@ def fetch_dra_submission_objects(dra_conn, bs_conn, ref_drrs):
     return runs, samds
 
 
+def fetch_citable_dra_objects(dra_conn, bs_conn, bp_conn, account, ref_drrs):
+    """SDRF が参照する DRA submission のうち **その account が引用してよいもの** から辿れる
+    Run / BioSample / BioProject を返す（`GEA_REF0002` の除外に使う）。
+
+    登録 web（Dway）の DRA タブは「account が登録した／外部参照を許可された DRA submission」だけを
+    出し、登録者が選ぶとその Run / Experiment / BioSample / BioProject を SDRF・IDF に引き写す。
+    引き写した BioSample / BioProject は **account の所有でも permit でもない**ことがあるため、
+    所有集合だけを見る `GEA_REF0002` では error になってしまう。そこで
+    **「引用してよい DRA submission から辿れるものは可」** として除外する。
+
+    **DRA submission 自体の可否は必ず見る。** そこを飛ばすと「公開されている DRA を書けば
+    何でも引用できる」ことになるため、所有（alias が `{account}-` で始まる）か
+    `ext_permit` で許可されたものだけを対象にする。
+
+    返り値は `(runs, samds, prjdbs)`。判定材料が無ければ `(None, None, None)`。
+    """
+    if not dra_conn or not account:
+        return None, None, None
+    try:
+        from apps.dra.db_meta import permitted_dra_prefixes, _psub_to_prjdb
+        referenced = _dra_submission_prefixes(dra_conn, ref_drrs)
+        if not referenced:
+            return set(), set(), set()
+        allowed = {p for p in referenced
+                   if p.startswith(f"{account}-") or p in permitted_dra_prefixes(dra_conn, account)}
+        if not allowed:
+            return set(), set(), set()
+        runs, smp_ids, psubs = set(), set(), set()
+        with dra_conn.cursor() as cur:
+            for prefix in sorted(allowed):
+                cur.execute(
+                    "SELECT acc_no FROM mass.accession_entity "
+                    "WHERE acc_type='DRR' AND alias LIKE %s AND (is_delete IS NULL OR is_delete=false)",
+                    (prefix + "\\_Run\\_%",))
+                for (no,) in cur.fetchall():
+                    acc = _acc_from_no("DRR", no)
+                    if acc:
+                        runs.add(acc)
+                cur.execute(
+                    "SELECT acc_id FROM mass.accession_entity "
+                    "WHERE acc_type='DRX' AND alias LIKE %s AND (is_delete IS NULL OR is_delete=false)",
+                    (prefix + "\\_Experiment\\_%",))
+                exp_ids = [r[0] for r in cur.fetchall()]
+                if not exp_ids:
+                    continue
+                cur.execute("SELECT DISTINCT grp_id FROM mass.accession_relation WHERE acc_id = ANY(%s)", (exp_ids,))
+                grp_ids = [r[0] for r in cur.fetchall()]
+                if not grp_ids:
+                    continue
+                # BioSample は SSUB（ref_name=smp_id）、BioProject は PSUB（ref_name=PSUB……）で入っている
+                cur.execute(
+                    "SELECT ee.acc_type, ee.ref_name FROM mass.ext_relation er "
+                    "JOIN mass.ext_entity ee USING(ext_id) "
+                    "WHERE er.grp_id = ANY(%s) AND ee.acc_type IN ('SSUB','PSUB')", (grp_ids,))
+                for acc_type, ref_name in cur.fetchall():
+                    rn = str(ref_name or "").strip()
+                    if acc_type == "SSUB" and rn.isdigit():
+                        smp_ids.add(int(rn))
+                    elif acc_type == "PSUB" and rn:
+                        psubs.add(rn.upper())
+        samds = set()
+        if smp_ids and bs_conn:
+            with bs_conn.cursor() as cur:
+                cur.execute("SELECT accession_id FROM mass.accession "
+                            "WHERE smp_id = ANY(%s) AND accession_id IS NOT NULL", (sorted(smp_ids),))
+                samds = {r[0].strip().upper() for r in cur.fetchall() if r[0]}
+        prjdbs = _psub_to_prjdb(bp_conn, psubs) if psubs else set()
+        return runs, samds, prjdbs
+    except Exception:
+        return None, None, None
+
+
 def fetch_dra_run_triples(dra_conn, ref_drrs):
     """参照 DRR ごとの DRA 実 triple（DRX / BioSample / BioProject）を返す（REF0008 用）。
 
