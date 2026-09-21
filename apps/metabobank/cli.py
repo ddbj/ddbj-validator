@@ -232,16 +232,21 @@ def run(args):
         cli_modes.print_found(1, "file set")   # idf+sdrf = 1 set
     if not context.skip_db:
         cli_modes.reset_db_access_log()
-        _fetch_biosample_attrs(context, sub, args.account)
-        # 実在判定（MB_IR0042 / MB_SR0051）は account を見ないので skip_auth でも取る。
-        _fetch_existing_refs(context, sub)
-        if not context.skip_auth:
-            # 引用可否（MB_IR0040/0041）は record-api があればそちらを使う。
-            # umbrella 除外と permitted を API 側が解決してくれるため。
-            if record_api.enabled():
-                _fetch_citable_from_api(context, args.account)
-            else:
-                _fetch_account_bioprojects(context, sub, args.account)
+        try:
+            _fetch_biosample_attrs(context, sub, args.account)
+            # 実在判定（MB_IR0042 / MB_SR0051）は account を見ないので skip_auth でも取る。
+            _fetch_existing_refs(context, sub)
+            if not context.skip_auth:
+                # 引用可否（MB_IR0040/0041）は record-api があればそちらを使う。
+                # umbrella 除外と permitted を API 側が解決してくれるため。
+                if record_api.enabled():
+                    _fetch_citable_from_api(context, args.account)
+                else:
+                    _fetch_account_bioprojects(context, sub, args.account)
+        finally:
+            # 取得が終わったら必ず接続を返す（gea / ddbj と同方針）。
+            from common.db_manager import DatabaseManager
+            DatabaseManager().close_all()
     results = pre + Validator(context).run(sub)
 
     now = datetime.datetime.now(_JST)

@@ -239,7 +239,7 @@ class GEA_PR0017(GeaRule):
     - CV 外の値は **除外**（`GEA_PR0020` が別に拾うので二重に出さない）。
     - `allow_any_protocol` が立っている type（Other。何が来るか分からない）では検査しない。
     """
-    rule_id = "GEA_PR0017"; level = "error"; target = "SDRF/Protocol"
+    rule_id = "GEA_PR0017"; level = "error"; target = "IDF/Protocol"
     description = "Protocol Type is not used in the specified Submission Type."
 
     def validate(self, sub, context):
@@ -266,7 +266,7 @@ class GEA_PR0007(GEA_PR0017):
     クラスは rule 表・参照のために残す。
     """
     deprecated = True
-    rule_id = "GEA_PR0007"; target = "IDF/Protocol"
+    rule_id = "GEA_PR0007"
 
 
 class GEA_PR0020(GeaRule):
