@@ -52,31 +52,31 @@ class _IncomingProtocol(GeaRule):
 
 
 class GEA_EX0003(_IncomingProtocol):
-    rule_id = "GEA_EX0003"; level = "error"; target = "SDRF/ExtractNode"; only_type = "microarray"
+    rule_id = "GEA_EX0003"; level = "error"; target = "SDRF/Extract"; only_type = "microarray"
     _node = "Extract Name"; _ptypes = ("Extraction protocol",)
     description = "An Extraction protocol must be included."
 
 
 class GEA_EX0004(_IncomingProtocol):
-    rule_id = "GEA_EX0004"; level = "error"; target = "SDRF/ExtractNode"; only_type = "sequencing"
+    rule_id = "GEA_EX0004"; level = "error"; target = "SDRF/Extract"; only_type = "sequencing"
     _node = "Extract Name"; _ptypes = ("Library construction protocol",)
     description = "A Library construction protocol must be included."
 
 
 class GEA_LE0005(_IncomingProtocol):
-    rule_id = "GEA_LE0005"; level = "error"; target = "SDRF/LabeledExtractNode"; only_type = "microarray"
+    rule_id = "GEA_LE0005"; level = "error"; target = "SDRF/LabeledExtract"; only_type = "microarray"
     _node = "Labeled Extract Name"; _ptypes = ("Labeling protocol",)
     description = "A Labeling protocol must be included."
 
 
 class GEA_AN0003(_IncomingProtocol):
-    rule_id = "GEA_AN0003"; level = "error"; target = "SDRF/ArrayNode"; only_type = "sequencing"
+    rule_id = "GEA_AN0003"; level = "error"; target = "SDRF/Array"; only_type = "sequencing"
     _node = "Assay Name"; _ptypes = ("Sequencing protocol",)
     description = "A Sequencing protocol must be included."
 
 
 class GEA_AN0004(_IncomingProtocol):
-    rule_id = "GEA_AN0004"; level = "error"; target = "SDRF/ArrayNode"; only_type = "microarray"
+    rule_id = "GEA_AN0004"; level = "error"; target = "SDRF/Array"; only_type = "microarray"
     _node = "Assay Name"; _ptypes = ("Hybridization protocol",)
     description = "A Hybridization protocol must be included."
 
@@ -134,14 +134,14 @@ class GEA_ADMN0004(_IncomingAny):
 
 
 class GEA_SM0003(_IncomingAny):
-    rule_id = "GEA_SM0003"; level = "warning"; target = "SDRF/SampleNode"
+    rule_id = "GEA_SM0003"; level = "warning"; target = "SDRF/Sample"
     _node = "Sample Name"
     description = "A sample should be described by a protocol."
 
 
 # ---------------- Assay incoming node type ----------------
 class GEA_AN0006(GeaRule):
-    rule_id = "GEA_AN0006"; level = "error"; target = "SDRF/ArrayNode"; only_type = "microarray"
+    rule_id = "GEA_AN0006"; level = "error"; target = "SDRF/Array"; only_type = "microarray"
     description = "For an array assay the incoming nodes must be 'Labeled Extract' nodes only."
 
     def validate(self, sub, context):
@@ -155,7 +155,7 @@ class GEA_AN0006(GeaRule):
 
 
 class GEA_AN0008(GeaRule):
-    rule_id = "GEA_AN0008"; level = "warning"; target = "SDRF/ArrayNode"; only_type = "microarray"
+    rule_id = "GEA_AN0008"; level = "warning"; target = "SDRF/Array"; only_type = "microarray"
     description = ("An assay must be connected to a number of distinctly labeled extracts "
                    "that equals a number of channels.")
 
@@ -189,7 +189,7 @@ class GEA_AN0008(GeaRule):
 
 # ---------------- Library info（HTS）----------------
 class GEA_LC0001(GeaRule):
-    rule_id = "GEA_LC0001"; level = "error"; target = "SDRF/LibraryConstructionAttribute"; only_type = "sequencing"
+    rule_id = "GEA_LC0001"; level = "error"; target = "SDRF/LibraryConstruction"; only_type = "sequencing"
     description = "Library source, layout, selection and strategy must be specified."  # 2026-09-17 文言変更
 
     _cols = ("Comment[LIBRARY_SOURCE]", "Comment[LIBRARY_LAYOUT]",
@@ -212,7 +212,7 @@ class GEA_LC0001(GeaRule):
 
 # ---------------- Factor value が変動するか ----------------
 class GEA_FV0004(GeaRule):
-    rule_id = "GEA_FV0004"; level = "error"; target = "SDRF/FactorValueAttribute"
+    rule_id = "GEA_FV0004"; level = "error"; target = "SDRF/FactorValue"
     description = "Values of an experimental variable must vary (for compound+dose at least one must vary)."
 
     def validate(self, sub, context):
@@ -262,22 +262,22 @@ class _EmptyBracket(GeaRule):
 
 
 class GEA_CA0001(_EmptyBracket):
-    rule_id = "GEA_CA0001"; level = "warning"; target = "SDRF/CharacteristicAttribute"; _prefix = "Characteristics"
+    rule_id = "GEA_CA0001"; level = "warning"; target = "SDRF/Characteristic"; _prefix = "Characteristics"
     description = "A characteristic attribute should have name specified."
 
 
 class GEA_PV0001(_EmptyBracket):
-    rule_id = "GEA_PV0001"; level = "warning"; target = "SDRF/ParameterValueAttribute"; _prefix = "Parameter Value"
+    rule_id = "GEA_PV0001"; level = "warning"; target = "SDRF/ParameterValue"; _prefix = "Parameter Value"
     description = "A parameter value attribute should have a name specified."
 
 
 class GEA_UA0001(_EmptyBracket):
-    rule_id = "GEA_UA0001"; level = "warning"; target = "SDRF/UnitAttribute"; _prefix = "Unit"
+    rule_id = "GEA_UA0001"; level = "warning"; target = "SDRF/Unit"; _prefix = "Unit"
     description = "A unit attribute should have name specified."
 
 
 class GEA_FV0001(_EmptyBracket):
-    rule_id = "GEA_FV0001"; level = "warning"; target = "SDRF/FactorValueAttribute"; _prefix = "Factor Value"
+    rule_id = "GEA_FV0001"; level = "warning"; target = "SDRF/FactorValue"; _prefix = "Factor Value"
     description = "An experimental variable attribute should have a name specified."
 
 
@@ -293,7 +293,7 @@ class _ColPresentButEmpty(GeaRule):
 
 
 class GEA_L0001(_ColPresentButEmpty):
-    rule_id = "GEA_L0001"; level = "warning"; target = "SDRF/LabelNode"; only_type = "microarray"; _col = "Label"
+    rule_id = "GEA_L0001"; level = "warning"; target = "SDRF/Label"; only_type = "microarray"; _col = "Label"
     description = "A label attribute should have name specified."
 
 
@@ -305,7 +305,7 @@ class GEA_MT0001(_ColPresentButEmpty):
     一部の行だけ空の場合を拾えなかった。クラスは rule 表・参照のために残す。
     """
     deprecated = True
-    rule_id = "GEA_MT0001"; level = "warning"; target = "SDRF/MaterialTypeAttribute"; _col = "Material Type"
+    rule_id = "GEA_MT0001"; level = "warning"; target = "SDRF/MaterialType"; _col = "Material Type"
     description = "A material type attribute should have a name specified."
 
 
@@ -315,7 +315,7 @@ class GEA_MT0002(GeaRule):
     旧 `GEA_EX0002`（列が無い＝warning）と旧 `GEA_MT0001`（全行空＝warning）を置き換える。
     実装は `GEA_EX0001`（Extract Name）と同じ形で、列が無いときだけ message を差し替える。
     """
-    rule_id = "GEA_MT0002"; level = "error"; target = "SDRF/MaterialTypeAttribute"
+    rule_id = "GEA_MT0002"; level = "error"; target = "SDRF/MaterialType"
     description = "A material type must be specified."
 
     def validate(self, sub, context):
@@ -331,18 +331,18 @@ class GEA_MT0002(GeaRule):
 
 
 class GEA_SC0001(_ColPresentButEmpty):
-    rule_id = "GEA_SC0001"; level = "warning"; target = "SDRF/ScanNode"; _col = "Scan Name"
+    rule_id = "GEA_SC0001"; level = "warning"; target = "SDRF/Scan"; _col = "Scan Name"
     description = "A scan should have a name specified."
 
 
 class GEA_NN0001(_ColPresentButEmpty):
-    rule_id = "GEA_NN0001"; level = "warning"; target = "SDRF/NormalizationNode"; _col = "Normalization Name"
+    rule_id = "GEA_NN0001"; level = "warning"; target = "SDRF/Normalization"; _col = "Normalization Name"
     description = "A normalization node should have a name."
 
 
 # ---------------- Sample node ----------------
 class GEA_SM0001(GeaRule):
-    rule_id = "GEA_SM0001"; level = "error"; target = "SDRF/SampleNode"
+    rule_id = "GEA_SM0001"; level = "error"; target = "SDRF/Sample"
     description = "A sample must have name specified."
 
     def validate(self, sub, context):
@@ -396,7 +396,7 @@ class GEA_DADMN0001(_ColPresentButEmpty):
 
 # ---------------- Source に growth/treatment/sample collection protocol ----------------
 class GEA_SR0008(GeaRule):
-    rule_id = "GEA_SR0008"; level = "error"; target = "SDRF/SourceNode"
+    rule_id = "GEA_SR0008"; level = "error"; target = "SDRF/Source"
     description = "A Growth, Treatment or Sample collection protocol must be included."
     _accept = ("Growth protocol", "Treatment protocol", "Sample collection protocol")
 
@@ -409,7 +409,7 @@ class GEA_SR0008(GeaRule):
 
 # ---------------- Protocol node ----------------
 class GEA_PN0001(GeaRule):
-    rule_id = "GEA_PN0001"; level = "error"; target = "SDRF/ProtocolNode"
+    rule_id = "GEA_PN0001"; level = "error"; target = "SDRF/Protocol"
     description = "A protocol must have a name specified."
 
     def validate(self, sub, context):
@@ -425,7 +425,7 @@ class GEA_PN0001(GeaRule):
 
 
 class GEA_PN0003(GeaRule):
-    rule_id = "GEA_PN0003"; level = "error"; target = "SDRF/ProtocolNode"
+    rule_id = "GEA_PN0003"; level = "error"; target = "SDRF/Protocol"
     description = "A protocol's date must be in 'YYYY-MM-DD' format."
 
     def validate(self, sub, context):

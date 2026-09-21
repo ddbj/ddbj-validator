@@ -190,7 +190,7 @@ class GEA_PR0018(GeaRule):
 
     submission type が分からない／その type の定義が無いときは検査しない。
     """
-    rule_id = "GEA_PR0018"; level = "error"; target = "IDF/Protocol"
+    rule_id = "GEA_PR0018"; level = "error"; target = "IDF/SDRF"
     description = "Required Protocol Type is missing for the specified Submission Type."
 
     def validate(self, sub, context):
@@ -215,7 +215,7 @@ class GEA_PR0019(GeaRule):
     raw が無い submission では出さない（`skip_conditions["raw-less"]` に登録。判定は `GeaRule.applies`）。
     Xenium は raw が無い形を想定しないので `required_with_raw` は空＝このルールは何も出さない。
     """
-    rule_id = "GEA_PR0019"; level = "error"; target = "IDF/Protocol"
+    rule_id = "GEA_PR0019"; level = "error"; target = "IDF/SDRF"
     description = "Protocol Type required for raw data is missing for the specified Submission Type."
 
     def validate(self, sub, context):
@@ -266,7 +266,7 @@ class GEA_PR0007(GEA_PR0017):
     クラスは rule 表・参照のために残す。
     """
     deprecated = True
-    rule_id = "GEA_PR0007"
+    rule_id = "GEA_PR0007"; target = "IDF/Protocol"
 
 
 class GEA_PR0020(GeaRule):
