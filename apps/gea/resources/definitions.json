@@ -236,19 +236,6 @@
       "Raw Data File",
       "Processed Data File"
     ],
-    "required_columns_error": [
-      "Source Name",
-      "Extract Name",
-      "Assay Name",
-      "Protocol REF",
-      "Characteristics[organism]"
-    ],
-    "required_columns_warning": [
-      "Characteristics\\[taxonomy_id\\]",
-      "Comment\\[BioSample\\]",
-      "Comment\\[sample_title\\]",
-      "Factor Value\\[[-_ A-Za-z0-9.]+\\]"
-    ],
     "required_columns_microarray": [
       "Labeled Extract Name",
       "Label",

@@ -117,6 +117,41 @@ class GEA_SR0012(GeaRule):
         return [self.result()]
 
 
+class GEA_SR0013(GeaRule):
+    """`Comment[BioSample]` 列が無い（2026-09-21 追加）。
+
+    `GEA_SR0012`（sample_title）と同じ形・同じ扱い（error ＋ internal ignore）。
+    参照列は `definitions.biosample_sync.biosample_ref_columns` から引く。直書きにしないのは、
+    MetaboBank が `Characteristics[biosample_accession]` も参照列に持っており、
+    GEA でも増えたときに自動で追従させるため。
+    """
+    rule_id = "GEA_SR0013"; level = "error"; target = "SDRF/Source"
+    description = "A source must have a 'BioSample' comment specified."
+
+    def validate(self, sub, context):
+        if not sub.sdrf:
+            return []
+        from common.magetab import biosample as _bs
+        cols = _bs.ref_columns(context)
+        return [] if any(_has_col(sub.sdrf, c) for c in cols) else [self.result()]
+
+
+class GEA_FV0002(GeaRule):
+    """`Factor Value[...]` 列が 1 本も無い（2026-09-21 追加）。
+
+    `GEA_FV0001` は「列はあるが括弧の中が空」を見る。こちらは**列そのものが無い**場合。
+    実験変数が 1 つも無い submission は珍しいが、登録を止めるほどではないので warning。
+    """
+    rule_id = "GEA_FV0002"; level = "warning"; target = "SDRF/FactorValue"
+    description = "At least one 'Factor Value' column is required."
+
+    def validate(self, sub, context):
+        if not sub.sdrf:
+            return []
+        has = any((h or "").strip().startswith("Factor Value[") for h in sub.sdrf.header)
+        return [] if has else [self.result()]
+
+
 # ---------------- Extract ----------------
 class GEA_EX0001(GeaRule):
     rule_id = "GEA_EX0001"; level = "error"; target = "SDRF/Extract"

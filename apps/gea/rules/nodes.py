@@ -210,6 +210,21 @@ class GEA_LC0001(GeaRule):
         return [self.result(message=f"{self.description} (missing/empty: {', '.join(miss)})")] if miss else []
 
 
+class GEA_LC0002(GeaRule):
+    """`Comment[INSTRUMENT_MODEL]` 列が無い（2026-09-21 追加）。
+
+    `GEA_LC0001`（library の 4 項目。error）と同じ target・同じ sequencing 限定だが、
+    **必須にはしない**方針なので warning。書かなくても登録は通る。
+    """
+    rule_id = "GEA_LC0002"; level = "warning"; target = "SDRF/LibraryConstruction"; only_type = "sequencing"
+    description = "Instrument model should be specified."
+
+    def validate(self, sub, context):
+        if not sub.sdrf:
+            return []
+        return [] if sub.sdrf.col_indices("Comment[INSTRUMENT_MODEL]") else [self.result()]
+
+
 # ---------------- Factor value が変動するか ----------------
 class GEA_FV0004(GeaRule):
     rule_id = "GEA_FV0004"; level = "error"; target = "SDRF/FactorValue"

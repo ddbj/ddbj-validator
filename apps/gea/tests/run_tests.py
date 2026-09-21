@@ -37,6 +37,11 @@ EXPECTED = {
     "COM0002-craft": {"GEA_COM0002"},
     # crafted fixture（E-GEAD-1117 派生）: Comment[Submission Date] を YYYY/MM/DD にして G0015 を担保
     "G0015-craft": {"GEA_G0015"},
+    # crafted fixture（E-GEAD-1114 派生）: 列の有無を見る 3 ルール（2026-09-21 追加）。
+    # 死んだ定義 sdrf.required_columns_error / _warning を消した代わりに個別ルールで見る形にしたもの。
+    "SR0013-craft": {"GEA_SR0013"},     # Comment[BioSample] 列なし（error ＋ ignore）
+    "FV0002-craft": {"GEA_FV0002"},     # Factor Value[...] 列が 1 本も無い（warning）
+    "LC0002-craft": {"GEA_LC0002"},     # Comment[INSTRUMENT_MODEL] 列なし（warning・sequencing 限定）
     # crafted fixture（E-GEAD-1104 派生）: Material Type 全必須（2026-09-20）の 2 分岐。
     # ① 列ごと無い（旧 GEA_EX0002 の担当範囲）② 列はあるが 1 行だけ空
     # ②は旧 GEA_MT0001 が「全行空」しか見なかったため**何も出なかった**ケース。ここが MT0002 の主眼。
