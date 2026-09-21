@@ -28,16 +28,24 @@ def execute_in_query(conn, sql_template, in_values, params=None):
 class DatabaseManager:
     """
     複数データベースへの接続を一元管理し、必要なタイミングでコネクションを張るクラス。
+
+    **接続はプロセス内で共有する**（`_conns` はクラス属性）。`DatabaseManager()` は
+    アプリ内の 15 か所以上から、`DatabaseManager().get_bs_conn()` のような使い捨ての形も含めて
+    呼ばれる。インスタンスごとに持つと **呼ばれた回数ぶん接続が増え**、1 プロセスで複数の
+    検証を回す E2E ハーネスではロールの接続数上限
+    （`FATAL: ロール"…"からの接続が多すぎます`）に当たってルールが黙ってスキップされる。
+    共有にすれば 1 プロセスあたり最大 6 本（DB の種類ぶん）で済む。
+
+    `ProcessPoolExecutor` のワーカーは別プロセスなのでクラス属性も別になる（共有されない）。
     """
-    def __init__(self):
-        self._conns = {
-            "tax": None,
-            "bp": None,
-            "bs": None,
-            "dra": None,
-            "submitter": None,
-            "gea": None
-        }
+    _conns = {
+        "tax": None,
+        "bp": None,
+        "bs": None,
+        "dra": None,
+        "submitter": None,
+        "gea": None
+    }
 
     def _get_conn(self, key, db_env_name, is_tax=False):
         if self._conns.get(key) is None:
@@ -80,6 +88,16 @@ class DatabaseManager:
         return self._get_conn("gea", "GEA_DB_NAME")
 
     def close_all(self):
-        for conn in self._conns.values():
+        """全接続を閉じ、スロットを None に戻す。
+
+        **None に戻すのが要点**。閉じた接続オブジェクトを残したままだと `_get_conn` の
+        `is None` 判定を素通りし、次の取得で**閉じ済みの接続**を返してしまう。
+        戻しておけば、閉じたあとに再び必要になっても張り直せる。
+        """
+        for key, conn in self._conns.items():
             if conn:
-                conn.close()
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+            self._conns[key] = None

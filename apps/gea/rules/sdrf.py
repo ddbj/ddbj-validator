@@ -41,7 +41,7 @@ def _col_nonempty_all_rows(sdrf, name):
 
 # ---------------- Source / Sample ----------------
 class GEA_SR0001(GeaRule):
-    rule_id = "GEA_SR0001"; level = "error"; target = "SDRF/SourceNode"
+    rule_id = "GEA_SR0001"; level = "error"; target = "SDRF/Source"
     description = "A source (starting sample) must have name specified."
 
     def validate(self, sub, context):
@@ -54,7 +54,7 @@ class GEA_SR0001(GeaRule):
 
 
 class GEA_SR0004(GeaRule):
-    rule_id = "GEA_SR0004"; level = "error"; target = "SDRF/SourceNode"
+    rule_id = "GEA_SR0004"; level = "error"; target = "SDRF/Source"
     description = "A source must have an 'organism' characteristic specified."
 
     def validate(self, sub, context):
@@ -67,7 +67,7 @@ class GEA_SR0004(GeaRule):
 
 
 class GEA_SR0009(GeaRule):
-    rule_id = "GEA_SR0009"; level = "warning"; target = "SDRF/SourceNode"
+    rule_id = "GEA_SR0009"; level = "warning"; target = "SDRF/Source"
     description = "A source should have a 'taxonomy_id' characteristic specified."
 
     def validate(self, sub, context):
@@ -77,7 +77,7 @@ class GEA_SR0009(GeaRule):
 
 
 class GEA_SR0005(GeaRule):
-    rule_id = "GEA_SR0005"; level = "warning"; target = "SDRF/SourceNode"
+    rule_id = "GEA_SR0005"; level = "warning"; target = "SDRF/Source"
     description = "A source should have more than 2 characteristic attributes."
 
     def validate(self, sub, context):
@@ -88,7 +88,7 @@ class GEA_SR0005(GeaRule):
 
 
 class GEA_SR0006(GeaRule):
-    rule_id = "GEA_SR0006"; level = "warning"; target = "SDRF/SourceNode"
+    rule_id = "GEA_SR0006"; level = "warning"; target = "SDRF/Source"
     description = "Characteristic types should be unique (case-insensitive)."
 
     def validate(self, sub, context):
@@ -106,7 +106,7 @@ class GEA_SR0006(GeaRule):
 
 
 class GEA_SR0012(GeaRule):
-    rule_id = "GEA_SR0012"; level = "error"; target = "SDRF/SourceNode"
+    rule_id = "GEA_SR0012"; level = "error"; target = "SDRF/Source"
     description = "A source should have a 'sample_title' characteristic/comment."
 
     def validate(self, sub, context):
@@ -117,9 +117,44 @@ class GEA_SR0012(GeaRule):
         return [self.result()]
 
 
+class GEA_SR0013(GeaRule):
+    """`Comment[BioSample]` 列が無い（2026-09-21 追加）。
+
+    `GEA_SR0012`（sample_title）と同じ形・同じ扱い（error ＋ internal ignore）。
+    参照列は `definitions.biosample_sync.biosample_ref_columns` から引く。直書きにしないのは、
+    MetaboBank が `Characteristics[biosample_accession]` も参照列に持っており、
+    GEA でも増えたときに自動で追従させるため。
+    """
+    rule_id = "GEA_SR0013"; level = "error"; target = "SDRF/Source"
+    description = "A source must have a 'BioSample' comment specified."
+
+    def validate(self, sub, context):
+        if not sub.sdrf:
+            return []
+        from common.magetab import biosample as _bs
+        cols = _bs.ref_columns(context)
+        return [] if any(_has_col(sub.sdrf, c) for c in cols) else [self.result()]
+
+
+class GEA_FV0002(GeaRule):
+    """`Factor Value[...]` 列が 1 本も無い（2026-09-21 追加）。
+
+    `GEA_FV0001` は「列はあるが括弧の中が空」を見る。こちらは**列そのものが無い**場合。
+    実験変数が 1 つも無い submission は珍しいが、登録を止めるほどではないので warning。
+    """
+    rule_id = "GEA_FV0002"; level = "warning"; target = "SDRF/FactorValue"
+    description = "At least one 'Factor Value' column is required."
+
+    def validate(self, sub, context):
+        if not sub.sdrf:
+            return []
+        has = any((h or "").strip().startswith("Factor Value[") for h in sub.sdrf.header)
+        return [] if has else [self.result()]
+
+
 # ---------------- Extract ----------------
 class GEA_EX0001(GeaRule):
-    rule_id = "GEA_EX0001"; level = "error"; target = "SDRF/ExtractNode"
+    rule_id = "GEA_EX0001"; level = "error"; target = "SDRF/Extract"
     description = "An extract must have name specified."
 
     def validate(self, sub, context):
@@ -138,7 +173,7 @@ class GEA_EX0002(GeaRule):
     列の有無だけを warning で見る作りだった。クラスは rule 表・参照のために残す。
     """
     deprecated = True
-    rule_id = "GEA_EX0002"; level = "warning"; target = "SDRF/ExtractNode"
+    rule_id = "GEA_EX0002"; level = "warning"; target = "SDRF/Extract"
     description = "An extract should have a 'Material Type' attribute specified."
 
     def validate(self, sub, context):
@@ -149,7 +184,7 @@ class GEA_EX0002(GeaRule):
 
 # ---------------- Assay / Technology Type ----------------
 class GEA_AN0001(GeaRule):
-    rule_id = "GEA_AN0001"; level = "error"; target = "SDRF/ArrayNode"
+    rule_id = "GEA_AN0001"; level = "error"; target = "SDRF/Array"
     description = "An assay must have a name specified."
 
     def validate(self, sub, context):
@@ -168,7 +203,7 @@ class GEA_AN0002(GeaRule):
     クラスは rule 表・参照のために残す。
     """
     deprecated = True
-    rule_id = "GEA_AN0002"; level = "error"; target = "SDRF/ArrayNode"
+    rule_id = "GEA_AN0002"; level = "error"; target = "SDRF/Array"
     description = "An assay must have a 'Technology Type' attribute specified."
 
     def validate(self, sub, context):
@@ -202,7 +237,7 @@ class GEA_AN0005(GeaRule):
     microarray で Technology Type = 'array assay' を強制していたが廃止。クラスは rule 表・参照のために残す。
     """
     deprecated = True
-    rule_id = "GEA_AN0005"; level = "error"; target = "SDRF/ArrayNode"; only_type = "microarray"
+    rule_id = "GEA_AN0005"; level = "error"; target = "SDRF/Array"; only_type = "microarray"
     description = "'Technology Type' must be equal to 'array assay' in micro-array submissions."
 
     def validate(self, sub, context):
@@ -220,7 +255,7 @@ class GEA_AN0009(GeaRule):
     （microarray 側の GEA_AN0005 は既に廃止済み）。クラスは rule 表・参照のために残す。
     """
     deprecated = True
-    rule_id = "GEA_AN0009"; level = "error"; target = "SDRF/ArrayNode"; only_type = "sequencing"
+    rule_id = "GEA_AN0009"; level = "error"; target = "SDRF/Array"; only_type = "sequencing"
     description = "'Technology Type' must be equal to 'sequencing assay' in HTS submissions."
 
     def validate(self, sub, context):
@@ -262,7 +297,7 @@ class GEA_COM0004(GeaRule):
 
 # ---------------- Material Type CV ----------------
 class GEA_MT0004(GeaRule):
-    rule_id = "GEA_MT0004"; level = "error"; target = "SDRF/MaterialTypeAttribute"
+    rule_id = "GEA_MT0004"; level = "error"; target = "SDRF/MaterialType"
     description = "A 'Material Type' attribute should have a controlled term."
 
     def validate(self, sub, context):
@@ -278,7 +313,7 @@ class GEA_MT0004(GeaRule):
 
 # ---------------- Labeled Extract / Label（Micro-array / HTS）----------------
 class GEA_LE0002(GeaRule):
-    rule_id = "GEA_LE0002"; level = "error"; target = "SDRF/LabeledExtractNode"; only_type = "microarray"
+    rule_id = "GEA_LE0002"; level = "error"; target = "SDRF/LabeledExtract"; only_type = "microarray"
     description = "A labeled extract must have name specified."
 
     def validate(self, sub, context):
@@ -288,7 +323,7 @@ class GEA_LE0002(GeaRule):
 
 
 class GEA_LE0004(GeaRule):
-    rule_id = "GEA_LE0004"; level = "error"; target = "SDRF/LabeledExtractNode"; only_type = "microarray"
+    rule_id = "GEA_LE0004"; level = "error"; target = "SDRF/LabeledExtract"; only_type = "microarray"
     description = "A labeled extract must have 'Label' attribute specified."
 
     def validate(self, sub, context):
@@ -298,7 +333,7 @@ class GEA_LE0004(GeaRule):
 
 
 class GEA_LE0001(GeaRule):
-    rule_id = "GEA_LE0001"; level = "error"; target = "SDRF/LabeledExtractNode"; only_type = "sequencing"
+    rule_id = "GEA_LE0001"; level = "error"; target = "SDRF/LabeledExtract"; only_type = "sequencing"
     description = "There must not be a labeled extract in a sequencing experiment."
 
     def validate(self, sub, context):
@@ -308,7 +343,7 @@ class GEA_LE0001(GeaRule):
 
 
 class GEA_AD0004(GeaRule):
-    rule_id = "GEA_AD0004"; level = "error"; target = "SDRF/ArrayDesignAttribute"; only_type = "sequencing"
+    rule_id = "GEA_AD0004"; level = "error"; target = "SDRF/ArrayDesign"; only_type = "sequencing"
     description = "There must not be any array design attributes in a sequencing experiment."
 
     def validate(self, sub, context):
@@ -318,7 +353,7 @@ class GEA_AD0004(GeaRule):
 
 
 class GEA_AD0001(GeaRule):
-    rule_id = "GEA_AD0001"; level = "error"; target = "SDRF/ArrayDesignAttribute"; only_type = "microarray"
+    rule_id = "GEA_AD0001"; level = "error"; target = "SDRF/ArrayDesign"; only_type = "microarray"
     description = "An array design attribute must have a name specified."
 
     def validate(self, sub, context):
@@ -473,7 +508,7 @@ class GEA_MAN0012(GeaRule):
 # ---------------- SDRF 形式（Comment 系 accession）----------------
 class GEA_SDRF_REGEX(GeaRule):
     """value_formats のうち SDRF 側 Comment 列の形式検査（GEA_REGEX0010-0051 相当を一括）。"""
-    rule_id = "GEA_REGEX0010"; level = "error"; target = "SDRF"
+    rule_id = "GEA_REGEX0010"; level = "error"; target = "SDRF,SRA_EXPERIMENT,SRA_RUN,SRA_ANALYSIS,JGA_STUDY,JGA_SAMPLE,JGA_EXPERIMENT,JGA_DATA,JGA_ANALYSIS,GEO_SAMPLE,GEO_SERIES,ArrayExpress_Experiment"
     description = "Format Error"
 
     _sdrf_fields = (

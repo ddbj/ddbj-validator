@@ -38,7 +38,7 @@ class Validator(SimpleValidator):
             # GEA_REGEX0002 は deprecated（2026-09-19。Protocol Name の値形式を廃止）。
             I.GEA_REGEX0001(), I.GEA_REGEX0003(), I.GEA_REGEX0004(),
             # --- SDRF ---
-            S.GEA_SR0001(), S.GEA_SR0004(), S.GEA_SR0009(), S.GEA_SR0005(), S.GEA_SR0006(), S.GEA_SR0012(),
+            S.GEA_SR0001(), S.GEA_SR0004(), S.GEA_SR0009(), S.GEA_SR0005(), S.GEA_SR0006(), S.GEA_SR0012(), S.GEA_SR0013(),
             # GEA_EX0002 は deprecated（2026-09-20。Material Type 全必須化で GEA_MT0002 に統合）。
             S.GEA_EX0001(),
             # GEA_AN0002 / GEA_AN0005 は deprecated（2026-09-18。Technology Type 列の有無・array assay 強制を廃止）のため登録しない。
@@ -60,8 +60,8 @@ class Validator(SimpleValidator):
             N.GEA_ADN0001(), N.GEA_DADN0001(),
             N.GEA_SM0001(), N.GEA_SM0003(), N.GEA_SC0001(), N.GEA_NN0001(),
             N.GEA_SR0008(), N.GEA_PN0001(), N.GEA_PN0003(),
-            N.GEA_LC0001(), N.GEA_FV0004(), N.GEA_G0011(),
-            N.GEA_CA0001(), N.GEA_PV0001(), N.GEA_UA0001(), N.GEA_FV0001(),
+            N.GEA_LC0001(), N.GEA_LC0002(), N.GEA_LC0003(), N.GEA_LC0004(), N.GEA_FV0004(), N.GEA_G0011(),
+            N.GEA_CA0001(), N.GEA_PV0001(), N.GEA_UA0001(), N.GEA_FV0001(), S.GEA_FV0002(),
             # GEA_MT0001 は deprecated（2026-09-20。同上）。
             N.GEA_L0001(), N.GEA_MT0002(),
             # --- cross（IDF↔SDRF）---
