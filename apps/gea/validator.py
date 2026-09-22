@@ -49,7 +49,7 @@ class Validator(SimpleValidator):
             S.GEA_DF0001(), S.GEA_DF0002(),
             # GEA_RC0002 は deprecated（2026-09-17。Comment 列の重複は取込で畳む）のため登録しない。
             S.GEA_CN0001(), S.GEA_UNDEF(), S.GEA_SR0003(),
-            S.GEA_MAN0011(), S.GEA_MAN0012(),
+            S.GEA_MAN0011(), S.GEA_MAN0012(), S.GEA_MAN0014(),
             S.GEA_SDRF_REGEX(),
             # --- SDRF node グラフ / 属性名 ---
             N.GEA_EX0003(), N.GEA_EX0004(), N.GEA_LE0005(),
