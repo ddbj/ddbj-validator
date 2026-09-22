@@ -445,3 +445,17 @@ def test_deprecated_rules_are_not_registered():
     bad = sorted({r.rule_id for r in Validator(ValidationContext()).active_rules
                   if getattr(r, "deprecated", False)})
     assert not bad, f"deprecated なのに登録されている: {bad}"
+
+
+def test_person_fields_match_metabobank():
+    """IDF の `Person *` の並びが MetaboBank と一致すること（2026-09-22）。
+
+    GEA に `Person Email` が無く、登録 web が入力されたメールアドレスを IDF に書けなかった
+    （行が無いので保存のたびにフォームが空で上書きされていた）。MB と同じ並びに揃える。
+    公開 FTP には `apps/magetab/public_metadata.py:PRIVATE_IDF_ROWS` で出ないため、
+    **足しても公開物の見え方は変わらない**（GEA 側の確認済み）。
+    """
+    from apps.metabobank.defs import load_definitions as mb_defs
+    gea = [f for f in DEFS["idf"]["fields"] if f.startswith("Person ")]
+    mb = [f for f in mb_defs()["idf"]["fields"] if f.startswith("Person ")]
+    assert gea == mb, f"GEA={gea} / MB={mb}"
