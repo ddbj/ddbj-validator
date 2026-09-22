@@ -42,6 +42,11 @@ EXPECTED = {
     "SR0013-craft": {"GEA_SR0013"},     # Comment[BioSample] 列なし（error ＋ ignore）
     "FV0002-craft": {"GEA_FV0002"},     # Factor Value[...] 列が 1 本も無い（warning）
     "LC0002-craft": {"GEA_LC0002"},     # Comment[INSTRUMENT_MODEL] 列なし（error ＋ ignore・sequencing 限定）
+    # crafted fixture（E-GEAD-1117 派生）: **初の Xenium fixture**。Submission Type=Xenium、
+    # experiment type を spatial transcriptomics by imaging に、protocol を Xenium の必須 5 種にした
+    # 移行後の姿。これで Xenium 限定ルール（GEA_G0016 / PR0017 / PR0018 / MAN0014）が E2E に載る。
+    "MAN0014-craft": {"GEA_MAN0014"},        # tissue_preservation_method 列なし
+    "MAN0014-pass-craft": set(),             # 同列あり → 発火なし（Xenium の clean な形）
     # crafted fixture（E-GEAD-1114 派生）: LIBRARY_STRATEGY を DRA の語彙に無い値にして GEA_LC0003 を担保。
     # 比較は大文字小文字・区切りを無視するので、旧綴り（RNA_SEQ 等）では発火しない。
     "LC0003-craft": {"GEA_LC0003"},

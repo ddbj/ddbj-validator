@@ -245,6 +245,9 @@
       "Comment\\[SRA_RUN\\]",
       "Comment\\[SRA_EXPERIMENT\\]"
     ],
+    "required_columns_xenium": [
+      "Comment\\[tissue_preservation_method\\]"
+    ],
     "singleton_columns": [
       "Source Name",
       "Sample Name",

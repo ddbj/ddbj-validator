@@ -490,7 +490,8 @@ class GEA_MAN0011(GeaRule):
             return []
         req = _sdrf_def(context).get("required_columns_microarray", [])
         miss = [p for p in req if not _matches_any_header(sub.sdrf.header, p)]
-        return [self.result(message=f"{self.description} ({', '.join(miss)})")] if miss else []
+        # 必須列は正規表現で持つので、message では `\[` → `[` に戻して列名として読めるようにする
+        return [self.result(message=f"{self.description} ({', '.join(m.replace(chr(92), '') for m in miss)})")] if miss else []
 
 
 class GEA_MAN0012(GeaRule):
@@ -502,7 +503,30 @@ class GEA_MAN0012(GeaRule):
             return []
         req = _sdrf_def(context).get("required_columns_sequencing", [])
         miss = [p for p in req if not _matches_any_header(sub.sdrf.header, p)]
-        return [self.result(message=f"{self.description} ({', '.join(miss)})")] if miss else []
+        # 必須列は正規表現で持つので、message では `\[` → `[` に戻して列名として読めるようにする
+        return [self.result(message=f"{self.description} ({', '.join(m.replace(chr(92), '') for m in miss)})")] if miss else []
+
+
+class GEA_MAN0014(GeaRule):
+    """Xenium の必須列（2026-09-22 追加）。いまは `Comment[tissue_preservation_method]` の 1 本。
+
+    `GEA_MAN0011`（Microarray）/ `GEA_MAN0012`（Sequencing）と同じ形で、読む定義が
+    `required_columns_xenium` になるだけ。error ＋ internal ignore なので**登録はブロックしない**
+    （移行データはこの列を 1 件も持っていないため。converter が列を足すまでの猶予）。
+
+    raw-less の skip は付けていない。「Xenium で raw が無い、はない」という GEA 側の整理に従い、
+    `dway_defaults.Xenium` の `required_with_raw` も空にしてあるため。
+    """
+    rule_id = "GEA_MAN0014"; level = "error"; target = "SDRF"; only_type = "xenium"
+    description = "Mandatory node (column) is required."
+
+    def validate(self, sub, context):
+        if not sub.sdrf:
+            return []
+        req = _sdrf_def(context).get("required_columns_xenium", [])
+        miss = [p for p in req if not _matches_any_header(sub.sdrf.header, p)]
+        # 必須列は正規表現で持つので、message では `\[` → `[` に戻して列名として読めるようにする
+        return [self.result(message=f"{self.description} ({', '.join(m.replace(chr(92), '') for m in miss)})")] if miss else []
 
 
 # ---------------- SDRF 形式（Comment 系 accession）----------------

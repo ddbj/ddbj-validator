@@ -45,6 +45,7 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     "GEA_SR0013",  # A source must have a 'BioSample' comment specified.
     "GEA_LC0002",  # Instrument model should be specified.
     "GEA_LC0003",  # Value is not in controlled terms.（library 4 項目 ＋ instrument model）
+    "GEA_MAN0014",  # Mandatory node (column) is required.（Xenium の tissue_preservation_method）
 })
 
 
