@@ -115,7 +115,7 @@
     ],
     "description_min_length": 20,
     "description_max_length": 4000,
-    "protocol_description_min_length": 30,
+    "protocol_description_min_length": 20,
     "person_roles": [
       "submitter"
     ],

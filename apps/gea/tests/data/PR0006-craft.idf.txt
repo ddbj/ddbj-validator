@@ -12,7 +12,7 @@ Person Roles	submitter
 Public Release Date	2025-10-27
 Protocol Name	P-GEAD-5016	P-GEAD-5017	P-GEAD-5018	P-GEAD-5019	P-GEAD-5020	P-GEAD-5021
 Protocol Type	sample collection protocol	nucleic acid extraction protocol	nucleic acid labeling protocol	nucleic acid hybridization to array protocol	array scanning and feature extraction protocol	normalization data transformation protocol
-Protocol Description	Surgically resected colorectal tumors which were already identified as BRAFV600E mutated and MSI or MSS were collected.	Nucleic acids were extracted from FFPE sections according to 10X genomics Xenium In Situ for FFPE Tissues protocol.	Nucleic acids were labeled according to 10X genomics Xenium In Situ Gene Expression protocol.	Nucleic acids hybridization to array was performed according to 10X genomics Xenium In Situ Gene Expression protocol.	Array scanning and feature extraction were performed according to 10X genomics Xenium In Situ Gene Expression protocol.	Total RNA was extracted.
+Protocol Description	Surgically resected colorectal tumors which were already identified as BRAFV600E mutated and MSI or MSS were collected.	Nucleic acids were extracted from FFPE sections according to 10X genomics Xenium In Situ for FFPE Tissues protocol.	Nucleic acids were labeled according to 10X genomics Xenium In Situ Gene Expression protocol.	Nucleic acids hybridization to array was performed according to 10X genomics Xenium In Situ Gene Expression protocol.	Array scanning and feature extraction were performed according to 10X genomics Xenium In Situ Gene Expression protocol.	Short protocol.
 SDRF File	E-GEAD-1117.sdrf.txt
 Comment[Number of channel]	single-channel
 Comment[Array Design REF]	A-GEAD-11

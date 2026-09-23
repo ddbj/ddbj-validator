@@ -370,7 +370,7 @@ class GEA_G0011(GeaRule):
     旧い submission は IDF 側にしか持たないことがあるので、**どちらかにあれば可**（後方互換）。
     """
     rule_id = "GEA_G0011"; level = "error"; target = "SDRF"; only_type = "microarray"
-    description = "Array Design File (or Array Design REF) is required for micro-array submissions."
+    description = "Array Design File (or Array Design REF) is required for microarray submissions."
 
     def validate(self, sub, context):
         sdrf_ad = any(not _empty(v) for v in sub.sdrf.values("Array Design REF")) if sub.sdrf else False
