@@ -1,7 +1,7 @@
 """IDF ルール（GEA_C / COM / ED / EF / G / PB / PR / MAN / RC / REGEX）。
 
 definitions.json の idf.* / value_formats を data 駆動で参照。
-experiment_type（Both / Micro-array / HTS）は only_type（None/microarray/sequencing）で表現。
+experiment_type（Both / Microarray / HTS）は only_type（None/microarray/sequencing）で表現。
 """
 import re
 from apps.gea.rules.base import GeaRule, submission_type_value, null_values
@@ -414,13 +414,22 @@ class GEA_PR0005(GeaRule):
 
 
 class GEA_PR0006(GeaRule):
+    """**deprecated**（validator に登録しない。2026-09-23）。
+
+    protocol description の文字数は見ないことにした。**MetaboBank に同じ検査が無い**ので
+    そちらに揃えた形（MB の長さ検査は `MB_IR0011` の study description だけで、protocol は見ない）。
+    閾値は 100（〜2026-09-17）→ 30（2026-09-17）→ 20（2026-09-23）と緩めてきたが、
+    緩めても移行対象 991 件のうち 275 件に出る状態で、警告としての意味が薄かった。
+    クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "GEA_PR0006"; level = "warning"; target = "IDF/Protocol"
-    description = "Description of a protocol should be over 30 characters long."  # 2026-09-17 100→30
+    description = "Description of a protocol should be over 20 characters long."  # 2026-09-17 100→30 / 2026-09-23 30→20
 
     def validate(self, sub, context):
         if not sub.idf:
             return []
-        mn = _idf(context).get("protocol_description_min_length", 30)
+        mn = _idf(context).get("protocol_description_min_length", 20)
         protos = sub.idf.protocols()
         bad = sum(1 for p in protos if p["Protocol Description"] and 0 < len(p["Protocol Description"].strip()) < mn)
         return [self.result(message=f"{self.description} ({bad} Protocol{'s' if bad != 1 else ''})")] if bad else []
@@ -487,7 +496,7 @@ class GEA_PR0010(_ProtocolRequired):
     """
     deprecated = True
     rule_id = "GEA_PR0010"; only_type = "microarray"; _ptype = "Labeling protocol"
-    description = "Labeling protocol is required for Micro-array submissions."
+    description = "Labeling protocol is required for microarray submissions."
 
 
 class GEA_PR0011(_ProtocolRequired):
@@ -500,7 +509,7 @@ class GEA_PR0011(_ProtocolRequired):
     """
     deprecated = True
     rule_id = "GEA_PR0011"; only_type = "microarray"; _ptype = "Hybridization protocol"
-    description = "Hybridization protocol is required for Micro-array submissions."
+    description = "Hybridization protocol is required for microarray submissions."
 
 
 class GEA_PR0012(_ProtocolRequired):
@@ -513,7 +522,7 @@ class GEA_PR0012(_ProtocolRequired):
     """
     deprecated = True
     rule_id = "GEA_PR0012"; only_type = "microarray"; _ptype = "Scanning protocol"
-    description = "Scanning protocol is required for Micro-array submissions."
+    description = "Scanning protocol is required for microarray submissions."
 
 
 class GEA_PR0008(_ProtocolRequired):

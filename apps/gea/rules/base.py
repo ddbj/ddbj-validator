@@ -25,7 +25,7 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     "GEA_LE0002",  # A labeled extract must have name specified.
     "GEA_LE0004",  # A labeled extract must have 'Label' attribute specified.
     "GEA_AN0006",  # For an array assay the incoming nodes must be 'Labeled Extract' nodes only.
-    "GEA_G0011",  # Array Design File (or Array Design REF) is required for micro-array submissions.
+    "GEA_G0011",  # Array Design File (or Array Design REF) is required for microarray submissions.
     #
     "GEA_COM0004",  # Value is not in controlled terms.（SDRF の Comment[tissue_preservation_method]。2026-09-18）
     "GEA_G0016",  # Experiment Type is not allowed for the specified Submission Type.（2026-09-18）

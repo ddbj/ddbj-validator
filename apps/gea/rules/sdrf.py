@@ -238,7 +238,7 @@ class GEA_AN0005(GeaRule):
     """
     deprecated = True
     rule_id = "GEA_AN0005"; level = "error"; target = "SDRF/Array"; only_type = "microarray"
-    description = "'Technology Type' must be equal to 'array assay' in micro-array submissions."
+    description = "'Technology Type' must be equal to 'array assay' in microarray submissions."
 
     def validate(self, sub, context):
         if not sub.sdrf:
@@ -311,7 +311,7 @@ class GEA_MT0004(GeaRule):
         return [self.result(message=f"{self.description} ({', '.join(sorted(bad))})")] if bad else []
 
 
-# ---------------- Labeled Extract / Label（Micro-array / HTS）----------------
+# ---------------- Labeled Extract / Label（Microarray / HTS）----------------
 class GEA_LE0002(GeaRule):
     rule_id = "GEA_LE0002"; level = "error"; target = "SDRF/LabeledExtract"; only_type = "microarray"
     description = "A labeled extract must have name specified."
