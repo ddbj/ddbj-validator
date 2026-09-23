@@ -414,6 +414,15 @@ class GEA_PR0005(GeaRule):
 
 
 class GEA_PR0006(GeaRule):
+    """**deprecated**（validator に登録しない。2026-09-23）。
+
+    protocol description の文字数は見ないことにした。**MetaboBank に同じ検査が無い**ので
+    そちらに揃えた形（MB の長さ検査は `MB_IR0011` の study description だけで、protocol は見ない）。
+    閾値は 100（〜2026-09-17）→ 30（2026-09-17）→ 20（2026-09-23）と緩めてきたが、
+    緩めても移行対象 991 件のうち 275 件に出る状態で、警告としての意味が薄かった。
+    クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "GEA_PR0006"; level = "warning"; target = "IDF/Protocol"
     description = "Description of a protocol should be over 20 characters long."  # 2026-09-17 100→30 / 2026-09-23 30→20
 

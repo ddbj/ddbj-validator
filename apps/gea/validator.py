@@ -28,7 +28,8 @@ class Validator(SimpleValidator):
             I.GEA_G0007(), I.GEA_G0012(), I.GEA_G0016(),
             I.GEA_ED0001(), I.GEA_EF0001(), I.GEA_EF0003(),
             I.GEA_PB0002(),
-            I.GEA_PR0001(), I.GEA_PR0002(), I.GEA_PR0003(), I.GEA_PR0005(), I.GEA_PR0006(),
+            # GEA_PR0006 は deprecated（2026-09-23。protocol description の文字数は見ない。MB に揃えた）。
+            I.GEA_PR0001(), I.GEA_PR0002(), I.GEA_PR0003(), I.GEA_PR0005(),
             # GEA_PR0008-0015（submission type ごとの必須 protocol）は GEA_PR0018 / GEA_PR0019 に
             # 集約したため登録しない。
             # GEA_PR0007 は deprecated（2026-09-20。ルール表の採番に合わせて GEA_PR0017 に統一）。
