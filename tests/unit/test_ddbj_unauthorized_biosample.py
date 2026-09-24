@@ -56,3 +56,36 @@ def test_unauthorized_biosample_is_not_reported_as_missing():
         _records(), {}, "icrown_0015.ann", unauthorized_bs={_SAMD}
     )
     assert props == [] and warns == []
+
+
+# ---------------------------------------------------------------
+# -b/--biosample の SSUB TSV（2026-09-24 の判断）
+# ---------------------------------------------------------------
+# -b はキュレータ専用なので --account 無しでは従来どおり全 SSUB を出す。
+# --account を付けた実行では安全側に倒し、権限外サンプルを含む SSUB は出さない。
+# SSUB は 1 登録単位＝1 アカウントなので、部分的に残さず丸ごと落とす。
+from apps.ddbj.fetch import drop_unauthorized_ssubs
+
+
+def _ssub_map():
+    return {
+        "SSUB048335": {"samples": [{"accession_id": "SAMD01961639"},
+                                   {"accession_id": "SAMD01961640"}]},
+        "SSUB050582": {"samples": [{"accession_id": _SAMD},
+                                   {"accession_id": "SAMD02061639"}]},
+    }
+
+
+def test_ssub_with_unauthorized_sample_is_dropped_whole():
+    ssub = _ssub_map()
+    dropped = drop_unauthorized_ssubs(ssub, {_SAMD})
+    assert dropped == ["SSUB050582"]
+    # 同じ SSUB の他サンプルも残さない（同じ他人の登録内容のため）
+    assert list(ssub) == ["SSUB048335"]
+
+
+def test_no_unauthorized_sample_keeps_every_ssub():
+    """--account 無し（権限判定が走らない）相当。-b の従来挙動を変えない。"""
+    ssub = _ssub_map()
+    assert drop_unauthorized_ssubs(ssub, set()) == []
+    assert sorted(ssub) == ["SSUB048335", "SSUB050582"]

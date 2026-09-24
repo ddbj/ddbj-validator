@@ -53,10 +53,23 @@ class BiosampleTsvMixin:
         for f in out_dir.glob("*.txt"):
             f.unlink()
 
+        # --account 付きで権限外サンプルがあった場合、その SSUB は fetch 側で落としてある。
+        # 黙って減ると「DBLINK に記載が無い」と誤読されるので、input_samds の判定より先に出す。
+        # （-b 単体＝--account 無しでは権限判定が走らないのでここは通らない）
+        unauth_samds = getattr(self, "_biosample_unauth_samds", [])
+        if unauth_samds:
+            print(f"  [WARN] BioSample accession(s) not associated with this account: {', '.join(unauth_samds)}")
+            unauth_ssubs = getattr(self, "_biosample_unauth_ssubs", [])
+            if unauth_ssubs:
+                print(f"  Submission TSV not generated for SSUB {', '.join(unauth_ssubs)}.")
+
         # 要件: DBLINK に biosample アクセッション番号が無い → メッセージ表示し生成しない
         input_samds = getattr(self, "_biosample_input_samds", set())
         if not input_samds:
-            print("  No BioSample accession found in DBLINK. Submission TSV not generated.")
+            if unauth_samds:
+                print("  No accessible BioSample accession left. Submission TSV not generated.")
+            else:
+                print("  No BioSample accession found in DBLINK. Submission TSV not generated.")
             return
 
         # 要件: biosample アクセッションが BioSample DB で見つからない → 同様
