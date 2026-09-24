@@ -1,8 +1,12 @@
 from common.rules.base import BaseRule
+from apps.ddbj.parser import fasta_entry_name
 import re
 import logging
 
 logger = logging.getLogger(__name__)
+
+# エントリ名が空のまま比較結果に出ると空白だけのメッセージになるため、表示用の代替文字列
+_NO_NAME = "(no entry name)"
 
 class ENTRY_CONSISTENCY_VALIDATOR(BaseRule):
     rule_id = "ENTRY_CONSISTENCY_MASTER"
@@ -22,13 +26,13 @@ class ENTRY_CONSISTENCY_VALIDATOR(BaseRule):
             # 前処理済みの内容がメモリ上にあるのでディスクから読み直さない
             for line in fasta_content.splitlines():
                 if line.startswith(">"):
-                    fasta_entries.append(line[1:].split()[0].strip())
+                    fasta_entries.append(fasta_entry_name(line))
         else:
             try:
                 with open(seq_path, 'r', encoding='utf-8') as f:
                     for line in f:
                         if line.startswith(">"):
-                            fasta_entries.append(line[1:].split()[0].strip())
+                            fasta_entries.append(fasta_entry_name(line))
             except Exception as e:
                 logger.debug(f"Failed to read FASTA for entry consistency check ({seq_path}): {e}", exc_info=True)
 
@@ -65,6 +69,9 @@ class ENTRY_CONSISTENCY_VALIDATOR(BaseRule):
         # ファイル内重複チェック        
         seen_seq = set()
         for e in fasta_entries:
+            # エントリ名が空の定義行は SEQ0080 が個別に報告するので重複判定からは外す
+            if not e:
+                continue
             if e in seen_seq:
                 msg = f"Duplicate entry name in sequence."
                 res = self.format_result(entry_id="ALL", message=msg, level="error", feature_type="file", rule="SEQ0110", target="file")
@@ -114,7 +121,7 @@ class ENTRY_CONSISTENCY_VALIDATOR(BaseRule):
                     j += 1
                     continue
 
-                msg = f"Entry name mismatch: annotation {a_ent} and sequence {f_ent}."
+                msg = f"Entry name mismatch: annotation {a_ent or _NO_NAME} and sequence {f_ent or _NO_NAME}."
                 res = self.format_result(entry_id="ALL", message=msg, level="error", feature_type="file", rule="AXS0070", target="file")
                 results.append(res)
 

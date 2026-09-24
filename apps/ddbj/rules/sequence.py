@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from common.rules.base import BaseRule
+from apps.ddbj.parser import fasta_entry_name
 
 # マジックナンバーの名前付き定数
 MAX_N_RATIO = 0.5                    # N 塩基の許容割合の上限（超で警告）
@@ -37,6 +38,18 @@ class FASTA_FORMAT_VALIDATOR(BaseRule):
             break
 
         # ---------------------------------------------------
+        # SEQ0080: 定義行はあるがエントリ名が書かれていないケース ('>' だけの行)
+        # 名前が無いままだと ANN 側と突き合わせようが無いので同じ ID でエラーにする
+        # ---------------------------------------------------
+        for line_no, line in enumerate(lines, start=1):
+            stripped = line.strip()
+            if not stripped.startswith('>'): continue
+            if fasta_entry_name(stripped): continue
+            msg = "Missing FASTA definition line (>Entry name). (Found a definition line with no entry name)"
+            res = self.format_result(entry_id="ALL", message=msg, level="error", feature_type="sequence", rule="SEQ0080", target="sequence", line_number=line_no)
+            results.append(res)
+
+        # ---------------------------------------------------
         # SEQ0100: 各エントリが '//' で終わっているか (WARNING)
         # ---------------------------------------------------
         current_entry = None
@@ -55,7 +68,8 @@ class FASTA_FORMAT_VALIDATOR(BaseRule):
                     res["is_cleanup"] = True
                     results.append(res)
                 
-                current_entry = stripped[1:].split()[0]
+                # 名前が無い定義行でも '//' の有無は見たいので、パーサーと同じ "UNKNOWN" を使う
+                current_entry = fasta_entry_name(stripped) or "UNKNOWN"
                 has_terminator = False
             elif stripped == '//':
                 has_terminator = True
