@@ -73,6 +73,11 @@ EXPECTED = {
     # Assay Name の重複（MB_SR0050）。2 行を同じ Assay Name にした合成ケース。
     # Assay Name は singleton 列なので列名の重複（MB_SR0003）とは別物。
     "MTBKS_dupassay": {"MB_IR0024", "MB_IR0037", "MB_SR0050"},
+    # ヘッダー行の形の 2 ケース（2026-09-24 追加。GEA の SR0014/SR0015-craft と対）。
+    # どちらも「書いた値が黙って捨てられる」。MB_SR0024 は元から発火していたが
+    # message が別件（Characteristics[] 用）だったので実装に合わせて書き換えた。
+    "MTBKS_blankcol": {"MB_IR0024", "MB_IR0037", "MB_SR0024"},   # 名前の無い列（値あり）
+    "MTBKS_longrow": {"MB_IR0024", "MB_IR0037", "MB_SR0053"},    # ヘッダーより 1 列長い行（値あり）
 }
 
 

@@ -459,3 +459,92 @@ def test_person_fields_match_metabobank():
     gea = [f for f in DEFS["idf"]["fields"] if f.startswith("Person ")]
     mb = [f for f in mb_defs()["idf"]["fields"] if f.startswith("Person ")]
     assert gea == mb, f"GEA={gea} / MB={mb}"
+
+
+# ---------------------------------------------------------------
+# SDRF ヘッダー行の形（2026-09-24 追加）
+# ---------------------------------------------------------------
+def test_sdrf_bracket_patterns_reject_empty_name():
+    """`Comment[]` のように括弧の中が空の列を `fields` が通さないこと。
+
+    `Comment\\[.*\\]` は空の括弧まで一致してしまい、GEA だけ `Comment[]` が素通りしていた
+    （MetaboBank は MB_SR0007 が拾う）。Characteristics / Parameter Value / Unit / Factor Value は
+    GEA_CA0001 等が個別に warning を出すが Comment には対応ルールが無いので、
+    パターン側を締めて GEA_SR0002（未定義列）で拾わせる。
+    """
+    from common.magetab.columns import matches_any
+    pats = list(DEFS["sdrf"]["fields"]) + list(DEFS["sdrf"].get("legacy_fields", []))
+    assert not matches_any("Comment[]", pats)
+    assert matches_any("Comment[SRA_RUN]", pats)
+
+
+def _mk_sdrf(header, rows):
+    from common.magetab.model import Sdrf
+    s = Sdrf()
+    s.header, s.rows = header, rows
+    return s
+
+
+def _mk_sub(sdrf):
+    from apps.gea.model import GeaSubmission
+    sub = GeaSubmission()
+    sub.sdrf = sdrf
+    return sub
+
+
+def test_sr0014_fires_on_blank_column_name():
+    """名前の無い列は、値の有無によらず error（MB_SR0024 と同じ扱い）。"""
+    from apps.gea.rules.sdrf import GEA_SR0014
+    ctx = type("C", (), {"definitions": DEFS})()
+
+    with_val = _mk_sub(_mk_sdrf(["Raw Data File", ""], [["raw1.txt", "raw3.txt"]]))
+    res = GEA_SR0014().validate(with_val, ctx)
+    assert len(res) == 1 and "column 2" in res[0]["message"]
+
+    # 末尾タブだけ（全行空）も同じく error
+    empty = _mk_sub(_mk_sdrf(["Raw Data File", ""], [["raw1.txt", ""]]))
+    assert len(GEA_SR0014().validate(empty, ctx)) == 1
+
+    ok = _mk_sub(_mk_sdrf(["Raw Data File"], [["raw1.txt"]]))
+    assert GEA_SR0014().validate(ok, ctx) == []
+
+
+def test_sr0015_fires_only_when_extra_cells_have_values():
+    """はみ出しセルに値があるときだけ warning（末尾タブは対象外）。"""
+    from apps.gea.rules.sdrf import GEA_SR0015
+    ctx = type("C", (), {"definitions": DEFS})()
+
+    over = _mk_sub(_mk_sdrf(["Raw Data File"], [["raw1.txt", "stray"]]))
+    res = GEA_SR0015().validate(over, ctx)
+    assert len(res) == 1 and "line 2" in res[0]["message"]
+
+    trailing = _mk_sub(_mk_sdrf(["Raw Data File"], [["raw1.txt", ""]]))
+    assert GEA_SR0015().validate(trailing, ctx) == []
+
+
+def test_com0005_requires_exactly_one_experiment_type():
+    """`Comment[Experiment Type]` は 1 個だけ（2026-09-24 追加）。
+
+    0 個は `GEA_COM0001` の担当なのでここでは出さない。複数書かれていても
+    `Idf.first()` を見る submission type 判定や only_type は先頭しか使わないため
+    2 個目以降は黙って無視される。それを error（internal ignore）で知らせる。
+    """
+    from apps.gea.model import GeaSubmission, Idf
+    from apps.gea.rules.idf import GEA_COM0005
+    from apps.gea.rules.base import INTERNAL_IGNORE_RULE_IDS
+
+    def sub(vals):
+        idf = Idf()
+        idf.fields = {"Comment[Experiment Type]": vals}
+        idf.field_order = ["Comment[Experiment Type]"]
+        s = GeaSubmission()
+        s.idf = idf
+        return s
+
+    r = GEA_COM0005()
+    assert r.validate(sub([]), None) == []                       # 0 個は COM0001 の担当
+    assert r.validate(sub(["transcription profiling by array"]), None) == []
+    assert r.validate(sub(["a", ""]), None) == []                # 空値は数えない
+    res = r.validate(sub(["a", "b"]), None)
+    assert len(res) == 1 and "a, b" in res[0]["message"]
+    assert "GEA_COM0005" in INTERNAL_IGNORE_RULE_IDS

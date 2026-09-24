@@ -123,8 +123,18 @@ class MB_SR0003(MbRule):
 
 
 class MB_SR0024(MbRule):
+    """ヘッダー行に名前の無い列が無いか。
+
+    2026-09-24 に message / description を実装に合わせた。もとは
+    「Characteristic, Factor value, Parameter Value and Unit should have a name specified.」
+    ＝ `Characteristics[]` のように括弧の中が空、という文言だったが、実装は当初から
+    **ヘッダーセルそのものが空**の列を見ている。括弧が空の側は 4 種とも `MB_SR0007`
+    （Invalid user-defined columns are added.）が拾うので、この rule が単独で担っているのは
+    空ヘッダーの方。GEA の `GEA_SR0014` と同じ文言にしてある。
+    列位置は message にも入れる（`column` kwarg はテキストレポートに出ないため）。
+    """
     rule_id = "MB_SR0024"; level = "error"; target = "SDRF"
-    description = "Each of Characteristic, Factor value, Parameter Value and Unit should have a name specified."
+    description = "A column name is required."
 
     def validate(self, sub, context):
         if not sub.sdrf:
@@ -132,7 +142,31 @@ class MB_SR0024(MbRule):
         blank = [i + 1 for i, h in enumerate(sub.sdrf.header) if _empty(h)]
         if not blank:
             return []
-        return [self.result(column=", ".join(f"column {i}" for i in blank))]
+        cols = ", ".join(f"column {i}" for i in blank)
+        return [self.result(message=f"{self.description} ({cols})", column=cols)]
+
+
+class MB_SR0053(MbRule):
+    """ヘッダーより列数の多い行が無いか（2026-09-24 追加。GEA_SR0015 と対）。
+
+    行の方が長いと、はみ出したセルは列名に紐づかないため読まれないまま落ちる。
+    値が書かれていないはみ出し（末尾タブ）は実害が無いので、
+    **値のあるセルがはみ出した行だけ** warning。
+    """
+    rule_id = "MB_SR0053"; level = "warning"; target = "SDRF"
+    description = "Row has more cells than the header row. The extra cells were ignored."
+
+    def validate(self, sub, context):
+        if not sub.sdrf:
+            return []
+        n = len(sub.sdrf.header)
+        over = [i for i, row in enumerate(sub.sdrf.rows, start=2)
+                if len(row) > n and any(not _empty(c) for c in row[n:])]
+        if not over:
+            return []
+        shown = ", ".join(str(i) for i in over[:5])
+        more = f", ... ({len(over)} rows)" if len(over) > 5 else ""
+        return [self.result(message=f"{self.description} (line {shown}{more})")]
 
 
 class MB_SR0004(MbRule):

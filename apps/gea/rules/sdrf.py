@@ -476,8 +476,53 @@ class GEA_UNDEF(GeaRule):
             return []
         sdef = _sdrf_def(context)
         patterns = list(sdef.get("fields", [])) + list(sdef.get("legacy_fields", []))
+        # 名前が空の列は `GEA_SR0014` が担当（「未定義の列名」と「列名が無い」は直し方が違う）
         bad = [h for h in sub.sdrf.header if h and not _matches_any(h, patterns)]
         return [self.result(message=f"{self.description} ({', '.join(sorted(set(bad)))})")] if bad else []
+
+
+# ---------------- ヘッダー行の形式 ----------------
+class GEA_SR0014(GeaRule):
+    """ヘッダー行に名前の無い列が無いか（2026-09-24 追加）。
+
+    `col_indices()` は列名の完全一致で列を引くので、名前の無い列の値はどのルールからも
+    到達できない。つまり**黙って捨てられる**。値の有無によらず error にする（MetaboBank の
+    `MB_SR0024` と同じ扱い。末尾タブだけの空列も同様に報告する）。
+    """
+    rule_id = "GEA_SR0014"; level = "error"; target = "SDRF"
+    description = "A column name is required."
+
+    def validate(self, sub, context):
+        if not sub.sdrf:
+            return []
+        blank = [i + 1 for i, h in enumerate(sub.sdrf.header) if _empty(h)]
+        if not blank:
+            return []
+        cols = ", ".join(f"column {i}" for i in blank)
+        return [self.result(message=f"{self.description} ({cols})", column=cols)]
+
+
+class GEA_SR0015(GeaRule):
+    """ヘッダーより列数の多い行が無いか（2026-09-24 追加）。
+
+    行の方が長いと、はみ出したセルは列名に紐づかないため読まれないまま落ちる。
+    空ヘッダー（`GEA_SR0014`）と同じ「黙って消える」問題だが、値が書かれていない
+    はみ出し（末尾タブ）は実害が無いので、**値のあるセルがはみ出した行だけ** warning。
+    """
+    rule_id = "GEA_SR0015"; level = "warning"; target = "SDRF"
+    description = "Row has more cells than the header row. The extra cells were ignored."
+
+    def validate(self, sub, context):
+        if not sub.sdrf:
+            return []
+        n = len(sub.sdrf.header)
+        over = [i for i, row in enumerate(sub.sdrf.rows, start=2)
+                if len(row) > n and any(not _empty(c) for c in row[n:])]
+        if not over:
+            return []
+        shown = ", ".join(str(i) for i in over[:5])
+        more = f", ... ({len(over)} rows)" if len(over) > 5 else ""
+        return [self.result(message=f"{self.description} (line {shown}{more})")]
 
 
 # ---------------- 必須列（type 別）----------------

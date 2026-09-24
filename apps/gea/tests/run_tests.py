@@ -72,6 +72,13 @@ EXPECTED = {
     "rawless-craft": {"GEA_SR0003", "GEA_PN0001"},
     # crafted fixture（E-GEAD-1104 派生）: Raw Data File を magic word none にして SR0003 を担保
     "SR0003-craft": {"GEA_SR0003"},
+    # crafted fixture（E-GEAD-1104 派生・2026-09-24 追加）: ヘッダー行の形の 2 ケース。
+    # どちらも「書いた値が黙って捨てられる」ため、以前は 0 error 0 warning で素通りしていた。
+    "SR0014-craft": {"GEA_SR0014"},   # Raw Data File の右に名前の無い列（値あり）
+    "SR0015-craft": {"GEA_SR0015"},   # ヘッダーより 1 列長い行（値あり）
+    # crafted fixture（E-GEAD-1104 派生・2026-09-24 追加）: Comment[Experiment Type] を 2 値にする。
+    # 2 つ目は Microarray で許可された語にしてあるので G0016 は出ず、COM0005 だけが出る
+    "COM0005-craft": {"GEA_COM0005"},
 }
 
 # --- DB モード（opt-in / dradev） ---

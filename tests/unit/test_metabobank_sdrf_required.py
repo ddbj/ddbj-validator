@@ -448,3 +448,39 @@ def test_sr0048_level_and_not_internal_ignore():
     from apps.metabobank.rules.base import is_internal_ignore
     assert S.MB_SR0048.level == "warning"
     assert not is_internal_ignore("MB_SR0048")
+
+
+# ---------------------------------------------------------------
+# SDRF ヘッダー行の形（2026-09-24）
+# ---------------------------------------------------------------
+def _hdr_sub(header, rows):
+    from common.magetab.model import Sdrf
+    from apps.metabobank.model import MbSubmission
+    s = Sdrf()
+    s.header, s.rows = header, rows
+    sub = MbSubmission()
+    sub.sdrf = s
+    return sub
+
+
+def test_mb_sr0024_reports_the_column_position():
+    """MB_SR0024 は「名前の無い列」。列位置を message に出す（GEA_SR0014 と同文）。
+
+    もとの message は `Characteristics[]` のように括弧の中が空、という別件の文言だった。
+    括弧が空の側は MB_SR0007 が拾うので、この rule が単独で担うのは空ヘッダーの方。
+    """
+    from apps.metabobank.rules.sdrf import MB_SR0024
+    r = MB_SR0024()
+    assert r.description == "A column name is required."
+    res = r.validate(_hdr_sub(["Raw Data File", ""], [["raw1.txt", "raw3.txt"]]), None)
+    assert len(res) == 1 and "column 2" in res[0]["message"]
+    assert r.validate(_hdr_sub(["Raw Data File"], [["raw1.txt"]]), None) == []
+
+
+def test_mb_sr0053_fires_only_when_extra_cells_have_values():
+    from apps.metabobank.rules.sdrf import MB_SR0053
+    r = MB_SR0053()
+    res = r.validate(_hdr_sub(["Raw Data File"], [["raw1.txt", "stray"]]), None)
+    assert len(res) == 1 and "line 2" in res[0]["message"]
+    # 末尾タブ（値なし）は対象外
+    assert r.validate(_hdr_sub(["Raw Data File"], [["raw1.txt", ""]]), None) == []
