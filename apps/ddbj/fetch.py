@@ -143,6 +143,21 @@ class ExternalFetchMixin:
                         self.unauthorized_accs["biosample"] = (all_samds - auth_sams) - missing_sams
                         self.unauthorized_accs["sra"] = (all_drrs - auth_drrs) - missing_drrs
 
+                        # =================================================
+                        # 権限の無い BioSample の中身は取得済みでも捨てる
+                        # =================================================
+                        # BioSample の取得は権限確定より前に走るので、この時点の bs_data /
+                        # bs_submitters にはアカウントがアクセスできないサンプルの属性値も
+                        # 入っている。残したままだと ANN1130（BioSample 属性との突合）が
+                        # 非公開サンプルの値をメッセージに出し、さらに autofix で登録者の
+                        # ann に書き込もうとする。ANN0463 で「権限が無い」と報告する相手の
+                        # 中身は一切使わない、を守るためここで落とす。
+                        # 認証必須ルール側は skip_auth で止まるが、autofix の提案生成は
+                        # ルールではなく worker が直接呼ぶので skip_auth では止まらない。
+                        for samd in self.unauthorized_accs["biosample"]:
+                            bs_data.pop(samd, None)
+                            bs_submitters.pop(samd, None)
+
                         # 権限がないアクセッションが含まれていれば、以後の認証必須ルールをスキップする
                         if any(self.unauthorized_accs.values()):
                             logger.warning("Unauthorized accession numbers referenced. Disable rules requiring account authorization.")
