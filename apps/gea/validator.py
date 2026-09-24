@@ -21,7 +21,7 @@ class Validator(SimpleValidator):
         return [
             # --- IDF ---
             I.GEA_C0001(), I.GEA_C0002(), I.GEA_C0008(),
-            I.GEA_COM0001(),
+            I.GEA_COM0001(), I.GEA_COM0005(),
             I.GEA_G0001(), I.GEA_G0002(), I.GEA_G0009(), I.GEA_G0004(), I.GEA_G0006(),
             I.GEA_G0015(),
             # GEA_G0013 は deprecated（2026-09-18。additional file 廃止で検査対象が無い）のため登録しない。

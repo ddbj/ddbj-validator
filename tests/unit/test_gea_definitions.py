@@ -520,3 +520,31 @@ def test_sr0015_fires_only_when_extra_cells_have_values():
 
     trailing = _mk_sub(_mk_sdrf(["Raw Data File"], [["raw1.txt", ""]]))
     assert GEA_SR0015().validate(trailing, ctx) == []
+
+
+def test_com0005_requires_exactly_one_experiment_type():
+    """`Comment[Experiment Type]` は 1 個だけ（2026-09-24 追加）。
+
+    0 個は `GEA_COM0001` の担当なのでここでは出さない。複数書かれていても
+    `Idf.first()` を見る submission type 判定や only_type は先頭しか使わないため
+    2 個目以降は黙って無視される。それを error（internal ignore）で知らせる。
+    """
+    from apps.gea.model import GeaSubmission, Idf
+    from apps.gea.rules.idf import GEA_COM0005
+    from apps.gea.rules.base import INTERNAL_IGNORE_RULE_IDS
+
+    def sub(vals):
+        idf = Idf()
+        idf.fields = {"Comment[Experiment Type]": vals}
+        idf.field_order = ["Comment[Experiment Type]"]
+        s = GeaSubmission()
+        s.idf = idf
+        return s
+
+    r = GEA_COM0005()
+    assert r.validate(sub([]), None) == []                       # 0 個は COM0001 の担当
+    assert r.validate(sub(["transcription profiling by array"]), None) == []
+    assert r.validate(sub(["a", ""]), None) == []                # 空値は数えない
+    res = r.validate(sub(["a", "b"]), None)
+    assert len(res) == 1 and "a, b" in res[0]["message"]
+    assert "GEA_COM0005" in INTERNAL_IGNORE_RULE_IDS

@@ -69,6 +69,26 @@ class GEA_COM0001(GeaRule):
         return [] if not _empty(sub.idf.ae_experiment_type) else [self.result()]
 
 
+class GEA_COM0005(GeaRule):
+    """`Comment[Experiment Type]` はちょうど 1 個（2026-09-24 追加）。
+
+    IDF の列並列フィールドなので値を複数書けてしまうが、submission に対する experiment type は
+    1 つ。複数書かれていても `Idf.first()` を見る `submission_type` 判定や `GeaRule.applies`
+    （only_type）は先頭しか使わないため、2 個目以降は**黙って無視される**。
+    値が 0 個（未記入・空）は `GEA_COM0001` の担当なのでここでは見ない。
+    """
+    rule_id = "GEA_COM0005"; level = "error"; target = "IDF/Comment"
+    description = "Only one 'Comment[Experiment Type]' value is allowed in IDF."
+
+    def validate(self, sub, context):
+        if not sub.idf:
+            return []
+        vals = [v.strip() for v in sub.idf.get("Comment[Experiment Type]") if not _empty(v)]
+        if len(vals) <= 1:
+            return []
+        return [self.result(message=f"{self.description} ({', '.join(vals)})")]
+
+
 class GEA_G0001(GeaRule):
     rule_id = "GEA_G0001"; level = "error"; target = "IDF/General"
     description = "Experiment title must be specified."
