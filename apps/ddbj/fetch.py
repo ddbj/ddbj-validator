@@ -22,6 +22,24 @@ from apps.ddbj.context import ValidationContext
 logger = logging.getLogger(__name__)
 
 
+def drop_unauthorized_ssubs(ssub_map, unauthorized_samds):
+    """権限外サンプルを含む SSUB を `ssub_map` から丸ごと落とし、落とした SSUB ID を返す。
+
+    SSUB は 1 登録単位＝1 アカウントなので、権限外サンプルを 1 つでも含む SSUB は
+    残りのサンプルも同じ他人の登録内容になる。部分的に残さず丸ごと落とす。
+    """
+    if not ssub_map or not unauthorized_samds:
+        return []
+    dropped = sorted(
+        sid for sid, info in ssub_map.items()
+        if any(smp.get("accession_id") in unauthorized_samds
+               for smp in info.get("samples", []))
+    )
+    for sid in dropped:
+        ssub_map.pop(sid, None)
+    return dropped
+
+
 class ExternalFetchMixin:
     """`ValidatorPipeline` のフェーズ 1 部分。"""
 
@@ -143,7 +161,40 @@ class ExternalFetchMixin:
                         self.unauthorized_accs["biosample"] = (all_samds - auth_sams) - missing_sams
                         self.unauthorized_accs["sra"] = (all_drrs - auth_drrs) - missing_drrs
 
-                        # 権限がないアクセッションが含まれていれば、以後の認証必須ルールをスキップする
+                        # =================================================
+                        # 権限の無い BioSample の中身は取得済みでも捨てる
+                        # =================================================
+                        # BioSample の取得は権限確定より前に走るので、この時点の bs_data /
+                        # bs_submitters にはアカウントがアクセスできないサンプルの属性値も
+                        # 入っている。残したままだと ANN1130（BioSample 属性との突合）が
+                        # 非公開サンプルの値をメッセージに出し、さらに autofix で登録者の
+                        # ann に書き込もうとする。ANN0463 で「権限が無い」と報告する相手の
+                        # 中身は一切使わない、を守るためここで落とす。
+                        # 認証必須ルール側は skip_auth で止まるが、autofix の提案生成は
+                        # ルールではなく worker が直接呼ぶので skip_auth では止まらない。
+                        for samd in self.unauthorized_accs["biosample"]:
+                            bs_data.pop(samd, None)
+                            bs_submitters.pop(samd, None)
+
+                        # -b の SSUB TSV も同じ扱いにする。
+                        # -b 自体はキュレータ専用なので --account 無しなら従来どおり全部出すが、
+                        # --account を付けた実行では権限外サンプルを TSV に出さない（安全側）。
+                        # SSUB は 1 登録単位＝1 アカウントなので、権限外サンプルを 1 つでも含む
+                        # SSUB は丸ごと落とす（同じ SSUB の残りを出しても同じ他人の登録内容になる）。
+                        if self.emit_biosample_tsv and self.biosample_ssub:
+                            unauth_bs = self.unauthorized_accs["biosample"]
+                            if unauth_bs:
+                                self._biosample_unauth_ssubs = drop_unauthorized_ssubs(
+                                    self.biosample_ssub, unauth_bs)
+                                # 権限外の SAMD は「DB に無い」ではないので not found の集計からも外す
+                                # （権限が無いことは ANN0463 が別に報告している）
+                                self._biosample_input_samds -= unauth_bs
+                                self._biosample_found_samds -= unauth_bs
+                                self._biosample_unauth_samds = sorted(unauth_bs)
+
+                        # 権限がないアクセッションが含まれていれば、以後の認証必須ルールをスキップする。
+                        # 粒度は accession 単位ではなく「1 件でもあれば全部止める」で**意図的**（2026-09-24 判断）。
+                        # 所有している他の accession の ANN0440 / ANN0464 まで止まるが、安全側に倒す。
                         if any(self.unauthorized_accs.values()):
                             logger.warning("Unauthorized accession numbers referenced. Disable rules requiring account authorization.")
                             self.skip_auth = True

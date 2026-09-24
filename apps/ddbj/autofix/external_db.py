@@ -60,7 +60,9 @@ def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None,
         active_samds = entry_samds if entry_samds else common_samds
         if not active_samds: continue
 
-        valid_samds = [s for s in active_samds if s in bs_data]
+        # 権限の無いサンプルは fetch 側で bs_data から落としているが、突合の入口でも
+        # 明示的に外す（ANN1130 が非公開サンプルの属性値を出す・autofix する経路を塞ぐ）
+        valid_samds = [s for s in active_samds if s in bs_data and s not in unauth_set]
         all_valid_samds.update(valid_samds)
         # 権限エラーで除外されたものは missing 扱いしない
         missing_samds = [s for s in active_samds if s not in bs_data and s not in unauth_set]

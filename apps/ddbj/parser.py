@@ -89,6 +89,18 @@ def parse_ddbj_submission(fasta_content, ann_path, ann_lines, ddbj_dict=None):
 # =========================================================
 # フェーズ分割された内部ヘルパー関数群
 # =========================================================
+def fasta_entry_name(def_line):
+    """FASTA の定義行からエントリ名を取り出す。名前が書かれていなければ "" を返す。
+
+    登録ファイルには '>' だけの行（エントリ名の書き漏らし）が実際に混ざることがある。
+    def_line[1:].split()[0] と直接書くとそこで IndexError になりルールごと落ちるため、
+    定義行からのエントリ名取得は必ずこの関数を通すこと。
+    """
+    body = def_line[1:] if def_line.startswith(">") else def_line
+    parts = body.split()
+    return parts[0].strip() if parts else ""
+
+
 def _parse_fasta_blocks(fasta_content, records, parse_errors, ann_path):
     """FASTA文字列をパースして SeqRecord を初期化する"""
     if not fasta_content:
