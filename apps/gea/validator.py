@@ -49,6 +49,8 @@ class Validator(SimpleValidator):
             S.GEA_LE0002(), S.GEA_LE0004(), S.GEA_LE0001(), S.GEA_AD0001(), S.GEA_AD0004(),
             S.GEA_DF0001(), S.GEA_DF0002(),
             # GEA_RC0002 は deprecated（2026-09-17。Comment 列の重複は取込で畳む）のため登録しない。
+            # ヘッダー行の形（列名の欠落・列数超過）は未定義列の判定より先に見る
+            S.GEA_SR0014(), S.GEA_SR0015(),
             S.GEA_CN0001(), S.GEA_UNDEF(), S.GEA_SR0003(),
             S.GEA_MAN0011(), S.GEA_MAN0012(), S.GEA_MAN0014(),
             S.GEA_SDRF_REGEX(),

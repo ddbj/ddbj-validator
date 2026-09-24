@@ -120,6 +120,9 @@ ANNOTATION_PATTERNS = {
     # --- 個別情報なし ---
     "MB_IR0020": "general",
     "MB_IR0037": "general",
+    # MB_SR0053 は「ヘッダーより長い行」。列にも値にも紐づかない（列名が無いから読めない）ので
+    # 行番号を message に書くだけにしてある。
+    "MB_SR0053": "general",
 }
 
 
