@@ -29,32 +29,32 @@ def matches_any_header(header, pattern):
 
 
 def cross_column_duplicates(sdrf, colname):
-    """**同じ行の中で** `colname` の複数の列が同じ値を指していれば、その値を並べて返す。
+    """同じ値が `colname` の**複数の列**に現れていれば、その値を並べて返す（行は問わない）。
 
     `Raw Data File` / `Processed Data File` / `Metabolite Assignment File` は 1 行に複数列
-    書ける（paired-end の 2 本、positive / negative の 2 本など）。同じ行の 2 つの列が同じ
-    ファイルを指していれば、どちらかの書き間違いで本来あるはずのファイルが 1 本欠けている。
+    書けるが、列をまたいで同じファイル名が出ていれば、書き間違い・勘違いの可能性がある。
+    ただし登録済みの MetaboBank study には、行ごとに使う MAF 列の本数が違うために
+    別の行の別の列へ同じ MAF 名が出る**正しい**例がある（MTBKS218 / MTBKS221）。
+    そのため報告は **warning**（登録は止めない）にしてあり、判定は行をまたいだ重複も含める。
 
-    **行をまたいだ重複は対象にしない。** 登録済みの MetaboBank study では、行ごとに使う列の
-    本数が違う（1 本目の列だけ使う行と 2 本目まで使う行が混在する）ため、別の行の別の列に
-    同じ MAF 名が出るのは正しい書き方として存在する（MTBKS218 / MTBKS221）。
+    同じ列の中の重複（別の行で同じファイルを指す）は対象にしない。
     GEA / MetaboBank で同じ判定をするのでここに置く。
     """
     idxs = sdrf.col_indices(colname)
     if len(idxs) < 2:
         return []
+    seen = {}          # 値 -> 最初に出た列 index
     dup = []
     for row in sdrf.rows:
-        seen = set()
         for i in idxs:
             v = (row[i] if i < len(row) else "").strip()
             if not v:
                 continue
             if v in seen:
-                if v not in dup:
+                if seen[v] != i and v not in dup:
                     dup.append(v)
             else:
-                seen.add(v)
+                seen[v] = i
     return sorted(dup)
 
 

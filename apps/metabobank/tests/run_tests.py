@@ -82,8 +82,8 @@ EXPECTED = {
     # 2 本目を 1 本目と同じファイル名にすると列をまたいだ同名になる（GEA の DF0003-craft と対）
     "MTBKS_dupfile": {"MB_IR0024", "MB_IR0037", "MB_SR0055"},
     # FIA-MS の study に MSI 専用の Histology protocol を IDF/SDRF の**両方**に入れる。
-    # 両方に正しく書くと MB_CR0002 は出ないので、MB_SR0054 が単独で type 違いを見ている
-    "MTBKS_protoif": {"MB_IR0024", "MB_IR0037", "MB_SR0054"},
+    # 両方に正しく書くと MB_CR0002 は出ないので、MB_IR0043 が単独で type 違いを見ている
+    "MTBKS_protoif": {"MB_IR0024", "MB_IR0037", "MB_IR0043"},
 }
 
 

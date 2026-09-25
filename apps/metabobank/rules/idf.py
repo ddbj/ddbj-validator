@@ -231,7 +231,7 @@ class MB_IR0017(MbRule):
                             protocol_type=", ".join(miss))]
 
 
-class MB_SR0054(MbRule):
+class MB_IR0043(MbRule):
     """その submission type では使わない protocol type が IDF に書かれていないか（2026-09-24 追加）。
 
     valid リスト = `idf.required_protocol_types[<type>]` ∪ `idf.optional_protocol_types[<type>]`。
@@ -243,10 +243,11 @@ class MB_SR0054(MbRule):
     IDF と SDRF の両方に正しく書くと何も出なかった**（IDF にだけ書いた場合に
     `MB_CR0002` が「only in IDF」として拾うだけだった）。GEA の `GEA_PR0017` に相当する。
 
+    2026-09-25 に `MB_SR0054` から改番（読むのは IDF の `Protocol Type` なので IR 側）。
     CV 外の値は対象外（`Protocol Type` の CV は `controlled_terms.idf.warning` が見る）。
     submission type が分からない／その type の定義が無いときは検査しない。
     """
-    rule_id = "MB_SR0054"; level = "error"; target = "IDF"
+    rule_id = "MB_IR0043"; level = "error"; target = "IDF"
     description = "Protocol Type is not used in the specified Submission Type."
 
     def validate(self, sub, context):

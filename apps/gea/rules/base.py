@@ -30,7 +30,6 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     "GEA_COM0004",  # Value is not in controlled terms.（SDRF の Comment[tissue_preservation_method]。2026-09-18）
     "GEA_G0016",  # Experiment Type is not allowed for the specified Submission Type.（2026-09-18）
     "GEA_COM0005",  # Only one 'Comment[Experiment Type]' value is allowed in IDF.（2026-09-24）
-    "GEA_DF0003",  # The same data file name is used in more than one column.（2026-09-24）
     #
     # --- 2026-09-19 追加（protocol 系。error のまま internal ignore）---
     "GEA_PR0017",  # Protocol Type is not used in the specified Submission Type.（2026-09-20 に GEA_PR0007 から改番）

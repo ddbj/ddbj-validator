@@ -15,6 +15,8 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     "MB_IR0013",   # Invalid date format. Use YYYY-MM-DD.
     "MB_IR0017",   # Missing protocol type(s) for the submission type.
     "MB_IR0018",   # Missing protocol parameter(s) for the submission type.
+    # 2026-09-24 追加（error のまま internal ignore）。2026-09-25 に MB_SR0054 から改番。
+    "MB_IR0043",   # Protocol Type is not used in the specified Submission Type.
     # residual（ASCII へ正規化しきれなかった非 ASCII）は error として出る。クラス属性の
     # level="warning" は既定値にすぎず、mapped=warning / residual=error を結果ごとに
     # 出し分けているので、warning が ignore に混じっているわけではない。
@@ -30,9 +32,6 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     "MB_SR0047",   # Experimental factor value is missing.
     "MB_SR0049",   # Protocol REF is missing from all SDRF rows.
     "MB_SR0050",   # Assay Name is not unique.
-    # --- 2026-09-24 追加（error のまま internal ignore）---
-    "MB_SR0054",   # Protocol Type is not used in the specified Submission Type.
-    "MB_SR0055",   # The same data file name is used in more than one column.
     # --- IDF↔SDRF ---
     "MB_CR0001",   # Experimental factor in SDRF does not match IDF Experimental Factor Name.
     "MB_CR0002",   # IDF Protocol and SDRF Protocol REF do not match.
@@ -115,12 +114,12 @@ ANNOTATION_PATTERNS = {
     # --- IDF: protocol 要件 ---
     "MB_IR0017": "idf_protocol",
     "MB_IR0018": "idf_protocol",
+    "MB_IR0043": "idf_protocol",
     # --- IDF↔SDRF ---
     "MB_CR0001": "idf_sdrf",
     "MB_CR0002": "idf_sdrf",
     "MB_CR0003": "idf_sdrf",
     "MB_CR0004": "idf_sdrf",
-    "MB_SR0054": "idf_protocol",
     "MB_SR0055": "sdrf_column",
     # --- 個別情報なし ---
     "MB_IR0020": "general",

@@ -151,12 +151,16 @@ class MB_SR0024(MbRule):
 class MB_SR0055(MbRule):
     """同じデータファイル名が**複数の列にまたがって**書かれていないか（2026-09-24 追加）。
 
-    対象列は `sdrf.cross_column_unique_files`（`Raw Data File` / `Processed Data File` /
-    `Metabolite Assignment File`）。1 行に複数列書けるが、列をまたいで同じファイル名が
-    出ていればどちらかの書き間違いで、本来あるはずのファイルが 1 本欠けている。
-    同じ列の中の重複（別の行で同じファイルを指す）は対象にしない。GEA_DF0003 と対。
+    対象列は `sdrf.cross_column_unique_files`。1 行に複数列書けるが、列をまたいで同じ
+    ファイル名が出ていれば書き間違い・勘違いの可能性がある。
+
+    **warning**（2026-09-25）。登録済みの MetaboBank study には、行ごとに使う MAF 列の
+    本数が違うために別の行の別の列へ同じ MAF 名が出る正しい例があり（MTBKS218 /
+    MTBKS221）、error だと正しい投稿を止めてしまう。止めずに気づかせるのが目的なので
+    warning にし、判定は行をまたいだ重複も含める。同じ列の中の重複は対象にしない。
+       GEA_DF0003 と対。
     """
-    rule_id = "MB_SR0055"; level = "error"; target = "SDRF"
+    rule_id = "MB_SR0055"; level = "warning"; target = "SDRF"
     description = "The same data file name is used in more than one column."
 
     def validate(self, sub, context):

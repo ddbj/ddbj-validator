@@ -21,7 +21,7 @@ class Validator(SimpleValidator):
             # 増えたときに定義を足すだけで効くよう登録は残す（deprecated にしない）。
             I.MB_IR0003(), I.MB_IR0004(), I.MB_IR0005(), I.MB_IR0007(),
             I.MB_IR0008(), I.MB_IR0009(), I.MB_IR0010(), I.MB_IR0011(), I.MB_IR0013(),
-            I.MB_IR0015(), I.MB_IR0016(), I.MB_IR0017(), I.MB_SR0054(), I.MB_IR0018(), I.MB_IR0020(),
+            I.MB_IR0015(), I.MB_IR0016(), I.MB_IR0017(), I.MB_IR0043(), I.MB_IR0018(), I.MB_IR0020(),
             I.MB_IR0023(), I.MB_IR0024(), I.MB_IR0025(), I.MB_IR0033(), I.MB_IR0034(),
             I.MB_IR0037(), I.MB_IR0038(),
             # --- SDRF（metadata）---

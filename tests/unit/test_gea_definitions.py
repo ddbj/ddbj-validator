@@ -550,23 +550,32 @@ def test_com0005_requires_exactly_one_experiment_type():
     assert "GEA_COM0005" in INTERNAL_IGNORE_RULE_IDS
 
 
-def test_df0003_flags_the_same_file_in_two_columns_of_one_row():
-    """列をまたいだ同名データファイル（2026-09-24 追加）。同じ行の中だけを見る。"""
+def test_df0003_flags_the_same_file_across_columns():
+    """列をまたいだ同名データファイル（2026-09-24 追加、2026-09-25 に warning 化）。
+
+    行はまたいでいてもよい。登録済み MB study に行ごとに使う列の本数が違う正しい例があるため、
+    止めずに気づかせる warning にしてある。同じ列の中の重複は対象にしない。
+    """
     from apps.gea.rules.sdrf import GEA_DF0003
     from apps.gea.rules.base import INTERNAL_IGNORE_RULE_IDS
     ctx = type("C", (), {"definitions": {"sdrf": {"cross_column_unique_files": ["Raw Data File"]}}})()
     r = GEA_DF0003()
+    assert r.level == "warning"
 
+    # 同じ行で 2 列が同名
     res = r.validate(_mk_sub(_mk_sdrf(["Raw Data File", "Raw Data File"], [["a.fq", "a.fq"]])), ctx)
     assert len(res) == 1 and "a.fq" in res[0]["message"]
+    # 行をまたいで 2 列が同名（こちらも拾う）
+    res = r.validate(_mk_sub(_mk_sdrf(["Raw Data File", "Raw Data File"],
+                                      [["a.fq", ""], ["", "a.fq"]])), ctx)
+    assert len(res) == 1 and "a.fq" in res[0]["message"]
+    # 別名なら出ない
     assert r.validate(_mk_sub(_mk_sdrf(["Raw Data File", "Raw Data File"],
                                        [["a_1.fq", "a_2.fq"]])), ctx) == []
-    # 行をまたいだ同名は対象外
-    assert r.validate(_mk_sub(_mk_sdrf(["Raw Data File", "Raw Data File"],
-                                       [["a.fq", ""], ["", "a.fq"]])), ctx) == []
-    # 列が 1 本だけなら見ない
+    # 列が 1 本だけなら見ない（同じ列の中の重複は対象外）
     assert r.validate(_mk_sub(_mk_sdrf(["Raw Data File"], [["a.fq"], ["a.fq"]])), ctx) == []
-    assert "GEA_DF0003" in INTERNAL_IGNORE_RULE_IDS
+    # warning なので internal ignore は不要
+    assert "GEA_DF0003" not in INTERNAL_IGNORE_RULE_IDS
 
 
 def test_cross_column_unique_files_is_defined():

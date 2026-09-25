@@ -384,13 +384,15 @@ class GEA_DF0001(GeaRule):
 class GEA_DF0003(GeaRule):
     """同じデータファイル名が**複数の列にまたがって**書かれていないか（2026-09-24 追加）。
 
-    `Raw Data File` / `Processed Data File` は 1 行に複数列書ける（paired-end の 2 本など）。
-    その列をまたいで同じファイル名が出ていれば、どちらかの列の書き間違いで、
-    本来あるはずのファイルが 1 本欠けている。対象列は `sdrf.cross_column_unique_files`。
+    対象列は `sdrf.cross_column_unique_files`。1 行に複数列書けるが、列をまたいで同じ
+    ファイル名が出ていれば書き間違い・勘違いの可能性がある。
 
-    同じ列の中の重複（別の行で同じファイルを指す）は対象にしない。列をまたいだ重複だけを見る。
+    **warning**（2026-09-25）。登録済みの MetaboBank study には、行ごとに使う MAF 列の
+    本数が違うために別の行の別の列へ同じ MAF 名が出る正しい例があり（MTBKS218 /
+    MTBKS221）、error だと正しい投稿を止めてしまう。止めずに気づかせるのが目的なので
+    warning にし、判定は行をまたいだ重複も含める。同じ列の中の重複は対象にしない。
     """
-    rule_id = "GEA_DF0003"; level = "error"; target = "SDRF"
+    rule_id = "GEA_DF0003"; level = "warning"; target = "SDRF"
     description = "The same data file name is used in more than one column."
 
     def validate(self, sub, context):

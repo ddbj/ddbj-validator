@@ -487,14 +487,14 @@ def test_mb_sr0053_fires_only_when_extra_cells_have_values():
 
 
 # ---------------------------------------------------------------
-# MB_SR0054 / MB_SR0055（2026-09-24 追加）
+# MB_IR0043 / MB_SR0055（2026-09-24 追加）
 # ---------------------------------------------------------------
 def test_mb_sr0054_flags_protocol_types_outside_the_submission_type():
     """valid リスト = required ∪ optional。CV 外の値は対象外。"""
     import json
     from pathlib import Path
     from apps.metabobank.model import MbSubmission, Idf as MbIdf
-    from apps.metabobank.rules.idf import MB_SR0054
+    from apps.metabobank.rules.idf import MB_IR0043
     from apps.metabobank.rules.base import INTERNAL_IGNORE_RULE_IDS
 
     defs = json.loads(Path("apps/metabobank/resources/definitions.json").read_text())
@@ -510,30 +510,32 @@ def test_mb_sr0054_flags_protocol_types_outside_the_submission_type():
 
     ok = ["Sample collection", "Extraction", "Flow injection analysis",
           "Mass spectrometry", "Data processing", "Metabolite identification"]
-    assert MB_SR0054().validate(sub(ok), ctx) == []
+    assert MB_IR0043().validate(sub(ok), ctx) == []
     # Histology は MSI 専用
-    res = MB_SR0054().validate(sub(ok + ["Histology"]), ctx)
+    res = MB_IR0043().validate(sub(ok + ["Histology"]), ctx)
     assert len(res) == 1 and "Histology" in res[0]["message"]
-    # CV 外の値は MB_SR0054 では出さない（Protocol Type の CV 側が見る）
-    assert MB_SR0054().validate(sub(ok + ["No such protocol"]), ctx) == []
-    assert "MB_SR0054" in INTERNAL_IGNORE_RULE_IDS
+    # CV 外の値は MB_IR0043 では出さない（Protocol Type の CV 側が見る）
+    assert MB_IR0043().validate(sub(ok + ["No such protocol"]), ctx) == []
+    assert "MB_IR0043" in INTERNAL_IGNORE_RULE_IDS
 
 
-def test_mb_sr0055_flags_the_same_file_in_two_columns_of_one_row():
+def test_mb_sr0055_flags_the_same_file_across_columns():
+    """MAF も対象。行をまたいだ重複も拾い、level は warning（登録を止めない）。"""
     from apps.metabobank.rules.sdrf import MB_SR0055
     from apps.metabobank.rules.base import INTERNAL_IGNORE_RULE_IDS
-    defs = {"sdrf": {"cross_column_unique_files": ["Raw Data File"]}}
+    defs = {"sdrf": {"cross_column_unique_files": ["Raw Data File", "Metabolite Assignment File"]}}
     ctx = type("C", (), {"definitions": defs})()
     r = MB_SR0055()
+    assert r.level == "warning"
 
-    same = _hdr_sub(["Raw Data File", "Raw Data File"], [["a.raw", "a.raw"]])
-    res = r.validate(same, ctx)
+    res = r.validate(_hdr_sub(["Raw Data File", "Raw Data File"], [["a.raw", "a.raw"]]), ctx)
     assert len(res) == 1 and "a.raw" in res[0]["message"]
-
+    # 行をまたいだ重複も拾う（MTBKS218 / MTBKS221 の形。warning なので投稿は通る）
+    maf = _hdr_sub(["Metabolite Assignment File", "Metabolite Assignment File"],
+                   [["m.txt", ""], ["", "m.txt"]])
+    res = r.validate(maf, ctx)
+    assert len(res) == 1 and "m.txt" in res[0]["message"]
     # 別名なら出ない
     assert r.validate(_hdr_sub(["Raw Data File", "Raw Data File"],
                                [["a_1.raw", "a_2.raw"]]), ctx) == []
-    # 行をまたいだ同名は対象外（登録済み study に正しい例がある）
-    assert r.validate(_hdr_sub(["Raw Data File", "Raw Data File"],
-                               [["a.raw", ""], ["", "a.raw"]]), ctx) == []
-    assert "MB_SR0055" in INTERNAL_IGNORE_RULE_IDS
+    assert "MB_SR0055" not in INTERNAL_IGNORE_RULE_IDS
