@@ -138,12 +138,13 @@ def _shape_errors(record):
                 value = attr.get(key)
                 if value is not None and not isinstance(value, str):
                     bad(f"{at}.attributes.{j}.{key}", "a string", value)
-            if attr.get("name") is None:
-                # スキーマ上は name も nullable だが、名前の無い属性は検証しようがない。
-                # 黙って捨てると「登録者が書いていない」と報告することになる。
+            if not _named(attr):
+                # v3 は name を必須とし、空白だけも認めない（ddbj-record-specifications#4）。
+                # 空白だけを通すと、属性名 "  " としてルールに渡ってしまう。黙って捨てると
+                # 「登録者が書いていない」と報告することになるので、ここで指摘する。
                 out.append(_schema_error(
                     f"{at}.attributes.{j}.name",
-                    f"Attribute without a name cannot be validated "
+                    f"Attribute name is required and must not be blank "
                     f"(value={attr.get('value')!r})"))
 
     return out[:_SCHEMA_ERR_CAP]
@@ -174,6 +175,12 @@ def _schema_validate(record):
     return []
 
 
+def _named(attr):
+    """v3 の Attribute として名前を持つか。name は必須で、空白だけも名前ではない。"""
+    name = attr.get("name")
+    return isinstance(name, str) and bool(name.strip())
+
+
 def _text(value):
     """値を xml_reader の `_text` と同じ形に揃える（strip、空は None）。"""
     if not isinstance(value, str):
@@ -187,9 +194,9 @@ def _attributes(sample):
     名前の無い属性は落とす。落としたことは `_shape_errors` が報告済み。"""
     out = {}
     for attr in sample.get("attributes") or []:
-        name = attr.get("name")
-        if not isinstance(name, str):
+        if not _named(attr):
             continue
+        name = attr["name"]
         value = attr.get("value")
         out.setdefault(name, []).append(value.strip() if isinstance(value, str) else "")
     return out
