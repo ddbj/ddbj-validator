@@ -133,6 +133,51 @@ class GEA_ADMN0004(_IncomingAny):
     description = "An array data matrix file should be described by a protocol."
 
 
+class GEA_AN0010(GeaRule):
+    """1 つの `Assay Name` が**複数の DRA Experiment** を指していないか（2026-09-26 追加）。
+
+    MetaboBank の `MB_SR0050`（Assay Name is not unique.）に対応するが、**判定は同じにしない**。
+    MetaboBank は 1 行 = 1 測定なので行の重複がそのまま誤りになるが、GEA では 1 つの assay が
+    複数行に跨るのが**正しい書き方**のため:
+
+    - processed data file を 1 ファイル 1 行で並べる（10x の barcodes/features/matrix など）
+    - dual channel の microarray で labeled extract ごとに行を作る（`GEA_AN0008` が数を見る）
+
+    そのため上流ノード（Extract / Labeled Extract / Source）は同じ assay でも行ごとに違ってよく、
+    比較に使えない。実データで確かめたところ、単純な行重複は 198 件中 22 件、上流ノードを
+    キーにすると dual channel の microarray（E-GEAD-1104）が 242 件も誤検知になった。
+
+    確実に「別の assay」と言えるのは **`Comment[SRA_EXPERIMENT]` が違う**場合だけなので、
+    そこに絞る。実データでの発火は 6 件で、いずれも別の Experiment に同じ assay 名を
+    付けてしまっているケースだった。
+    """
+    rule_id = "GEA_AN0010"; level = "error"; target = "SDRF/Array"
+    description = "The same Assay Name is used for more than one DRA Experiment."
+
+    #: assay の同一性を決める列。上流ノードは同じ assay でも行ごとに変わるので使わない。
+    _UPSTREAM = ("Comment[SRA_EXPERIMENT]",)
+
+    def validate(self, sub, context):
+        if not sub.sdrf:
+            return []
+        ai = sub.sdrf.col_indices("Assay Name")
+        if not ai:
+            return []          # 列そのものが無いのは GEA_AN0001 / GEA_MAN0011 の担当
+        ups = [i for c in self._UPSTREAM for i in sub.sdrf.col_indices(c)]
+        if not ups:
+            return []          # 比べる手がかりが無ければ判定しない
+        i = ai[0]
+        seen = {}
+        for row in sub.sdrf.rows:
+            v = (row[i] if i < len(row) else "").strip()
+            if not v:
+                continue       # 値が無い行は GEA_AN0001 の担当
+            key = tuple((row[j] if j < len(row) else "").strip() for j in ups)
+            seen.setdefault(v, set()).add(key)
+        bad = sorted(v for v, keys in seen.items() if len(keys) > 1)
+        return [self.result(message=f"{self.description} ('{v}')", value=v) for v in bad]
+
+
 class GEA_SM0003(_IncomingAny):
     rule_id = "GEA_SM0003"; level = "warning"; target = "SDRF/Sample"
     _node = "Sample Name"

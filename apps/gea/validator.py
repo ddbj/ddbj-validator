@@ -21,7 +21,7 @@ class Validator(SimpleValidator):
         return [
             # --- IDF ---
             I.GEA_C0001(), I.GEA_C0002(), I.GEA_C0008(),
-            I.GEA_COM0001(), I.GEA_COM0005(),
+            I.GEA_COM0001(), I.GEA_COM0005(), I.GEA_G0017(),
             I.GEA_G0001(), I.GEA_G0002(), I.GEA_G0009(), I.GEA_G0004(), I.GEA_G0006(),
             I.GEA_G0015(),
             # GEA_G0013 は deprecated（2026-09-18。additional file 廃止で検査対象が無い）のため登録しない。
@@ -47,10 +47,10 @@ class Validator(SimpleValidator):
             S.GEA_AN0001(),
             S.GEA_COM0004(), S.GEA_MT0004(),
             S.GEA_LE0002(), S.GEA_LE0004(), S.GEA_LE0001(), S.GEA_AD0001(), S.GEA_AD0004(),
-            S.GEA_DF0001(), S.GEA_DF0002(), S.GEA_DF0003(),
+            S.GEA_DF0001(), S.GEA_DF0002(), S.GEA_DF0003(), S.GEA_DF0004(),
             # GEA_RC0002 は deprecated（2026-09-17。Comment 列の重複は取込で畳む）のため登録しない。
             # ヘッダー行の形（列名の欠落・列数超過）は未定義列の判定より先に見る
-            S.GEA_SR0014(), S.GEA_SR0015(),
+            S.GEA_SR0014(), S.GEA_SR0015(), S.GEA_SR0016(),
             S.GEA_CN0001(), S.GEA_UNDEF(), S.GEA_SR0003(),
             S.GEA_MAN0011(), S.GEA_MAN0012(), S.GEA_MAN0014(),
             S.GEA_SDRF_REGEX(),
@@ -59,6 +59,7 @@ class Validator(SimpleValidator):
             N.GEA_AN0003(), N.GEA_AN0004(), N.GEA_AN0006(), N.GEA_AN0008(),
             # GEA_DADMN0001 / GEA_DADMN0004 は deprecated（2026-09-19。Processed Data File に統合）。
             # GEA_ADMN0001 / GEA_ADMN0004 も deprecated（2026-09-20。Raw Data File に統合）。
+            N.GEA_AN0010(),
             N.GEA_ADN0004(), N.GEA_DADN0004(),
             N.GEA_ADN0001(), N.GEA_DADN0001(),
             N.GEA_SM0001(), N.GEA_SM0003(), N.GEA_SC0001(), N.GEA_NN0001(),
