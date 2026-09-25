@@ -22,6 +22,22 @@ def update_qualifier_action(entry, feature_type, qualifier, old_value, new_value
     return action
 
 
+def update_qualifier_in_feature_action(entry, feature_type, qualifier, old_value, new_value,
+                                       feature_line, feature_id=None):
+    """updates リストの 1 要素（**その feature の中だけ**を対象にした qualifier 更新）。
+
+    `update_qualifier` は entry ＋ qualifier 名 ＋ 旧値でしか一致を見ないため、
+    `codon_start 1` のように同じ entry の多くの feature が同じ値を持つ qualifier では
+    関係の無い行まで書き換わる。`feature_line`（その feature の行番号）を渡し、
+    writer 側で「その行から次の feature 行の手前まで」に範囲を絞る。
+    """
+    action = update_qualifier_action(entry, feature_type, qualifier, old_value, new_value,
+                                     feature_id=feature_id)
+    action["action"] = "update_qualifier_in_feature"
+    action["feature_line"] = feature_line
+    return action
+
+
 def update_location_action(entry, feature_type, old_value, new_value, feature_id=None):
     """updates リストの 1 要素（location 更新）を構築する。"""
     action = {
@@ -38,7 +54,7 @@ def update_location_action(entry, feature_type, old_value, new_value, feature_id
 
 def build_proposal(ann_path, entry, feature_type, qualifier, target, target_level,
                    positions, old_value, new_value, rule, updates,
-                   message="Value will be fixed.", source_db=None):
+                   message="Value will be fixed.", source_db=None, note=None):
     """autofix proposal 辞書を構築する（スキーマは old_value/new_value に一本化）。"""
     proposal = {
         "ann_path": ann_path,
@@ -56,4 +72,8 @@ def build_proposal(ann_path, entry, feature_type, qualifier, target, target_leve
     }
     if source_db is not None:
         proposal["source_db"] = source_db
+    # note は確認画面に添える補足（例 "codon_start: 1 -> 2"）。source_db は値の出どころ
+    # （BioSample の SAMD、Taxonomy の taxid 等）なので別のキーにしてある。
+    if note is not None:
+        proposal["note"] = note
     return proposal

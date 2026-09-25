@@ -31,7 +31,10 @@ def _build_confirmation_summary(all_proposals):
         rule_id = p.get("rule", "UNKNOWN_RULE")
         source_db = p.get("source_db", "")
 
-        change_key = (str(p.get("old_value", "")), str(p.get("new_value", "")), source_db)
+        note = p.get("note", "")
+        # note は「codon_start: 1 -> 2」のような補足。同じ location 変更でも
+        # codon_start のずれ方が違えば別の行として見せたいのでキーに含める。
+        change_key = (str(p.get("old_value", "")), str(p.get("new_value", "")), source_db, note)
 
         target_dict = summary[target][file_set][change_key]
         target_dict["target_level"] = p.get("target_level", "qualifier")
@@ -49,7 +52,7 @@ def _build_confirmation_summary(all_proposals):
         target_lines = [f"[ Target: {target} ]"]
         for file_set, changes in sorted(summary[target].items()):
             target_lines.append(f"  {file_set}")
-            for (old_val, new_val, source_db), stats in sorted(changes.items()):
+            for (old_val, new_val, source_db, note), stats in sorted(changes.items()):
                 t_level = stats["target_level"]
                 positions = stats["positions"]
                 rules = stats["rules"]
@@ -74,6 +77,8 @@ def _build_confirmation_summary(all_proposals):
                     count_str = f"{e_len} {e_label}"
 
                 source_str = f" ({source_db})" if source_db else ""
+                if note:
+                    source_str += f" ({note})"
                 rule_str = f" [Rule: {', '.join(sorted(rules))}]" if rules and list(rules) != ["UNKNOWN_RULE"] else ""
 
                 # ann限定追加は new_value が空なので「(add to BioSample)」表記にする

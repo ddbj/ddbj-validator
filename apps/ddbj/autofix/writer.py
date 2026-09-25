@@ -89,6 +89,9 @@ def _apply_autofix_worker(task):
 
 def write_autofix_to_file(ann_lines, updates, out_path):
     current_entry = ""
+    # 「今どの feature の中か」。継続行の qualifier を feature 単位で絞るために使う
+    # （update_qualifier_in_feature）。feature type 列が非空の行がその feature の開始。
+    current_feature_line = None
     update_count = 0
     pending_new_features = [u for u in updates if u.get("action") == "add_feature"]
     
@@ -123,6 +126,10 @@ def write_autofix_to_file(ann_lines, updates, out_path):
             entry = cols[0]
             feat_type = cols[1]
             loc_str = cols[2]
+
+            if feat_type.strip():
+                current_feature_line = line_no
+
             qualifier = cols[3] if len(cols) > 3 else ""
             value = cols[4] if len(cols) > 4 else ""
             
@@ -147,6 +154,26 @@ def write_autofix_to_file(ann_lines, updates, out_path):
                             line_modified = True
                             update_count += 1
                             
+                    elif action == "update_qualifier_in_feature":
+                        # feature_line で示された feature の中だけを対象にする。
+                        # codon_start のように同じ値が entry 内に多数ある qualifier 用。
+                        if current_feature_line != u.get("feature_line"):
+                            continue
+                        if qualifier.strip() != str(u.get("qualifier", "")).strip():
+                            continue
+                        if str(value).strip() != str(u.get("old_value", "")).strip():
+                            continue
+                        if len(cols) == 3:
+                            cols.extend([str(u["qualifier"]), str(u["new_value"])])
+                        elif len(cols) == 4:
+                            cols.append(str(u["new_value"]))
+                        else:
+                            cols[4] = str(u["new_value"])
+                        qualifier = cols[3] if len(cols) > 3 else ""
+                        value = cols[4] if len(cols) > 4 else ""
+                        line_modified = True
+                        update_count += 1
+
                     elif action == "update_qualifier":
                         q_file = qualifier.strip()
                         q_target = str(u.get("qualifier", "")).strip()
