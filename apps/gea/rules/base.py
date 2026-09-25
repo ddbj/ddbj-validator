@@ -34,7 +34,6 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     # --- 2026-09-26 追加（MetaboBank に揃えた。error のまま internal ignore）---
     "GEA_G0017",   # Non-ASCII characters in an IDF field.（MB_IR0024 と同扱い）
     "GEA_SR0016",  # Non-ASCII or control characters in an SDRF cell.（MB_SR0030 と同扱い）
-    "GEA_AN0010",  # The same Assay Name is used for different assays.（MB_SR0050 と同扱い）
     #
     # --- 2026-09-19 追加（protocol 系。error のまま internal ignore）---
     "GEA_PR0017",  # Protocol Type is not used in the specified Submission Type.（2026-09-20 に GEA_PR0007 から改番）

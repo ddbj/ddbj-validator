@@ -86,8 +86,6 @@ EXPECTED = {
     # E-GEAD-1104 派生: IDF の説明文と SDRF のセルを日本語＋全角数字にし、raw のファイル名も日本語に。
     # 非 ASCII は ASCII 化できたものが warning、できなかったものが error。ファイル名は DF0004。
     "nonascii-craft": {"GEA_G0017", "GEA_SR0016", "GEA_DF0004"},
-    # E-GEAD-1114 派生: 2 行目と 3 行目で同じ Assay Name なのに DRX が違う
-    "AN0010-craft": {"GEA_AN0010"},
 }
 
 # --- DB モード（opt-in / dradev） ---

@@ -3,8 +3,6 @@
 - GEA_G0017 / GEA_SR0016: 非 ASCII。ASCII 化できた文字は warning（autofix 報告）、
   表に無く残った文字（日本語など）は error。MB_IR0024 / MB_SR0030 と同仕様。
 - GEA_DF0004: データファイル名に使える文字（MB_SR0036 と同仕様）。
-- GEA_AN0010: 同じ Assay Name が複数の DRA Experiment を指していないか。
-  MB_SR0050 とは**判定が違う**（GEA は 1 assay が複数行に跨るのが正しいため）。
 """
 from apps.gea.model import GeaSubmission, Idf
 from apps.gea.rules.base import INTERNAL_IGNORE_RULE_IDS
@@ -84,37 +82,3 @@ def test_df0004_rejects_non_ascii_file_names():
     none = _sub(header=["Raw Data File"], rows=[["none"]])
     assert r.validate(none, _ctx(defs)) == []
     assert "GEA_DF0004" not in INTERNAL_IGNORE_RULE_IDS   # MB_SR0036 と同じく ignore なし
-
-
-# ---------------- GEA_AN0010 ----------------
-def test_an0010_flags_one_assay_name_across_two_experiments():
-    from apps.gea.rules.nodes import GEA_AN0010
-    r = GEA_AN0010()
-    bad = _sub(header=["Assay Name", "Comment[SRA_EXPERIMENT]"],
-               rows=[["a1", "DRX0000001"], ["a1", "DRX0000002"]])
-    res = r.validate(bad, _ctx())
-    assert len(res) == 1 and "a1" in res[0]["message"]
-    assert "GEA_AN0010" in INTERNAL_IGNORE_RULE_IDS
-
-
-def test_an0010_allows_one_assay_spanning_several_rows():
-    """GEA では 1 assay が複数行に跨るのが正しい（processed file を 1 行ずつ並べる等）。
-
-    MetaboBank の MB_SR0050 と同じ「行の重複」判定にすると、この正しい形が全部 error になる。
-    """
-    from apps.gea.rules.nodes import GEA_AN0010
-    r = GEA_AN0010()
-    same_exp = _sub(header=["Assay Name", "Comment[SRA_EXPERIMENT]", "Processed Data File"],
-                    rows=[["a1", "DRX0000001", "barcodes.tsv.gz"],
-                          ["a1", "DRX0000001", "features.tsv.gz"],
-                          ["a1", "DRX0000001", "matrix.mtx.gz"]])
-    assert r.validate(same_exp, _ctx()) == []
-
-    # dual channel の microarray（上流の labeled extract は行ごとに違うが同じ assay）
-    dual = _sub(header=["Assay Name", "Labeled Extract Name", "Label"],
-                rows=[["a1", "le1", "Cy3"], ["a1", "le2", "Cy5"]])
-    assert r.validate(dual, _ctx()) == []
-
-    # DRX 列が無ければ判定しない
-    no_exp = _sub(header=["Assay Name"], rows=[["a1"], ["a1"]])
-    assert r.validate(no_exp, _ctx()) == []
