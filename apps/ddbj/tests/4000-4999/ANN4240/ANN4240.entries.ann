@@ -47,3 +47,13 @@ seq7	source	1..300	organism	Escherichia coli
 			note	ANN4240 fail
 	CDS	<202..290	transl_table	11
 			note	ANN4240 fail
+seq8	source	1..120	organism	Escherichia coli
+			mol_type	genomic DNA
+	CDS	complement(10..>119)	transl_table	11
+			codon_start	1
+			note	ANN4240 fail
+seq9	source	1..120	organism	Escherichia coli
+			mol_type	genomic DNA
+	CDS	complement(<2..100)	transl_table	11
+			codon_start	1
+			note	ANN4240 fail

@@ -1,7 +1,8 @@
 import re
 from Bio.SeqFeature import BeforePosition, AfterPosition
 from apps.ddbj.utils.features import get_features
-from apps.ddbj.autofix.proposal import build_proposal, update_qualifier_action, update_location_action
+from apps.ddbj.autofix.proposal import (build_proposal, update_qualifier_action, update_location_action,
+                                        update_qualifier_in_feature_action)
 
 from common.format import (
     _INSDC_DATE_PATTERN,
@@ -346,6 +347,34 @@ def propose_latlon_fixes(records, ann_path, existing_proposals=None):
 
     return proposals
     
+def _shifted_codon_start(feature, five_shift):
+    """5' 端を `five_shift` 塩基伸ばしたときの codon_start を返す。
+
+    codon_start は feature 内で最初の完全なコドンが始まる位置（1-3）。5' を N 塩基伸ばすと
+    元の塩基が N だけ後ろへ動くので、読み枠を保つには codon_start も N ずらす必要がある。
+
+        new = ((old - 1) + N) % 3 + 1
+
+    戻り値は (旧値, 新値)。変更が要らないときは新値を None にする:
+    - 5' 側を伸ばしていない（3' 側だけ伸ばした）
+    - ずれ幅が 3 の倍数で値が変わらない
+    - 書かれている値が 1/2/3 以外（壊れた値をこちらで直さない。AXS6420 の担当）
+
+    codon_start が書かれていない場合は既定の 1 として扱い、伸ばした後は必要なら**追加**する。
+    """
+    if five_shift <= 0:
+        return None, None
+    vals = feature.qualifiers.get("codon_start") or []
+    raw = vals[0].strip() if vals else "1"
+    if raw not in ("1", "2", "3"):
+        return raw, None
+    old_cs = int(raw)
+    new_cs = ((old_cs - 1) + five_shift) % 3 + 1
+    if new_cs == old_cs:
+        return old_cs, None
+    return old_cs, new_cs
+
+
 def propose_partial_location_fixes(records, ann_path, tax_data):
     """
     原核生物のCDSにおいて、末端やgapから1〜2塩基離れた partial な location を
@@ -397,18 +426,26 @@ def propose_partial_location_fixes(records, ann_path, tax_data):
             original_loc_str = getattr(feature, 'original_location', str(feature.location))
             new_loc_str = original_loc_str
             fix_needed = False
+            # 5' 端に足した塩基数。codon_start をずらす量になる（3' 側だけ伸ばしたときは 0）。
+            five_shift = 0
+            # 5' 端は鎖で決まる。complement の CDS は `>` 側が 5'。
+            is_minus = feature.location.strand == -1
 
             # 左端（<）の補正：距離が 1 or 2 の場合のみ境界ぴったりに伸ばす
             if is_left_partial:
                 if 0 < start_val <= 2:  # 先頭から1〜2塩基のズレ (<2, <3)
                     new_loc_str = re.sub(rf"<{start_val + 1}\b", "<1", new_loc_str)
                     fix_needed = True
+                    if not is_minus:
+                        five_shift = start_val
                 else:
                     for g_start, g_end in gaps:
                         diff = start_val - g_end
                         if 0 < diff <= 2:  # ギャップ終端から1〜2塩基のズレ
                             new_loc_str = re.sub(rf"<{start_val + 1}\b", f"<{g_end + 1}", new_loc_str)
                             fix_needed = True
+                            if not is_minus:
+                                five_shift = diff
                             break
 
             # 右端（>）の補正：距離が 1 or 2 の場合のみ境界ぴったりに伸ばす
@@ -416,23 +453,47 @@ def propose_partial_location_fixes(records, ann_path, tax_data):
                 if 0 < (seq_len - end_val) <= 2:  # 末端から1〜2塩基のズレ
                     new_loc_str = re.sub(rf">{end_val}\b", f">{seq_len}", new_loc_str)
                     fix_needed = True
+                    if is_minus:
+                        five_shift = seq_len - end_val
                 else:
                     for g_start, g_end in gaps:
                         diff = g_start - end_val
                         if 0 < diff <= 2:  # ギャップ始端から1〜2塩基のズレ
                             new_loc_str = re.sub(rf">{end_val}\b", f">{g_start}", new_loc_str)
                             fix_needed = True
+                            if is_minus:
+                                five_shift = diff
                             break
 
             if fix_needed and new_loc_str != original_loc_str:
-                updates = [update_location_action(entry_id, feature.type, original_loc_str, new_loc_str, feature_id=getattr(feature, 'line_number', id(feature)))]
+                feature_line = getattr(feature, 'line_number', id(feature))
+                updates = [update_location_action(entry_id, feature.type, original_loc_str, new_loc_str, feature_id=feature_line)]
+
+                # 5' を伸ばすと feature 内の最初の完全コドンの位置が同じだけずれるので
+                # codon_start も合わせて直す。location だけ直すと読み枠が壊れる（2026-09-25）。
+                # location と同じ proposal に入れて **1 回の承認で両方**適用する。
+                cs_note = ""
+                old_cs, new_cs = _shifted_codon_start(feature, five_shift)
+                if new_cs is not None:
+                    cs_note = f"codon_start: {old_cs} -> {new_cs}"
+                    if "codon_start" in feature.qualifiers:
+                        updates.append(update_qualifier_in_feature_action(
+                            entry_id, feature.type, "codon_start", str(old_cs), str(new_cs),
+                            feature_line=feature_line, feature_id=feature_line))
+                    else:
+                        updates.append({
+                            "action": "add_qualifier", "entry": entry_id,
+                            "feature_type": feature.type, "feature_id": feature_line,
+                            "feature_line": feature_line,
+                            "qualifier": "codon_start", "new_value": str(new_cs),
+                        })
 
                 proposals.append(build_proposal(
                     ann_path=ann_path, entry=entry_id, feature_type=feature.type,
                     qualifier=None, target="location", target_level="location",
-                    positions=[{"entry": entry_id, "feature_id": getattr(feature, 'line_number', id(feature))}],
+                    positions=[{"entry": entry_id, "feature_id": feature_line}],
                     old_value=original_loc_str, new_value=new_loc_str, rule="ANN4240",
-                    updates=updates, source_db=""
+                    updates=updates, source_db="", note=cs_note or None
                 ))
 
     return proposals    

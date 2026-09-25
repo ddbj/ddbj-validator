@@ -23,10 +23,12 @@ seq1	source	1..120	organism	Mus musculus
 seq2	source	1..120	organism	Escherichia coli
 			mol_type	genomic DNA
 	CDS	<1..100	transl_table	11
+			codon_start	2
 			note	ANN4240 fail
 seq3	source	1..120	organism	Escherichia coli
 			mol_type	genomic DNA
 	CDS	<1..100	transl_table	11
+			codon_start	3
 			note	ANN4240 fail
 seq4	source	1..120	organism	Escherichia coli
 			mol_type	genomic DNA
@@ -46,4 +48,15 @@ seq7	source	1..300	organism	Escherichia coli
 	CDS	10..>100	transl_table	11
 			note	ANN4240 fail
 	CDS	<201..290	transl_table	11
+			codon_start	2
+			note	ANN4240 fail
+seq8	source	1..120	organism	Escherichia coli
+			mol_type	genomic DNA
+	CDS	complement(10..>120)	transl_table	11
+			codon_start	2
+			note	ANN4240 fail
+seq9	source	1..120	organism	Escherichia coli
+			mol_type	genomic DNA
+	CDS	complement(<1..100)	transl_table	11
+			codon_start	1
 			note	ANN4240 fail
