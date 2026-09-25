@@ -548,3 +548,26 @@ def test_com0005_requires_exactly_one_experiment_type():
     res = r.validate(sub(["a", "b"]), None)
     assert len(res) == 1 and "a, b" in res[0]["message"]
     assert "GEA_COM0005" in INTERNAL_IGNORE_RULE_IDS
+
+
+def test_df0003_flags_the_same_file_in_two_columns_of_one_row():
+    """列をまたいだ同名データファイル（2026-09-24 追加）。同じ行の中だけを見る。"""
+    from apps.gea.rules.sdrf import GEA_DF0003
+    from apps.gea.rules.base import INTERNAL_IGNORE_RULE_IDS
+    ctx = type("C", (), {"definitions": {"sdrf": {"cross_column_unique_files": ["Raw Data File"]}}})()
+    r = GEA_DF0003()
+
+    res = r.validate(_mk_sub(_mk_sdrf(["Raw Data File", "Raw Data File"], [["a.fq", "a.fq"]])), ctx)
+    assert len(res) == 1 and "a.fq" in res[0]["message"]
+    assert r.validate(_mk_sub(_mk_sdrf(["Raw Data File", "Raw Data File"],
+                                       [["a_1.fq", "a_2.fq"]])), ctx) == []
+    # 行をまたいだ同名は対象外
+    assert r.validate(_mk_sub(_mk_sdrf(["Raw Data File", "Raw Data File"],
+                                       [["a.fq", ""], ["", "a.fq"]])), ctx) == []
+    # 列が 1 本だけなら見ない
+    assert r.validate(_mk_sub(_mk_sdrf(["Raw Data File"], [["a.fq"], ["a.fq"]])), ctx) == []
+    assert "GEA_DF0003" in INTERNAL_IGNORE_RULE_IDS
+
+
+def test_cross_column_unique_files_is_defined():
+    assert DEFS["sdrf"]["cross_column_unique_files"] == ["Raw Data File", "Processed Data File"]

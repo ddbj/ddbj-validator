@@ -78,6 +78,12 @@ EXPECTED = {
     # message が別件（Characteristics[] 用）だったので実装に合わせて書き換えた。
     "MTBKS_blankcol": {"MB_IR0024", "MB_IR0037", "MB_SR0024"},   # 名前の無い列（値あり）
     "MTBKS_longrow": {"MB_IR0024", "MB_IR0037", "MB_SR0053"},    # ヘッダーより 1 列長い行（値あり）
+    # 2026-09-24 追加。MTBKS210 は Raw Data File 列が元から 2 本あるので、
+    # 2 本目を 1 本目と同じファイル名にすると列をまたいだ同名になる（GEA の DF0003-craft と対）
+    "MTBKS_dupfile": {"MB_IR0024", "MB_IR0037", "MB_SR0055"},
+    # FIA-MS の study に MSI 専用の Histology protocol を IDF/SDRF の**両方**に入れる。
+    # 両方に正しく書くと MB_CR0002 は出ないので、MB_SR0054 が単独で type 違いを見ている
+    "MTBKS_protoif": {"MB_IR0024", "MB_IR0037", "MB_SR0054"},
 }
 
 

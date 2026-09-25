@@ -4,6 +4,8 @@ from apps.metabobank.rules.base import (MbRule, null_values, is_raw_data_file_no
                                         RAW_DATA_FILE_COLUMN)
 from common.text import is_blank as _empty
 from common.magetab.columns import matches_any as _matches_any
+from common.magetab.columns import (cross_column_duplicates as _cross_column_duplicates,
+                                    format_duplicate_files as _fmt_dup_files)
 
 
 def _sdrf_def(context):
@@ -144,6 +146,29 @@ class MB_SR0024(MbRule):
             return []
         cols = ", ".join(f"column {i}" for i in blank)
         return [self.result(message=f"{self.description} ({cols})", column=cols)]
+
+
+class MB_SR0055(MbRule):
+    """同じデータファイル名が**複数の列にまたがって**書かれていないか（2026-09-24 追加）。
+
+    対象列は `sdrf.cross_column_unique_files`（`Raw Data File` / `Processed Data File` /
+    `Metabolite Assignment File`）。1 行に複数列書けるが、列をまたいで同じファイル名が
+    出ていればどちらかの書き間違いで、本来あるはずのファイルが 1 本欠けている。
+    同じ列の中の重複（別の行で同じファイルを指す）は対象にしない。GEA_DF0003 と対。
+    """
+    rule_id = "MB_SR0055"; level = "error"; target = "SDRF"
+    description = "The same data file name is used in more than one column."
+
+    def validate(self, sub, context):
+        if not sub.sdrf:
+            return []
+        out = []
+        for col in _sdrf_def(context).get("cross_column_unique_files", []):
+            dup = _cross_column_duplicates(sub.sdrf, col)
+            if dup:
+                out.append(self.result(message=f"{self.description} ({_fmt_dup_files(col, dup)})",
+                                       column=col))
+        return out
 
 
 class MB_SR0053(MbRule):

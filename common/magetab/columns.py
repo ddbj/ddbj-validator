@@ -26,3 +26,43 @@ def matches_any(colname, patterns):
 def matches_any_header(header, pattern):
     """ヘッダー列のいずれかが pattern に全体一致するか。"""
     return any(matches_any(h, [pattern]) for h in header)
+
+
+def cross_column_duplicates(sdrf, colname):
+    """**同じ行の中で** `colname` の複数の列が同じ値を指していれば、その値を並べて返す。
+
+    `Raw Data File` / `Processed Data File` / `Metabolite Assignment File` は 1 行に複数列
+    書ける（paired-end の 2 本、positive / negative の 2 本など）。同じ行の 2 つの列が同じ
+    ファイルを指していれば、どちらかの書き間違いで本来あるはずのファイルが 1 本欠けている。
+
+    **行をまたいだ重複は対象にしない。** 登録済みの MetaboBank study では、行ごとに使う列の
+    本数が違う（1 本目の列だけ使う行と 2 本目まで使う行が混在する）ため、別の行の別の列に
+    同じ MAF 名が出るのは正しい書き方として存在する（MTBKS218 / MTBKS221）。
+    GEA / MetaboBank で同じ判定をするのでここに置く。
+    """
+    idxs = sdrf.col_indices(colname)
+    if len(idxs) < 2:
+        return []
+    dup = []
+    for row in sdrf.rows:
+        seen = set()
+        for i in idxs:
+            v = (row[i] if i < len(row) else "").strip()
+            if not v:
+                continue
+            if v in seen:
+                if v not in dup:
+                    dup.append(v)
+            else:
+                seen.add(v)
+    return sorted(dup)
+
+
+def format_duplicate_files(colname, dup, limit=5):
+    """`cross_column_duplicates` の結果をメッセージ用の 1 行に整形する。
+
+    実データでは 1 列まるごと取り違えると数百件並ぶので、先頭 `limit` 件＋総数に丸める。
+    """
+    shown = ", ".join(dup[:limit])
+    more = f", ... ({len(dup)} files)" if len(dup) > limit else ""
+    return f"{colname}: {shown}{more}"

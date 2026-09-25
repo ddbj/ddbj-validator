@@ -30,6 +30,9 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     "MB_SR0047",   # Experimental factor value is missing.
     "MB_SR0049",   # Protocol REF is missing from all SDRF rows.
     "MB_SR0050",   # Assay Name is not unique.
+    # --- 2026-09-24 追加（error のまま internal ignore）---
+    "MB_SR0054",   # Protocol Type is not used in the specified Submission Type.
+    "MB_SR0055",   # The same data file name is used in more than one column.
     # --- IDF↔SDRF ---
     "MB_CR0001",   # Experimental factor in SDRF does not match IDF Experimental Factor Name.
     "MB_CR0002",   # IDF Protocol and SDRF Protocol REF do not match.
@@ -117,6 +120,8 @@ ANNOTATION_PATTERNS = {
     "MB_CR0002": "idf_sdrf",
     "MB_CR0003": "idf_sdrf",
     "MB_CR0004": "idf_sdrf",
+    "MB_SR0054": "idf_protocol",
+    "MB_SR0055": "sdrf_column",
     # --- 個別情報なし ---
     "MB_IR0020": "general",
     "MB_IR0037": "general",

@@ -222,6 +222,19 @@
         "Metabolite identification"
       ]
     },
+    "optional_protocol_types": {
+      "LC-MS": [],
+      "LC-DAD-MS": [],
+      "GC-MS": [],
+      "GCGC-MS": [],
+      "GC-FID-MS": [],
+      "CE-MS": [],
+      "DI-MS": [],
+      "FIA-MS": [],
+      "MALDI-MS": [],
+      "MSI": [],
+      "NMR": []
+    },
     "required_protocol_parameters": {
       "LC-MS": {
         "Extraction": [
@@ -570,6 +583,11 @@
         "Comment[Metabolite Assignment File md5]"
       ]
     },
+    "cross_column_unique_files": [
+      "Raw Data File",
+      "Processed Data File",
+      "Metabolite Assignment File"
+    ],
     "singleton_columns": [
       "Source Name",
       "Sample Name",

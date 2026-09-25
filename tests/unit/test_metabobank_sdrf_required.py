@@ -484,3 +484,56 @@ def test_mb_sr0053_fires_only_when_extra_cells_have_values():
     assert len(res) == 1 and "line 2" in res[0]["message"]
     # 末尾タブ（値なし）は対象外
     assert r.validate(_hdr_sub(["Raw Data File"], [["raw1.txt", ""]]), None) == []
+
+
+# ---------------------------------------------------------------
+# MB_SR0054 / MB_SR0055（2026-09-24 追加）
+# ---------------------------------------------------------------
+def test_mb_sr0054_flags_protocol_types_outside_the_submission_type():
+    """valid リスト = required ∪ optional。CV 外の値は対象外。"""
+    import json
+    from pathlib import Path
+    from apps.metabobank.model import MbSubmission, Idf as MbIdf
+    from apps.metabobank.rules.idf import MB_SR0054
+    from apps.metabobank.rules.base import INTERNAL_IGNORE_RULE_IDS
+
+    defs = json.loads(Path("apps/metabobank/resources/definitions.json").read_text())
+    ctx = type("C", (), {"definitions": defs})()
+
+    def sub(types):
+        idf = MbIdf()
+        idf.fields = {"Comment[Submission Type]": ["FIA-MS"], "Protocol Type": types}
+        idf.field_order = list(idf.fields)
+        s = MbSubmission()
+        s.idf = idf
+        return s
+
+    ok = ["Sample collection", "Extraction", "Flow injection analysis",
+          "Mass spectrometry", "Data processing", "Metabolite identification"]
+    assert MB_SR0054().validate(sub(ok), ctx) == []
+    # Histology は MSI 専用
+    res = MB_SR0054().validate(sub(ok + ["Histology"]), ctx)
+    assert len(res) == 1 and "Histology" in res[0]["message"]
+    # CV 外の値は MB_SR0054 では出さない（Protocol Type の CV 側が見る）
+    assert MB_SR0054().validate(sub(ok + ["No such protocol"]), ctx) == []
+    assert "MB_SR0054" in INTERNAL_IGNORE_RULE_IDS
+
+
+def test_mb_sr0055_flags_the_same_file_in_two_columns_of_one_row():
+    from apps.metabobank.rules.sdrf import MB_SR0055
+    from apps.metabobank.rules.base import INTERNAL_IGNORE_RULE_IDS
+    defs = {"sdrf": {"cross_column_unique_files": ["Raw Data File"]}}
+    ctx = type("C", (), {"definitions": defs})()
+    r = MB_SR0055()
+
+    same = _hdr_sub(["Raw Data File", "Raw Data File"], [["a.raw", "a.raw"]])
+    res = r.validate(same, ctx)
+    assert len(res) == 1 and "a.raw" in res[0]["message"]
+
+    # 別名なら出ない
+    assert r.validate(_hdr_sub(["Raw Data File", "Raw Data File"],
+                               [["a_1.raw", "a_2.raw"]]), ctx) == []
+    # 行をまたいだ同名は対象外（登録済み study に正しい例がある）
+    assert r.validate(_hdr_sub(["Raw Data File", "Raw Data File"],
+                               [["a.raw", ""], ["", "a.raw"]]), ctx) == []
+    assert "MB_SR0055" in INTERNAL_IGNORE_RULE_IDS
