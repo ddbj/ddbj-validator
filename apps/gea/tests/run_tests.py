@@ -79,6 +79,9 @@ EXPECTED = {
     # crafted fixture（E-GEAD-1104 派生・2026-09-24 追加）: Comment[Experiment Type] を 2 値にする。
     # 2 つ目は Microarray で許可された語にしてあるので G0016 は出ず、COM0005 だけが出る
     "COM0005-craft": {"GEA_COM0005"},
+    # crafted fixture（E-GEAD-1104 派生・2026-09-24 追加）: Raw Data File 列を 2 本にし、
+    # 2 本目に 1 本目と同じファイル名を入れる。列をまたいだ同名＝どちらかの書き間違い
+    "DF0003-craft": {"GEA_DF0003"},
 }
 
 # --- DB モード（opt-in / dradev） ---

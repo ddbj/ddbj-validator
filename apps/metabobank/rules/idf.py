@@ -231,6 +231,44 @@ class MB_IR0017(MbRule):
                             protocol_type=", ".join(miss))]
 
 
+class MB_IR0043(MbRule):
+    """その submission type では使わない protocol type が IDF に書かれていないか（2026-09-24 追加）。
+
+    valid リスト = `idf.required_protocol_types[<type>]` ∪ `idf.optional_protocol_types[<type>]`。
+    公式の対応表（登録システムの submission type ↔ protocol の割り当て）は type ごとに
+    protocol を 1 本のリストで定義していて必須と任意の区別が無いため、`optional_protocol_types`
+    は全 type 空で用意してある（「この type ではこれも使ってよい」と来たときの置き場所）。
+
+    これまで MB は必須の欠落（`MB_IR0017`）しか見ておらず、**type 違いの protocol を
+    IDF と SDRF の両方に正しく書くと何も出なかった**（IDF にだけ書いた場合に
+    `MB_CR0002` が「only in IDF」として拾うだけだった）。GEA の `GEA_PR0017` に相当する。
+
+    2026-09-25 に `MB_SR0054` から改番（読むのは IDF の `Protocol Type` なので IR 側）。
+    CV 外の値は対象外（`Protocol Type` の CV は `controlled_terms.idf.warning` が見る）。
+    submission type が分からない／その type の定義が無いときは検査しない。
+    """
+    rule_id = "MB_IR0043"; level = "error"; target = "IDF"
+    description = "Protocol Type is not used in the specified Submission Type."
+
+    def validate(self, sub, context):
+        if not sub.idf:
+            return []
+        st = sub.idf.submission_type
+        idf = _idf(context)
+        req = idf.get("required_protocol_types", {}).get(st)
+        if not req:
+            return []
+        allowed = set(req) | set(idf.get("optional_protocol_types", {}).get(st) or [])
+        cv = set(((context.definitions or {}).get("controlled_terms", {})
+                  .get("idf", {}).get("warning", {}) or {}).get("Protocol Type", []))
+        bad = sorted({t.strip() for t in sub.idf.get("Protocol Type")
+                      if t.strip() and t.strip() in cv and t.strip() not in allowed})
+        if not bad:
+            return []
+        return [self.result(message=f"{self.description} ({st}: {', '.join(bad)})",
+                            protocol_type=", ".join(bad))]
+
+
 class MB_IR0018(MbRule):
     rule_id = "MB_IR0018"; level = "error"; target = "IDF"
     description = "Missing protocol parameter for submission type."

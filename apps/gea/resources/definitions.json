@@ -248,6 +248,10 @@
     "required_columns_xenium": [
       "Comment\\[tissue_preservation_method\\]"
     ],
+    "cross_column_unique_files": [
+      "Raw Data File",
+      "Processed Data File"
+    ],
     "singleton_columns": [
       "Source Name",
       "Sample Name",
