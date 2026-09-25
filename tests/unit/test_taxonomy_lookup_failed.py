@@ -74,3 +74,35 @@ def test_ann1020_does_not_claim_absence_when_the_lookup_failed():
     notfound = SimpleNamespace(tax_data={"Arabidopsis thaliana": {"status": "not_found"}})
     msg2 = ANN1020().validate_file(recs, notfound)[0]["message"]
     assert "not found in the Taxonomy database" in msg2
+
+
+def test_bs_r0096_is_internal_ignore():
+    """表（docs/biosample/rules.txt）は ignore と書いているのに、コードは true error で
+    登録を止めていた。2026-09-26 に表へ合わせた。"""
+    from apps.biosample.rules.base import INTERNAL_IGNORE_RULE_IDS
+    assert "BS_R0096" in INTERNAL_IGNORE_RULE_IDS
+
+
+def test_biosample_ignore_set_matches_the_rule_table():
+    """コードの internal ignore と rule 表の「Internal ignore」列が食い違わないこと。
+
+    BS_R0096 のような取りこぼしが再発すると、表では「登録を止めない」と書いてあるルールが
+    実際には止めてしまう（逆も同じ）。
+    """
+    from pathlib import Path
+    from apps.biosample.validator import Validator
+    from apps.biosample.context import ValidationContext
+    table = {}
+    for line in Path("docs/biosample/rules.txt").read_text().rstrip("\n").split("\n")[1:]:
+        c = line.split("\t") + [""] * 12
+        table[c[0]] = c[2]
+    v = Validator(ValidationContext())
+    mismatch = []
+    for r in v.active_rules:
+        want = table.get(r.rule_id)
+        if want is None:
+            continue                      # 表に無い rule は別問題（ここでは見ない）
+        got = "ignore" if r.rule_id in v.ignore_ids else ""
+        if want != got:
+            mismatch.append(f"{r.rule_id}: 表={want!r} code={got!r}")
+    assert not mismatch, mismatch
