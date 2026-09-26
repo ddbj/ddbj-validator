@@ -39,8 +39,8 @@ def _to_record(submission):
         if rec.organism:
             organism["name"] = rec.organism
         if rec.taxonomy_id:
-            tax_id = str(rec.taxonomy_id)
-            organism["taxonomy_id"] = int(tax_id) if tax_id.isdigit() else tax_id
+            # v3 の taxonomy_id は書かれたままの文字列（repository の converter も同じ）。
+            organism["taxonomy_id"] = str(rec.taxonomy_id).strip()
         sample = {
             "alias": rec.sample_name,
             "accession": rec.accession,

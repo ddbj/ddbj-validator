@@ -122,8 +122,8 @@ def _shape_errors(record):
                 if organism.get("name") is not None and not isinstance(organism["name"], str):
                     bad(f"{at}.organism.name", "a string", organism["name"])
                 tax_id = organism.get("taxonomy_id")
-                if tax_id is not None and not isinstance(tax_id, (int, str)):
-                    bad(f"{at}.organism.taxonomy_id", "an integer", tax_id)
+                if tax_id is not None and not isinstance(tax_id, str):
+                    bad(f"{at}.organism.taxonomy_id", "a string", tax_id)
         attributes = sample.get("attributes")
         if attributes is None:
             continue
@@ -219,8 +219,8 @@ def _build_record(sample):
     organism = sample.get("organism") or {}
     rec.organism = _text(organism.get("name")) or rec.attr("organism")
     tax_id = organism.get("taxonomy_id")
-    # 属性由来の taxonomy_id は str、typed slot は int。ルールは str を前提にしている
-    # （`is_missing_value` が値を strip するので、int が来ると AttributeError になる）。
+    # v3 の taxonomy_id は書かれたままの str。形の違う値（int など）は上で指摘したうえで、
+    # ルールが前提にする str にして読む（`is_missing_value` が値を strip する）。
     rec.taxonomy_id = str(tax_id).strip() if tax_id is not None else rec.attr("taxonomy_id")
     dropped = {name: rec.attributes.pop(name) for name in _LIFTED_OUT_OF_BAG
                if name in rec.attributes}

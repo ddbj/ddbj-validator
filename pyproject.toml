@@ -26,15 +26,13 @@ dependencies = [
 # PyPI 未公開なので GitHub の tarball を参照する。tarball にしているのは git URL と違って
 # イメージに git を入れずに済むため（hatch-vcs は fallback-version で 0.0.0 になる）。
 # ddbj-record-specifications は tag を打たず、利用側は main を追うか commit を固定する。
-# 今は commit を固定している: main の v3 は ddbj/ddbj-record-specifications#11 で形が変わり
-# （project → projects、taxonomy_id は str など）、reader がまだその形を読まないため。
-# 固定しているのは #11 の直前の record-v3 branch の先頭。reader を main の v3 に合わせるときに
-# main へ移す。
+# 固定しているのは、v3 の形が変わった（ddbj/ddbj-record-specifications#11: project → projects、
+# taxonomy_id は str）後の main。上げるときは、reader が前提とする形が変わっていないかを見る。
 #
 # これが無くても Record の検証自体はできる（reader が前提とする形は自前で確かめる）が、
 # スキーマ違反の検出は行われない。インストール: pip install '.[record]'
 record = [
-    "ddbj-record @ https://github.com/ddbj/ddbj-record-specifications/archive/2b7d98f688c150147aa6b5ac294dd7ac61e68076.tar.gz",
+    "ddbj-record @ https://github.com/ddbj/ddbj-record-specifications/archive/47cd4433123652d6355e06a2678e96fc34c04caf.tar.gz",
 ]
 
 # Web API（FastAPI）用。validator 本体には不要なので extra に分離。

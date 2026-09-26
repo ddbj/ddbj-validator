@@ -1,5 +1,5 @@
 {
-  "schema_version": "v3.0",
+  "schema_version": "v3",
   "samples": [
     {
       "accession": "SAMD00000001",
@@ -8,7 +8,7 @@
       "package": "Microbe",
       "organism": {
         "name": "Escherichia coli",
-        "taxonomy_id": 562
+        "taxonomy_id": "562"
       },
       "attributes": [
         {

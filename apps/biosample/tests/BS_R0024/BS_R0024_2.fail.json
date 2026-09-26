@@ -1,12 +1,12 @@
 {
-  "schema_version": "v3.0",
+  "schema_version": "v3",
   "samples": [
     {
       "accession": "SAMD00000001",
       "alias": "S1",
       "title": "S1",
       "package": "Microbe",
-      "organism": {"name": "Escherichia coli", "taxonomy_id": 562},
+      "organism": {"name": "Escherichia coli", "taxonomy_id": "562"},
       "attributes": [
         {"name": "sample_name", "value": "S1"},
         {"name": "organism", "value": "Escherichia coli"},
@@ -22,7 +22,7 @@
       "alias": "S2",
       "title": "S2",
       "package": "Microbe",
-      "organism": {"name": "Homo sapiens", "taxonomy_id": 9606},
+      "organism": {"name": "Homo sapiens", "taxonomy_id": "9606"},
       "attributes": [
         {"name": "sample_name", "value": "S2"},
         {"name": "organism", "value": "Homo sapiens"},

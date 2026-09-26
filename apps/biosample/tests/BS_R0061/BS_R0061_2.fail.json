@@ -1,12 +1,12 @@
 {
-  "schema_version": "v3.0",
+  "schema_version": "v3",
   "samples": [
     {
       "accession": "SAMD00000001",
       "alias": "S1",
       "title": "S1",
       "package": "Microbe",
-      "organism": {"name": "Escherichia coli", "taxonomy_id": 562},
+      "organism": {"name": "Escherichia coli", "taxonomy_id": "562"},
       "attributes": [
         {"name": "sample_name", "value": "S1"},
         {"name": "strain", "value": "K-12"},

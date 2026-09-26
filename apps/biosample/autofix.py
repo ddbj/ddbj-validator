@@ -278,9 +278,8 @@ def _apply_record_organism(sample, p):
             organism["name"] = new_name
             changed = _record_set_attribute(sample, "organism", None, new_name) or True
         if new_taxid:
-            # v3 の taxonomy_id は int。数字でない提案（ありえないが）はそのまま載せて
-            # スキーマ検証に落とさせる — 黙って捨てるより気付ける。
-            organism["taxonomy_id"] = int(new_taxid) if str(new_taxid).isdigit() else new_taxid
+            # v3 の taxonomy_id は str。
+            organism["taxonomy_id"] = str(new_taxid)
             changed = _record_set_attribute(sample, "taxonomy_id", None, str(new_taxid)) or True
     return 1 if changed else 0
 

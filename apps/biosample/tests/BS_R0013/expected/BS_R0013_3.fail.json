@@ -1,5 +1,5 @@
 {
-  "schema_version": "v3.0",
+  "schema_version": "v3",
   "samples": [
     {
       "accession": "SAMD00000001",
@@ -8,7 +8,7 @@
       "package": "Plant",
       "organism": {
         "name": "Arabidopsis thaliana",
-        "taxonomy_id": 3702
+        "taxonomy_id": "3702"
       },
       "attributes": [
         {
