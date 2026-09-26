@@ -24,7 +24,7 @@ dependencies = [
 # DDBJ Record（v3 JSON）入力のスキーマ検証（BS_R0098）用。
 #
 # PyPI 未公開なので GitHub の tarball を参照する。tarball にしているのは git URL と違って
-# イメージに git を入れずに済むため（hatch-vcs は fallback-version で 0.0.0 になる）。
+# イメージに git を入れずに済むため。
 # ddbj-record-specifications は tag を打たず、利用側は main を追うか commit を固定する。
 # 固定しているのは、v3 の形が変わった（ddbj/ddbj-record-specifications#11: project → projects、
 # taxonomy_id は str）後の main。上げるときは、reader が前提とする形が変わっていないかを見る。
