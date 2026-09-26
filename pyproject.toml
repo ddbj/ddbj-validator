@@ -23,15 +23,18 @@ dependencies = [
 [project.optional-dependencies]
 # DDBJ Record（v3 JSON）入力のスキーマ検証（BS_R0098）用。
 #
-# PyPI 未公開なので GitHub の tarball を参照する。**ブランチを名指しするのが必須**で、
-# 既定ブランチ (main) には v3 スキーマがまだ無い。tarball にしているのは git URL と違って
+# PyPI 未公開なので GitHub の tarball を参照する。tarball にしているのは git URL と違って
 # イメージに git を入れずに済むため（hatch-vcs は fallback-version で 0.0.0 になる）。
-# v3 がリリースされたらタグへ差し替える。
+# ddbj-record-specifications は tag を打たず、利用側は main を追うか commit を固定する。
+# 今は commit を固定している: main の v3 は ddbj/ddbj-record-specifications#11 で形が変わり
+# （project → projects、taxonomy_id は str など）、reader がまだその形を読まないため。
+# 固定しているのは #11 の直前の record-v3 branch の先頭。reader を main の v3 に合わせるときに
+# main へ移す。
 #
 # これが無くても Record の検証自体はできる（reader が前提とする形は自前で確かめる）が、
 # スキーマ違反の検出は行われない。インストール: pip install '.[record]'
 record = [
-    "ddbj-record @ https://github.com/ddbj/ddbj-record-specifications/archive/refs/heads/record-v3.tar.gz",
+    "ddbj-record @ https://github.com/ddbj/ddbj-record-specifications/archive/2b7d98f688c150147aa6b5ac294dd7ac61e68076.tar.gz",
 ]
 
 # Web API（FastAPI）用。validator 本体には不要なので extra に分離。
