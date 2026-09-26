@@ -539,3 +539,16 @@ def test_mb_sr0055_flags_the_same_file_across_columns():
     assert r.validate(_hdr_sub(["Raw Data File", "Raw Data File"],
                                [["a_1.raw", "a_2.raw"]]), ctx) == []
     assert "MB_SR0055" not in INTERNAL_IGNORE_RULE_IDS
+
+
+def test_mb_sr0046_is_an_ignorable_error():
+    """2026-09-26 に warning → error（internal ignore）へ変更。
+
+    CV 外の値を warning で通すとそのまま登録されるため error にするが、
+    既存投稿を止めないよう internal ignore を付ける。見る列（_level_key）は変えていない。
+    """
+    from apps.metabobank.rules.sdrf import MB_SR0046
+    from apps.metabobank.rules.base import INTERNAL_IGNORE_RULE_IDS
+    assert MB_SR0046.level == "error"
+    assert MB_SR0046._level_key == "warning"      # 対象列の定義キーは据え置き
+    assert "MB_SR0046" in INTERNAL_IGNORE_RULE_IDS

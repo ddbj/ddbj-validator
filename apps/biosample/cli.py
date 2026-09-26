@@ -237,8 +237,12 @@ def _fetch_taxonomy(context, organisms, taxids=None):
             from common.db_taxonomy import fetch_taxonomy_from_ncbi
             context.tax_data = fetch_taxonomy_from_ncbi(organisms)
     except Exception as e:
+        # 取得が丸ごと失敗した場合も「Taxonomy に無い」とは区別する（2026-09-26）。
+        # 空 dict にすると taxonomy 依存のルールが黙って素通りしてしまうため、
+        # 全 organism を lookup_failed として記録し BS_R0145 が「検査できなかった」と報告する。
         print(f"[WARN] taxonomy fetch failed: {e}", file=sys.stderr)
-        context.tax_data = {}
+        from common.db_taxonomy import mark_all_lookup_failed
+        context.tax_data = mark_all_lookup_failed(organisms)
 
 
 def _fetch_account(context, submission):

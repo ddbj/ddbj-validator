@@ -18,6 +18,10 @@ from common.magetab.columns import (cross_column_duplicates as _cross_column_dup
                                     format_duplicate_files as _fmt_dup_files)
 
 
+#: データファイル名に使える文字（MetaboBank の MB_SR0036 と同じ）
+_VALID_FILENAME = re.compile(r"^[-_A-Za-z0-9. ]+$")
+
+
 def _sdrf_def(context):
     return (context.definitions or {}).get("sdrf", {})
 
@@ -552,6 +556,68 @@ class GEA_SR0015(GeaRule):
         shown = ", ".join(str(i) for i in over[:5])
         more = f", ... ({len(over)} rows)" if len(over) > 5 else ""
         return [self.result(message=f"{self.description} (line {shown}{more})")]
+
+
+class GEA_SR0016(GeaRule):
+    """SDRF のセルに非 ASCII 文字・制御文字が無いか（2026-09-26 追加。MB_SR0030 と同仕様）。
+
+    reader で ASCII へ強制正規化済み（`sub.char_fixes` に記録）。ASCII 化できた文字は
+    **autofix の報告として warning**、表に無く残った文字（日本語など）と制御文字は **error**。
+    """
+    rule_id = "GEA_SR0016"; level = "error"; target = "SDRF"
+    description = "Non-ASCII or control characters in an SDRF cell."
+
+    def validate(self, sub, context):
+        from common.magetab.charnorm import fix_warning_message, residual_error_message
+        if not sub.sdrf:
+            return []
+        out = []
+        for fx in getattr(sub, "char_fixes", []):
+            if fx["target"] != "SDRF":
+                continue
+            where = f"{fx['where']}, row {fx['line']}"
+            if fx["mapped"]:
+                out.append(self.result(message=fix_warning_message(where, fx["mapped"]),
+                                       level="warning", column=fx["where"], line=fx["line"]))
+            if fx["residual"]:
+                out.append(self.result(message=residual_error_message(where, fx["residual"]),
+                                       level="error", column=fx["where"], line=fx["line"]))
+        # 制御文字（ord<32・タブ除く）は正規化表の対象外なので、ここで直接見る
+        for r, row in enumerate(sub.sdrf.rows, start=1):
+            ctrl = {ch for cell in row for ch in cell if ord(ch) < 32 and ch != "\t"}
+            if ctrl:
+                out.append(self.result(message=residual_error_message(f"row {r}", ctrl),
+                                       level="error", line=r))
+        return out
+
+
+class GEA_DF0004(GeaRule):
+    """データファイル名に使える文字か（2026-09-26 追加。MB_SR0036 と同仕様）。
+
+    対象列は `sdrf.cross_column_unique_files` と旧名の data file 列。英数字・アンダースコア・
+    ハイフン・空白・ドットのみ許す。日本語のファイル名などを弾く。
+    """
+    rule_id = "GEA_DF0004"; level = "error"; target = "SDRF"
+    description = ("Invalid character in file name. Use only alphanumerals [A-Z,a-z,0-9], "
+                   "underscores [_], hyphens [-], spaces and dots [.] for file name.")
+
+    def validate(self, sub, context):
+        if not sub.sdrf:
+            return []
+        sdef = _sdrf_def(context)
+        cols = list(sdef.get("cross_column_unique_files", [])) + [
+            c for c in sdef.get("legacy_fields", []) if c.endswith("File")]
+        bad = []
+        for col in cols:
+            for i in sub.sdrf.col_indices(col):
+                for row in sub.sdrf.rows:
+                    v = (row[i] if i < len(row) else "").strip()
+                    if not v or v.lower() == RAW_NONE_MAGIC_WORD:
+                        continue
+                    name = v.rstrip("/").split("/")[-1]
+                    if name and not _VALID_FILENAME.fullmatch(name) and name not in bad:
+                        bad.append(name)
+        return [self.result(message=f"{self.description} ('{n}')", value=n) for n in bad]
 
 
 # ---------------- 必須列（type 別）----------------
