@@ -109,7 +109,7 @@ def _failure_message(proc):
 
 # DDBJ Record を「どの validator に渡すか」。値は、指定が無いときに top-level から
 # 推測するためのキーでもある（サブコマンド名 -> そのサブコマンドが読む top-level キー）。
-RECORD_DB_KEYS = {"bioproject": "project", "biosample": "samples"}
+RECORD_DB_KEYS = {"bioproject": "projects", "biosample": "samples"}
 
 
 # D-way の submission id 接頭辞。同じ record を DB ごとに 2 回投げるようになったので、
@@ -157,12 +157,12 @@ def normalise_record_db(value):
 def _plan_record(path, params):
     """DDBJ Record（v3 JSON）の振り分け。
 
-    Record は 1 ファイルに project / samples / experiments … が同居し得るので、他ロールと
+    Record は 1 ファイルに projects / samples / experiments … が同居し得るので、他ロールと
     違って「そのファイルがある＝この validator」とは決まらない。`record_db` で指定して
     もらうのが本筋で、無ければ top-level から推測する。
 
     **同居する record 自体は不正ではない。** 登録は DB ごとに行い、BioProject として登録
-    するときに読まれるのは project、BioSample として登録するときは samples だけなので、
+    するときに読まれるのは projects、BioSample として登録するときは samples だけなので、
     片方だけを検証するのは正しい振る舞いになる。不正なのは「どちらとして検証するのか
     分からないまま片方を選ぶ」ことだけで、それは `record_db` があれば起きない。
     """
@@ -194,24 +194,17 @@ def _sniff_record_db(path):
     if not isinstance(record, dict):
         raise ValueError("DDBJ Record が JSON オブジェクトではありません")
 
-    # 判定は両方の reader と揃える。`bool()` だと `{"project": {}}` が「project 無し」に
-    # なり、web api は断るのに reader は何も言わない、という食い違いが出る。
-    present = sorted(db for db, key in RECORD_DB_KEYS.items() if _has(record.get(key)))
+    # 判定は両方の reader と揃える。どちらも list で、空なら無いのと同じ。
+    present = sorted(db for db, key in RECORD_DB_KEYS.items() if record.get(key))
 
     if len(present) > 1:
         raise ValueError(
-            "project と samples が同居する DDBJ Record は、どちらとして検証するのかを"
+            "projects と samples が同居する DDBJ Record は、どちらとして検証するのかを"
             "推測できません。record_db フォームフィールドに "
             f"{' / '.join(sorted(RECORD_DB_KEYS))} のいずれかを指定してください。")
     if not present:
-        raise ValueError("DDBJ Record に project も samples もありません")
+        raise ValueError("DDBJ Record に projects も samples もありません")
     return present[0]
-
-
-def _has(value):
-    """top-level の要素が「在る」か。dict は空でも在る（`{"project": {}}` は project 在り）、
-    list は空なら無い（`{"samples": []}` は 0 件であって samples 無し）。"""
-    return isinstance(value, dict) or bool(value)
 
 
 def run_validation(rdir, saved, params):

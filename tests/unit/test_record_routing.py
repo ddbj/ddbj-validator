@@ -1,7 +1,7 @@
 """DDBJ Record を「どの DB として検証するか」の決め方と、担当外の扱いを固定する。
 
-DDBJ Record は 1 ドキュメントに project と samples を同居させられる。登録は DB ごとに
-行い、BioProject として登録するときに読まれるのは project、BioSample として登録する
+DDBJ Record は 1 ドキュメントに projects と samples を同居させられる。登録は DB ごとに
+行い、BioProject として登録するときに読まれるのは projects、BioSample として登録する
 ときは samples だけなので、reader は自分の担当だけを読む（2026-08-28 の方針決定）。
 CLI はサブコマンドが担当を決めるが、web api はロールが `ddbj_record` の 1 つしか無いので
 `record_db` で指定してもらい、無ければ top-level から推測する。
@@ -23,7 +23,7 @@ from apps.biosample import record_reader as bs_reader
 from apps.biosample import reporter as bs_reporter
 from apps.webapi import runner
 
-_PROJECT = {"title": "A project title long enough", "project_type": "primary"}
+_PROJECTS = [{"title": "A project title long enough", "project_type": "primary"}]
 _SAMPLES = [{"alias": "S1", "package": "Microbe.1.0", "attributes": []}]
 
 
@@ -36,11 +36,8 @@ def _write(tmp_path, record):
 # --- web api の振り分け -------------------------------------------------
 
 @pytest.mark.parametrize("record, expected", [
-    ({"project": _PROJECT}, "bioproject"),
+    ({"projects": _PROJECTS}, "bioproject"),
     ({"samples": _SAMPLES}, "biosample"),
-    # `{"project": {}}` は「project 無し」ではない。truthy で見ると reader（空の project を
-    # 読む）と web api（断る）で答えが割れる。
-    ({"project": {}}, "bioproject"),
 ])
 def test_sniffs_db_from_top_level(tmp_path, record, expected):
     args = runner._plan_record(_write(tmp_path, record), {})
@@ -48,22 +45,22 @@ def test_sniffs_db_from_top_level(tmp_path, record, expected):
 
 
 def test_refuses_to_guess_when_both_present(tmp_path):
-    path = _write(tmp_path, {"project": _PROJECT, "samples": _SAMPLES})
-    # 「推測できない」であって「project も samples も無い」ではない。match を
+    path = _write(tmp_path, {"projects": _PROJECTS, "samples": _SAMPLES})
+    # 「推測できない」であって「projects も samples も無い」ではない。match を
     # "record_db" にすると両方の ValueError が通ってしまい、どちらが出たか固定できない。
     with pytest.raises(ValueError, match="同居する DDBJ Record"):
         runner._plan_record(path, {})
 
 
-@pytest.mark.parametrize("record", [{}, {"samples": []}])
+@pytest.mark.parametrize("record", [{}, {"samples": []}, {"projects": []}])
 def test_rejects_record_with_neither(tmp_path, record):
-    with pytest.raises(ValueError, match="project も samples も"):
+    with pytest.raises(ValueError, match="projects も samples も"):
         runner._plan_record(_write(tmp_path, record), {})
 
 
 @pytest.mark.parametrize("db", ["bioproject", "biosample"])
 def test_record_db_decides_even_when_both_present(tmp_path, db):
-    path = _write(tmp_path, {"project": _PROJECT, "samples": _SAMPLES})
+    path = _write(tmp_path, {"projects": _PROJECTS, "samples": _SAMPLES})
     assert runner._plan_record(path, {"record_db": db})[0] == db
 
 
@@ -117,20 +114,28 @@ def test_submission_id_prefix_must_match_record_db(db, submission_id, bad):
 # --- reader は自分の担当だけを読む ---------------------------------------
 
 def test_bioproject_reader_ignores_samples(tmp_path):
-    path = _write(tmp_path, {"project": _PROJECT, "samples": _SAMPLES})
+    path = _write(tmp_path, {"projects": _PROJECTS, "samples": _SAMPLES})
     submission, _ = bp_reader.parse_record(str(path))
-    assert [r.title for r in submission.records] == [_PROJECT["title"]]
+    assert [r.title for r in submission.records] == [_PROJECTS[0]["title"]]
+
+
+def test_bioproject_reader_reads_every_project(tmp_path):
+    """projects は list。1 つ目だけ読むと、残りは検証されないまま「指摘ゼロ」になる。"""
+    second = {"title": "Another project title long enough", "project_type": "primary"}
+    path = _write(tmp_path, {"projects": [*_PROJECTS, second]})
+    submission, _ = bp_reader.parse_record(str(path))
+    assert [r.title for r in submission.records] == [_PROJECTS[0]["title"], second["title"]]
 
 
 def test_biosample_reader_ignores_project(tmp_path):
-    path = _write(tmp_path, {"project": _PROJECT, "samples": _SAMPLES})
+    path = _write(tmp_path, {"projects": _PROJECTS, "samples": _SAMPLES})
     submission, _ = bs_reader.parse_record(str(path))
     assert [r.sample_name for r in submission.records] == ["S1"]
 
 
 @pytest.mark.parametrize("reader, record, rule_id", [
-    (bp_reader, {"project": _PROJECT, "samples": _SAMPLES}, "BP_R0002"),
-    (bs_reader, {"project": _PROJECT, "samples": _SAMPLES}, "BS_R0098"),
+    (bp_reader, {"projects": _PROJECTS, "samples": _SAMPLES}, "BP_R0002"),
+    (bs_reader, {"projects": _PROJECTS, "samples": _SAMPLES}, "BS_R0098"),
 ])
 def test_skipped_half_is_reported_not_just_logged(tmp_path, reader, record, rule_id):
     """stderr は validation.log にしか残らず、それを取れる API が無い（`get_file` の
@@ -152,14 +157,14 @@ def test_biosample_skip_notice_has_its_own_wording():
 
 
 def test_no_skip_notice_when_the_other_half_is_absent(tmp_path):
-    _, errors = bp_reader.parse_record(str(_write(tmp_path, {"project": _PROJECT})))
+    _, errors = bp_reader.parse_record(str(_write(tmp_path, {"projects": _PROJECTS})))
     assert [e for e in errors if e["target"] == "#not_validated"] == []
 
 
 # --- 担当外のスキーマ違反は validity を動かさない -------------------------
 
 _PYDANTIC_ERR = [
-    {"loc": ("project", "title"), "msg": "Input should be a valid string"},
+    {"loc": ("projects", 0, "title"), "msg": "Input should be a valid string"},
     {"loc": ("samples", 0, "attributes"), "msg": "Input should be a valid list"},
 ]
 
@@ -178,9 +183,9 @@ def test_biosample_demotes_schema_violations_in_project():
 
 
 def test_cap_is_applied_per_half():
-    """pydantic はモデルのフィールド順に返し project は samples より先。まとめて 20 件で
-    切ると、project 側の瑕疵 20 件で samples 側の本当の違反が 1 件も出ない。"""
-    errors = ([{"loc": ("project", f"k{i}"), "msg": "Extra inputs are not permitted"}
+    """pydantic はモデルのフィールド順に返し projects は samples より先。まとめて 20 件で
+    切ると、projects 側の瑕疵 20 件で samples 側の本当の違反が 1 件も出ない。"""
+    errors = ([{"loc": ("projects", 0, f"k{i}"), "msg": "Extra inputs are not permitted"}
                for i in range(bp_reader._SCHEMA_ERR_CAP + 5)] +
               [{"loc": ("samples", 0, "attributes"), "msg": "Input should be a valid list"}])
     out = bs_reader._scoped_schema_errors(errors)
@@ -188,7 +193,7 @@ def test_cap_is_applied_per_half():
 
 
 def test_truncation_says_it_truncated():
-    errors = [{"loc": ("project", f"k{i}"), "msg": "Extra inputs are not permitted"}
+    errors = [{"loc": ("projects", 0, f"k{i}"), "msg": "Extra inputs are not permitted"}
               for i in range(bp_reader._SCHEMA_ERR_CAP + 5)]
     assert any("further violation" in json.dumps(e, ensure_ascii=False)
                for e in bp_reader._scoped_schema_errors(errors))

@@ -6,29 +6,30 @@
 
 v3 → BioProjectRecord の対応:
 
-    project.accession                    -> accession
-    project.title / description          -> title / description
-    project.project_type                 -> project_kind（primary -> submission）
-    project.umbrella_subtype             -> top_admin_subtype
-    project.umbrella_subtype_description -> subtype_other_descr
-    project.organism.name / taxonomy_id  -> organism_name / tax_id
-    project.locus_tag_prefix[]           -> locus_tags [{prefix, biosample_id}]
-    project.relevance                    -> relevance_present / _other_selected / _other
-    project.publications[]               -> publications [{id, db_type, reference}]
+    projects[].accession                    -> accession
+    projects[].title / description          -> title / description
+    projects[].project_type                 -> project_kind（primary -> submission）
+    projects[].umbrella_subtype             -> top_admin_subtype
+    projects[].umbrella_subtype_description -> subtype_other_descr
+    projects[].organism.name / taxonomy_id  -> organism_name / tax_id
+    projects[].locus_tag_prefix[]           -> locus_tags [{prefix, biosample_id}]
+    projects[].relevance                    -> relevance_present / _other_selected / _other
+    projects[].publications[]               -> publications [{id, db_type, reference}]
                                             （title -> reference、pubmed_id / doi は両方）
-    project.target.sample_scope          -> sample_scope
-    project.target.material              -> material
-    project.target.capture               -> capture
-    project.target.method                -> method_type
-    project.target.method_description    -> method_text
-    project.target.description           -> target_description
-    project.target.data_types            -> data_types
-    project.target.data_types
+    projects[].target.sample_scope          -> sample_scope
+    projects[].target.material              -> material
+    projects[].target.capture               -> capture
+    projects[].target.method                -> method_type
+    projects[].target.method_description    -> method_text
+    projects[].target.description           -> target_description
+    projects[].target.data_types            -> data_types
+    projects[].target.data_types
       ＋ .data_type_descriptions          -> data_entries [{type, text}]
 
-**読むのは `project` だけ。** DDBJ Record は 1 ドキュメントに project と samples を
+**読むのは `projects` だけ。** DDBJ Record は 1 ドキュメントに projects と samples を
 同居させられるが、登録は DB ごとに行い、BioProject として登録するときに読まれるのは
-project だけ（2026-08-28 の方針決定）。同居していても samples は読まず、読まなかった
+projects だけ（2026-08-28 の方針決定）。projects の 1 つずつを 1 つの BioProject として
+検証する。同居していても samples は読まず、読まなかった
 ことを **level=info の結果としてレポートに出す**（stderr は validation.log にしか残らず、
 取得する API が無い）。
 
@@ -36,7 +37,7 @@ project だけ（2026-08-28 の方針決定）。同居していても samples �
 （`_scoped_schema_errors`）。v3 モデルは `extra='forbid'` なので samples 側の独自キー
 1 つで document 全体が invalid になり、それを error にすると BioProject の curator が
 直せない瑕疵で BioProject の validity が false になる。なお `ddbj_record` が入っていない
-環境ではスキーマ検証そのものが動かず、`_shape_errors` は project しか見ないので、
+環境ではスキーマ検証そのものが動かず、`_shape_errors` は projects しか見ないので、
 **壊れた samples は何も報告されない**。
 
 **同一ドキュメント内の相互参照は解決されない。** `BP_R0021` は locus_tag prefix と
@@ -131,83 +132,91 @@ def _shape_errors(record):
     def bad(field, expected, value):
         out.append(_schema_error(field, f'Expected {expected}, got {type(value).__name__}'))
 
-    project = record.get('project')
-    if project is None:
+    projects = record.get('projects')
+    if projects is None:
         return out
-    if not isinstance(project, dict):
-        bad('project', 'an object', project)
+    if not isinstance(projects, list):
+        bad('projects', 'a list', projects)
         return out
 
+    for i, project in enumerate(projects):
+        if not isinstance(project, dict):
+            bad(f'projects.{i}', 'an object', project)
+        else:
+            _project_shape_errors(project, f'projects.{i}', bad)
+
+    return out[:_SCHEMA_ERR_CAP]
+
+
+def _project_shape_errors(project, at, bad):
+    """projects の 1 つ（`at` がその位置）について、reader が前提にしている形を確かめる。"""
     for key in ('accession', 'title', 'description', 'project_type',
                 'umbrella_subtype', 'umbrella_subtype_description'):
         value = project.get(key)
         if value is not None and not isinstance(value, str):
-            bad(f'project.{key}', 'a string', value)
+            bad(f'{at}.{key}', 'a string', value)
 
     organism = project.get('organism')
     if organism is not None:
         if not isinstance(organism, dict):
-            bad('project.organism', 'an object', organism)
+            bad(f'{at}.organism', 'an object', organism)
         else:
             if organism.get('name') is not None and not isinstance(organism['name'], str):
-                bad('project.organism.name', 'a string', organism['name'])
+                bad(f'{at}.organism.name', 'a string', organism['name'])
             tax_id = organism.get('taxonomy_id')
-            # str() は何でも受けるので、ここで見ないと "{'oops': 1}" が
-            # taxonomy_id として通り、BP_R0038 が「学名と id が不一致」という
-            # 誤った診断を出す。
-            if tax_id is not None and not isinstance(tax_id, (int, str)):
-                bad('project.organism.taxonomy_id', 'an integer', tax_id)
+            # v3 は書かれたままの str。ここで見ないと _build_record が数や object を
+            # 黙って落とし、「taxonomy_id が無い」として BP_R0038 などが外れた診断を出す。
+            if tax_id is not None and not isinstance(tax_id, str):
+                bad(f'{at}.organism.taxonomy_id', 'a string', tax_id)
 
     relevance = project.get('relevance')
     if relevance is not None and not isinstance(relevance, dict):
-        bad('project.relevance', 'an object', relevance)
+        bad(f'{at}.relevance', 'an object', relevance)
 
     prefixes = project.get('locus_tag_prefix')
     if prefixes is not None:
         if not isinstance(prefixes, list):
-            bad('project.locus_tag_prefix', 'a list', prefixes)
+            bad(f'{at}.locus_tag_prefix', 'a list', prefixes)
         else:
             for i, prefix in enumerate(prefixes):
                 if not isinstance(prefix, dict):
                     # v3 の途中まで list[str] だった。古い形は黙って通さない
                     # （通すと prefix だけの record が BP_R0021/R0022 を素通りする）。
-                    bad(f'project.locus_tag_prefix.{i}', 'an object with prefix / biosample_id', prefix)
+                    bad(f'{at}.locus_tag_prefix.{i}', 'an object with prefix / biosample_id', prefix)
 
     publications = project.get('publications')
     if publications is not None:
         if not isinstance(publications, list):
-            bad('project.publications', 'a list', publications)
+            bad(f'{at}.publications', 'a list', publications)
         else:
             for i, pub in enumerate(publications):
                 if not isinstance(pub, dict):
-                    bad(f'project.publications.{i}', 'an object', pub)
+                    bad(f'{at}.publications.{i}', 'an object', pub)
 
     target = project.get('target')
     if target is not None:
         if not isinstance(target, dict):
-            bad('project.target', 'an object', target)
+            bad(f'{at}.target', 'an object', target)
         else:
             for key in ('sample_scope', 'material', 'capture', 'method',
                         'method_description', 'description'):
                 value = target.get(key)
                 if value is not None and not isinstance(value, str):
-                    bad(f'project.target.{key}', 'a string', value)
+                    bad(f'{at}.target.{key}', 'a string', value)
             data_types = target.get('data_types')
             if data_types is not None:
                 if not isinstance(data_types, list):
-                    bad('project.target.data_types', 'a list', data_types)
+                    bad(f'{at}.target.data_types', 'a list', data_types)
                 else:
                     # 要素まで見る。dict が来ると _data_entries が descriptions の
                     # キーに使って TypeError で落ちる（unhashable）。落ちると
                     # レポートが出ず、終了コードは「指摘あり」と同じ 1 になる。
                     for i, data_type in enumerate(data_types):
                         if not isinstance(data_type, str):
-                            bad(f'project.target.data_types.{i}', 'a string', data_type)
+                            bad(f'{at}.target.data_types.{i}', 'a string', data_type)
             descriptions = target.get('data_type_descriptions')
             if descriptions is not None and not isinstance(descriptions, dict):
-                bad('project.target.data_type_descriptions', 'an object', descriptions)
-
-    return out[:_SCHEMA_ERR_CAP]
+                bad(f'{at}.target.data_type_descriptions', 'an object', descriptions)
 
 
 def _schema_validate(record):
@@ -243,8 +252,8 @@ def _scoped_schema_errors(errors):
     前提と食い違うので、**担当外は warning に落として validity を動かさない**。
     黙らせはしない — 読まないことと、壊れていて良いことは別。
 
-    上限も別々にかける。pydantic はモデルのフィールド順に返し `project` は `samples`
-    より先なので、まとめて 20 件で切ると project 側の瑕疵 20 件で samples 側の違反が
+    上限も別々にかける。pydantic はモデルのフィールド順に返し `projects` は `samples`
+    より先なので、まとめて 20 件で切ると projects 側の瑕疵 20 件で samples 側の違反が
     1 件も出ない、が起きる（逆向きは BioSample 側で同じことになる）。
     切ったときは切ったと言う。
     """
@@ -329,9 +338,7 @@ def _build_record(project):
 
     organism = project.get('organism') or {}
     rec.organism_name = _text(organism.get('name'))
-    tax_id = organism.get('taxonomy_id')
-    # ルールは str を前提にしている（値を strip するので int だと AttributeError）。
-    rec.tax_id = str(tax_id).strip() if tax_id is not None else None
+    rec.tax_id        = _text(organism.get('taxonomy_id'))
 
     rec.locus_tags = [
         {'prefix': _text(prefix.get('prefix')), 'biosample_id': _text(prefix.get('biosample_id'))}
@@ -374,7 +381,7 @@ def parse_record(record_path, account=None):
     XML なら中身は全て文字列なので不正でもモデルは組めるが、JSON のスキーマ違反は
     そのまま型違反であり、読み進めれば落ちる。
 
-    `project` を持たないレコードは records=[] の submission を返す。「検証対象がゼロ」を
+    `projects` が無い（空の）レコードは records=[] の submission を返す。「検証対象がゼロ」を
     「指摘ゼロ」と混同させないため、どう扱うかは呼び出し側の責任にしてある。
     """
     try:
@@ -389,8 +396,7 @@ def parse_record(record_path, account=None):
         return None, shape_errors
 
     errors  = _schema_validate(record)
-    project = record.get('project')
-    records = [_build_record(project)] if isinstance(project, dict) else []
+    records = [_build_record(project) for project in record.get('projects') or []]
 
     samples = record.get(_OUT_OF_SCOPE_KEY)
     if samples:

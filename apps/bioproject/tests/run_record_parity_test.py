@@ -67,7 +67,7 @@ def _to_record(submission):
         "umbrella_subtype_description": rec.subtype_other_descr,
         "organism": {k: v for k, v in (
             ("name", rec.organism_name),
-            ("taxonomy_id", int(rec.tax_id) if (rec.tax_id or "").isdigit() else None),
+            ("taxonomy_id", rec.tax_id),
         ) if v is not None} or None,
         "locus_tag_prefix": [
             {k: v for k, v in lt.items() if v} for lt in rec.locus_tags
@@ -80,8 +80,8 @@ def _to_record(submission):
         "target":    _target(rec),
     }
 
-    return {"schema_version": "v3.0",
-            "project": {k: v for k, v in project.items() if v is not None}}
+    return {"schema_version": "v3",
+            "projects": [{k: v for k, v in project.items() if v is not None}]}
 
 
 def _publication(pub):

@@ -268,7 +268,7 @@ BioProject 登録データ（XML または DDBJ Record）を検証します。
 # XML 入力
 ddbj-validator bioproject -x PSUB012060.xml
 
-# DDBJ Record 入力（v3 JSON。record の project を検証する）
+# DDBJ Record 入力（v3 JSON。record の projects[] を検証する）
 ddbj-validator bioproject -r PSUB012060.json
 ```
 
@@ -281,10 +281,10 @@ ddbj-validator bioproject -r PSUB012060.json
 BioSample と同じ考え方で、`record_reader` が XML と同じ内部モデルを組みます。対応関係は
 `apps/bioproject/record_reader.py` の docstring にまとめてあります。要点:
 
-- **`project` のみを見ます。** `project` が無い record は「指摘ゼロ」ではなく
-  入力エラーとして落とします。
-- **`project` と `samples` が同居していても `project` だけを読みます。** 登録は DB ごとに
-  行い、BioProject として登録するときに読まれるのは `project` だけなので、片方だけを
+- **`projects[]` のみを見ます。** project の 1 つずつを 1 つの BioProject として検証します。
+  `projects` が無い（空の）record は「指摘ゼロ」ではなく入力エラーとして落とします。
+- **`projects` と `samples` が同居していても `projects` だけを読みます。** 登録は DB ごとに
+  行い、BioProject として登録するときに読まれるのは `projects` だけなので、片方だけを
   検証するのが正しい振る舞いです。読まなかったことは **`level: info` の結果として
   レポートに出します**（`validity` にも error/warning 数にも影響しません）。
   web api では**どちらとして検証するかが決まらない**ので、`record_db` フォーム
@@ -295,7 +295,7 @@ BioSample と同じ考え方で、`record_reader` が XML と同じ内部モデ�
   ドキュメント全体が invalid になり、それを error にすると BioProject の curator が
   直せない瑕疵で BioProject の `validity` が false になるためです。
   なお **`[record]` extra が入っていない環境ではスキーマ検証そのものが動きません**
-  （`_shape_errors` は `project` しか見ないので、壊れた `samples` は何も報告されません）。
+  （`_shape_errors` は `projects` しか見ないので、壊れた `samples` は何も報告されません）。
 - **同一ドキュメント内の相互参照は解決されません。** `BP_R0021` は locus_tag prefix と
   BioSample の組を **BioSample DB に問い合わせて**確かめ、`BP_R0022` は accession の形を
   見ます。同居する sample を `locus_tag_prefix[].biosample_id` から指しても accession は
@@ -349,11 +349,11 @@ XML と同じ内部モデルを組むため、ルールは入力形式を区別�
 対応関係と、v3 に無いために呼び出し側から渡す必要があるものは `apps/biosample/record_reader.py`
 の docstring にまとめてあります。要点:
 
-- **`samples[]` のみを見ます。** `project` が同居していても読みません（BioProject として
+- **`samples[]` のみを見ます。** `projects` が同居していても読みません（BioProject として
   検証したいときは `bioproject` サブコマンド、web api なら `record_db=bioproject`）。
   読まなかったことは `level: info` の結果としてレポートに出します。
   `samples` が無い record は「指摘ゼロ」ではなく入力エラーとして落とします。
-- BioProject 側と同じく、**スキーマ検証はドキュメント全体にかけ、担当外（`project` 側）の
+- BioProject 側と同じく、**スキーマ検証はドキュメント全体にかけ、担当外（`projects` 側）の
   違反は `warning`** にします。`[record]` extra が無ければスキーマ検証は動きません
   （`_shape_errors` は `samples` しか見ません）。
 - `submission_id` は record が持たないので `-s` で渡します。**省略すると `BS_R0091` が

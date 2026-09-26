@@ -47,7 +47,7 @@ def _official_message(rule_id, fallback=""):
 # （どのルールがどの形式で公式文言から外れるかが、この表を見れば分かる）。
 #
 # target まで見るのは、DDBJ Record では BS_R0098 が「document がスキーマ違反」以外の
-# ことも言うため。担当外 (project 側) の違反と、担当外を検証していないこと自体は、
+# ことも言うため。担当外 (projects 側) の違反と、担当外を検証していないこと自体は、
 # どちらも document の話なので rule_id は同じで、意味が違うので文言が違う。
 _FORMAT_MESSAGES = {
     ("BS_R0097", "record", "#file_format"):
@@ -58,7 +58,7 @@ _FORMAT_MESSAGES = {
         "DDBJ Record (JSON) document is invalid against the schema outside the BioSample "
         "scope. It is not validated here.",
     ("BS_R0098", "record", "#not_validated"):
-        "This DDBJ Record also carries a project, which is not validated here. Send the "
+        "This DDBJ Record also carries projects, which are not validated here. Send the "
         "same record to the BioProject validator as well.",
 }
 
