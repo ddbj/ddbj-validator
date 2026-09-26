@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT))
 
 from apps.bioproject.context import ValidationContext
 from apps.bioproject.validator import Validator
-from apps.bioproject import xml_reader
+from apps.bioproject import record_reader, xml_reader
 
 from common.e2e import E2ERunner
 
@@ -48,13 +48,20 @@ MOCK_PROJECT_NAMES = [                                    # account 登録済み
 ]
 
 
+def _is_record(path):
+    return Path(path).suffix.lower() == ".json"
+
+
 def _fired(fixture):
     ctx = ValidationContext(skip_db=False, skip_ncbi=False, skip_auth=False,
                             tax_data=dict(MOCK_TAX), taxid_info=dict(MOCK_TAXID),
                             umbrella_ok=set(MOCK_UMBRELLA_OK),
                             bs_locus_prefix={k: set(v) for k, v in MOCK_BS_LOCUS.items()},
                             project_names=list(MOCK_PROJECT_NAMES))
-    sub, pre = xml_reader.parse_xml(str(fixture))
+    if _is_record(fixture):
+        sub, pre = record_reader.parse_record(str(fixture))
+    else:
+        sub, pre = xml_reader.parse_xml(str(fixture))
     results = list(pre)
     if sub is not None:
         results += Validator(ctx).run(sub)
@@ -69,12 +76,25 @@ def main(argv):
     for d in dirs:
         rid = d.name
         print(f"Testing: {rid}")
-        for fx in sorted(list(d.glob("*.xml"))):
+        for fx in sorted(list(d.glob("*.xml")) + list(d.glob("*.json"))):
             parts = fx.name.split(".")
             if len(parts) < 3 or parts[-2] not in ("pass", "fail"):
                 continue
             runner.check_rule(fx.name, rid, parts[-2], _fired(fx))
-    return runner.finish()
+    rule_status = runner.finish()
+
+    # 全件実行のときだけ、XML と Record の同値性も確かめる。
+    parity_ok = True
+    if not targets:
+        print("\n--- XML / DDBJ Record parity test ---")
+        import importlib.util
+        path = HERE / "run_record_parity_test.py"
+        spec = importlib.util.spec_from_file_location("run_record_parity_test", path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        parity_ok = mod.main() == 0
+
+    return 0 if (rule_status == 0 and parity_ok) else 1
 
 
 if __name__ == "__main__":

@@ -1,12 +1,14 @@
 """BioSample validator の CLI（サブコマンド biosample）。
 
-入力は XML（-x）または TSV（-t）。TSV は XML へ変換してから検証する（検証パスは XML 一本）。
-  ddbj-validator biosample (-x <xml> | -t <tsv>) [-s SSUBxxxx] [-p <package>] [--account ID] [-o OUT] [-l|-n|-d] [-j]
+入力は XML（-x）/ TSV（-t）/ DDBJ Record v3 JSON（-r）。TSV は XML へ変換してから検証する。
+Record は record_reader が XML と同じモデルを組むので、ルールは入力形式を意識しない。
+  ddbj-validator biosample (-x <xml> | -t <tsv> | -r <record.json>) [-s SSUBxxxx] [-p <package>] [--account ID] [-o OUT] [-l|-n|-d] [-j]
 実行モード: 既定は一般ユーザ向け NCBI API モード（内部DB/auth スキップ、taxonomy は NCBI。ddbj v と同じ公開モード）。
   curator は環境変数 DDBJ_VALIDATOR_INTERNAL_DB=1（.bashrc 等に1回）で既定を内部DBモードにできる。明示フラグ -l/-n/-d は常に優先。
 出力: 既定は ddbj v 風の TSV（summary＋details、summary は標準出力）。-j 指定で result.json 互換 JSON。
 TSV 入力の submission_id / package は -s / -p で指定。省略時はファイル名 `SSUBxxxx.<Package>.txt` から補完
 （-s/-p が優先。ファイル名から必要値が得られない場合はエラー終了）。
+autofix の修正済みファイルは入力形式に従う（XML/TSV → XML、Record → Record）。
 """
 import argparse
 import datetime
@@ -16,7 +18,7 @@ from pathlib import Path
 
 from common import cli_modes
 from apps.biosample.context import ValidationContext
-from apps.biosample import xml_reader, tsv_to_xml, autofix
+from apps.biosample import xml_reader, tsv_to_xml, record_reader, autofix
 from apps.biosample.validator import Validator
 from apps.biosample.reporter import (
     build_summary, build_details, build_autofix_lines,
@@ -31,8 +33,11 @@ def _build_parser():
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("-x", "--xml", dest="xml", default=None, help="BioSample XML 入力ファイル")
     g.add_argument("-t", "--tsv", dest="tsv", default=None, help="BioSample TSV 入力ファイル (.txt/.tsv)")
+    g.add_argument("-r", "--record", dest="record", default=None,
+                   help="DDBJ Record 入力ファイル (v3 JSON)。samples[] を検証する")
     p.add_argument("-s", "--submission-id", dest="submission_id", default=None,
-                   help="TSV 入力の submission id（例 SSUB000001）。省略時はファイル名から補完")
+                   help="TSV/Record 入力の submission id（例 SSUB000001）。TSV は省略時ファイル名から補完。"
+                        "Record は SSUB を持たないため、必要ならここで渡す")
     p.add_argument("-p", "--package", dest="package", default=None,
                    help="TSV 入力の package full name（例 Human / MIGS.ba）。省略時はファイル名から補完")
     p.add_argument("--account", default=None, help="Submitter id (account) for auth-dependent rules")
@@ -100,12 +105,17 @@ def _finalize(args, results, records, in_path, out_dir, submission_id, package, 
     if autofix_lines:
         parts.append("[ Auto-Fix ]\n" + "\n".join(autofix_lines))
         if fixed_path:
-            parts.append(f"=> Auto-fixed XML saved to: {fixed_path}")
+            parts.append(f"=> Auto-fixed {_fixed_label(fixed_path)} saved to: {fixed_path}")
     parts.append(f"[ All reports successfully generated to {reports_dir} ]\n"
                  + "\n".join(f"  {f}" for f in report_files))
     print("\n" + "\n\n".join(parts))   # DB チェック/Found 行との間に空行
 
     return {"error": sum(1 for r in results if r.get("level") == "error")}
+
+
+def _fixed_label(fixed_path):
+    """autofix 出力の呼び名。ddbj の "Auto-fixed ANN saved to" と同じ形にする。"""
+    return "Record" if fixed_path.suffix.lower() == ".json" else "XML"
 
 
 def _ssub_from_name(path):
@@ -161,21 +171,33 @@ def _fetch_references(context, submission):
         _fetch_registered_prefixes(context)
 
 
-def _apply_autofix(in_path, is_tsv, xml_for_parse, results, out_dir):
-    """autofix を全自動適用（対話なし）し、修正済み XML を fixed/ に出力。書いたら保存先パス、無ければ None。
-    入力が TSV でも出力は XML（検証パスと同一の XML を元に修正）。"""
+def _apply_autofix(in_path, is_tsv, is_record, parse_source, results, out_dir):
+    """autofix を全自動適用（対話なし）し、修正済みファイルを fixed/ に出力。書いたら保存先パス、無ければ None。
+    出力は入力形式に従う: TSV でも XML（検証パスと同一の XML を元に修正）、Record なら Record。"""
     autofix.clean_fixed_dir(out_dir)
-    fixed_name = in_path.name if not is_tsv else (in_path.stem + ".xml")
-    n_fixed = autofix.apply_autofix(xml_for_parse, results, out_dir, fixed_name)
+    if is_record:
+        fixed_name = in_path.stem + ".json"
+        n_fixed = autofix.apply_autofix_record(parse_source, results, out_dir, fixed_name)
+    else:
+        fixed_name = in_path.name if not is_tsv else (in_path.stem + ".xml")
+        n_fixed = autofix.apply_autofix(parse_source, results, out_dir, fixed_name)
     return (Path(out_dir) / "fixed" / fixed_name) if n_fixed else None
 
 
 def run(args):
     started = datetime.datetime.now(_JST)
     is_tsv = bool(args.tsv)
-    in_path = Path(args.tsv if is_tsv else args.xml)
+    is_record = bool(args.record)
+    in_path = Path(args.record or args.tsv or args.xml)
     if not in_path.exists():
         print(f"[ERROR] Input not found: {in_path}", file=sys.stderr)
+        return 2
+
+    if is_record and args.package:
+        # record の package は samples[].package から取る。黙って無視すると、
+        # 指定したつもりの package で検証されたと読まれる。
+        print("[ERROR] -p/--package is not used with -r/--record; "
+              "the package is taken from samples[].package.", file=sys.stderr)
         return 2
 
     skip_db, skip_ncbi, skip_auth = _resolve_modes(args)
@@ -188,14 +210,25 @@ def run(args):
     context = ValidationContext(account=args.account, skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
 
     if not args.json:
-        cli_modes.print_found(1, "file")   # BioSample は TSV/XML 1 ファイル
+        cli_modes.print_found(1, "file")   # BioSample は TSV/XML/Record いずれも 1 ファイル
 
-    xml_for_parse, submission_id, err = _prepare_input(args, in_path)
-    if err:
-        print(f"[ERROR] {err}", file=sys.stderr)
-        return 2
-
-    submission, pre_errors = xml_reader.parse_xml(xml_for_parse, submission_id=submission_id, account=args.account)
+    if is_record:
+        # Record は専用 reader。SSUB を持たないので submission_id は -s からだけ来る。
+        # 渡されないと BS_R0091 が自分自身の locus_tag_prefix を重複と報告する。
+        parse_source, submission_id = str(in_path), args.submission_id
+        if not submission_id:
+            print("[WARN] --submission-id が指定されていません。登録済みの submission を"
+                  "再検証する場合、自分自身の locus_tag_prefix が重複として報告されます "
+                  "(BS_R0091)。", file=sys.stderr)
+        submission, pre_errors = record_reader.parse_record(parse_source, submission_id=submission_id,
+                                                            account=args.account)
+    else:
+        parse_source, submission_id, err = _prepare_input(args, in_path)
+        if err:
+            print(f"[ERROR] {err}", file=sys.stderr)
+            return 2
+        submission, pre_errors = xml_reader.parse_xml(parse_source, submission_id=submission_id,
+                                                      account=args.account)
 
     out_dir = args.out_dir or str(in_path.parent)
     if submission is None:
@@ -203,6 +236,21 @@ def run(args):
         counts = _finalize(args, pre_errors, [], in_path, out_dir,
                            submission_id or _ssub_from_name(in_path), None, started, None)
         return 1 if counts.get("error") else 0
+
+    # 読めたが検証対象が無い。「サンプル 0 件」を「指摘 0 件」として返すと、渡す record を
+    # 間違えた側は成功したと読むので、入力エラーとして落とす。ただしスキーマ違反などの
+    # pre_errors は握りつぶさずレポートに残す（落とす理由と別の問題が同時にあり得る）。
+    if is_record and not submission.records:
+        print(f"[ERROR] No samples in record: {in_path}", file=sys.stderr)
+        if any(e["level"] == "error" for e in pre_errors):
+            # スキーマ違反は実際の指摘なので残す。error 級なので「問題なし」とは読まれない。
+            _finalize(args, pre_errors, [], in_path, out_dir,
+                      submission_id or _ssub_from_name(in_path), None, started, None)
+            return 1
+        # error の無いレポートを書くと「検証して問題なし」に見える（「projects は読まなかった」
+        # の info だけでも validity は true）。書かずに入力エラーで落とす
+        # （レポートが無ければ web api 側も「検証は成立していない」と扱う）。
+        return 2
 
     # account が --account 未指定でも XML ルートの submitter_id から解決できていれば採用（互換）
     if not context.account and submission.account:
@@ -213,7 +261,7 @@ def run(args):
 
     _fetch_references(context, submission)
     results = pre_errors + Validator(context).run(submission)
-    fixed_path = _apply_autofix(in_path, is_tsv, xml_for_parse, results, out_dir)
+    fixed_path = _apply_autofix(in_path, is_tsv, is_record, parse_source, results, out_dir)
 
     package = submission.package or (submission.records[0].package if submission.records else None)
     sub_id = submission.submission_id or submission_id or _ssub_from_name(in_path)
