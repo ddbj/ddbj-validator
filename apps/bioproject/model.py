@@ -59,6 +59,6 @@ class BioProjectRecord:
 
 @dataclass
 class BioProjectSubmission:
-    """1 BioProject XML（PackageSet）。通常 1 project。"""
+    """1 入力（BioProject XML の PackageSet / DDBJ Record）。通常 1 project。"""
     records: list = field(default_factory=list)
     account: Optional[str] = None            # --account（submitter id）

@@ -10,7 +10,7 @@ from pathlib import Path
 
 from apps.webapi import config
 from common import run_event
-from common.ddbj_record import carries
+from common.record_keys import carries
 
 logger = logging.getLogger(__name__)
 

@@ -290,7 +290,8 @@ BioSample と同じ考え方で、`record_reader` が XML と同じ内部モデ�
   レポートに出します**（`validity` にも error/warning 数にも影響しません）。
   web api では**どちらとして検証するかが決まらない**ので、`record_db` フォーム
   フィールド（`bioproject` / `biosample`）で指定してください。省略時は top-level から
-  推測し、同居していれば「推測できない」として断ります。
+  推測し、同居していれば「推測できない」として断ります。空の list は無いのと同じですが、
+  list でない値（`"samples": {}` など）は形が違うだけで在るものとして数えます。
 - スキーマ検証はドキュメント全体にかけますが、**担当外（`samples` 側）の違反は
   `warning`** にします。v3 モデルは `extra="forbid"` なので `samples` 側の独自キー 1 つで
   ドキュメント全体が invalid になり、それを error にすると BioProject の curator が

@@ -43,6 +43,8 @@ def _write(tmp_path, record):
     # list でない projects は「無い」ではない。無いとして断ると、BioProject の reader が
     # 形の違反として報告する機会が無くなる。
     ({"projects": {}}, "bioproject"),
+    ({"projects": 0}, "bioproject"),
+    ({"samples": ""}, "biosample"),
 ])
 def test_sniffs_db_from_top_level(tmp_path, record, expected):
     args = runner._plan_record(_write(tmp_path, record), {})
@@ -179,6 +181,19 @@ def test_nothing_to_validate_writes_no_report(tmp_path, cli, record):
                                            "-l", "-j", "-o", str(out)])
     assert cli.run(args) == 2
     assert not out.exists() or not any(out.iterdir())
+
+
+@pytest.mark.parametrize("cli, record", [
+    (bp_cli, {"projects": [], "bogus": 1}),
+    (bs_cli, {"samples": [], "bogus": 1}),
+])
+def test_nothing_to_validate_but_an_error_still_reports_it(tmp_path, cli, record):
+    """担当 0 件でも、形式の違反は実際の指摘なので握りつぶさずレポートに残す。"""
+    out  = tmp_path / "out"
+    args = cli._build_parser().parse_args(["-r", str(_write(tmp_path, record)),
+                                           "-l", "-j", "-o", str(out)])
+    assert cli.run(args) == 1
+    assert any(out.rglob("*.json"))
 
 
 def test_no_skip_notice_when_the_other_half_is_absent(tmp_path):

@@ -140,8 +140,7 @@ def run(args):
         cli_modes.print_found(1, "file")   # BioProject は XML / Record いずれも 1 ファイル
 
     # 読めたが検証対象が無い。「project 0 件」を「指摘 0 件」として返すと、渡す record を
-    # 間違えた側は成功したと読む。指摘が 1 件も無いのにレポートを書くと「検証して問題なし」に
-    # 見えるので、書かずに入力エラーで落とす。
+    # 間違えた側は成功したと読むので、入力エラーとして落とす。
     if is_record and submission is not None and not submission.records:
         print(f"[ERROR] No project in record: {in_path}", file=sys.stderr)
         if not any(e['level'] == 'error' for e in pre_errors):

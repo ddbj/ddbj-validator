@@ -74,7 +74,7 @@ import sys
 from pathlib import Path
 
 from apps.bioproject.model import BioProjectRecord, BioProjectSubmission, Publication
-from common.ddbj_record import carries
+from common.record_keys import carries
 
 _SCHEMA_ERR_CAP = 20
 _warned_no_schema = False
@@ -439,7 +439,7 @@ def parse_record(record_path, account=None):
             'message': 'Umbrella membership is not expressed in DDBJ Record v3, '
                        'so this rule could not be evaluated for this input.',
         })
-        print('[WARN] umbrella project ですが、v3 には member を表す関係が未確定のため '
-              'BP_R0016 (umbrella の妥当性) は評価できません。', file=sys.stderr)
+        print(f'[WARN] {umbrella.label} は umbrella project ですが、v3 には member を表す関係が'
+              '未確定のため BP_R0016 (umbrella の妥当性) は評価できません。', file=sys.stderr)
 
     return BioProjectSubmission(records=records, account=account), errors

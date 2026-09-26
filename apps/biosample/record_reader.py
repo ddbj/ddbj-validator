@@ -68,7 +68,7 @@ import sys
 from pathlib import Path
 
 from apps.biosample.model import BioSampleRecord, BioSampleSubmission
-from common.ddbj_record import carries
+from common.record_keys import carries
 
 _SCHEMA_ERR_CAP = 20   # スキーマエラーは大量に出るため上限（xml_reader と同じ）
 _warned_no_schema = False
