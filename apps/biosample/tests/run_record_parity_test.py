@@ -53,7 +53,7 @@ def _to_record(submission):
                            for value in values] or None,
         }
         samples.append({k: v for k, v in sample.items() if v is not None})
-    return {"schema_version": "v3.0", "samples": samples}
+    return {"schema_version": "v3", "samples": samples}
 
 
 def _context():
