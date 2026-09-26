@@ -26,8 +26,8 @@ import run_tests as H  # noqa: E402
 GREEN = "\033[92m"; RED = "\033[91m"; END = "\033[0m"
 
 # 形式そのものの指摘は XML と Record で別物（XSD vs v3 スキーマ）なので比較しない。
-# BP_R0037（1 XML に複数 project）は v3 では起こり得ない（project は 1 つ）。
-_FORMAT_RULES = {"BP_R0001", "BP_R0002", "BP_R0037"}
+# BP_R0037（複数 project）はどちらでも同じ意味なので比較する。
+_FORMAT_RULES = {"BP_R0001", "BP_R0002"}
 
 # v3 が XML を表現しきれず、同値にならないと**分かっている**組み合わせ。
 # fixture 名 -> {rule_id: 理由}。
@@ -56,8 +56,10 @@ _DB_TYPE_KEY  = {"ePubmed": "pubmed_id", "eDOI": "doi"}
 
 def _to_record(submission):
     """内部モデル → v3 record。ddbj-repository の BioProject::Converter と同じ載せ方。"""
-    rec = submission.records[0]
+    return {"schema_version": "v3", "projects": [_project(rec) for rec in submission.records]}
 
+
+def _project(rec):
     project = {
         "accession":                    rec.accession,
         "title":                        rec.title,
@@ -80,8 +82,7 @@ def _to_record(submission):
         "target":    _target(rec),
     }
 
-    return {"schema_version": "v3",
-            "projects": [{k: v for k, v in project.items() if v is not None}]}
+    return {k: v for k, v in project.items() if v is not None}
 
 
 def _publication(pub):

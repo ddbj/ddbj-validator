@@ -252,7 +252,7 @@ NCBI_API_EMAIL=あなたのメールアドレス
 | `record_db` | `ddbj_record` | `bioproject` / `biosample`。省略時は record の top-level から推測 |
 
 **`ddbj_record` だけはロールで validator が決まりません。** DDBJ Record は 1 ドキュメントに
-project と samples を同居させられるためで、`record_db` で指定します。省略した場合は
+projects と samples を同居させられるためで、`record_db` で指定します。省略した場合は
 top-level を見て決めますが、同居していると決められないので断ります。指定すると振り分けの
 ために全文をパースしなくて済むので、サンプル数の多い record では指定するほうが軽くなります。
 
@@ -281,8 +281,9 @@ ddbj-validator bioproject -r PSUB012060.json
 BioSample と同じ考え方で、`record_reader` が XML と同じ内部モデルを組みます。対応関係は
 `apps/bioproject/record_reader.py` の docstring にまとめてあります。要点:
 
-- **`projects[]` のみを見ます。** project の 1 つずつを 1 つの BioProject として検証します。
-  `projects` が無い（空の）record は「指摘ゼロ」ではなく入力エラーとして落とします。
+- **`projects[]` のみを見ます。** `projects` が無い（空の）record は「指摘ゼロ」ではなく
+  入力エラーとして落とします。XML と同じく 1 登録 = 1 project で、2 つ以上あれば
+  `BP_R0037` です（v3 の `projects` が list なのは SRA の study なども載せるため）。
 - **`projects` と `samples` が同居していても `projects` だけを読みます。** 登録は DB ごとに
   行い、BioProject として登録するときに読まれるのは `projects` だけなので、片方だけを
   検証するのが正しい振る舞いです。読まなかったことは **`level: info` の結果として

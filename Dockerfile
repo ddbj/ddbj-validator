@@ -22,7 +22,7 @@ RUN if [ -f "requirements.txt" ]; then \
 
 COPY . .
 
-# record extra = DDBJ Record 入力のスキーマ検証 (BS_R0098)。入れないと黙って検証されない。
+# record extra = DDBJ Record 入力のスキーマ検証 (BS_R0098 / BP_R0002)。入れないと黙って検証されない。
 RUN pip install --no-cache-dir ".[record]"
 
 RUN chmod +x /app/ddbj-validator-seq.sh

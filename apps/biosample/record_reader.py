@@ -68,6 +68,7 @@ import sys
 from pathlib import Path
 
 from apps.biosample.model import BioSampleRecord, BioSampleSubmission
+from common.ddbj_record import carries
 
 _SCHEMA_ERR_CAP = 20   # スキーマエラーは大量に出るため上限（xml_reader と同じ）
 _warned_no_schema = False
@@ -338,8 +339,7 @@ def parse_record(record_path, submission_id=None, account=None):
 
     errors = _schema_validate(record)
 
-    # 判定は runner._sniff_record_db と揃える。空の list は project が無いのと同じ。
-    if record.get(_OUT_OF_SCOPE_KEY):
+    if carries(record, _OUT_OF_SCOPE_KEY):
         # 読まなかったことを**レポートに**出す。stderr は validation.log にしか残らず、
         # それを取れる API が無い（`get_file` の filetype は `^[a-z][a-z_]*$`）ので、
         # web 経由の呼び出し側から見ると「指摘ゼロの綺麗なレポート」と区別が付かない。

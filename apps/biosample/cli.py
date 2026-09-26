@@ -242,12 +242,13 @@ def run(args):
     # pre_errors は握りつぶさずレポートに残す（落とす理由と別の問題が同時にあり得る）。
     if is_record and not submission.records:
         print(f"[ERROR] No samples in record: {in_path}", file=sys.stderr)
-        if pre_errors:
+        if any(e["level"] == "error" for e in pre_errors):
             # スキーマ違反は実際の指摘なので残す。error 級なので「問題なし」とは読まれない。
             _finalize(args, pre_errors, [], in_path, out_dir,
                       submission_id or _ssub_from_name(in_path), None, started, None)
             return 1
-        # 指摘ゼロのレポートを書くと「検証して問題なし」に見える。書かずに入力エラーで落とす
+        # error の無いレポートを書くと「検証して問題なし」に見える（「projects は読まなかった」
+        # の info だけでも validity は true）。書かずに入力エラーで落とす
         # （レポートが無ければ web api 側も「検証は成立していない」と扱う）。
         return 2
 

@@ -18,7 +18,9 @@ import json
 
 import pytest
 
+from apps.bioproject import cli as bp_cli
 from apps.bioproject import record_reader as bp_reader
+from apps.biosample import cli as bs_cli
 from apps.biosample import record_reader as bs_reader
 from apps.biosample import reporter as bs_reporter
 from apps.webapi import runner
@@ -38,6 +40,9 @@ def _write(tmp_path, record):
 @pytest.mark.parametrize("record, expected", [
     ({"projects": _PROJECTS}, "bioproject"),
     ({"samples": _SAMPLES}, "biosample"),
+    # list でない projects は「無い」ではない。無いとして断ると、BioProject の reader が
+    # 形の違反として報告する機会が無くなる。
+    ({"projects": {}}, "bioproject"),
 ])
 def test_sniffs_db_from_top_level(tmp_path, record, expected):
     args = runner._plan_record(_write(tmp_path, record), {})
@@ -119,12 +124,16 @@ def test_bioproject_reader_ignores_samples(tmp_path):
     assert [r.title for r in submission.records] == [_PROJECTS[0]["title"]]
 
 
-def test_bioproject_reader_reads_every_project(tmp_path):
-    """projects は list。1 つ目だけ読むと、残りは検証されないまま「指摘ゼロ」になる。"""
-    second = {"title": "Another project title long enough", "project_type": "primary"}
+def test_bioproject_takes_one_project_like_xml(tmp_path):
+    """v3 の projects は list（SRA の study なども載る）だが、BioProject の登録は XML と
+    同じく 1 つ。2 つ目以降も黙って捨てずに検証し、そのうえで BP_R0037 で断る。"""
+    second = {"title": "Another project title long enough", "project_type": "umbrella"}
     path = _write(tmp_path, {"projects": [*_PROJECTS, second]})
-    submission, _ = bp_reader.parse_record(str(path))
+    submission, errors = bp_reader.parse_record(str(path))
     assert [r.title for r in submission.records] == [_PROJECTS[0]["title"], second["title"]]
+    assert [e["level"] for e in errors if e["rule_id"] == "BP_R0037"] == ["error"]
+    # umbrella は 1 つ目でなくても「評価できなかった」と言う。
+    assert [e["sample"] for e in errors if e["rule_id"] == "BP_R0016"] == [second["title"]]
 
 
 def test_biosample_reader_ignores_project(tmp_path):
@@ -154,6 +163,22 @@ def test_biosample_skip_notice_has_its_own_wording():
     assert "not validated here" in message
     assert message != bs_reporter._message({"rule_id": "BS_R0098", "input_format": "record",
                                             "target": "#file_format", "message": "ignored"})
+
+
+@pytest.mark.parametrize("cli, record", [
+    (bp_cli, {"samples": _SAMPLES}),
+    (bp_cli, {"projects": [], "samples": _SAMPLES}),
+    (bs_cli, {"projects": _PROJECTS}),
+    (bs_cli, {"projects": _PROJECTS, "samples": []}),
+])
+def test_nothing_to_validate_writes_no_report(tmp_path, cli, record):
+    """担当が 0 件なら、担当外の info しか無くてもレポートを書かずに落とす。info は
+    validity を動かさないので、書くと「検証して問題なし」のレポートになる。"""
+    out  = tmp_path / "out"
+    args = cli._build_parser().parse_args(["-r", str(_write(tmp_path, record)),
+                                           "-l", "-j", "-o", str(out)])
+    assert cli.run(args) == 2
+    assert not out.exists() or not any(out.iterdir())
 
 
 def test_no_skip_notice_when_the_other_half_is_absent(tmp_path):

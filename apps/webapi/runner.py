@@ -10,6 +10,7 @@ from pathlib import Path
 
 from apps.webapi import config
 from common import run_event
+from common.ddbj_record import carries
 
 logger = logging.getLogger(__name__)
 
@@ -194,8 +195,7 @@ def _sniff_record_db(path):
     if not isinstance(record, dict):
         raise ValueError("DDBJ Record が JSON オブジェクトではありません")
 
-    # 判定は両方の reader と揃える。どちらも list で、空なら無いのと同じ。
-    present = sorted(db for db, key in RECORD_DB_KEYS.items() if record.get(key))
+    present = sorted(db for db, key in RECORD_DB_KEYS.items() if carries(record, key))
 
     if len(present) > 1:
         raise ValueError(

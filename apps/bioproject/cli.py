@@ -28,7 +28,7 @@ def _build_parser():
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("-x", "--xml", dest="xml", default=None, help="BioProject XML 入力ファイル")
     g.add_argument("-r", "--record", dest="record", default=None,
-                   help="DDBJ Record 入力ファイル (v3 JSON)。project を検証する")
+                   help="DDBJ Record 入力ファイル (v3 JSON)。projects を検証する")
     p.add_argument("-s", "--submission-id", dest="submission_id", default=None,
                    help="PSUB id。省略時はファイル名から拾う。Record 入力は PSUB を持たないので、"
                         "BP_R0004 の自己除外を効かせたいならここで渡す")
@@ -144,9 +144,10 @@ def run(args):
     # 見えるので、書かずに入力エラーで落とす。
     if is_record and submission is not None and not submission.records:
         print(f"[ERROR] No project in record: {in_path}", file=sys.stderr)
-        if not pre_errors:
-            # 指摘ゼロのレポートを書くと「検証して問題なし」に見える。書かずに落とす
-            # （レポートが無ければ web api 側も「検証は成立していない」と扱う）。
+        if not any(e['level'] == 'error' for e in pre_errors):
+            # error の無いレポートを書くと「検証して問題なし」に見える（「samples は読まな
+            # かった」の info だけでも validity は true）。書かずに落とす（レポートが無ければ
+            # web api 側も「検証は成立していない」と扱う）。
             return 2
         # スキーマ違反は実際の指摘なので通常経路でレポートに残す。project 0 件なので
         # ルールは何も出さず、結果は pre_errors だけになる。

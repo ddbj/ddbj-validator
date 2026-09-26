@@ -3,6 +3,8 @@
 - BP_R0001: JSON well-formed（パース失敗で検出）。
 - BP_R0002: 形状・スキーマ違反。`ddbj_record` があれば v3 スキーマで、無くても
   reader が前提にしている形だけは自前で確かめる（`_shape_errors`）。
+- BP_R0037: projects が 2 つ以上 → error。XML と同じく 1 登録 = 1 project で、v3 の
+  projects が list なのは SRA の study なども載せるため。
 
 v3 → BioProjectRecord の対応:
 
@@ -28,8 +30,7 @@ v3 → BioProjectRecord の対応:
 
 **読むのは `projects` だけ。** DDBJ Record は 1 ドキュメントに projects と samples を
 同居させられるが、登録は DB ごとに行い、BioProject として登録するときに読まれるのは
-projects だけ（2026-08-28 の方針決定）。projects の 1 つずつを 1 つの BioProject として
-検証する。同居していても samples は読まず、読まなかった
+projects だけ（2026-08-28 の方針決定）。同居していても samples は読まず、読まなかった
 ことを **level=info の結果としてレポートに出す**（stderr は validation.log にしか残らず、
 取得する API が無い）。
 
@@ -73,6 +74,7 @@ import sys
 from pathlib import Path
 
 from apps.bioproject.model import BioProjectRecord, BioProjectSubmission, Publication
+from common.ddbj_record import carries
 
 _SCHEMA_ERR_CAP = 20
 _warned_no_schema = False
@@ -97,7 +99,7 @@ _PUBLICATION_DB_TYPE = {
 
 
 def _format_error(rule_id, message, field=None, detail=None):
-    """入力形式そのものの不備（BP_R0001/R0002）を 1 件組む。
+    """入力形式そのものの不備（BP_R0001/R0002/R0037）を 1 件組む。
 
     **どこがなぜ悪いかを message に畳み込む。** BioProject のレポートには注釈列の
     channel が無く、JSON も text も id / level / message / target / object / external
@@ -398,8 +400,13 @@ def parse_record(record_path, account=None):
     errors  = _schema_validate(record)
     records = [_build_record(project) for project in record.get('projects') or []]
 
-    samples = record.get(_OUT_OF_SCOPE_KEY)
-    if samples:
+    if len(records) > 1:
+        # 2 つ目以降も検証はする（XML と同じ）。どれを残すべきかは reader には決められない。
+        errors.append(_format_error('BP_R0037', 'Only one project is allowed in a BioProject '
+                                                f'submission; this record has {len(records)}.'))
+
+    if carries(record, _OUT_OF_SCOPE_KEY):
+        samples = record[_OUT_OF_SCOPE_KEY]
         # 読まなかったことを**レポートに**出す。stderr は validation.log にしか残らず、
         # それを取れる API が無い（`get_file` の filetype は `^[a-z][a-z_]*$`）ので、
         # web 経由の呼び出し側から見ると「指摘ゼロの綺麗なレポート」と区別が付かない。
@@ -421,14 +428,14 @@ def parse_record(record_path, account=None):
         print(f'[INFO] この record は samples を{f" {count} 件" if count is not None else ""}'
               '持っていますが、BioProject の検証対象ではないので読みません。', file=sys.stderr)
 
-    if records and records[0].project_kind == 'umbrella':
+    for umbrella in (rec for rec in records if rec.project_kind == 'umbrella'):
         # 「評価できなかった」をレポートに出す。level=info は validity にも
         # error/warning 数にも影響せず messages に載る（common/reporter.py）ので、
         # 先方のレポート形式を変えずに「検証していない」を可視化できる。
         # stderr だけだと validation.log にしか残らず、取得する API が無い。
         errors.append({
             'rule_id': 'BP_R0016', 'level': 'info', 'target': '#not_evaluated',
-            'sample': records[0].label,
+            'sample': umbrella.label,
             'message': 'Umbrella membership is not expressed in DDBJ Record v3, '
                        'so this rule could not be evaluated for this input.',
         })

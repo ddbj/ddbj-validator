@@ -4,7 +4,7 @@
 （PackageSet > Package > Project > Project ＋ Submission）と DDBJ Record（v3 JSON）。
 ルールはこの構造だけを見る（入力形式の差異を意識しない）。新しい入力形式に対応するとは、
 ここへ組み直す reader を 1 本足すこと以上の意味を持たない。
-通常 1 入力 = 1 project（XML で複数は BP_R0037）。
+通常 1 入力 = 1 project（複数は XML でも DDBJ Record でも BP_R0037）。
 """
 from dataclasses import dataclass, field
 from typing import Any, Optional
