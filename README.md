@@ -208,7 +208,7 @@ NCBI_API_EMAIL=あなたのメールアドレス
 |---|---|---|
 | `ddbj`（省略可・既定） | 塩基配列アノテーション | `.ann` ＋ FASTA のペア（ディレクトリ） |
 | `bioproject` | BioProject | XML |
-| `biosample` | BioSample | XML または TSV |
+| `biosample` | BioSample | XML / TSV / DDBJ Record（v3 JSON） |
 | `dra` | DRA（Sequence Read Archive） | Submission/Experiment/Run/Analysis XML |
 | `gea` | GEA（Genomic Expression Archive） | MAGE-TAB（IDF/SDRF） |
 | `metabobank`（`mb`） | MetaboBank | MAGE-TAB（IDF/SDRF） |
@@ -243,7 +243,7 @@ ddbj-validator bioproject -x PSUB012060.xml
 
 ## BioSample（`biosample`）
 
-BioSample 登録データ（XML または TSV）を検証します。
+BioSample 登録データ（XML / TSV / DDBJ Record）を検証します。
 
 ```bash
 # XML 入力
@@ -251,13 +251,49 @@ ddbj-validator biosample -x SSUB045342.xml
 
 # TSV 入力（submission id / package はファイル名 SSUBxxxx.<Package>.txt から補完。-s/-p で明示指定可）
 ddbj-validator biosample -t SSUB045342.Human.txt [-s SSUB045342] [-p Human]
+
+# DDBJ Record 入力（v3 JSON。record の samples[] を検証する）
+ddbj-validator biosample -r SSUB045342.json [-s SSUB045342]
 ```
 
-- 入力: `-x`, `--xml` または `-t`, `--tsv`（どちらか必須）。TSV は内部で XML に変換して検証します。
+- 入力: `-x`, `--xml` / `-t`, `--tsv` / `-r`, `--record`（いずれか 1 つ必須）。TSV は内部で XML に変換して検証します。
 - `-s`, `--submission-id` / `-p`, `--package`: TSV の submission id / package。省略時はファイル名（`SSUBxxxx.<Package>.txt`）から補完。
-- autofix は常に自動適用され、修正済み XML を `fixed/` に出力します（`reports/` には autofix 確認ファイルも出力）。
+  Record は submission id を持たないため `-s` で渡します（`-p` は Record では使えません。package は
+  `samples[].package` から取るため、併用するとエラーになります）。
+- autofix は常に自動適用され、修正済みファイルを `fixed/` に出力します。**形式は入力に従います**
+  （XML/TSV 入力なら XML、Record 入力なら Record）。`reports/` には autofix 確認ファイルも出力します。
 - モード: 既定 NCBI API。`-d` で内部 DB（account / BioProject / 登録済み locus_tag_prefix の取得）。
 - サンプル: `docs/biosample/SSUB045342.xml` / `SSUB045342.txt` ほか。
+
+### DDBJ Record（v3 JSON）入力について
+
+[ddbj/ddbj-record-specifications](https://github.com/ddbj/ddbj-record-specifications) の v3 レコードを
+そのまま入力にできます。検証ルールは XML/TSV と同じものが同じように動きます（`record_reader` が
+XML と同じ内部モデルを組むため、ルールは入力形式を区別しません）。
+
+対応関係と、v3 に無いために呼び出し側から渡す必要があるものは `apps/biosample/record_reader.py`
+の docstring にまとめてあります。要点:
+
+- **`samples[]` のみを見ます。** `project` などが同居していても検証しません（BioProject は今後対応）。
+  `samples` が無い record は「指摘ゼロ」ではなく入力エラーとして落とします。
+- `submission_id` は record が持たないので `-s` で渡します。**省略すると `BS_R0091` が
+  そのサブミッション自身の locus_tag_prefix を重複として報告します**（警告を出します）。
+  `--account` も同様に record からは取れず、省略すると権限系ルール（`BS_R0006` 等）は動きません。
+- 値が typed slot（`organism` / `title` / …）と属性バッグのどちらに載っていても拾います。
+  値は XML 入力と同じく全て strip します。
+- **`organism` / `taxonomy_id` は typed slot へ引き上げたあと属性バッグから外します。**
+  BioSample の XML はこの 2 つを `Description/Organism` に置き `<Attributes>` には残さないためで、
+  バッグにも残すと属性を総なめするルールが余分な行を見ます（`BS_R0024` が、organism だけが
+  違う 2 サンプルを「区別情報あり」と見なして警告を出さなくなります）。ルール側はこの 2 つを
+  属性としては読んでいないので、外して失われる判定はありません。typed slot と属性の値が
+  食い違う場合は typed slot を採り、その旨を stderr に警告します。
+- **`attributes[].unit` は見ていません。** BioSample の XML/TSV に単位の概念が無く、ルールも
+  単位を見ないためです。単位付きの値をどう扱うかは未決で、現状は値だけを検証します。
+- スキーマ検証（`BS_R0098`）は `ddbj-record` パッケージを使います（`[record]` extra。
+  Docker イメージには同梱済み）。入っていない場合でも reader が前提とする形の検査は行い、
+  スキーマ検証を行わなかったことを stderr に警告します。
+- autofix は typed slot と属性バッグの両方を揃えて書き戻します（片方だけ直すと、
+  直したはずの record を再検証したときに同じ指摘が出なくなるため）。
 
 ## DRA（`dra`）
 

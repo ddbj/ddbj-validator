@@ -20,7 +20,11 @@ UPLOAD_ROLES = (
     "dra_submission", "dra_experiment", "dra_run", "dra_analysis",
     "gea_idf", "gea_sdrf",
     "metabobank_idf", "metabobank_sdrf",
+    "ddbj_record",
 )
+
+# ロール既定の拡張子（アップロードがファイル名を持たないとき用）。ddbj_record 以外は XML。
+_ROLE_SUFFIX = {"ddbj_record": ".json"}
 
 
 def save_upload(rdir, role, filename, data):
@@ -34,7 +38,7 @@ def save_upload(rdir, role, filename, data):
     GET /validation/{uuid} がその中身を返す）ので、ぶつかる名前はロール名を前置して避ける。"""
     dest_dir = Path(rdir)
     dest_dir.mkdir(parents=True, exist_ok=True)
-    safe = Path(filename or f"{role}.xml").name
+    safe = Path(filename or f"{role}{_ROLE_SUFFIX.get(role, '.xml')}").name
     if run_event.is_run_output(safe):
         safe = f"{role}_{safe}"
     dest = dest_dir / safe
@@ -44,7 +48,10 @@ def save_upload(rdir, role, filename, data):
 
 def plan(saved, params):
     """保存済みファイル（role→Path）から validator サブコマンド＋引数を決める。
-    どの validator かはアップロードされたロールの有無で判定する（ruby と同様）。"""
+    どの validator かはアップロードされたロールの有無で判定する（ruby と同様）。
+    決められなければ None を返す（呼び出し側が入力エラーにする）。"""
+    if "ddbj_record" in saved:
+        return _plan_record(saved["ddbj_record"], params)
     if "biosample" in saved:
         f = saved["biosample"]
         # 拡張子 .xml、または D-way 由来の拡張子なしフォールバック名 "biosample" は XML と決め打ち。
@@ -97,6 +104,25 @@ def _failure_message(proc):
     if len(detail) > _FAILURE_DETAIL_MAX:
         detail = detail[:_FAILURE_DETAIL_MAX] + "..."
     return f"validator finished without a report (exit={proc.returncode}): {detail}"
+
+
+def _plan_record(path, params):
+    """DDBJ Record（v3 JSON）の振り分け。
+
+    Record は 1 ファイルに project / samples / experiments … が同居し得るので、他ロールと違って
+    「そのファイルがある＝この validator」とは決まらない。現在 Record 入力に対応しているのは
+    BioSample だけなので biosample へ回し、**中身の判断は validator 側に任せる**。
+    samples を持たない record は CLI が理由を言って終了コード 2 で落ち、run_validation が
+    それを status の message に載せる。ここで判断するには全文をパースする必要があり、
+    10 万 sample の record では数百 MB の一時オブジェクトが web プロセス側に載る。
+
+    BioProject 対応が入ったら、ここが「複数 validator を走らせて結果をまとめる」分岐になる
+    （run_validation は 1 プロセス・1 レポート前提なので、そのときは併せて直す必要がある）。
+    """
+    args = ["biosample", "-r", str(path)]
+    if params.get("submission_id"):
+        args += ["-s", params["submission_id"]]
+    return args
 
 
 def run_validation(rdir, saved, params):
