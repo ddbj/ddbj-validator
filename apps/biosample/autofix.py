@@ -185,10 +185,6 @@ _RECORD_TYPED_SLOTS = {
     "taxonomy_id": ("organism", "taxonomy_id"),
 }
 
-# v3 で int の slot。数字でない値はそのまま載せてスキーマ検証に落とさせる（黙って捨てない）。
-_RECORD_INT_SLOTS = {("organism", "taxonomy_id")}
-
-
 def _slot_get(sample, path):
     """typed slot の現在値。途中が dict でなければ None。"""
     node = sample
@@ -209,8 +205,6 @@ def _slot_set(sample, path, value):
             return False
     if not isinstance(node, dict) or node.get(path[-1]) is None:
         return False
-    if path in _RECORD_INT_SLOTS and str(value).isdigit():
-        value = int(value)
     node[path[-1]] = value
     return True
 

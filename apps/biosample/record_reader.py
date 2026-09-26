@@ -218,10 +218,7 @@ def _build_record(sample):
 
     organism = sample.get("organism") or {}
     rec.organism = _text(organism.get("name")) or rec.attr("organism")
-    tax_id = organism.get("taxonomy_id")
-    # v3 の taxonomy_id は書かれたままの str。形の違う値（int など）は上で指摘したうえで、
-    # ルールが前提にする str にして読む（`is_missing_value` が値を strip する）。
-    rec.taxonomy_id = str(tax_id).strip() if tax_id is not None else rec.attr("taxonomy_id")
+    rec.taxonomy_id = _text(organism.get("taxonomy_id")) or rec.attr("taxonomy_id")
     dropped = {name: rec.attributes.pop(name) for name in _LIFTED_OUT_OF_BAG
                if name in rec.attributes}
 
