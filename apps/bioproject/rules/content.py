@@ -5,9 +5,8 @@
 - BP_R0005: title が 20-250 文字（inclusive）でない → error（INSDC min spec。旧 BP_R0005 廃止 ID を再利用）。
 - BP_R0007: Relevance の 'Other' に説明が無い → error。
 - BP_R0008: ProjectTypeTopAdmin subtype=eOther で DescriptionSubtypeOther が無い → error。
-- BP_R0009/0010/0011: Target の sample_scope/material/capture=eOther で Target/Description が無い → error。
-- BP_R0012: Method method_type=eOther で Method 本文が無い → error。
-- BP_R0013: Data data_type=eOther で Data 本文が無い → error。
+- BP_R0009: Target の sample_scope=eOther で Target/Description が無い → error。
+- BP_R0010/0011/0012/0013: deprecated（2026-09-27。validator に登録しない）。
 - BP_R0014: publication identifier（PubMed/PMC/DOI）が不正 → warning。
 - BP_R0015: publication に id も reference も無い → error。
 - BP_R0019: sample_scope=eMultispecies で organism 説明（Target/Description）が無い → error。
@@ -151,6 +150,13 @@ class BP_R0009(_OtherDescrRule):
 
 
 class BP_R0010(_OtherDescrRule):
+    """**deprecated**（validator に登録しない。2026-09-27）。
+
+    説明の取得先が BP_R0009 と同じ Target/Description なので、sample_scope と material の
+    両方が eOther のとき同一箇所に対して同じ指摘が二重に出る。sample_scope 側の BP_R0009
+    だけを残す。クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "BP_R0010"
     target = "material"
     description = "Text description for the material 'Other' is not provided. Please provide description of target."
@@ -159,6 +165,11 @@ class BP_R0010(_OtherDescrRule):
 
 
 class BP_R0011(_OtherDescrRule):
+    """**deprecated**（validator に登録しない。2026-09-27）。
+
+    BP_R0010 と同じ理由。説明の取得先が BP_R0009 と同じ Target/Description のため重複する。
+    """
+    deprecated = True
     rule_id = "BP_R0011"
     target = "capture"
     description = "Text description for the capture 'Other' is not provided. Please provide description of target."
@@ -167,6 +178,8 @@ class BP_R0011(_OtherDescrRule):
 
 
 class BP_R0012(_OtherDescrRule):
+    """**deprecated**（validator に登録しない。2026-09-27）。"""
+    deprecated = True
     rule_id = "BP_R0012"
     target = "method_type"
     description = "Text description for the method_type 'Other' is not provided. Please provide description of method."
@@ -175,6 +188,8 @@ class BP_R0012(_OtherDescrRule):
 
 
 class BP_R0013(BpRule):
+    """**deprecated**（validator に登録しない。2026-09-27）。"""
+    deprecated = True
     rule_id = "BP_R0013"
     level = "error"
     target = "data_type"
