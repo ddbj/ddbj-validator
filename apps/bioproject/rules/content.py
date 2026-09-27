@@ -9,7 +9,7 @@
 - BP_R0010/0011/0012/0013: deprecated（2026-09-27。validator に登録しない）。
 - BP_R0014: publication identifier（PubMed/PMC/DOI）が不正 → warning。
 - BP_R0015: publication に id も reference も無い → error。
-- BP_R0019: sample_scope=eMultispecies で organism 説明（Target/Description）が無い → error。
+- BP_R0019: deprecated（2026-09-27。validator に登録しない）。
 - BP_R0040: ProjectTypeTopSingleOrganism は不正な project type → error。
 """
 import re
@@ -206,6 +206,13 @@ class BP_R0013(BpRule):
 
 
 class BP_R0019(BpRule):
+    """**deprecated**（validator に登録しない。2026-09-27）。
+
+    BP_R0010 / 0011 と同じく、見ている説明が BP_R0009 と同じ Target/Description。
+    sample_scope が eMultispecies のときの欠落は BP_R0009 では拾えないが、
+    BP_R0010-0013 を落とすのに合わせて一緒に外す。クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "BP_R0019"
     level = "error"
     target = "sample_scope, organism"
