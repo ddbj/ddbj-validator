@@ -1,7 +1,7 @@
 """BioProject taxonomy ルール（common/db_taxonomy を biosample と共用）。
 
 - BP_R0018: taxonomy が species 以下（infraspecific）でない（= BS_R0096 相当）。
-- BP_R0020: sample_scope が Environment のとき organism は metagenome でなければならない（= BS_R0106 相当）。
+- BP_R0020: deprecated（2026-09-28。validator に登録しない）。
 - BP_R0038: organism と taxonomy_id が不一致（= BS_R0004 相当）。
 - BP_R0039: organism が Taxonomy 未解決の警告（= BS_R0045 warning 相当）。
 tax_data/taxid_info は cli で事前取得（DB or NCBI）。local（skip_ncbi）では空＝スキップ。
@@ -41,6 +41,13 @@ class BP_R0018(BpRule):
 
 
 class BP_R0020(BpRule):
+    """**deprecated**（validator に登録しない。2026-09-28）。
+
+    sample_scope=Environment のとき organism を metagenome に限定していたが、
+    実運用では metagenome 以外を Environment で登録する例があるため外す。
+    クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "BP_R0020"
     level = "error"
     target = "sample_scope, organism"

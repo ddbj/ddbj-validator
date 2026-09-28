@@ -16,6 +16,8 @@
     "title_length": {"min": 20, "max": 250},
     "description_length": {"min": 20, "max": 4000},
     "biosample_accession": "^SAMD\\d{8,}$",
+    "ddbj_project_accession": "^(PRJDB\\d+|PSUB\\d{6,7})$",
+    "foreign_project_accession": "^PRJ(?!DB)[A-Z]{2}\\d+$",
     "locus_tag_prefix": "^[A-Za-z][A-Za-z0-9]{2,11}$",
     "publication_id": "^(\\d+|PMC\\d+|10\\.\\d+/\\S+|https?://\\S+)$"
   }

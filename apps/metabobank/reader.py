@@ -4,7 +4,7 @@
 """
 from common.magetab import reader as base
 from apps.metabobank.model import Idf, MbSubmission
-from apps.metabobank.charnorm import normalize
+from common.magetab.charnorm import apply_to_submission as _apply_charnorm
 
 
 #: 旧い IDF フィールド名 → 今の名前（2026-09-18 に GEA と揃えて Title Case に）
@@ -23,36 +23,6 @@ def _known_idf_fields():
         return set(load_definitions().get("idf", {}).get("fields", []))
     except Exception:
         return set()
-
-
-def _apply_charnorm(sub):
-    """IDF フィールド値・SDRF セルの非 ASCII を強制正規化（in-place）。
-    正規化・残存の記録を sub.char_fixes に積む（MB_IR0024 / MB_SR0030 が報告に使う）。"""
-    fixes = []
-    if sub.idf:
-        for name in sub.idf.field_order:
-            vals = sub.idf.fields.get(name)
-            if not vals:
-                continue
-            for i, v in enumerate(vals):
-                new, mapped, residual = normalize(v)
-                if mapped or residual:
-                    vals[i] = new
-                    fixes.append({"target": "IDF", "where": name, "line": None,
-                                  "original": v, "fixed": new,
-                                  "mapped": mapped, "residual": residual})
-    if sub.sdrf:
-        header = sub.sdrf.header
-        for r, row in enumerate(sub.sdrf.rows):
-            for c, cell in enumerate(row):
-                new, mapped, residual = normalize(cell)
-                if mapped or residual:
-                    row[c] = new
-                    col = header[c] if c < len(header) else f"col{c + 1}"
-                    fixes.append({"target": "SDRF", "where": col, "line": r + 1,
-                                  "original": cell, "fixed": new,
-                                  "mapped": mapped, "residual": residual})
-    sub.char_fixes = fixes
 
 
 def parse(idf_path=None, sdrf_path=None, account=None):

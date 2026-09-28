@@ -211,6 +211,42 @@ class BS_R0141(BsRule):
         return out
 
 
+class BS_R0145(BsRule):
+    """taxonomy を引けなかった organism を「検査できなかった」と明示する（2026-09-26 追加）。
+
+    taxonomy 依存のルール（`BS_R0004` / `BS_R0096` / `BS_R0048` など）は、organism が
+    解決できないと **何も返さない＝黙って pass** する作りになっている。Taxonomy に本当に
+    無い場合はそれでよい（新規名の申請運用があり `BS_R0045` が warning を出す）が、
+    **NCBI API や内部 DB が一時的に落ちていただけ**のときも同じ挙動になってしまい、
+    organism と taxonomy_id が食い違っていても指摘が出ないまま通る。
+
+    実際に `-n`（NCBI モード）の E2E で、`BS_R0004` の fail 用 fixture が
+    1 件だけ素通りする事象が起きた（2026-09-25）。
+
+    取得失敗は `lookup_failed` で「Taxonomy に無い」と区別してあるので、ここでまとめて
+    報告する。**検査結果ではなく「検査できなかった」ことの通知**なので warning。
+    """
+    rule_id = "BS_R0145"
+    level = "warning"
+    target = "organism"
+    description = "Taxonomy lookup failed. Taxonomy-dependent checks were skipped for these organisms."
+    requires_network = True
+
+    def validate(self, submission, context):
+        from common.db_taxonomy import lookup_failed_organisms
+        failed = lookup_failed_organisms(getattr(context, "tax_data", None))
+        if not failed:
+            return []
+        out = []
+        for rec in submission.records:
+            org = (rec.organism or "").strip()
+            if org and org in failed:
+                out.append(self.result(sample=rec.sample_id, attribute="organism",
+                                       old_value=org,
+                                       message=f"{self.description} (organism: '{org}')"))
+        return out
+
+
 class BS_R0045(BsRule):
     rule_id = "BS_R0045"
     level = "warning"

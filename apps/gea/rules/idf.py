@@ -89,6 +89,31 @@ class GEA_COM0005(GeaRule):
         return [self.result(message=f"{self.description} ({', '.join(vals)})")]
 
 
+class GEA_G0017(GeaRule):
+    """IDF の値に非 ASCII 文字が無いか（2026-09-26 追加。MetaboBank の `MB_IR0024` と同仕様）。
+
+    reader で ASCII へ強制正規化済み（`sub.char_fixes` に記録）。ASCII 化できた文字は
+    **autofix の報告として warning**、表に無く残った文字（日本語など）は **error**。
+    level のクラス属性は error だが、結果ごとに warning / error を出し分ける。
+    """
+    rule_id = "GEA_G0017"; level = "error"; target = "IDF"
+    description = "Non-ASCII characters in an IDF field."
+
+    def validate(self, sub, context):
+        from common.magetab.charnorm import fix_warning_message, residual_error_message
+        out = []
+        for fx in getattr(sub, "char_fixes", []):
+            if fx["target"] != "IDF":
+                continue
+            if fx["mapped"]:
+                out.append(self.result(message=fix_warning_message(fx["where"], fx["mapped"]),
+                                       level="warning", field=fx["where"]))
+            if fx["residual"]:
+                out.append(self.result(message=residual_error_message(fx["where"], fx["residual"]),
+                                       level="error", field=fx["where"]))
+        return out
+
+
 class GEA_G0001(GeaRule):
     rule_id = "GEA_G0001"; level = "error"; target = "IDF/General"
     description = "Experiment title must be specified."

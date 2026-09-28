@@ -4,6 +4,7 @@
 """
 from common.magetab import reader as base
 from apps.gea.model import Idf, GeaSubmission
+from common.magetab.charnorm import apply_to_submission as _apply_charnorm
 
 
 #: 旧い IDF フィールド名 → 今の名前（2026-09-18 に MetaboBank と揃えた）。登録済みの IDF は旧名のままなので読むときに直す
@@ -39,6 +40,10 @@ def parse(idf_path=None, sdrf_path=None, account=None):
     base.rename_idf_fields(sub.idf, RENAMED_IDF_FIELDS)
     _rename_protocol_types(sub.idf)
     _rename_experiment_types(sub.idf)
+    # 非 ASCII を ASCII へ強制正規化（MetaboBank と同仕様。2026-09-26 追加）。
+    # 置換できた文字は GEA_G0017 / GEA_SR0016 が warning で報告し、
+    # 置換できず残った文字（日本語など）は同じルールが error にする。
+    _apply_charnorm(sub)
     return sub, pre
 
 
