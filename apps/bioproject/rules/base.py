@@ -1,8 +1,10 @@
 """BioProject ルールの基底。biosample の BsRule と同型。"""
 
-# internal_ignore（外部由来で無視可）の rule_id 集合。rule_config_bioproject.json の internal_ignore に準拠。
+# internal_ignore（error は出すが登録は止めない）の rule_id 集合。docs/bioproject/rules.txt の
+# Internal ignore 列と一致させる。2026-09-28 に BP_R0005 / BP_R0006 / BP_R0021 を追加。
+# BP_R0020 は deprecated で発火しないが、rule 表の記載に合わせて集合には残す。
 INTERNAL_IGNORE_RULE_IDS = frozenset({
-    "BP_R0018", "BP_R0020",
+    "BP_R0005", "BP_R0006", "BP_R0018", "BP_R0020", "BP_R0021",
 })
 
 
