@@ -4932,12 +4932,13 @@
     },
     "PCR_primers": {
       "max_length": 4000,
-      "format_pattern": "^(?:fwd_name:\\s*[^,]+,\\s*)?fwd_seq:\\s*[a-z]+(?:,\\s*(?:rev_name:\\s*[^,]+,\\s*)?rev_seq:\\s*[a-z]+)?$",
+      "format_pattern": "^(?:fwd_name: [^,]+, )?fwd_seq: [a-z]+(?:, (?:rev_name: [^,]+, )?rev_seq: [a-z]+)?$",
       "format_rule": {
         "rule_id": "ANN3340",
         "alternate_id": "BLP0105",
-        "level": "warning",
-        "message": "Sequences of PCR_primers qualifier must be in lower-case"
+        "level": "error",
+        "internal_ignore": true,
+        "message": "PCR_primers must be written as 'fwd_name: <name>, fwd_seq: <seq>, rev_name: <name>, rev_seq: <seq>' with lower-case sequences and a single space after each colon and comma"
       }
     },
     "allele": {

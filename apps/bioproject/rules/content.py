@@ -6,7 +6,7 @@
 - BP_R0007/0008/0009/0010/0011/0012/0013: deprecated（validator に登録しない）。
   eOther を選んだフィールドの説明欠落を見ていた系統で、登録を止めるほどではないと判断して畳んだ。
 - BP_R0014: publication identifier（PubMed/PMC/DOI）が不正 → warning。
-- BP_R0015: publication に id も reference も無い → error。
+- BP_R0015: publication に id も Reference も StructuredCitation も無い → error。
 - BP_R0019: deprecated（2026-09-27。validator に登録しない）。
 - BP_R0040: ProjectTypeTopSingleOrganism は不正な project type → error。
 """
@@ -253,16 +253,24 @@ class BP_R0014(BpRule):
 
 
 class BP_R0015(BpRule):
+    """citation がどの形でも書かれていない publication → error。
+
+    XSD は id（PubMed/PMC/DOI）・free form の Reference・構造化した StructuredCitation の
+    3 通りを認めているので、そのどれも無いときだけ指摘する。
+    2026-09-28 まで StructuredCitation を見ておらず、それだけで citation を書いた投稿を
+    誤検知していた（実データで誤検知 4 件・真のエラー 4 件）。
+    """
     rule_id = "BP_R0015"
     level = "error"
     target = "Publication"
-    description = "Publication reference is not provided. Please provide reference in free-text when id is not available."
+    description = ("Publication must have an id, a free-text Reference, or a StructuredCitation. "
+                   "Please provide one of them.")
 
     def validate(self, submission, context):
         out = []
         for rec in submission.records:
             for pub in rec.publications:
-                if _empty(pub.id) and _empty(pub.reference):
+                if _empty(pub.id) and _empty(pub.reference) and not pub.structured_citation:
                     out.append(self.result(sample=rec.label, message=self.description))
                     break
         return out

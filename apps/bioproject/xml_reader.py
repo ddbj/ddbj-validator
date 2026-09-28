@@ -42,6 +42,20 @@ def _text(el):
     return el.text.strip() if el is not None and el.text else None
 
 
+def _has_structured_citation(pub):
+    """Publication/StructuredCitation に中身があるか。
+
+    XSD 上 Title / Journal / AuthorSet は必須だが、実データには空の要素だけが
+    置かれている場合がありうるので、どれかにテキストがあることを条件にする。
+    """
+    sc = pub.find("./StructuredCitation")
+    if sc is None:
+        return False
+    if _text(sc.find("./Title")) or _text(sc.find("./Journal/JournalTitle")):
+        return True
+    return any(_text(n) for n in sc.findall("./AuthorSet/Author/Name/Last"))
+
+
 def _build_record(proj):
     """内側 Project 要素から BioProjectRecord を組む。"""
     rec = BioProjectRecord(raw=proj)
@@ -58,7 +72,8 @@ def _build_record(proj):
             rec.publications.append(Publication(
                 id=(pub.get("id") or "").strip() or None,
                 db_type=_text(pub.find("./DbType")),
-                reference=_text(pub.find("./Reference"))))
+                reference=_text(pub.find("./Reference")),
+                structured_citation=_has_structured_citation(pub)))
     # Relevance（ProjectDescr 配下）: Other 要素の有無・text
     rel = descr.find("./Relevance") if descr is not None else None
     if rel is not None:
