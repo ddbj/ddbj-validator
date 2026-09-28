@@ -138,6 +138,21 @@ def test_bioproject_takes_one_project_like_xml(tmp_path):
     assert [e["sample"] for e in errors if e["rule_id"] == "BP_R0016"] == [second["title"]]
 
 
+@pytest.mark.parametrize("ensure_ascii, reported", [(False, True), (True, False)])
+def test_bioproject_non_ascii_is_what_the_file_writes_literally(tmp_path, ensure_ascii, reported):
+    """BP_R0060 は XML では文字参照 (`&#x201c;`) を対象外にする。JSON の `\\u201c` はそれに当たるので、
+    record でも素で書かれた非 ASCII だけを報告する。"""
+    from apps.bioproject.rules.value import BP_R0060
+
+    title = "A project title \u201clong\u201d enough"
+    path  = tmp_path / "record.json"
+    path.write_text(json.dumps({"projects": [{**_PROJECTS[0], "title": title}]}, ensure_ascii=ensure_ascii), encoding="utf-8")
+
+    submission, _ = bp_reader.parse_record(str(path))
+
+    assert bool(BP_R0060().validate(submission, None)) is reported
+
+
 def test_biosample_reader_ignores_project(tmp_path):
     path = _write(tmp_path, {"projects": _PROJECTS, "samples": _SAMPLES})
     submission, _ = bs_reader.parse_record(str(path))

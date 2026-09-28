@@ -387,7 +387,8 @@ def parse_record(record_path, account=None):
     「指摘ゼロ」と混同させないため、どう扱うかは呼び出し側の責任にしてある。
     """
     try:
-        record = json.loads(Path(record_path).read_text(encoding='utf-8'))
+        text   = Path(record_path).read_text(encoding='utf-8')
+        record = json.loads(text)
     except (OSError, UnicodeDecodeError, json.JSONDecodeError, RecursionError) as e:
         return None, [_format_error('BP_R0001', 'JSON document is not well-formed.', detail=str(e))]
     if not isinstance(record, dict):
@@ -442,4 +443,8 @@ def parse_record(record_path, account=None):
         print(f'[WARN] {umbrella.label} は umbrella project ですが、v3 には member を表す関係が'
               '未確定のため BP_R0016 (umbrella の妥当性) は評価できません。', file=sys.stderr)
 
-    return BioProjectSubmission(records=records, account=account), errors
+    # BP_R0060 は、ソースに素の文字として書かれた非 ASCII だけを見る（XML の文字参照は対象外）。
+    # JSON の `\u201c` は XML の `&#x201c;` に当たるので、同じく素で書かれた文字だけを渡す。
+    source_non_ascii = {ch for ch in text if ord(ch) > 0x7F}
+
+    return BioProjectSubmission(records=records, account=account, source_non_ascii=source_non_ascii), errors
