@@ -19,6 +19,25 @@ _VALID_METHOD_PATTERN = re.compile(r"^.+?\s+v\.\s+\S.*$", re.IGNORECASE)
 _FIX_METHOD_PATTERN = re.compile(r"^(.*?)(?:\s+|[\s]*(?:v\.?|version|ver\.?))[\s]*([0-9][\d\.a-zA-Z-]*)$", re.IGNORECASE)
 _FWD_SEQ_PATTERN = re.compile(r'(fwd_seq:\s*)([A-Za-z]+)')
 _REV_SEQ_PATTERN = re.compile(r'(rev_seq:\s*)([A-Za-z]+)')
+# PCR_primers の区切りを INSDC の書式（`key: value` を `, ` で連結）へ揃えるための正規表現。
+# jParser（JP0075）はコロン・カンマの後ろに 1 個分の空白を要求するが、無くても値自体は読めるため
+# 検知（ANN3340）＋ autofix で直す。
+_PCR_KEYS = r'fwd_name|fwd_seq|rev_name|rev_seq'
+_PCR_COLON_PATTERN = re.compile(rf'\b({_PCR_KEYS}):\s*')
+_PCR_COMMA_PATTERN = re.compile(rf'\s*,\s*(?=(?:{_PCR_KEYS}):)')
+
+
+def normalize_pcr_primers(val):
+    """PCR_primers の値を INSDC 書式へ整える。
+
+    コロン／カンマの後ろの空白を 1 個に揃え、fwd_seq/rev_seq の塩基配列を小文字にする。
+    区切り以外（primer 名や配列そのもの）は触らない。
+    """
+    out = _PCR_COMMA_PATTERN.sub(', ', val)
+    out = _PCR_COLON_PATTERN.sub(lambda m: m.group(1) + ': ', out)
+    out = _FWD_SEQ_PATTERN.sub(lambda m: m.group(1) + m.group(2).lower(), out)
+    out = _REV_SEQ_PATTERN.sub(lambda m: m.group(1) + m.group(2).lower(), out)
+    return out
 _COV_NUMERIC_PATTERN = re.compile(r'^(\d+(?:\.\d+)?)$')
 _HOLD_DATE_SALVAGE_PATTERN = re.compile(r"^(20\d{2})[-/](0[1-9]|1[0-2])[-/](0[1-9]|[12]\d|3[01])$")
 
@@ -216,8 +235,10 @@ def propose_location_overlap_fixes(records, ann_path):
     return proposals
     
 def propose_pcr_primer_fixes(records, ann_path):
-    """
-    PCR_primers の fwd_seq/rev_seq の塩基配列部分を小文字にフォーマットする提案。
+    """PCR_primers を INSDC 書式へ整える提案。
+
+    塩基配列の小文字化に加え、コロン／カンマの後ろの空白を 1 個に揃える
+    （`fwd_seq:tga...` → `fwd_seq: tga...`）。jParser が JP0075 で弾く形。
     """
     proposals = []
     for entry_id, record in records.items():
@@ -225,14 +246,7 @@ def propose_pcr_primer_fixes(records, ann_path):
             if "PCR_primers" in feature.qualifiers:
                 old_vals = feature.qualifiers["PCR_primers"]
                 for i, val in enumerate(old_vals):
-                    new_val = _FWD_SEQ_PATTERN.sub(
-                        lambda m: m.group(1) + m.group(2).lower(), 
-                        val
-                    )
-                    new_val = _REV_SEQ_PATTERN.sub(
-                        lambda m: m.group(1) + m.group(2).lower(), 
-                        new_val
-                    )
+                    new_val = normalize_pcr_primers(val)
                     if new_val != val:
                         updates = [update_qualifier_action(entry_id, feature.type, "PCR_primers", val, new_val, feature_id=getattr(feature, 'line_number', id(feature)))]
 

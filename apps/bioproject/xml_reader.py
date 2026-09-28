@@ -5,6 +5,7 @@
 - BP_R0037: 1 XML に複数 project → error。
 戻り値: (BioProjectSubmission | None, pre_errors[])。パース不可なら submission=None。
 """
+import re
 from pathlib import Path
 import defusedxml.ElementTree as ET
 from apps.bioproject.model import BioProjectRecord, BioProjectSubmission, Publication
@@ -42,6 +43,20 @@ def _text(el):
     return el.text.strip() if el is not None and el.text else None
 
 
+def _has_structured_citation(pub):
+    """Publication/StructuredCitation に中身があるか。
+
+    XSD 上 Title / Journal / AuthorSet は必須だが、実データには空の要素だけが
+    置かれている場合がありうるので、どれかにテキストがあることを条件にする。
+    """
+    sc = pub.find("./StructuredCitation")
+    if sc is None:
+        return False
+    if _text(sc.find("./Title")) or _text(sc.find("./Journal/JournalTitle")):
+        return True
+    return any(_text(n) for n in sc.findall("./AuthorSet/Author/Name/Last"))
+
+
 def _build_record(proj):
     """内側 Project 要素から BioProjectRecord を組む。"""
     rec = BioProjectRecord(raw=proj)
@@ -58,7 +73,8 @@ def _build_record(proj):
             rec.publications.append(Publication(
                 id=(pub.get("id") or "").strip() or None,
                 db_type=_text(pub.find("./DbType")),
-                reference=_text(pub.find("./Reference"))))
+                reference=_text(pub.find("./Reference")),
+                structured_citation=_has_structured_citation(pub)))
     # Relevance（ProjectDescr 配下）: Other 要素の有無・text
     rel = descr.find("./Relevance") if descr is not None else None
     if rel is not None:
@@ -107,6 +123,30 @@ def _build_record(proj):
     return rec
 
 
+_ENCODING_RE = re.compile(rb"""<\?xml[^>]*?encoding\s*=\s*["']([\w.-]+)["']""", re.I)
+
+
+def _source_non_ascii(xml_path):
+    """XML ソースに素の文字として現れる非 ASCII 文字の集合を返す（BP_R0060 用）。
+
+    `&#x201c;` のような文字参照はソース上では ASCII のみで書かれているので、ここには含まれない。
+    バイト列がすべて ASCII ならその時点で空集合（ファイルの大半はこのケース）。
+    """
+    try:
+        raw = Path(xml_path).read_bytes()
+    except OSError:
+        return set()
+    if not any(b > 0x7F for b in raw):
+        return set()
+    m = _ENCODING_RE.search(raw[:200])
+    enc = m.group(1).decode("ascii", "replace") if m else "utf-8"
+    try:
+        text = raw.decode(enc, errors="replace")
+    except LookupError:
+        text = raw.decode("utf-8", errors="replace")
+    return {ch for ch in text if ord(ch) > 0x7F}
+
+
 def parse_xml(xml_path, account=None):
     try:
         tree = ET.parse(xml_path)
@@ -130,5 +170,6 @@ def parse_xml(xml_path, account=None):
     records = [_build_record(p) for p in projects]
     for rec in records:  # 通常 1 project。umbrella 参照は project に紐づける
         rec.umbrella_member_ids = list(umbrella_members)
-    sub = BioProjectSubmission(records=records, account=account)
+    sub = BioProjectSubmission(records=records, account=account,
+                               source_non_ascii=_source_non_ascii(xml_path))
     return sub, pre_errors

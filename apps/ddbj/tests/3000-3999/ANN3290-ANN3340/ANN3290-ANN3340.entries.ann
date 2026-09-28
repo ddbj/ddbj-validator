@@ -35,3 +35,9 @@ seq4	source	1..120	organism	Mus musculus
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima
 			note	ANN3290 pass
+seq5	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			PCR_primers	fwd_name: Acancytb_1-27, fwd_seq:tgaatagacagaattttaagagtttt, rev_name: Acancytb_977-997, rev_seq:actgacccaatcaacttaaca
+			note	ANN3340 fail autofix

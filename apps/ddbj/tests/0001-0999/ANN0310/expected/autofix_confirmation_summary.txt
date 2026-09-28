@@ -4,4 +4,5 @@
   ANN0310_1.fail
     1 entry, 1 feature, 1 qualifier: 'Direct Submission' -> 'No primary citation' [Rule: ANN0310]
   ANN0310_2.fail
+    1 entry, 1 feature, 1 qualifier: 'direct submission' -> 'Direct submission' [Rule: ANN0347]
     1 entry, 1 feature, 1 qualifier: 'direct submission' -> 'No primary citation' [Rule: ANN0310]

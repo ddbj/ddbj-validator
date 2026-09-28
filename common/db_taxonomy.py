@@ -466,7 +466,27 @@ def fetch_taxonomy_from_ncbi(organism_list):
             time.sleep(0.15 if api_key else 0.35)
 
         except Exception as e:
+            # 取得そのものが失敗した場合。**「Taxonomy に無い」とは区別する**（2026-09-26）。
+            # status は "not_found" のままにして既存の呼び出し側の挙動を変えず、
+            # lookup_failed で「検査できなかった」ことを別に伝える。
+            # これが無いと、NCBI が一時的に落ちているだけで
+            #   - organism↔taxonomy_id 不一致が黙って通る（BS_R0004 の fail-open）
+            #   - 実在する organism を「Taxonomy に無い」と誤報告する（ANN1020 / BS_R0045）
+            # の 2 つが起きる。
             logger.warning(f"NCBI Taxonomy API failed for '{org}': {e}")
-            tax_data[org] = {"status": "not_found", "is_species_or_below": False}
+            tax_data[org] = {"status": "not_found", "is_species_or_below": False,
+                             "lookup_failed": True}
 
     return tax_data
+
+
+def lookup_failed_organisms(tax_data):
+    """taxonomy の取得自体に失敗した organism の集合（「Taxonomy に無い」は含まない）。"""
+    return {org for org, info in (tax_data or {}).items()
+            if isinstance(info, dict) and info.get("lookup_failed")}
+
+
+def mark_all_lookup_failed(organisms):
+    """取得が丸ごと失敗したとき用の tax_data（全 organism を lookup_failed にする）。"""
+    return {org: {"status": "not_found", "is_species_or_below": False, "lookup_failed": True}
+            for org in organisms}

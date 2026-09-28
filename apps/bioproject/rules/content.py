@@ -3,14 +3,11 @@
 - BP_R0004: 提出済み project と title＋description が両方重複 → warning（要 DB/account）。
 - BP_R0006: description が 20-4000 文字（inclusive）でない → error（INSDC min spec）。
 - BP_R0005: title が 20-250 文字（inclusive）でない → error（INSDC min spec。旧 BP_R0005 廃止 ID を再利用）。
-- BP_R0007: Relevance の 'Other' に説明が無い → error。
-- BP_R0008: ProjectTypeTopAdmin subtype=eOther で DescriptionSubtypeOther が無い → error。
-- BP_R0009/0010/0011: Target の sample_scope/material/capture=eOther で Target/Description が無い → error。
-- BP_R0012: Method method_type=eOther で Method 本文が無い → error。
-- BP_R0013: Data data_type=eOther で Data 本文が無い → error。
+- BP_R0007/0008/0009/0010/0011/0012/0013: deprecated（validator に登録しない）。
+  eOther を選んだフィールドの説明欠落を見ていた系統で、登録を止めるほどではないと判断して畳んだ。
 - BP_R0014: publication identifier（PubMed/PMC/DOI）が不正 → warning。
-- BP_R0015: publication に id も reference も無い → error。
-- BP_R0019: sample_scope=eMultispecies で organism 説明（Target/Description）が無い → error。
+- BP_R0015: publication に id も Reference も StructuredCitation も無い → error。
+- BP_R0019: deprecated（2026-09-27。validator に登録しない）。
 - BP_R0040: ProjectTypeTopSingleOrganism は不正な project type → error。
 """
 import re
@@ -120,6 +117,8 @@ class _OtherDescrRule(BpRule):
 
 
 class BP_R0007(_OtherDescrRule):
+    """**deprecated**（validator に登録しない。2026-09-28）。"""
+    deprecated = True
     rule_id = "BP_R0007"
     target = "Relevance"
     description = "Text description for the Relevance 'Other' is not provided. Please provide description of the Relevance 'Other'."
@@ -131,6 +130,8 @@ class BP_R0007(_OtherDescrRule):
 
 
 class BP_R0008(_OtherDescrRule):
+    """**deprecated**（validator に登録しない。2026-09-28）。"""
+    deprecated = True
     rule_id = "BP_R0008"
     target = "subtype"
     description = "Text description for the subtype 'Other' is not provided. Please provide DescriptionSubtypeOther."
@@ -139,6 +140,12 @@ class BP_R0008(_OtherDescrRule):
 
 
 class BP_R0009(_OtherDescrRule):
+    """**deprecated**（validator に登録しない。2026-09-28）。
+
+    これで _OtherDescrRule を使う 0007-0013 がすべて deprecated になり、
+    Target/Description の欠落を見るルールは 1 本も残らない。
+    """
+    deprecated = True
     rule_id = "BP_R0009"
     target = "sample_scope"
     description = "Text description for the sample_scope 'Other' is not provided. Please provide description of target."
@@ -147,6 +154,13 @@ class BP_R0009(_OtherDescrRule):
 
 
 class BP_R0010(_OtherDescrRule):
+    """**deprecated**（validator に登録しない。2026-09-27）。
+
+    説明の取得先が BP_R0009 と同じ Target/Description で、sample_scope と material の
+    両方が eOther のとき同一箇所に対して同じ指摘が二重に出ていた。
+    BP_R0009 も 2026-09-28 に deprecated。クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "BP_R0010"
     target = "material"
     description = "Text description for the material 'Other' is not provided. Please provide description of target."
@@ -155,6 +169,11 @@ class BP_R0010(_OtherDescrRule):
 
 
 class BP_R0011(_OtherDescrRule):
+    """**deprecated**（validator に登録しない。2026-09-27）。
+
+    BP_R0010 と同じ理由。説明の取得先が BP_R0009 と同じ Target/Description のため重複する。
+    """
+    deprecated = True
     rule_id = "BP_R0011"
     target = "capture"
     description = "Text description for the capture 'Other' is not provided. Please provide description of target."
@@ -163,6 +182,8 @@ class BP_R0011(_OtherDescrRule):
 
 
 class BP_R0012(_OtherDescrRule):
+    """**deprecated**（validator に登録しない。2026-09-27）。"""
+    deprecated = True
     rule_id = "BP_R0012"
     target = "method_type"
     description = "Text description for the method_type 'Other' is not provided. Please provide description of method."
@@ -171,6 +192,8 @@ class BP_R0012(_OtherDescrRule):
 
 
 class BP_R0013(BpRule):
+    """**deprecated**（validator に登録しない。2026-09-27）。"""
+    deprecated = True
     rule_id = "BP_R0013"
     level = "error"
     target = "data_type"
@@ -187,6 +210,12 @@ class BP_R0013(BpRule):
 
 
 class BP_R0019(BpRule):
+    """**deprecated**（validator に登録しない。2026-09-27）。
+
+    BP_R0010 / 0011 と同じく、見ている説明が BP_R0009 と同じ Target/Description。
+    BP_R0010-0013 を落とすのに合わせて一緒に外した。クラスは rule 表・参照のために残す。
+    """
+    deprecated = True
     rule_id = "BP_R0019"
     level = "error"
     target = "sample_scope, organism"
@@ -220,16 +249,24 @@ class BP_R0014(BpRule):
 
 
 class BP_R0015(BpRule):
+    """citation がどの形でも書かれていない publication → error。
+
+    XSD は id（PubMed/PMC/DOI）・free form の Reference・構造化した StructuredCitation の
+    3 通りを認めているので、そのどれも無いときだけ指摘する。
+    2026-09-28 まで StructuredCitation を見ておらず、それだけで citation を書いた投稿を
+    誤検知していた（実データで誤検知 4 件・真のエラー 4 件）。
+    """
     rule_id = "BP_R0015"
     level = "error"
     target = "Publication"
-    description = "Publication reference is not provided. Please provide reference in free-text when id is not available."
+    description = ("Publication must have an id, a free-text Reference, or a StructuredCitation. "
+                   "Please provide one of them.")
 
     def validate(self, submission, context):
         out = []
         for rec in submission.records:
             for pub in rec.publications:
-                if _empty(pub.id) and _empty(pub.reference):
+                if _empty(pub.id) and _empty(pub.reference) and not pub.structured_citation:
                     out.append(self.result(sample=rec.label, message=self.description))
                     break
         return out

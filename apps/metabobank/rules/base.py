@@ -29,6 +29,7 @@ INTERNAL_IGNORE_RULE_IDS = frozenset({
     "MB_SR0019",   # Invalid value format.
     "MB_SR0017",   # Factor value is constant across all rows.
     "MB_SR0030",   # Non-ASCII or control characters in an SDRF cell.
+    "MB_SR0046",   # Value is not in controlled terms.（2026-09-26 warning→error ＋ ignore）
     "MB_SR0047",   # Experimental factor value is missing.
     "MB_SR0049",   # Protocol REF is missing from all SDRF rows.
     "MB_SR0050",   # Assay Name is not unique.

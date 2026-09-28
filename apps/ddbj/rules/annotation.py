@@ -1168,9 +1168,17 @@ class ANN1020(BaseRule):
         results = []
         for record, feature, org_clean in self.iter_unique_qualifier_values(records, "source", "organism", strip=True):
             t_data = context.tax_data.get(org_clean, {"status": "not_found"})
-            if t_data["status"] == "not_found":
+            if t_data["status"] != "not_found":
+                continue
+            # taxonomy の取得自体に失敗した場合は「Taxonomy に無い」と言い切らない（2026-09-26）。
+            # -n（NCBI API モード）で API が一時的に落ちていると、実在する organism まで
+            # 「見つからない」と報告してしまうため、検査できなかったことを伝える文言に変える。
+            if t_data.get("lookup_failed"):
+                msg = (f"Taxonomy lookup failed, so the organism name could not be checked. "
+                       f"('{org_clean}')")
+            else:
                 msg = f"{self.description} ('{org_clean}')"
-                results.append(self.feature_result(record, feature, msg, level="warning", qualifier="organism"))
+            results.append(self.feature_result(record, feature, msg, level="warning", qualifier="organism"))
         return results
 
 class ANN1040(BaseRule):

@@ -674,7 +674,13 @@ class MB_SR0045(_SdrfCvBase):
 
 
 class MB_SR0046(_SdrfCvBase):
-    rule_id = "MB_SR0046"; level = "warning"; target = "SDRF"; _level_key = "warning"
+    """`controlled_terms.sdrf.warning` に置いた列の統制語彙。
+
+    2026-09-26 に **warning → error（internal ignore）** に変更。CV 外の値を通してしまうと
+    そのまま登録されるため error にするが、既存投稿を止めないよう internal ignore を付ける。
+    参照する定義のキー（`_level_key`）は `warning` のまま＝**どの列を見るかは変えていない**。
+    """
+    rule_id = "MB_SR0046"; level = "error"; target = "SDRF"; _level_key = "warning"
     description = "Value is not in controlled terms."
 
 

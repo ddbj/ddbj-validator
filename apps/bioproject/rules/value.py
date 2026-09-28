@@ -1,6 +1,7 @@
 """BioProject 値ルール（文字種・データ形式）。biosample の R0058/R0013 と同型ロジック。
 
-- BP_R0060: 非 ASCII 文字（= BS_R0058）。error。
+- BP_R0060: 非 ASCII 文字（= BS_R0058）。error。**文字参照（`&#x201c;` 等）は対象外**
+  （ソースは ASCII だけで書かれており下流も扱えるため。submission.source_non_ascii を参照）。
 - BP_R0059: 不正データ形式（前後/連続空白・囲みクオート。= BS_R0013）。warning。
 検査対象: title / description / organism_name / publication reference（自由文フィールド）。
 """
@@ -19,6 +20,12 @@ def _text_fields(rec):
 
 
 class BP_R0060(BpRule):
+    """自由文フィールドに非 ASCII 文字が素で入っていれば error。
+
+    XML パーサは `&#x201c;` のような文字参照を実体へ展開するので、値だけを見ると
+    ASCII だけで書かれたファイルまで非 ASCII と判定してしまう。**ソースに素の文字として
+    現れた非 ASCII だけ**を対象にするため、`submission.source_non_ascii` で絞り込む。
+    """
     rule_id = "BP_R0060"
     level = "error"
     target = "#fields"
@@ -26,12 +33,17 @@ class BP_R0060(BpRule):
 
     def validate(self, submission, context):
         out = []
+        # ソースに素で入っている非 ASCII 文字。文字参照で書かれたものはここに入らない。
+        literal = getattr(submission, "source_non_ascii", None)
         for rec in submission.records:
             for name, v in _text_fields(rec).items():
-                if _non_ascii(v):
-                    out.append(self.result(sample=rec.label, target=name,
-                                           message=f"Non-ASCII characters detected in '{name}'. (Found: '{v}')"))
-                    break
+                if not _non_ascii(v):
+                    continue
+                if literal is not None and not any(ord(ch) > 0x7F and ch in literal for ch in v):
+                    continue   # すべて文字参照由来（ソースは ASCII のみ）
+                out.append(self.result(sample=rec.label, target=name,
+                                       message=f"Non-ASCII characters detected in '{name}'. (Found: '{v}')"))
+                break
         return out
 
 

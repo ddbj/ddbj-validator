@@ -12,10 +12,16 @@ from typing import Any, Optional
 
 @dataclass
 class Publication:
-    """ProjectDescr/Publication。id（PubMed 数値 / PMC / DOI）と DbType、free-text Reference。"""
+    """ProjectDescr/Publication。
+
+    XSD（Core.xsd の typePublication）は citation の書き方を 3 通り認めている。
+    `@id`（PubMed 数値 / PMC / DOI）、free form の `Reference`、構造化した `StructuredCitation`。
+    BP_R0015 はこの 3 つのどれも無いときだけ error にする。
+    """
     id: Optional[str] = None
-    db_type: Optional[str] = None       # ePubmed / eDOI / ePMC 等
-    reference: Optional[str] = None
+    db_type: Optional[str] = None       # ePubmed / eDOI / ePMC / eNotAvailable
+    reference: Optional[str] = None     # Reference（free form citation）
+    structured_citation: bool = False   # StructuredCitation に中身があるか
 
 
 @dataclass
@@ -62,3 +68,7 @@ class BioProjectSubmission:
     """1 入力（BioProject XML の PackageSet / DDBJ Record）。通常 1 project。"""
     records: list = field(default_factory=list)
     account: Optional[str] = None            # --account（submitter id）
+    # XML ソースに **素の文字として** 現れる非 ASCII 文字の集合（BP_R0060）。
+    # XML パーサは `&#x201c;` のような文字参照を実体へ展開してしまうため、展開後の値だけを見ると
+    # ASCII だけで書かれたファイルまで非 ASCII と判定してしまう。ソース側の実態をここに持つ。
+    source_non_ascii: set = field(default_factory=set)
