@@ -23,6 +23,12 @@ def _prefix_re(context):  # locus_tag_prefix（3-12 英数・先頭非数字）
     return compiled(f.get("locus_tag_prefix", r"^[A-Za-z][A-Za-z0-9]{2,11}$"))
 
 
+def _foreign_project_re(context):
+    """他アーカイブの BioProject accession（PRJNA / PRJEB / PRJEA 等。PRJDB 以外）。"""
+    f = (context.definitions or {}).get("formats", {}) if context else formats()
+    return compiled(f.get("foreign_project_accession", r"^PRJ(?!DB)[A-Z]{2}\d+$"))
+
+
 class BP_R0022(BpRule):
     rule_id = "BP_R0022"
     level = "error"
@@ -75,7 +81,12 @@ class BP_R0042(BpRule):
 
 
 class BP_R0016(BpRule):
-    """ProjectLinks で umbrella として参照する BioProject が DB 上 umbrella でない → error。"""
+    """ProjectLinks で umbrella として参照する BioProject が DB 上 umbrella でない → error。
+
+    他アーカイブの親（PRJNA / PRJEB 等）は DDBJ の DB に無いので umbrella かどうかを
+    判定できない。照会しても必ず「umbrella でない」になってしまうため**対象外にする**。
+    形式が accession に見えない値（打ち間違い等）は従来どおり error にする。
+    """
     rule_id = "BP_R0016"
     level = "error"
     requires_rdb = True
@@ -87,9 +98,12 @@ class BP_R0016(BpRule):
         umbrella_ok = getattr(context, "umbrella_ok", None)
         if umbrella_ok is None:   # DB 未取得（スキップ）
             return out
+        foreign_re = _foreign_project_re(context)
         for rec in submission.records:
             for acc in rec.umbrella_member_ids:
-                if acc and acc not in umbrella_ok:
+                if not acc or foreign_re.match(acc.strip().upper()):
+                    continue   # 他極の親は DDBJ 側で妥当性を確かめられない
+                if acc not in umbrella_ok:
                     out.append(self.result(sample=rec.label,
                                            message=f"{self.description} (Found: '{acc}')"))
         return out
