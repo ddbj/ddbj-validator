@@ -67,7 +67,7 @@ v3 に無いもの / 見ていないもの:
         **BP_R0016（umbrella の妥当性）は record 入力では評価できない。**
         黙って通すと「検証して問題なし」に見えるので、**「評価できなかった」を
         level=info の結果としてレポートに出す**（validity にも error 数にも影響しない）。
-        断らないのは、断ると同じ umbrella の BP_R0008 / BP_R0042 まで検証できなくなるため。
+        断らないのは、断ると同じ umbrella の BP_R0042 などまで検証できなくなるため。
 """
 import json
 import sys
@@ -317,7 +317,7 @@ def _data_entries(target):
     """data_types と data_type_descriptions を XML の <Data data_type=..>本文</Data> の形へ。
 
     説明の引き当ては正規化後のキーで行う。生の値で引くと " eOther " と "eOther" が
-    別物になり、説明があるのに BP_R0013 が発火する。
+    別物になり、説明があるのに XML の <Data> とは違う（説明の無い）形になる。
     """
     descriptions = {_text(k): v for k, v in (target.get('data_type_descriptions') or {}).items()}
 
@@ -361,7 +361,8 @@ def _build_record(project):
     rec.publications = _publications(project)
 
     # xml_reader は Target/Method/Objectives を ProjectTypeSubmission の下でだけ読む。
-    # umbrella に target が付いた record で BP_R0009 等が出ないよう、同じ条件にする。
+    # umbrella に target が付いた record で、Target を見る規則（BP_R0070 など）の結果が XML と
+    # 食い違わないよう、同じ条件にする。
     target = (project.get('target') or {}) if rec.project_kind == 'submission' else {}
     rec.sample_scope       = _text(target.get('sample_scope'))
     rec.material           = _text(target.get('material'))

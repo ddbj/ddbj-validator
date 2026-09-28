@@ -29,8 +29,8 @@ GREEN = "\033[92m"; RED = "\033[91m"; END = "\033[0m"
 # BP_R0037（複数 project）はどちらでも同じ意味なので比較する。
 _FORMAT_RULES = {"BP_R0001", "BP_R0002"}
 
-# v3 が XML を表現しきれず、同値にならないと**分かっている**組み合わせ。
-# fixture 名 -> {rule_id: 理由}。
+# v3 が XML を表現しきれず、同値にならないと**分かっている**組み合わせ。どちら側にだけ出る差も
+# ここで説明する。fixture 名 -> {rule_id: 理由}。
 #
 # 素通りさせるのではなく列挙するのは、埋まったときに気付くため。ここに挙げた差が
 # 出なくなったらテストは失敗し、この表から消せと言う。
@@ -39,10 +39,17 @@ _KNOWN_GAPS = {
         "BP_R0015": "v3 の Publication は構造化引用で、XML の <Reference>（自由記述）に "
                     "あたる slot が無い。id も reference も無い publication を表現できない。",
     },
+    "BP_R0015/BP_R0015_2.fail.xml": {
+        "BP_R0015": "_1 と同じ。id も reference も無い publication を v3 では表現できない。",
+    },
     "BP_R0016/BP_R0016_1.fail.xml": {
         "BP_R0016": "umbrella の member（XML の ProjectLinks/.../MemberID）を v3 の relations で "
                     "どう書くかが未確定。reader は umbrella のとき level=info で "
                     "「評価できなかった」をレポートに出す（validity には影響しない）。",
+    },
+    "BP_R0060/BP_R0060_2.pass.xml": {
+        "BP_R0060": "XML の文字参照（&#x2103;）は record では文字そのものになり、区別が残らない。"
+                    "repository の正準形は非 ASCII を素で書くので、record では報告されるのが正しい。",
     },
     "BP_R0040/BP_R0040_1.fail.xml": {
         "BP_R0040": "v3 の project_type は primary / umbrella だけで、"
@@ -182,12 +189,12 @@ def main():
 
         only_xml    = sorted(want - got)
         only_record = sorted(got - want)
-        unexplained = [r for r in only_xml if r[0] not in known] + only_record
-        stale       = [r for r in known if r not in {entry[0] for entry in only_xml}]
+        unexplained = [r for r in only_xml + only_record if r[0] not in known]
+        stale       = [r for r in known if r not in {entry[0] for entry in only_xml + only_record}]
 
         if not unexplained and not stale:
             matched += 1
-            for rule_id, *_ in only_xml:
+            for rule_id, *_ in only_xml + only_record:
                 gaps.append((name, rule_id, known[rule_id]))
         else:
             mismatched += 1
