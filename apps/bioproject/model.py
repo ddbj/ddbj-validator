@@ -60,3 +60,7 @@ class BioProjectSubmission:
     """1 BioProject XML（PackageSet）。通常 1 project。"""
     records: list = field(default_factory=list)
     account: Optional[str] = None            # --account（submitter id）
+    # XML ソースに **素の文字として** 現れる非 ASCII 文字の集合（BP_R0060）。
+    # XML パーサは `&#x201c;` のような文字参照を実体へ展開してしまうため、展開後の値だけを見ると
+    # ASCII だけで書かれたファイルまで非 ASCII と判定してしまう。ソース側の実態をここに持つ。
+    source_non_ascii: set = field(default_factory=set)
