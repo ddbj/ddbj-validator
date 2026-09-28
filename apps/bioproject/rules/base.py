@@ -3,8 +3,10 @@
 # internal_ignore（error は出すが登録は止めない）の rule_id 集合。docs/bioproject/rules.txt の
 # Internal ignore 列と一致させる。2026-09-28 に BP_R0005 / BP_R0006 / BP_R0021 を追加。
 # BP_R0020 は deprecated で発火しないが、rule 表の記載に合わせて集合には残す。
+# BP_R0015 は 2026-09-28 に追加。StructuredCitation で citation を書いた publication を
+# 誤検知するため（登録を止めないようにする）。誤検知そのものの修正は別途。
 INTERNAL_IGNORE_RULE_IDS = frozenset({
-    "BP_R0005", "BP_R0006", "BP_R0018", "BP_R0020", "BP_R0021",
+    "BP_R0005", "BP_R0006", "BP_R0015", "BP_R0018", "BP_R0020", "BP_R0021",
 })
 
 
