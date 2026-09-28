@@ -8,6 +8,8 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from apps.biosample.model import BioSampleRecord, BioSampleSubmission
+# ソースの素の非 ASCII 集合（文字参照を除くため）。BS_R0058 が使う。
+from common.xmltext import literal_non_ascii
 
 _XSD = Path(__file__).resolve().parent / "resources" / "xsd" / "biosample_set.xsd"
 _SCHEMA_ERR_CAP = 20  # スキーマエラーは大量に出るため上限
@@ -71,7 +73,8 @@ def parse_xml(xml_path, submission_id=None, account=None):
         submission_id = root.get("submission_id")
     if not account:
         account = root.get("submitter_id")
-    sub = BioSampleSubmission(submission_id=submission_id, account=account)
+    sub = BioSampleSubmission(submission_id=submission_id, account=account, raw_root=root,
+                              source_non_ascii=literal_non_ascii(xml_path))
 
     for bs in root.findall(".//BioSample"):
         rec = BioSampleRecord(raw=bs)

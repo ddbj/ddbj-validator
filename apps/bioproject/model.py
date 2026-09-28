@@ -64,3 +64,6 @@ class BioProjectSubmission:
     # XML パーサは `&#x201c;` のような文字参照を実体へ展開してしまうため、展開後の値だけを見ると
     # ASCII だけで書かれたファイルまで非 ASCII と判定してしまう。ソース側の実態をここに持つ。
     source_non_ascii: set = field(default_factory=set)
+    # XML のルート要素（PackageSet）。BP_R0060 が Project の外（Submission/Organization/Contact 等）まで
+    # 含めて全要素を走査するために持つ。
+    raw_root: Any = None

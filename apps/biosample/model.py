@@ -43,3 +43,8 @@ class BioSampleSubmission:
     submission_id: Optional[str] = None      # SSUB（ファイル名などから）
     package: Optional[str] = None            # サブミッション代表パッケージ（通常全サンプル共通）
     account: Optional[str] = None            # --account（submitter id）
+    raw_root: Any = None                     # 元 XML のルート要素（BioSampleSet）。BS_R0058 が全要素を走査する
+    # XML ソースに **素の文字として** 現れる非 ASCII 文字の集合（BS_R0058）。
+    # XML パーサは `&#x201c;` のような文字参照を実体へ展開してしまうため、展開後の値だけを見ると
+    # ASCII だけで書かれたファイルまで非 ASCII と判定してしまう。ソース側の実態をここに持つ。
+    source_non_ascii: set = field(default_factory=set)

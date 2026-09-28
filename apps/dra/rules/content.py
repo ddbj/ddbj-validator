@@ -6,9 +6,12 @@
 - DRA_R0018: Experiment の LIBRARY_NAME 必須。
 - DRA_R0019: PAIRED ライブラリで insert size（NOMINAL_LENGTH）必須。
 - DRA_R0020: insert size は 10,000,000 未満。
+- DRA_R0050: XML のどこかに非 ASCII 文字（2026-09-28 追加。BP_R0060 / BS_R0058 と同趣旨）。
 """
 from apps.dra.rules.base import DraRule
 from common.text import is_blank as _empty
+# XML 全要素の走査（非 ASCII 検査用）
+from common.xmltext import non_ascii_values
 
 
 class DRA_R0010(DraRule):
@@ -105,4 +108,32 @@ class DRA_R0020(DraRule):
             if v.isdigit() and int(v) > limit:
                 out.append(self.result(sample=e.label,
                                        message=f"{self.description} (Found: {v})"))
+        return out
+
+
+class DRA_R0050(DraRule):
+    """XML のどこかに非 ASCII 文字が素で入っていれば error（2026-09-28 追加）。
+
+    submission / experiment / run / analysis のすべての XML について、**全要素のテキストと
+    属性値**を走査する。TITLE や DESIGN_DESCRIPTION のようにモデルへ取り込んだ項目だけでなく、
+    CONTACT@name、center_name、LIBRARY_CONSTRUCTION_PROTOCOL なども対象になる。
+
+    文字参照（`&#x201c;` 等）は対象外。XML パーサが実体へ展開してしまうため、
+    各 XML のソースに **素の文字として** 現れた非 ASCII だけを見る（BP_R0060 と同じ考え方）。
+    """
+    rule_id = "DRA_R0050"
+    level = "error"
+    target = "#fields"
+    description = "Non-ASCII format characters detected."
+
+    def validate(self, submission, context):
+        out = []
+        for doc in getattr(submission, "xml_docs", []):
+            seen = set()
+            for _el, path, value in non_ascii_values(doc["root"], doc["literal"]):
+                if value in seen:
+                    continue   # 同じ値が複数箇所に写っているときは 1 回だけ出す
+                seen.add(value)
+                out.append(self.result(sample=doc["file"], target=path,
+                                       message=f"Non-ASCII characters detected in '{path}'. (Found: '{value}')"))
         return out
