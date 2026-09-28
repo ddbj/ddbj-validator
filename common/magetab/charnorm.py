@@ -79,11 +79,18 @@ def apply_to_submission(sub):
     """IDF フィールド値・SDRF セルの非 ASCII を強制正規化する（in-place）。
 
     正規化した文字と、ASCII 化できず残った文字を `sub.char_fixes` に積む。
+    **IDF の項目名・SDRF の列名は書き換えない**（列の同定が変わるため）。非 ASCII があれば
+    residual（error）として報告するだけにする（line=None で値のセルと区別する）。
     報告は各 app のルール（MB_IR0024 / MB_SR0030、GEA_G0017 / GEA_SR0016）が行う。
     **値を書き換えるので、報告するルールを必ず登録しておくこと**（黙って直すのを避けるため）。
     """
     fixes = []
     if getattr(sub, "idf", None):
+        for name in sub.idf.field_order:   # 項目名そのものの非 ASCII（値ではない）は書き換えず error に
+            res = {ch for ch in name if ord(ch) > 0x7F}
+            if res:
+                fixes.append({"target": "IDF", "where": name, "line": None,
+                              "original": name, "fixed": name, "mapped": set(), "residual": res})
         for name in sub.idf.field_order:
             vals = sub.idf.fields.get(name)
             if not vals:
@@ -97,6 +104,13 @@ def apply_to_submission(sub):
                                   "mapped": mapped, "residual": residual})
     if getattr(sub, "sdrf", None):
         header = sub.sdrf.header
+        # 列名は書き換えない（列の同定が変わるため）。非 ASCII があれば residual（error）として
+        # 報告するだけにする。IDF の項目名も同じ扱い（下の _name_check）。
+        for col in header:
+            res = {ch for ch in col if ord(ch) > 0x7F}
+            if res:
+                fixes.append({"target": "SDRF", "where": col, "line": None,
+                              "original": col, "fixed": col, "mapped": set(), "residual": res})
         for r, row in enumerate(sub.sdrf.rows):
             for c, cell in enumerate(row):
                 new, mapped, residual = normalize(cell)

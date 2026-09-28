@@ -575,7 +575,8 @@ class GEA_SR0016(GeaRule):
         for fx in getattr(sub, "char_fixes", []):
             if fx["target"] != "SDRF":
                 continue
-            where = f"{fx['where']}, row {fx['line']}"
+            # line=None は列名そのもの（値のセルではない）
+            where = fx["where"] if fx["line"] is None else f"{fx['where']}, row {fx['line']}"
             if fx["mapped"]:
                 out.append(self.result(message=fix_warning_message(where, fx["mapped"]),
                                        level="warning", column=fx["where"], line=fx["line"]))

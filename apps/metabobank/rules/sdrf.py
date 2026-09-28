@@ -628,7 +628,8 @@ class MB_SR0030(MbRule):
                 continue
             line = fx["line"]
             row = rows[line - 1] if line and line - 1 < len(rows) else []
-            where = f"{fx['where']}, row {line}"
+            # line=None は列名そのもの（値のセルではない）
+            where = fx["where"] if line is None else f"{fx['where']}, row {line}"
             if fx["mapped"]:
                 out.append(self.result(message=fix_warning_message(where, fx["mapped"]),
                                        level="warning", assay=_assay(sub, row), line=line,

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Project の外（Submission/Organization/Contact）に非 ASCII がある。2026-09-28 の対象拡大まで素通りしていた。 -->
+<PackageSet>
+<Package>
+  <Project><Project>
+    <ProjectID><ArchiveID accession="PRJDB0001" archive="DDBJ"/></ProjectID>
+    <ProjectDescr><Title>Test Project</Title><Description>Grown at 25 C in lab.</Description></ProjectDescr>
+    <ProjectType><ProjectTypeSubmission>
+      <Target sample_scope="eMonoisolate" material="eGenome" capture="eWhole">
+        <Organism taxID="9606"><OrganismName>Homo sapiens</OrganismName></Organism>
+      </Target>
+      <Method method_type="eSequencing"/>
+      <Objectives><Data data_type="eRawSequenceReads"/></Objectives>
+    </ProjectTypeSubmission></ProjectType>
+  </Project></Project>
+  <Submission><Submission submitted="2020-01-01"><Description>
+    <Organization type="center" role="owner"><Name>NIG</Name>
+      <Contact email="test@ddbj.nig.ac.jp"><Name><First>Hanako</First><Last>三島</Last></Name></Contact>
+    </Organization><Access>public</Access>
+  </Description></Submission></Submission>
+</Package>
+</PackageSet>
