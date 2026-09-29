@@ -1,0 +1,27 @@
+COMMON	SUBMITTER		ab_name	Mishima,H.
+			contact	Hanako Mishima
+			email	mishima@ddbj.nig.ac.jp
+			institute	National Institute of Genetics
+			department	DNA Data Bank of Japan
+			country	Japan
+	REFERENCE		title	Organism name in qualifier test
+			ab_name	Mishima,H.
+			year	2026
+			status	Unpublished
+seq1	source	1..102	organism	Bacillus subtilis
+			mol_type	genomic DNA
+			strain	168
+			note	ANN0840 pass ANN0850 pass
+	rRNA	1..102	product	16S ribosomal RNA
+seq2	source	1..102	organism	Bacillus subtilis
+			mol_type	genomic DNA
+			note	ANN0840 fail
+	rRNA	1..102	product	Bacillus subtilis 16S ribosomal RNA
+seq3	source	1..102	organism	Bacillus subtilis
+			mol_type	genomic DNA
+			strain	Bacillus subtilis 168
+			note	ANN0850 fail
+seq4	source	1..102	organism	Bacillus subtilis
+			mol_type	genomic DNA
+			isolate	B. subtilis iso1
+			note	ANN0850 fail
