@@ -17,6 +17,7 @@ COMMON	SUBMITTER		ab_name	Mishima,H.
 			year	2026
 			status	Unpublished
 seq1	source	1..120	organism	Arabidopsis thaliana
+			ecotype	Col-0
 			mol_type	genomic DNA
 			collection_date	2020-01-01
 			geo_loc_name	Japan:Shizuoka, Mishima

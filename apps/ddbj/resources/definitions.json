@@ -253,6 +253,33 @@
     }
   },
   "biosample_sync": {
+    "levels": {
+      "1": [
+        "collection_date",
+        "cultivar",
+        "geo_loc_name",
+        "isolate",
+        "metagenome_source",
+        "organism",
+        "strain"
+      ],
+      "2": [
+        "host",
+        "isolation_source",
+        "lat_lon"
+      ],
+      "3": [
+        "culture_collection",
+        "lab_host",
+        "specimen_voucher"
+      ]
+    },
+    "extra": [
+      "bio_material",
+      "cell_line",
+      "ecotype",
+      "sex"
+    ],
     "common": [
       "collection_date",
       "cultivar",
