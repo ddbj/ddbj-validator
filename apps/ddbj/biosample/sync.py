@@ -10,6 +10,8 @@
 from pathlib import Path
 from apps.ddbj.autofix.proposal import build_proposal, update_qualifier_action
 from apps.ddbj.utils.features import get_features
+from common.format import fix_insdc_lat_lon
+from common.insdc_missing import is_missing_value
 
 
 def _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, ann_path, target_attrs, emit_additions=False):
@@ -30,14 +32,7 @@ def _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, an
                 ann_val_list = feature.qualifiers[attr]
                 ann_val = ann_val_list[0] if ann_val_list else ""
 
-                bs_values = set()
-                bs_samd_map = {}
-                for s in valid_samds:
-                    val = bs_data[s].get(attr)
-                    if val is not None and str(val).strip() != "":
-                        clean_val = str(val).strip()
-                        bs_values.add(clean_val)
-                        bs_samd_map[clean_val] = s
+                bs_values, bs_samd_map = _bs_values(valid_samds, bs_data, attr)
 
                 if len(bs_values) == 1:
                     bs_val = bs_values.pop()
@@ -102,7 +97,120 @@ def _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, an
                         p["bs_attr"] = attr
                         proposals.append(p)
 
+                elif (not emit_additions) and ann_val:
+                    # 一般実行で ann にだけ値がある（BioSample 側が空）。ann は正しいかもしれないので
+                    # autofix は提案せず、BioSample 側に追加が要ることを warning で知らせる。
+                    # （BioSample への反映は -b の TSV か登録者への依頼で行う＝同期指針）
+                    validation_warnings.append(_sync_warning(
+                        ann_path, entry_id, feature, attr,
+                        f"The '{attr}' qualifier has a value but the BioSample attribute is empty. "
+                        f"(ann: '{ann_val}', BioSample: '')"))
+
+    # ann に qualifier が無く BioSample 側に値がある → source へ追加する提案（BioSample が情報リッチな側）。
+    # -b（emit_additions=True）は ann→BioSample の TSV 生成が目的なのでこの向きは扱わない。
+    if not emit_additions:
+        proposals.extend(_propose_missing_qualifier_additions(
+            record, entry_id, valid_samds, bs_data, ann_path, target_attrs, validation_warnings))
+
     return proposals, validation_warnings, skipped_warnings
+
+
+def _sync_warning(ann_path, entry_id, feature, attr, message):
+    """ANN1130 の warning dict（突合結果）を組む。"""
+    return {
+        "file": Path(ann_path).name,
+        "full_path": str(ann_path),
+        "entry": entry_id,
+        "rule": "ANN1130",
+        "target": attr,
+        "level": "warning",
+        "message": message,
+        "feature_type": feature.type,
+        "qualifier": attr,
+        "line_number": getattr(feature, 'line_number', None),
+        "location": getattr(feature, 'original_location', ""),
+    }
+
+
+def _bs_values(valid_samds, bs_data, attr):
+    """valid_samds の BioSample 属性 attr の値集合と、値 -> SAMD の対応を返す。
+
+    INSDC の missing 値（"missing" / "not collected" / "missing: xxx" 等）は値が無いのと同じ扱いにする。
+    ann へ書き写しても意味が無く、むしろ null 値ルールに引っかかるため。
+    """
+    values, samd_of = set(), {}
+    for s in valid_samds:
+        val = bs_data[s].get(attr)
+        if val is not None and str(val).strip() != "" and not is_missing_value(str(val)):
+            clean = str(val).strip()
+            values.add(clean)
+            samd_of[clean] = s
+    return values, samd_of
+
+
+def _unique_bs_value(valid_samds, bs_data, attr):
+    """attr の値が 1 つに定まるなら (値, その SAMD) を返す。定まらなければ (None, None)。"""
+    values, samd_of = _bs_values(valid_samds, bs_data, attr)
+    if len(values) != 1:
+        return None, None
+    v = values.pop()
+    return v, samd_of[v]
+
+
+def _ann_writable_value(attr, bs_val):
+    """BioSample の値を ann の qualifier として書ける形にする。書けなければ None。
+
+    lat_lon は BioSample 側が "136.225389 35.262246" のように INSDC 表記でないことがある。
+    そのまま書くと不正な lat_lon になるので、INSDC 形式へ直せるときだけ提案する。
+    """
+    if attr != "lat_lon":
+        return bs_val
+    return fix_insdc_lat_lon(bs_val) or None
+
+
+def _propose_missing_qualifier_additions(record, entry_id, valid_samds, bs_data, ann_path,
+                                         target_attrs, validation_warnings):
+    """ann の source に無い qualifier を BioSample 側の値で追加する提案を作る。
+
+    同期指針の「BioSample が情報リッチ → 不足分をアノテーションファイルに反映（必須）」に当たる。
+    2026-09-29 まではこの向きを見ておらず、**両方に値があるときの不一致しか**検知していなかった。
+    """
+    proposals = []
+    for feature in get_features(record, "source"):
+        for attr in target_attrs:
+            if attr in feature.qualifiers:
+                continue
+            bs_val, source_samd = _unique_bs_value(valid_samds, bs_data, attr)
+            if not bs_val:
+                continue
+            validation_warnings.append(_sync_warning(
+                ann_path, entry_id, feature, attr,
+                f"The '{attr}' qualifier is missing but the BioSample attribute has a value. "
+                f"(ann: '', BioSample: '{bs_val}')"))
+            new_val = _ann_writable_value(attr, bs_val)
+            if new_val is None:
+                continue   # ann に書ける形式へ直せない（警告だけ出す）
+            bs_val = new_val
+            feature_line = getattr(feature, 'line_number', -1)
+            updates = [{
+                "action": "add_qualifier",
+                "entry": entry_id,
+                "feature_type": feature.type,
+                "feature_id": getattr(feature, 'line_number', id(feature)),
+                "feature_line": feature_line,
+                "qualifier": attr,
+                "new_value": bs_val,
+            }]
+            prop = build_proposal(
+                ann_path=ann_path, entry=entry_id, feature_type=feature.type,
+                qualifier=attr, target=attr, target_level="qualifier",
+                positions=[{"entry": entry_id, "feature_id": getattr(feature, 'line_number', id(feature))}],
+                old_value="none", new_value=bs_val, rule="ANN1130",
+                updates=updates, source_db=source_samd,
+            )
+            prop["bs_attr"] = attr
+            proposals.append(prop)
+    return proposals
 
 
 def _propose_locus_tag_prefix_sync(record, entry_id, valid_samds, bs_data, ann_path, emit_additions=False):

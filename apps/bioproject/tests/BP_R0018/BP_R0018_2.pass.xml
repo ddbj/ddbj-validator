@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PackageSet>
+<Package>
+  <Project><Project>
+    <ProjectID><ArchiveID accession="PRJDB0001" archive="DDBJ"/></ProjectID>
+    <!-- 複数種なので属レベルでよい（対象外） -->
+    <ProjectDescr><Title>Test Project</Title><Description>A test bioproject description.</Description></ProjectDescr>
+    <ProjectType><ProjectTypeSubmission>
+      <Target sample_scope="eMultispecies" material="eGenome" capture="eWhole">
+        <Organism taxID="9605"><OrganismName>Homo</OrganismName></Organism>
+      </Target>
+      <Method method_type="eSequencing"/>
+      <Objectives><Data data_type="eRawSequenceReads"/></Objectives>
+    </ProjectTypeSubmission></ProjectType>
+  </Project></Project>
+  <Submission><Submission submitted="2020-01-01"><Description>
+    <Organization type="center" role="owner"><Name>NIG</Name></Organization><Access>public</Access>
+  </Description></Submission></Submission>
+</Package>
+</PackageSet>

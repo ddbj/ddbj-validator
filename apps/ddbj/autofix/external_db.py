@@ -28,6 +28,7 @@ from apps.ddbj.biosample.sync import (
     _propose_locus_tag_prefix_sync,
     _propose_bioproject_sync,
 )
+from apps.ddbj.biosample.tsv import load_biosample_sync_targets
 
 
 def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None, sync_attrs=None, emit_additions=False, mapping_keys=None):
@@ -46,9 +47,9 @@ def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None,
 
     unauth_set = unauthorized_bs or set()
 
-    target_attrs = sync_attrs if sync_attrs else ["bio_material", "collection_date", "geo_loc_name", "culture_collection",
-                    "host", "lat_lon", "sex", "specimen_voucher", "strain", "isolate", "ecotype",
-                    "cultivar", "cell_line"]
+    # 一般実行の突合対象は definitions.biosample_sync（同期指針のレベル 1-3 ＋ extra）から引く。
+    # -b 時は呼び出し側が biosample_sync.common（レベル 1 相当）を sync_attrs で渡す。
+    target_attrs = sync_attrs if sync_attrs else load_biosample_sync_targets()
     common_samds = []
     if "COMMON" in records:
         common_samds = _extract_samd_from_single_record(records["COMMON"])
