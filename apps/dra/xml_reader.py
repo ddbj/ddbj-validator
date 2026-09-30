@@ -82,6 +82,9 @@ def _build_submission(root):
 def _build_experiment(exp):
     e = DraExperiment(alias=exp.get("alias"), accession=exp.get("accession"),
                       center_name=exp.get("center_name"), title=_text(exp.find("./TITLE")), raw=exp)
+    e.design_present = exp.find("./DESIGN") is not None
+    e.library_descriptor_present = exp.find("./DESIGN/LIBRARY_DESCRIPTOR") is not None
+    e.platform_present = exp.find("./PLATFORM") is not None
     e.description = _text(exp.find("./DESIGN/DESIGN_DESCRIPTION"))
     sref = exp.find("./STUDY_REF")
     if sref is not None:
@@ -117,6 +120,7 @@ def _build_run(run):
     if ref is not None:
         r.experiment_ref = ref.get("accession")
         r.experiment_refname = ref.get("refname")
+    r.data_block_present = run.find("./DATA_BLOCK") is not None
     r.files = _files(run)
     return r
 
@@ -137,6 +141,7 @@ def _build_analysis(an):
             a.sample_refs.append(acc)
         elif typ == "RUN":
             a.run_refs.append(acc)
+    a.data_block_present = an.find("./DATA_BLOCK") is not None
     a.files = _files(an)
     return a
 
