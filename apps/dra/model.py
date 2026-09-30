@@ -81,7 +81,9 @@ class DraSubmissionMeta(DraObject):
     """SUBMISSION 要素（submission そのもの）。"""
     lab_name: Optional[str] = None
     submission_date: Optional[str] = None
-    hold_date: Optional[str] = None            # ACTIONS/HOLD@HoldUntilDate
+    # ACTIONS のうち @target の無い HOLD と RELEASE の最後のものが HOLD なら、その @HoldUntilDate
+    # （RELEASE なら None）。DDBJ Record の submission.hold_date と同じ決め方。
+    hold_date: Optional[str] = None
     contacts: list = field(default_factory=list)
 
 
