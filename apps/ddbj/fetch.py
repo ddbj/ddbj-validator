@@ -15,7 +15,7 @@ from apps.ddbj.db_metadata import (
     fetch_bp_psubs, fetch_dra_refs, fetch_prjdb_by_psub, fetch_samd_by_smp_id,
     fetch_dra_library_metadata, fetch_drr_status, fast_extract_db_keys
 )
-from common.db_taxonomy import fetch_taxonomy_data
+from common.db_taxonomy import fetch_taxonomy_data, fetch_taxonomy_name_variants
 from common.ncbi_api import check_ncbi_public_status
 from apps.ddbj.context import ValidationContext
 
@@ -104,6 +104,14 @@ class ExternalFetchMixin:
                         lbl = "organism" if len(all_organisms) == 1 else "organisms"
                         print(f"[Taxonomy DB] Checking {len(all_organisms)} {lbl}...")
                         tax_data = fetch_taxonomy_data(db_manager.get_tax_conn(), list(all_organisms))
+                        # ANN0832 / ANN0834 用: 各 organism の別名一式（synonym / common name 等）を
+                        # ut_id からまとめて引き、tax_data[org]["name_variants"] に載せる。
+                        ut_ids = {info.get("tax_id") for info in tax_data.values()
+                                  if info.get("tax_id") not in (None, "", "unknown")}
+                        if ut_ids:
+                            variants = fetch_taxonomy_name_variants(db_manager.get_tax_conn(), ut_ids)
+                            for info in tax_data.values():
+                                info["name_variants"] = variants.get(str(info.get("tax_id")), set())
                         
                     if all_projects:
                         lbl = "project" if len(all_projects) == 1 else "projects"
