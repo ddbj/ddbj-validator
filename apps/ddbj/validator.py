@@ -100,8 +100,6 @@ class Validator:
             ANN0810(), # [WARNING] Invalid Genome Coverage/Coverage format
             ANN0820(), # [WARNING] Assembly Name required for eukaryotes
             ANN0830(), # [ERROR] Invalid ST_COMMENT qualifier value
-            ANN0840(), # [WARNING] Organism name should not appear in /product
-            ANN0850(), # [WARNING] Organism name should not appear in /strain or /isolate
             ANN0940(), # [ERROR] The REFERENCE status "Published Only in Database" is not allowed for TPA
             ANN1110(), # [WARNING] The strain matches an institution code
             ANN1240(), # [ERROR] Future collection date is not allowed
