@@ -74,6 +74,9 @@ def plan(saved, params):
         for role, flag in dra_map.items():
             if role in saved:
                 args += [flag, str(saved[role])]
+        if params.get("submission_id"):
+            # 省略時は CLI が submission の alias から導く（account の導出にも使う）。
+            args += ["-s", params["submission_id"]]
         return args
     if "gea_idf" in saved or "gea_sdrf" in saved:
         args = ["gea"]
@@ -177,8 +180,12 @@ def _plan_record(path, params):
     検証するのは正しい振る舞いになる。不正なのは「どれとして検証するのか分からないまま
     1 つを選ぶ」ことだけで、それは `record_db` があれば起きない。
     """
-    args = [normalise_record_db(params.get("record_db")) or _sniff_record_db(path),
-            "-r", str(path)]
+    db = normalise_record_db(params.get("record_db")) or _sniff_record_db(path)
+    # app.py は `record_db` が指定されたときだけ受付時に確かめられる。推測したときはここで。
+    mismatch = submission_id_mismatch(db, params.get("submission_id"))
+    if mismatch:
+        raise ValueError(mismatch)
+    args = [db, "-r", str(path)]
     if params.get("submission_id"):
         # BP_R0004 の自己除外・BS_R0091 の自己重複除外に使う。record は submission id を
         # 持たず、web api の一時ファイル名も PSUB / SSUB を含まない（CLI はファイル名から拾う）。

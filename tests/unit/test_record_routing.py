@@ -118,6 +118,20 @@ def test_plan_routes_the_ddbj_record_role(tmp_path):
         ["biosample", "-r", str(path), "-s", "SSUB000001"]
 
 
+def test_submission_id_is_checked_against_the_sniffed_db_too(tmp_path):
+    """`record_db` を省いたときは受付時に比べられないので、推測したあとで比べる。DRA では
+    submission id から account も導くので、PSUB を渡すと別の account で権限系ルールが動く。"""
+    path = _write(tmp_path, {"experiments": _EXPERIMENTS})
+    with pytest.raises(ValueError, match="record_db は dra"):
+        runner._plan_record(path, {"submission_id": "PSUB000001"})
+
+
+def test_dra_xml_forwards_submission_id(tmp_path):
+    saved = {"dra_submission": tmp_path / "sub.xml"}
+    assert runner.plan(saved, {"submission_id": "amr_ddbj-0104"}) == \
+        ["dra", "--sub", str(saved["dra_submission"]), "-s", "amr_ddbj-0104"]
+
+
 @pytest.mark.parametrize("db, submission_id, bad", [
     ("bioproject", "SSUB000001", True),
     ("biosample",  "PSUB000001", True),
@@ -217,6 +231,8 @@ def test_biosample_skip_notice_has_its_own_wording():
     (bs_cli, {"projects": _PROJECTS}),
     (bs_cli, {"projects": _PROJECTS, "samples": []}),
     (dra_cli, {"projects": _PROJECTS, "samples": _SAMPLES}),
+    # BioProject の record（submission も持つ）を DRA として渡した。submission だけでは数えない。
+    (dra_cli, {"submission": {"alias": "PSUB000001"}, "projects": _PROJECTS}),
     (dra_cli, {"experiments": [], "runs": []}),
 ])
 def test_nothing_to_validate_writes_no_report(tmp_path, cli, record):

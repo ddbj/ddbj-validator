@@ -247,7 +247,7 @@ NCBI_API_EMAIL=あなたのメールアドレス
 | フィールド | 対象 | 意味 |
 |---|---|---|
 | `submitter_id` | 全部 | 権限系ルールが使う account。内部 DB モードでのみ効きます |
-| `submission_id` | 全部 | 自分自身を除外するために使う（`BP_R0004` / `BS_R0091`）。DRA の `ddbj_record` では submission id（省略時は submission の alias から導く）。`record_db` と接頭辞が食い違えば 400 |
+| `submission_id` | 全部 | 自分自身を除外するために使う（`BP_R0004` / `BS_R0091`）。DRA の `ddbj_record` では submission id（省略時は submission の alias から導く）。`record_db` と接頭辞が食い違えば 400（`record_db` を省略したときは推測した DB と比べ、食い違えば run が `error`） |
 | `package` | `biosample` の XML / TSV | TSV の package。**`ddbj_record` と併用すると 400**（record は sample ごとに package を持つため） |
 | `record_db` | `ddbj_record` | `bioproject` / `biosample` / `dra`。省略時は record の top-level から推測 |
 
@@ -424,7 +424,8 @@ docstring にまとめてあります。要点:
   error として報告します: `source` が record の中の何も指さない relation、XML では 1 つしか
   書けない参照（`STUDY_REF` など）が 2 つある object、未知の `library.layout`。
 - `submission` の無い record に experiments / runs / analyses があれば `DRA_R0032` です。
-  submission / experiments / runs / analyses のどれも無い record は「指摘ゼロ」ではなく入力エラーとして落とします。
+  experiments / runs / analyses のどれも無い record は「指摘ゼロ」ではなく入力エラーとして落とします
+  （submission だけでは数えません。BioProject / BioSample の record も submission を持つためです）。
 - **`projects` / `samples` が同居していても読みません**（BioProject / BioSample として別に検証します）。
   読まなかったことは `level: info` の結果としてレポートに出し（テキストのレポートでは `[ INFO ]` 節）、
   そちら側のスキーマ違反は `warning` にします。

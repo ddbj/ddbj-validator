@@ -107,6 +107,46 @@ def test_namesakes_are_told_apart_by_index(tmp_path, source, resolved):
     assert [r.experiment_ref or "-" for r in sub.runs] == resolved
 
 
+def test_lax_integers_are_read_like_the_schema_reads_them(tmp_path):
+    """スキーマ（pydantic の lax）は "1" や 1.0 も int として受ける。形の確認がそれより厳しいと、
+    スキーマが通す record でルールが 1 つも動かなくなる。"""
+    sub, errors = _read(tmp_path, {
+        "submission": _SUBMISSION,
+        "experiments": [{"alias": "E1", "library": {"layout": "paired", "nominal_length": 300.0}}],
+        "runs": [{"alias": "R"}, {"alias": "R"}],
+        "relations": [_relation("part_of", {"type": "run", "alias": "R", "index": "1"},
+                                {"db": "experiment", "accession": "DRX1"})]})
+    assert [e for e in errors if e["level"] == "error"] == []
+    assert sub.experiments[0].nominal_length == "300"
+    assert [r.experiment_ref for r in sub.runs] == [None, "DRX1"]
+
+
+@pytest.mark.parametrize("aliases, source", [
+    # 正準形は NFC なので、合成済みと分解された "é" は同じ alias。
+    (["\u00e9", "e\u0301"], {"alias": "\u00e9", "index": 1}),
+    # U+200B も空白として畳む（Python の \s は含まない）。
+    (["x\u200by", "x y"], {"alias": "x y", "index": 1}),
+    # alias の無いものと空白だけの alias は、正準形ではどちらも alias が無い。
+    ([None, " "], {"index": 1}),
+])
+def test_namesakes_are_counted_on_the_canonical_form(tmp_path, aliases, source):
+    """converter（ddbj-repository の DRA::Converter）は正準形で同じ alias を数えて index を書く。
+    違う比べ方をすると、converter の書いた index が何も指さなくなる。"""
+    runs = [{"alias": a} if a is not None else {"title": "t"} for a in aliases]
+    sub, errors = _read(tmp_path, {"submission": _SUBMISSION, "runs": runs, "relations": [
+        _relation("part_of", {"type": "run", **source}, {"db": "experiment", "accession": "DRX1"})]})
+    assert [e for e in errors if e["level"] == "error"] == []
+    assert [r.experiment_ref for r in sub.runs] == [None, "DRX1"]
+
+
+def test_targeted_loci_count_as_library_descriptor(tmp_path):
+    """LIBRARY_DESCRIPTOR/TARGETED_LOCI は library の外（experiments[].targeted_loci）に載る。"""
+    sub, _ = _read(tmp_path, {"submission": _SUBMISSION, "experiments": [
+        {"alias": "E1", "targeted_loci": [{"name": "16S rRNA"}]}]})
+    e = sub.experiments[0]
+    assert (e.design_present, e.library_descriptor_present) == (True, True)
+
+
 @pytest.mark.parametrize("source", [
     {"type": "run", "accession": "DRR9"},
     {"type": "run", "alias": "R"},              # 2 つある alias を index 無しで
@@ -156,10 +196,11 @@ def test_role_files_name_the_record(tmp_path):
 
 
 @pytest.mark.parametrize("record, field", [
-    ({"experiments": [{"library": {"nominal_length": True}}]}, "experiments.0.library.nominal_length"),
+    ({"experiments": [{"library": {"nominal_length": 1.5}}]}, "experiments.0.library.nominal_length"),
+    ({"experiments": [{"legacy": "x"}]}, "experiments.0.legacy"),
     ({"experiments": [{"library": "paired"}]}, "experiments.0.library"),
     ({"runs": [{"data_blocks": [{"files": [{"filename": 1}]}]}]}, "runs.0.data_blocks.0.files.0.filename"),
-    ({"relations": [{"source": {"type": "run", "index": "0"}}]}, "relations.0.source.index"),
+    ({"relations": [{"source": {"type": "run", "index": "first"}}]}, "relations.0.source.index"),
     ({"submission": {"sra": {"contacts": {}}}}, "submission.sra.contacts"),
 ])
 def test_shape_is_checked_without_the_schema_package(tmp_path, record, field):
@@ -195,8 +236,8 @@ def test_cli_refuses_record_and_xml_together(tmp_path):
 ])
 def test_cli_submission_id(tmp_path, extra, expected):
     out  = tmp_path / "out"
-    args = dra_cli._build_parser().parse_args(["-r", str(_write(tmp_path, {"submission": _SUBMISSION})),
-                                               "-l", "-o", str(out), *extra])
+    record = {"submission": _SUBMISSION, "experiments": [{"alias": "E1"}]}
+    args = dra_cli._build_parser().parse_args(["-r", str(_write(tmp_path, record)), "-l", "-o", str(out), *extra])
     dra_cli.run(args)
     assert f"Submission ID: {expected}" in (out / "reports" / "validation_report_details.txt").read_text()
 

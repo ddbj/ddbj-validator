@@ -141,17 +141,22 @@ def run(args):
     skip_db, skip_ncbi, skip_auth = _resolve_modes(args)
     if args.record:
         submission, pre_errors = record_reader.parse_record(args.record, account=args.account)
-        if submission is None:   # DRA_R0001 / DRA_R0002（読めない・形が違う）。空のモデルで先へ進む
-            submission = DraSubmission(account=args.account)
-        elif not (submission.submission or submission.experiments or submission.runs or submission.analyses):
+        if submission is not None and not (submission.experiments or submission.runs or submission.analyses):
             # 読めたが検証対象が無い。「0 件」を「指摘 0 件」として返すと、渡す record を
             # 間違えた側は成功したと読むので、入力エラーとして落とす（BioProject / BioSample と同じ）。
-            print(f"[ERROR] No DRA object (submission / experiments / runs / analyses) in record: "
-                  f"{args.record}", file=sys.stderr)
+            # submission だけでは数えない。BioProject / BioSample の record も submission を持つので、
+            # それを DRA として渡した間違いが「問題なし」になる（web api の推測も同じ理由で使わない）。
+            print(f"[ERROR] No DRA object (experiments / runs / analyses) in record: {args.record}",
+                  file=sys.stderr)
             if not any(e["level"] == "error" for e in pre_errors):
                 return 2
     else:
         submission, pre_errors = xml_reader.parse_files(paths, account=args.account)
+    # モデルを組めなかった（DRA_R0001 / 形の違う DRA_R0002）。結果は pre_errors だけで、
+    # ルールも DB メタの取得も走らせない（BioProject と同じ）。レポートの見出し用に空のモデルを置く。
+    readable = submission is not None
+    if not readable:
+        submission = DraSubmission(account=args.account)
 
     # submission alias から submission id / account を導出。
     # DDBJ 以外の DRA 等は必ずアカウントに紐づくため、--account 未指定なら alias から自動取得する。
@@ -163,10 +168,10 @@ def run(args):
     out_dir = args.out_dir or str(Path(paths[0]).parent)
     if not args.json:
         cli_modes.print_found(1, "file" if args.record else "file set")   # sub/exp/run/ana = 1 set、Record は 1 file
-    if not context.skip_db:   # 内部 DB モードのみ: account/DB 依存ルール用メタを取得
+    if readable and not context.skip_db:   # 内部 DB モードのみ: account/DB 依存ルール用メタを取得
         cli_modes.reset_db_access_log()
         _fetch_db_meta(context, submission, account)
-    results = pre_errors + Validator(context).run(submission)
+    results = pre_errors + (Validator(context).run(submission) if readable else [])
 
     now = datetime.datetime.now(_JST)
     when = started.strftime("%Y-%m-%d %H:%M:%S JST")

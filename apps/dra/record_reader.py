@@ -62,6 +62,7 @@ level=info の結果としてレポートに出し、そちら側のスキーマ
 import json
 import re
 import sys
+import unicodedata
 from pathlib import Path
 
 from apps.dra.model import (
@@ -142,10 +143,24 @@ class _Shape:
             if value is not None and not isinstance(value, str):
                 self.bad(f'{at}.{key}', 'a string', value)
 
-    def index(self, obj, at):
-        value = obj.get('index')
-        if value is not None and (isinstance(value, bool) or not isinstance(value, int)):
-            self.bad(f'{at}.index', 'an integer', value)
+    def integer(self, obj, at, key):
+        value = obj.get(key)
+        if value is not None and _lax_int(value) is None:
+            self.bad(f'{at}.{key}', 'an integer', value)
+
+
+def _lax_int(value):
+    """スキーマ（pydantic の lax モード）が int として受ける値を int に。受けないものは None。
+
+    形の確認をスキーマより厳しくすると、スキーマが通す record でルールが 1 つも動かなくなる。
+    """
+    if isinstance(value, int):   # bool も（pydantic が受ける）
+        return int(value)
+    if isinstance(value, float):
+        return int(value) if value.is_integer() else None
+    if isinstance(value, str) and re.fullmatch(r'\s*[+-]?\d+\s*', value):
+        return int(value)
+    return None
 
 
 def _shape_errors(record):
@@ -167,13 +182,11 @@ def _shape_errors(record):
         library = experiment.get('library')
         if s.obj(library, f'{at}.library'):
             s.strings(library, f'{at}.library', ('name', 'strategy', 'source', 'selection', 'layout'))
-            length = library.get('nominal_length')
-            # v3 は int。スキーマは数字の文字列も受ける（pydantic の lax）ので、それも読む。
-            if length is not None and (isinstance(length, bool) or not isinstance(length, (int, str))):
-                s.bad(f'{at}.library.nominal_length', 'an integer', length)
+            s.integer(library, f'{at}.library', 'nominal_length')
         platform = experiment.get('platform')
         if s.obj(platform, f'{at}.platform'):
             s.strings(platform, f'{at}.platform', ('type', 'instrument_model'))
+        s.obj(experiment.get('legacy'), f'{at}.legacy')
 
     for key in ('runs', 'analyses'):
         for i, obj in s.objects(record.get(key), key):
@@ -190,7 +203,7 @@ def _shape_errors(record):
         source = relation.get('source')
         if s.obj(source, f'{at}.source'):
             s.strings(source, f'{at}.source', ('type', 'accession', 'alias'))
-            s.index(source, f'{at}.source')
+            s.integer(source, f'{at}.source', 'index')
         target = relation.get('target')
         if s.obj(target, f'{at}.target'):
             s.strings(target, f'{at}.target', ('db', 'accession', 'id'))
@@ -323,16 +336,18 @@ def _build_experiment(experiment, at, errors):
                                         f'got {layout!r}', sample=e.label))
     length = library.get('nominal_length')
     if e.library_layout == 'PAIRED' and length is not None:
-        e.nominal_length = str(length)
+        e.nominal_length = str(_lax_int(length))
 
     e.platform         = _text(platform.get('type'))
     e.instrument_model = _text(platform.get('instrument_model'))
 
-    e.library_descriptor_present = bool(experiment.get('library'))
+    # LIBRARY_DESCRIPTOR/TARGETED_LOCI は library の外（experiments[].targeted_loci）に載る。
+    e.library_descriptor_present = bool(experiment.get('library') or experiment.get('targeted_loci'))
     e.platform_present           = bool(experiment.get('platform'))
     # DESIGN は v3 に無い入れ物。その下にあったものが 1 つでもあれば「ある」。
     # sample への relation は _apply_relations が足す。
-    e.design_present = any(experiment.get(key) for key in ('description', 'library', 'spot_descriptor', 'pool')) \
+    e.design_present = e.library_descriptor_present \
+        or any(experiment.get(key) for key in ('description', 'spot_descriptor', 'pool')) \
         or bool((experiment.get('legacy') or {}).get('gaps'))
     return e
 
@@ -356,10 +371,19 @@ def _build_analysis(analysis):
 
 # --- relations ---------------------------------------------------------------
 
+# 正準形（ddbj-canon）の single-line の文字列が 1 つの空白に畳む文字: Unicode の White_Space と
+# U+200B / U+200C / U+200D / U+FEFF（ddbj-repository の doc/canonical-json.md §2.2）。
+# Python の \s は White_Space と一致しない（U+001C〜U+001F を含み、U+200B などを含まない）。
+_WHITESPACE = re.compile('[\t\n\v\f\r \x85\xa0\u1680\u2000-\u200d\u2028\u2029\u202f\u205f\u3000\ufeff]+')
+
+
 def _alias_key(alias):
-    """alias の比べ方（ddbj/ddbj-record-specifications#18）: 前後の空白を除き、続く空白を 1 つと
-    みなす。alias の無いものどうしも同じ alias を持つものとして数える。"""
-    return re.sub(r'\s+', ' ', alias).strip() if isinstance(alias, str) else None
+    """alias の比べ方（ddbj/ddbj-record-specifications#18）。record が書かれるときの正準形に揃えて
+    比べる: NFC にし、空白の並びを 1 つにし、前後を除く。alias の無いものは空の alias と同じに
+    数える（正準形では空の文字列は落ちるので区別できない）。converter（ddbj-repository の
+    DRA::Converter）も同じ正準形で数えて index を書く。"""
+    text = unicodedata.normalize('NFC', alias) if isinstance(alias, str) else ''
+    return _WHITESPACE.sub(' ', text).strip(' ')
 
 
 class _Sources:
@@ -382,8 +406,8 @@ class _Sources:
 
         key       = _alias_key(source.get('alias'))
         namesakes = [o for o in objects if _alias_key(o.alias) == key]
-        index     = source.get('index')
-        shown     = f'alias {source.get("alias")!r}' if key is not None else 'no alias'
+        index     = _lax_int(source['index']) if source.get('index') is not None else None
+        shown     = f'alias {source.get("alias")!r}' if key else 'no alias'
         if index is not None:
             if 0 <= index < len(namesakes):
                 return namesakes[index], None
@@ -456,7 +480,7 @@ def parse_record(record_path, account=None):
     """DDBJ Record ファイルを DraSubmission へ。戻り値: (submission, errors)。
 
     submission=None は「モデルを組めなかった」を意味する（JSON として読めない / 形が違う）。
-    DRA の object が 1 つも無い record は空の submission を返す。「検証対象がゼロ」を
+    experiments / runs / analyses が 1 つも無い record もそのまま返す。「検証対象がゼロ」を
     「指摘ゼロ」と混同させないため、どう扱うかは呼び出し側（CLI）の責任にしてある。
     """
     try:
