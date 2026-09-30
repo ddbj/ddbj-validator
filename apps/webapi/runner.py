@@ -110,11 +110,18 @@ def _failure_message(proc):
 
 # DDBJ Record を「どの validator に渡すか」。値は、指定が無いときに top-level から
 # 推測するためのキーでもある（サブコマンド名 -> そのサブコマンドが読む top-level キー）。
-RECORD_DB_KEYS = {"bioproject": "projects", "biosample": "samples"}
+# DRA は submission も読むが、submission は他の DB の record にもあるので推測には使わない。
+RECORD_DB_KEYS = {
+    "bioproject": ("projects",),
+    "biosample":  ("samples",),
+    "dra":        ("experiments", "runs", "analyses"),
+}
 
 
 # D-way の submission id 接頭辞。同じ record を DB ごとに 2 回投げるようになったので、
 # 片方の id をもう片方の実行に付けたままにする間違いが現実的になった。
+# DRA の submission id は account 名に連番を付けたもの（例 amr_ddbj-0104）で、決まった
+# 接頭辞が無い。
 _SUBMISSION_ID_PREFIX = {"bioproject": "PSUB", "biosample": "SSUB"}
 
 
@@ -123,19 +130,21 @@ def submission_id_mismatch(db, submission_id):
 
     自分自身を除外するために使う id なので（BP_R0004 / BS_R0091）、他の DB の id を
     渡すと**除外が効かず、再検証した submission が自分自身と衝突していると報告される**。
-    CLI は id をそのまま受け取るだけで、この食い違いはどこにも現れない。
+    CLI は id をそのまま受け取るだけで、この食い違いはどこにも現れない。DRA では account の
+    導出にも使うので、PSUB / SSUB を渡すと account 依存のルールが別の account で動く。
 
     接頭辞が既知のものでなければ何も言わない。将来 id の体系が変わったときに、
     正しい入力を拒む側へ倒れないようにする。
     """
     if not db or not submission_id:
         return None
-    mine   = _SUBMISSION_ID_PREFIX[db]
+    mine   = _SUBMISSION_ID_PREFIX.get(db)
     theirs = {p: d for d, p in _SUBMISSION_ID_PREFIX.items() if d != db}
     for prefix, other_db in theirs.items():
-        if submission_id.upper().startswith(prefix) and not submission_id.upper().startswith(mine):
+        if submission_id.upper().startswith(prefix) and not (mine and submission_id.upper().startswith(mine)):
+            expected = f"{mine} から始まる id" if mine else f"{db} の submission id"
             return (f"submission_id {submission_id!r} は {other_db} のものに見えますが "
-                    f"record_db は {db} です。{mine} から始まる id を指定してください。")
+                    f"record_db は {db} です。{expected}を指定してください。")
     return None
 
 
@@ -163,15 +172,17 @@ def _plan_record(path, params):
     もらうのが本筋で、無ければ top-level から推測する。
 
     **同居する record 自体は不正ではない。** 登録は DB ごとに行い、BioProject として登録
-    するときに読まれるのは projects、BioSample として登録するときは samples だけなので、
-    片方だけを検証するのは正しい振る舞いになる。不正なのは「どちらとして検証するのか
-    分からないまま片方を選ぶ」ことだけで、それは `record_db` があれば起きない。
+    するときに読まれるのは projects、BioSample として登録するときは samples、DRA として
+    登録するときは submission / experiments / runs / analyses だけなので、自分の担当だけを
+    検証するのは正しい振る舞いになる。不正なのは「どれとして検証するのか分からないまま
+    1 つを選ぶ」ことだけで、それは `record_db` があれば起きない。
     """
     args = [normalise_record_db(params.get("record_db")) or _sniff_record_db(path),
             "-r", str(path)]
     if params.get("submission_id"):
         # BP_R0004 の自己除外・BS_R0091 の自己重複除外に使う。record は submission id を
         # 持たず、web api の一時ファイル名も PSUB / SSUB を含まない（CLI はファイル名から拾う）。
+        # DRA は submission の alias から導くが、渡されればそちらを使う。
         args += ["-s", params["submission_id"]]
     return args
 
@@ -183,8 +194,8 @@ def _sniff_record_db(path):
     一時オブジェクトが web プロセスに載るので、呼び出し側は `record_db` を渡すほうがよい。
 
     渡すかどうかで**壊れた入力の見え方が変わる**ことに注意。JSON として読めないものを
-    `ddbj_record` として送ると、`record_db` があれば CLI まで届いて BP_R0001 / BS_R0097
-    のレポートになり、無ければここで落ちてレポートの無い `error` になる。推測できない
+    `ddbj_record` として送ると、`record_db` があれば CLI まで届いて BP_R0001 / BS_R0097 /
+    DRA_R0001 のレポートになり、無ければここで落ちてレポートの無い `error` になる。推測できない
     ものは振り分けようが無いので避けられない差で、`record_db` を渡す側が良い。
     """
     try:
@@ -195,15 +206,17 @@ def _sniff_record_db(path):
     if not isinstance(record, dict):
         raise ValueError("DDBJ Record が JSON オブジェクトではありません")
 
-    present = sorted(db for db, key in RECORD_DB_KEYS.items() if carries(record, key))
+    present = sorted(db for db, keys in RECORD_DB_KEYS.items()
+                     if any(carries(record, key) for key in keys))
 
     if len(present) > 1:
         raise ValueError(
-            "projects と samples が同居する DDBJ Record は、どちらとして検証するのかを"
+            f"{' と '.join(present)} の分が同居する DDBJ Record は、どれとして検証するのかを"
             "推測できません。record_db フォームフィールドに "
             f"{' / '.join(sorted(RECORD_DB_KEYS))} のいずれかを指定してください。")
     if not present:
-        raise ValueError("DDBJ Record に projects も samples もありません")
+        keys = [key for db_keys in RECORD_DB_KEYS.values() for key in db_keys]
+        raise ValueError(f"DDBJ Record に {' / '.join(keys)} のどれもありません")
     return present[0]
 
 

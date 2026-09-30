@@ -63,15 +63,21 @@ def test_package_with_a_record_is_rejected(client):
     assert "package" in r.json()["message"]
 
 
-def test_submission_id_from_the_other_db_is_rejected(client):
+@pytest.mark.parametrize("record_db, submission_id", [
+    ("bioproject", "SSUB000001"),
+    # DRA の submission id に接頭辞は無いが、BioProject / BioSample のものなら取り違え。
+    ("dra", "PSUB000001"),
+])
+def test_submission_id_from_the_other_db_is_rejected(client, record_db, submission_id):
     r = _post(client, {"ddbj_record": ("r.json", _RECORD)},
-              record_db="bioproject", submission_id="SSUB000001")
+              record_db=record_db, submission_id=submission_id)
     assert r.status_code == 400
     assert "record_db" in r.json()["message"]
 
 
 @pytest.mark.parametrize("form", [
     {}, {"record_db": "biosample"}, {"record_db": "biosample", "submission_id": "SSUB000001"},
+    {"record_db": "dra"}, {"record_db": "DRA", "submission_id": "amr_ddbj-0104"},
 ])
 def test_valid_combinations_are_accepted(client, form):
     r = _post(client, {"ddbj_record": ("r.json", _RECORD)}, **form)

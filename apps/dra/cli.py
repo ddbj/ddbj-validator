@@ -1,8 +1,9 @@
 """DRA validator の CLI（サブコマンド dra）。
 
-入力は 1 セッション分の DRA XML 群。指定方法は 2 通り（併用も可）:
+入力は 1 セッション分の DRA XML 群か、DDBJ Record v3 JSON（-r）。XML の指定方法は 2 通り（併用も可）:
   - ディレクトリ: 中の *.xml を root 要素でロール自動判定。
   - 個別指定: --sub / --exp / --run / --ana（複数可）。
+Record は record_reader が XML と同じモデルを組むので、ルールは入力形式を意識しない。
 実行モードは biosample/bioproject と同一骨格（-l ローカル / -n NCBI / -d 内部DB, -j JSON）。
 1 セッションに渡された submission/experiment/run/analysis を 1 submission として検証する。
 """
@@ -15,7 +16,8 @@ from common import cli_modes
 from pathlib import Path
 
 from apps.dra.context import ValidationContext
-from apps.dra import xml_reader
+from apps.dra.model import DraSubmission
+from apps.dra import record_reader, xml_reader
 from apps.dra.validator import Validator
 from apps.dra.reporter import build_summary, build_details, write_text_reports, write_json_report
 
@@ -29,6 +31,12 @@ def _build_parser():
     p.add_argument("--exp", "--experiment", dest="exp", action="append", default=[], help="experiment XML")
     p.add_argument("--run", dest="run", action="append", default=[], help="run XML")
     p.add_argument("--ana", "--analysis", dest="ana", action="append", default=[], help="analysis XML（任意）")
+    p.add_argument("-r", "--record", dest="record", default=None,
+                   help="DDBJ Record 入力ファイル (v3 JSON)。submission / experiments / runs / analyses を"
+                        "検証する。XML の指定とは併用できない")
+    p.add_argument("-s", "--submission-id", dest="submission_id", default=None,
+                   help="submission id。省略時は submission の alias から導く（例 'amr_ddbj-0104_Submission' → "
+                        "'amr_ddbj-0104'）。account の導出にも使う")
     p.add_argument("--account", default=None, help="Submitter id (account) for auth-dependent rules")
     p.add_argument("-o", "--out-dir", default=None, help="Output directory (default: 入力の親)")
     p.add_argument("-l", "--local", action="store_true", help="Local mode (skip DB and NCBI API)")
@@ -118,9 +126,12 @@ def _fetch_db_meta(context, submission, account):
 
 def run(args):
     started = datetime.datetime.now(_JST)
-    paths = _collect_paths(args)
+    paths = [args.record] if args.record else _collect_paths(args)
+    if args.record and _collect_paths(args):
+        print("[ERROR] -r（DDBJ Record）と XML の指定は併用できません", file=sys.stderr)
+        return 2
     if not paths:
-        print("[ERROR] 入力 XML がありません（ディレクトリ or --sub/--exp/--run/--ana）", file=sys.stderr)
+        print("[ERROR] 入力がありません（ディレクトリ or --sub/--exp/--run/--ana、または -r）", file=sys.stderr)
         return 2
     missing = [p for p in paths if not Path(p).exists()]
     if missing:
@@ -128,18 +139,30 @@ def run(args):
         return 2
 
     skip_db, skip_ncbi, skip_auth = _resolve_modes(args)
-    submission, pre_errors = xml_reader.parse_files(paths, account=args.account)
+    if args.record:
+        submission, pre_errors = record_reader.parse_record(args.record, account=args.account)
+        if submission is None:   # DRA_R0001 / DRA_R0002（読めない・形が違う）。空のモデルで先へ進む
+            submission = DraSubmission(account=args.account)
+        elif not (submission.submission or submission.experiments or submission.runs or submission.analyses):
+            # 読めたが検証対象が無い。「0 件」を「指摘 0 件」として返すと、渡す record を
+            # 間違えた側は成功したと読むので、入力エラーとして落とす（BioProject / BioSample と同じ）。
+            print(f"[ERROR] No DRA object (submission / experiments / runs / analyses) in record: "
+                  f"{args.record}", file=sys.stderr)
+            if not any(e["level"] == "error" for e in pre_errors):
+                return 2
+    else:
+        submission, pre_errors = xml_reader.parse_files(paths, account=args.account)
 
     # submission alias から submission id / account を導出。
     # DDBJ 以外の DRA 等は必ずアカウントに紐づくため、--account 未指定なら alias から自動取得する。
-    submission.submission_id = _submission_id(submission)
+    submission.submission_id = args.submission_id or _submission_id(submission)
     account = args.account or _account_from_submission_id(submission.submission_id)
     submission.account = account
 
     context = ValidationContext(account=account, skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
     out_dir = args.out_dir or str(Path(paths[0]).parent)
     if not args.json:
-        cli_modes.print_found(1, "file set")   # sub/exp/run/ana = 1 set
+        cli_modes.print_found(1, "file" if args.record else "file set")   # sub/exp/run/ana = 1 set、Record は 1 file
     if not context.skip_db:   # 内部 DB モードのみ: account/DB 依存ルール用メタを取得
         cli_modes.reset_db_access_log()
         _fetch_db_meta(context, submission, account)
@@ -149,7 +172,7 @@ def run(args):
     when = started.strftime("%Y-%m-%d %H:%M:%S JST")
     elapsed = str(datetime.timedelta(seconds=int((now - started).total_seconds())))
     version = _tool_version()
-    label = f"{len(paths)} files"
+    label = Path(args.record).name if args.record else f"{len(paths)} files"
     summary = build_summary(results, submission, version, when, elapsed)
     if args.json:
         write_json_report(results, out_dir, label, version)

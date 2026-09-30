@@ -3,7 +3,9 @@
 
 apps/dra/tests/<RULEID>/ 配下の 1 シナリオ = 1 ディレクトリ。ディレクトリ内の *.xml を
 まとめて 1 submission として検証し、`.pass`/`.fail` をディレクトリ名（＝ルール）で判定する。
+ディレクトリに record.json（DDBJ Record v3）があれば、XML の代わりにそれを検証する。
 - ディレクトリ名末尾が `.pass` なら当該ルールが発火しないこと、`.fail` なら発火することを期待。
+- level=info（Record 入力で「読まなかった」を知らせる注記）は発火に数えない。
 """
 import sys
 import datetime
@@ -15,7 +17,7 @@ sys.path.insert(0, str(ROOT))
 
 from apps.dra.context import ValidationContext
 from apps.dra.validator import Validator
-from apps.dra import xml_reader
+from apps.dra import record_reader, xml_reader
 
 from common.e2e import E2ERunner
 
@@ -27,19 +29,29 @@ MOCK_RUNS = {"DRR0000001"}
 MOCK_OBJ_NAMES = {"DUP_ALIAS"}
 MOCK_HOLD_REF = datetime.date(2026, 1, 1)
 
+RECORD = "record.json"   # シナリオが DDBJ Record のとき、ディレクトリ内のファイル名
+
+
+def _context():
+    return ValidationContext(skip_db=False, skip_ncbi=False, skip_auth=False,
+                             account_org_name=MOCK_ORG,
+                             account_bioprojects=set(MOCK_BP),
+                             account_biosamples=set(MOCK_BS),
+                             account_runs=set(MOCK_RUNS),
+                             account_object_names=set(MOCK_OBJ_NAMES),
+                             hold_ref_date=MOCK_HOLD_REF)
+
 
 def _fired(scenario_dir):
-    paths = sorted(str(p) for p in scenario_dir.glob("*.xml"))
-    ctx = ValidationContext(skip_db=False, skip_ncbi=False, skip_auth=False,
-                            account_org_name=MOCK_ORG,
-                            account_bioprojects=set(MOCK_BP),
-                            account_biosamples=set(MOCK_BS),
-                            account_runs=set(MOCK_RUNS),
-                            account_object_names=set(MOCK_OBJ_NAMES),
-                            hold_ref_date=MOCK_HOLD_REF)
-    sub, pre = xml_reader.parse_files(paths)
-    results = list(pre) + Validator(ctx).run(sub)
-    return {r["rule_id"] for r in results}
+    record = scenario_dir / RECORD
+    if record.exists():
+        sub, pre = record_reader.parse_record(str(record))
+    else:
+        sub, pre = xml_reader.parse_files(sorted(str(p) for p in scenario_dir.glob("*.xml")))
+    results = list(pre)
+    if sub is not None:
+        results += Validator(_context()).run(sub)
+    return {r["rule_id"] for r in results if r["level"] != "info"}
 
 
 def main(argv):
@@ -54,7 +66,20 @@ def main(argv):
             continue
         rid = parts[0].split("_")[0] + "_" + parts[0].split("_")[1]  # DRA_R00xx
         runner.check_rule(d.name, rid, parts[-1], _fired(d))
-    return runner.finish()
+    rule_status = runner.finish()
+
+    # 全件実行のときだけ、XML と Record の同値性も確かめる。
+    parity_ok = True
+    if not targets:
+        print("\n--- XML / DDBJ Record parity test ---")
+        import importlib.util
+        path = HERE / "run_record_parity_test.py"
+        spec = importlib.util.spec_from_file_location("run_record_parity_test", path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        parity_ok = mod.main() == 0
+
+    return 0 if (rule_status == 0 and parity_ok) else 1
 
 
 if __name__ == "__main__":

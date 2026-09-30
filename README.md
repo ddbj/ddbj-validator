@@ -209,7 +209,7 @@ NCBI_API_EMAIL=あなたのメールアドレス
 | `ddbj`（省略可・既定） | 塩基配列アノテーション | `.ann` ＋ FASTA のペア（ディレクトリ） |
 | `bioproject` | BioProject | XML / DDBJ Record（v3 JSON） |
 | `biosample` | BioSample | XML / TSV / DDBJ Record（v3 JSON） |
-| `dra` | DRA（Sequence Read Archive） | Submission/Experiment/Run/Analysis XML |
+| `dra` | DRA（Sequence Read Archive） | Submission/Experiment/Run/Analysis XML / DDBJ Record（v3 JSON） |
 | `gea` | GEA（Genomic Expression Archive） | MAGE-TAB（IDF/SDRF） |
 | `metabobank`（`mb`） | MetaboBank | MAGE-TAB（IDF/SDRF） |
 
@@ -247,13 +247,16 @@ NCBI_API_EMAIL=あなたのメールアドレス
 | フィールド | 対象 | 意味 |
 |---|---|---|
 | `submitter_id` | 全部 | 権限系ルールが使う account。内部 DB モードでのみ効きます |
-| `submission_id` | 全部 | 自分自身を除外するために使う（`BP_R0004` / `BS_R0091`）。`record_db` と接頭辞が食い違えば 400 |
+| `submission_id` | 全部 | 自分自身を除外するために使う（`BP_R0004` / `BS_R0091`）。DRA の `ddbj_record` では submission id（省略時は submission の alias から導く）。`record_db` と接頭辞が食い違えば 400 |
 | `package` | `biosample` の XML / TSV | TSV の package。**`ddbj_record` と併用すると 400**（record は sample ごとに package を持つため） |
-| `record_db` | `ddbj_record` | `bioproject` / `biosample`。省略時は record の top-level から推測 |
+| `record_db` | `ddbj_record` | `bioproject` / `biosample` / `dra`。省略時は record の top-level から推測 |
 
 **`ddbj_record` だけはロールで validator が決まりません。** DDBJ Record は 1 ドキュメントに
-projects と samples を同居させられるためで、`record_db` で指定します。省略した場合は
-top-level を見て決めますが、同居していると決められないので断ります。指定すると振り分けの
+projects と samples（と DRA の experiments / runs / analyses）を同居させられるためで、
+`record_db` で指定します。省略した場合は top-level（`projects` → `bioproject`、`samples` →
+`biosample`、`experiments` / `runs` / `analyses` → `dra`）を見て決めますが、同居していると
+決められないので断ります。SRA の STUDY / SAMPLE から来た projects / samples を持つ DRA の
+record もこれに当たります。指定すると振り分けの
 ために全文をパースしなくて済むので、サンプル数の多い record では指定するほうが軽くなります。
 
 受付時に分かる入力の誤り（未知の `record_db`、ロールと合わないフィールド）は `400` で
@@ -390,8 +393,43 @@ ddbj-validator dra --sub xxx_submission.xml --exp xxx_experiment.xml --run xxx_r
 ```
 
 - 入力: positional でディレクトリ、または `--sub`/`--exp`/`--run`/`--ana`（各複数指定可）で個別に。両者併用可。
+  DDBJ Record は `-r`, `--record`（XML の指定とは併用不可）。
+- `-s`, `--submission-id`: submission id。省略時は submission の alias から導きます（例 `amr_ddbj-0104_Submission`
+  → `amr_ddbj-0104`）。`--account` が無ければ account もここから導きます。
 - モード: 既定 NCBI API。`-d` で内部 DB（account・DB 依存ルール用メタ取得）。
 - サンプル: `docs/dra/dradev-0062/`（analysis 無し）、`docs/dra/amr_ddbj-0104/`（analysis 有り）。
+
+### DDBJ Record（v3 JSON）入力について
+
+```bash
+# DDBJ Record 入力（v3 JSON。record の submission / experiments / runs / analyses を検証する）
+ddbj-validator dra -r DRA000001.json
+```
+
+BioProject / BioSample と同じ考え方で、`record_reader` が XML と同じ内部モデルを組みます。
+SRA XML の各要素が v3 のどこに載るかは spec の対応表（ddbj-record-specifications の
+`tests/fixtures/v3/mapping/sra.yml`）が正本で、読み方は `apps/dra/record_reader.py` の
+docstring にまとめてあります。要点:
+
+- **参照（`STUDY_REF` / `SAMPLE_DESCRIPTOR` / `EXPERIMENT_REF` / Analysis の `TARGET`）は
+  object の中でなく、ルートの `relations` に書きます。** `source` がその object（accession で、
+  無ければ alias で。同じ alias が複数あれば、その中での位置を `index` に）、`target.db` が相手の
+  種類（`project` / `sample` / `experiment` / `run`）です。experiment → project / sample と
+  run → experiment は `part_of`、analysis → project は `part_of`、analysis → sample / run は
+  `derived_from` です。
+- `library.layout` は要素名を小文字にした値（`single` / `paired`）です。それ以外は `DRA_R0002`。
+- `submission.hold_date` を公開予定日として読みます（`DRA_R0006`）。XML 入力も同じ規則
+  （`@target` の無い `HOLD` と `RELEASE` のうち最後のもの）で決めています。
+- **XML では XSD が止めていたが v3 のスキーマは止めないもの**は、reader が `DRA_R0002` の
+  error として報告します: `source` が record の中の何も指さない relation、XML では 1 つしか
+  書けない参照（`STUDY_REF` など）が 2 つある object、未知の `library.layout`。
+- `submission` の無い record に experiments / runs / analyses があれば `DRA_R0032` です。
+  submission / experiments / runs / analyses のどれも無い record は「指摘ゼロ」ではなく入力エラーとして落とします。
+- **`projects` / `samples` が同居していても読みません**（BioProject / BioSample として別に検証します）。
+  読まなかったことは `level: info` の結果としてレポートに出し（テキストのレポートでは `[ INFO ]` 節）、
+  そちら側のスキーマ違反は `warning` にします。
+- XML との同値性は `apps/dra/tests/run_record_parity_test.py` がシナリオ全件で確かめています
+  （`run_tests.py` を引数無しで実行すると一緒に走ります）。
 
 ## GEA（`gea`）
 

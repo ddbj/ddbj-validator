@@ -1,8 +1,9 @@
 """DDBJ Record を「どの DB として検証するか」の決め方と、担当外の扱いを固定する。
 
-DDBJ Record は 1 ドキュメントに projects と samples を同居させられる。登録は DB ごとに
-行い、BioProject として登録するときに読まれるのは projects、BioSample として登録する
-ときは samples だけなので、reader は自分の担当だけを読む（2026-08-28 の方針決定）。
+DDBJ Record は 1 ドキュメントに projects と samples（と DRA の experiments / runs / analyses）を
+同居させられる。登録は DB ごとに行い、BioProject として登録するときに読まれるのは projects、
+BioSample として登録するときは samples、DRA は submission / experiments / runs / analyses
+だけなので、reader は自分の担当だけを読む（2026-08-28 の方針決定）。
 CLI はサブコマンドが担当を決めるが、web api はロールが `ddbj_record` の 1 つしか無いので
 `record_db` で指定してもらい、無ければ top-level から推測する。
 
@@ -23,10 +24,13 @@ from apps.bioproject import record_reader as bp_reader
 from apps.biosample import cli as bs_cli
 from apps.biosample import record_reader as bs_reader
 from apps.biosample import reporter as bs_reporter
+from apps.dra import cli as dra_cli
+from apps.dra import record_reader as dra_reader
 from apps.webapi import runner
 
 _PROJECTS = [{"title": "A project title long enough", "project_type": "primary"}]
 _SAMPLES = [{"alias": "S1", "package": "Microbe.1.0", "attributes": []}]
+_EXPERIMENTS = [{"alias": "E1", "title": "An experiment"}]
 
 
 def _write(tmp_path, record):
@@ -45,29 +49,41 @@ def _write(tmp_path, record):
     ({"projects": {}}, "bioproject"),
     ({"projects": 0}, "bioproject"),
     ({"samples": ""}, "biosample"),
+    ({"experiments": _EXPERIMENTS}, "dra"),
+    ({"runs": [{"alias": "R1"}]}, "dra"),
+    ({"analyses": [{"alias": "A1"}], "submission": {"alias": "s"}}, "dra"),
 ])
 def test_sniffs_db_from_top_level(tmp_path, record, expected):
     args = runner._plan_record(_write(tmp_path, record), {})
     assert args[0] == expected
 
 
-def test_refuses_to_guess_when_both_present(tmp_path):
-    path = _write(tmp_path, {"projects": _PROJECTS, "samples": _SAMPLES})
-    # 「推測できない」であって「projects も samples も無い」ではない。match を
-    # "record_db" にすると両方の ValueError が通ってしまい、どちらが出たか固定できない。
+@pytest.mark.parametrize("record", [
+    {"projects": _PROJECTS, "samples": _SAMPLES},
+    # SRA の STUDY から来た projects を持つ DRA の record。
+    {"projects": _PROJECTS, "experiments": _EXPERIMENTS},
+])
+def test_refuses_to_guess_when_both_present(tmp_path, record):
+    path = _write(tmp_path, record)
+    # 「推測できない」であって「どれも無い」ではない。match を "record_db" にすると
+    # 両方の ValueError が通ってしまい、どちらが出たか固定できない。
     with pytest.raises(ValueError, match="同居する DDBJ Record"):
         runner._plan_record(path, {})
 
 
-@pytest.mark.parametrize("record", [{}, {"samples": []}, {"projects": []}])
+@pytest.mark.parametrize("record", [
+    {}, {"samples": []}, {"projects": []},
+    # submission は他の DB の record にもあるので、それだけでは DRA と推測しない。
+    {"submission": {"alias": "s"}},
+])
 def test_rejects_record_with_neither(tmp_path, record):
-    with pytest.raises(ValueError, match="projects も samples も"):
+    with pytest.raises(ValueError, match="のどれもありません"):
         runner._plan_record(_write(tmp_path, record), {})
 
 
-@pytest.mark.parametrize("db", ["bioproject", "biosample"])
+@pytest.mark.parametrize("db", ["bioproject", "biosample", "dra"])
 def test_record_db_decides_even_when_both_present(tmp_path, db):
-    path = _write(tmp_path, {"projects": _PROJECTS, "samples": _SAMPLES})
+    path = _write(tmp_path, {"projects": _PROJECTS, "samples": _SAMPLES, "experiments": _EXPERIMENTS})
     assert runner._plan_record(path, {"record_db": db})[0] == db
 
 
@@ -78,7 +94,7 @@ def test_record_db_skips_the_parse_entirely(tmp_path):
                                {"record_db": "biosample"})[0] == "biosample"
 
 
-@pytest.mark.parametrize("db", ["dra", "project", "bio project"])
+@pytest.mark.parametrize("db", ["gea", "project", "bio project"])
 def test_rejects_unknown_record_db(db):
     with pytest.raises(ValueError, match="record_db に指定できるのは"):
         runner.normalise_record_db(db)
@@ -111,6 +127,10 @@ def test_plan_routes_the_ddbj_record_role(tmp_path):
     ("bioproject", "PRJDB0001",  False),
     ("bioproject", None,         False),
     (None,         "SSUB000001", False),
+    # DRA の id（account 名＋連番）に接頭辞は無い。PSUB / SSUB なら取り違え。
+    ("dra",        "amr_ddbj-0104", False),
+    ("dra",        "PSUB000001", True),
+    ("dra",        "SSUB000001", True),
 ])
 def test_submission_id_prefix_must_match_record_db(db, submission_id, bad):
     """同じ record を DB ごとに 2 回投げるので、片方の id を付けたままにする間違いが
@@ -159,9 +179,18 @@ def test_biosample_reader_ignores_project(tmp_path):
     assert [r.sample_name for r in submission.records] == ["S1"]
 
 
+def test_dra_reader_ignores_projects_and_samples(tmp_path):
+    path = _write(tmp_path, {"projects": _PROJECTS, "samples": _SAMPLES,
+                             "submission": {"alias": "s"}, "experiments": _EXPERIMENTS})
+    submission, _ = dra_reader.parse_record(str(path))
+    assert [e.alias for e in submission.experiments] == ["E1"]
+
+
 @pytest.mark.parametrize("reader, record, rule_id", [
     (bp_reader, {"projects": _PROJECTS, "samples": _SAMPLES}, "BP_R0002"),
     (bs_reader, {"projects": _PROJECTS, "samples": _SAMPLES}, "BS_R0098"),
+    (dra_reader, {"projects": _PROJECTS, "samples": _SAMPLES,
+                  "submission": {"alias": "s"}, "experiments": _EXPERIMENTS}, "DRA_R0002"),
 ])
 def test_skipped_half_is_reported_not_just_logged(tmp_path, reader, record, rule_id):
     """stderr は validation.log にしか残らず、それを取れる API が無い（`get_file` の
@@ -187,6 +216,8 @@ def test_biosample_skip_notice_has_its_own_wording():
     (bp_cli, {"projects": [], "samples": _SAMPLES}),
     (bs_cli, {"projects": _PROJECTS}),
     (bs_cli, {"projects": _PROJECTS, "samples": []}),
+    (dra_cli, {"projects": _PROJECTS, "samples": _SAMPLES}),
+    (dra_cli, {"experiments": [], "runs": []}),
 ])
 def test_nothing_to_validate_writes_no_report(tmp_path, cli, record):
     """担当が 0 件なら、担当外の info しか無くてもレポートを書かずに落とす。info は
@@ -201,6 +232,7 @@ def test_nothing_to_validate_writes_no_report(tmp_path, cli, record):
 @pytest.mark.parametrize("cli, record", [
     (bp_cli, {"projects": [], "bogus": 1}),
     (bs_cli, {"samples": [], "bogus": 1}),
+    (dra_cli, {"experiments": [], "bogus": 1}),
 ])
 def test_nothing_to_validate_but_an_error_still_reports_it(tmp_path, cli, record):
     """担当 0 件でも、形式の違反は実際の指摘なので握りつぶさずレポートに残す。"""
@@ -235,6 +267,23 @@ def test_bioproject_demotes_schema_violations_in_samples():
 def test_biosample_demotes_schema_violations_in_project():
     out = {(e["level"], e["target"]) for e in bs_reader._scoped_schema_errors(_PYDANTIC_ERR)}
     assert out == {("error", "#file_format"), ("warning", "#out_of_scope")}
+
+
+def test_dra_demotes_schema_violations_in_projects_samples_and_their_relations():
+    """DRA は projects も samples も読まない。それらを source にする relation（SRA の
+    STUDY_LINKS などから来る）も同じ。experiment を source にする relation の違反は DRA の側。"""
+    record = {"relations": [{"source": {"type": "project"}}, {"source": {"type": "experiment"}}]}
+    errors = [*_PYDANTIC_ERR,
+              {"loc": ("relations", 0, "bogus"), "msg": "Extra inputs are not permitted"},
+              {"loc": ("relations", 1, "bogus"), "msg": "Extra inputs are not permitted"},
+              {"loc": ("experiments", 0, "bogus"), "msg": "Extra inputs are not permitted"}]
+    out = dra_reader._scoped_schema_errors(errors, record)
+    mine = [e for e in out if e["level"] == "error"]
+    assert [e["message"].split("(")[-1] for e in mine] == [
+        "relations.1.bogus: Extra inputs are not permitted)",
+        "experiments.0.bogus: Extra inputs are not permitted)",
+    ]
+    assert [(e["level"], e["target"]) for e in out if e not in mine] == [("warning", "#out_of_scope")]
 
 
 def test_cap_is_applied_per_half():

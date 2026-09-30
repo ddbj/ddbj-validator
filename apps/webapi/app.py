@@ -253,7 +253,7 @@ async def create_validation(
     # 呼び出し側が指定する（省略時は top-level から推測。runner._plan_record）。
     # 名前が record_db なのは、この file 内の「db モード」（MODE_FLAG_DB）と別物だから。
     record_db: str = Form(
-        None, description="ddbj_record 専用。bioproject / biosample。"
+        None, description="ddbj_record 専用。bioproject / biosample / dra。"
                           "省略時は record の top-level から推測する（同居していると決まらない）"),
 ):
     uploads = {
