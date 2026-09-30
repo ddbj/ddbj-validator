@@ -236,6 +236,13 @@ class AXS5290(BaseRule):
         return results
         
 class AXS5210(BaseRule):
+    """assembly_gap の合計が配列長の 50% を超えていれば warning。
+
+    entry 単位の指摘なので details 行に location 列が出ない（reporter の show_location は
+    常に False。feature_type="sequence" の行は line も [FILE] になる）。どこがどれだけ効いて
+    いるのか分かるよう、**gap の実数・比率・本数・最長 gap の位置を message に入れる**。
+    gap 1 本ごとに 1 件出すことはしない（実データで 1 entry に gap が 2,000 本を超える例がある）。
+    """
     rule_id = "AXS5210"
     alternate_id = "SVP0020, AXS0001"
     target = "gap"
@@ -250,14 +257,28 @@ class AXS5210(BaseRule):
             return results
             
         total_gap_length = 0
+        gap_count = 0
+        longest_len = 0
+        longest_loc = ""
         for feature in self.get_features(record, "assembly_gap"):
-            if feature.location:
-                total_gap_length += len(feature.location)
+            if not feature.location:
+                continue
+            gap_len = len(feature.location)
+            total_gap_length += gap_len
+            gap_count += 1
+            if gap_len > longest_len:
+                longest_len = gap_len
+                longest_loc = getattr(feature, "original_location", "") or str(feature.location)
                 
         gap_ratio = total_gap_length / seq_len
         if gap_ratio > 0.5:
+            # 値は entry ごとに違うので `(Found: ...)` の体裁にする。summary は 2 件以上のとき
+            # これを `(Example: ...)` へ書き換えるので、代表値だと分かる形で出る（reporter の既存挙動）。
+            gaps_label = "gap" if gap_count == 1 else "gaps"
+            detail = (f"(Found: {total_gap_length:,} / {seq_len:,} bases are gaps, {gap_ratio:.1%}; "
+                      f"{gap_count:,} {gaps_label}, longest {longest_len:,} bases at {longest_loc})")
             results.append(self.format_result(
-                entry_id=record.id, message=self.description, level="warning",
+                entry_id=record.id, message=f"{self.description} {detail}", level="warning",
                 feature_type="sequence"
             ))
             
