@@ -80,6 +80,14 @@ TYPE_PRIORITY = {
     "misnomer": 13,
 }
 
+# 生物名の別名一式として扱う name type（学名・synonym・common name 等）。
+# ANN0832 / ANN0834 が product / strain / isolate の値に生物名が紛れていないかを照合するのに使う。
+NAME_VARIANT_TYPES = {
+    "scientific name", "synonym", "equivalent name", "common name",
+    "genbank common name", "blast name", "includes", "acronym", "in-part",
+    "authority",
+}
+
 # 許可される rank の定義
 ALLOWED_RANKS = {"species", "forma", "subspecies", "varietas"}
 
@@ -134,6 +142,44 @@ NCBI_DIVISION_MAP = {
     "Vertebrates": "VRT",
     "Environmental samples": "ENV",
 }
+
+
+def fetch_taxonomy_name_variants(db_conn, ut_ids):
+    """ut_id 群 → {ut_id(str): set(小文字化した名前バリアント)} を返す。
+
+    学名・synonym・common name・genbank common name などの別名一式を utax_names から一括で引く。
+    ANN0832 / ANN0834 が product / strain / isolate の値に生物名が入っていないかを照合するために使う。
+    DB が引けないときは空を返してチェックごとスキップさせる（どちらも warning ルールのため）。
+    """
+    result = {}
+    ids = []
+    for u in ut_ids:
+        if u in (None, "", "unknown"):
+            continue
+        try:
+            ids.append(int(u))
+        except (TypeError, ValueError):
+            continue
+    if not ids or db_conn is None:
+        return result
+    query = """
+        SELECT n.ut_id, trim(n.ut_name) AS name, lower(trim(n.ut_type)) AS name_type
+        FROM public.utax_names n
+        WHERE n.ut_id IN ({placeholders})
+    """
+    try:
+        rows = execute_in_query(db_conn, query, ids)
+    except Exception as e:
+        logger.warning(f"fetch_taxonomy_name_variants failed: {e}")
+        return result
+    for row in rows:
+        uid = str(row[0])
+        name = (row[1] or "").strip()
+        ntype = (row[2] or "").strip()
+        if not name or ntype not in NAME_VARIANT_TYPES:
+            continue
+        result.setdefault(uid, set()).add(name.lower())
+    return result
 
 
 def fetch_taxonomy_data(db_conn, organism_list):

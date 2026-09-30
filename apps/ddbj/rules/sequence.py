@@ -128,6 +128,11 @@ class SEQ0090(BaseRule):
 
         
 class SEQ5010(BaseRule):
+    """N（曖昧塩基）が配列長の 50% を超えていれば warning。
+
+    entry 単位の指摘で details 行に location が出ないため（AXS5210 と同じ事情）、
+    N の実数と比率を message に入れてどれくらい酷いのか分かるようにする。
+    """
     rule_id = "SEQ5010"
     alternate_id = "SVP0022, SEQ0001"
     target = "sequence"
@@ -144,8 +149,10 @@ class SEQ5010(BaseRule):
             n_ratio = n_count / seq_len
             
             if n_ratio > MAX_N_RATIO:
+                # AXS5210 と同じく `(Found: ...)` 体裁。summary では `(Example: ...)` になる。
+                detail = f"(Found: {n_count:,} / {seq_len:,} bases are 'N', {n_ratio:.1%})"
                 results.append(self.format_result(
-                    entry_id=record.id, message=self.description, level="warning",
+                    entry_id=record.id, message=f"{self.description} {detail}", level="warning",
                     feature_type="sequence"
                 ))
                 

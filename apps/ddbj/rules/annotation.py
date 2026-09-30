@@ -47,6 +47,77 @@ def normalize_name(s):
     if not s: return ""
     return re.sub(r'[^a-z]', '', s.lower())
 
+
+# 二名法（属名＋種小名）の先頭を拾う。属名略記 "B. subtilis" を作るのに使う。
+_GENUS_SPECIES_RE = re.compile(r"^([A-Z][a-z]+)\s+([a-z][a-z-]+)")
+# 種小名ではない略号。"Bacillus sp." から "B. sp" を作らないよう除外する。
+_SP_TOKENS = {"sp", "spp", "cf", "aff", "nr"}
+
+
+def _organism_name_candidates(org_clean, tax_info):
+    """organism とその別名一式から、照合用の名前候補集合（小文字）を作る。
+
+    二名法の名前には属名略記 "g. species" / "g.species" も加える（実データで頻出するため）。
+    """
+    raw = set()
+    if org_clean:
+        raw.add(org_clean)
+    if tax_info:
+        sci = tax_info.get("scientific_name")
+        if sci:
+            raw.add(sci)
+        raw.update(tax_info.get("name_variants") or set())
+    cands = set()
+    for name in raw:
+        n = " ".join(str(name).split()).strip()
+        if not n:
+            continue
+        cands.add(n.lower())
+        m = _GENUS_SPECIES_RE.match(n)
+        if m and m.group(2).lower() not in _SP_TOKENS:
+            g, sp = m.group(1)[0].lower(), m.group(2).lower()
+            cands.add(f"{g}. {sp}")
+            cands.add(f"{g}.{sp}")
+    return cands
+
+
+def _find_organism_name_in(text, candidates, min_len=4):
+    """text に candidates のいずれかが語境界で含まれれば、その候補文字列を返す。
+
+    "subtilisin" のような部分一致を避けるため前後を語境界で挟む。
+    min_len 未満の短い候補は誤検出のもとなので見ない。長い候補を優先して返す。
+    """
+    if not text:
+        return None
+    hay = " ".join(str(text).split()).lower()
+    for cand in sorted(candidates, key=len, reverse=True):
+        if len(cand) < min_len:
+            continue
+        body = r"\s+".join(re.escape(t) for t in cand.split())
+        if re.search(r"(?<![a-z0-9])" + body + r"(?![a-z0-9])", hay):
+            return cand
+    return None
+
+
+def _source_organism(rule, record):
+    """source feature の organism を 1 つ返す（無ければ空文字）。"""
+    for feature in rule.get_features(record, "source"):
+        for o in feature.qualifiers.get("organism", []):
+            org = (o or "").strip()
+            if org:
+                return org
+    return ""
+
+
+def _organism_candidates_for(rule, record, context):
+    """record の organism から照合候補を作る。organism 未記載・DB 未解決なら空集合。"""
+    org = _source_organism(rule, record)
+    if not org:
+        return set()
+    tax_info = (context.tax_data or {}).get(org, {}) if getattr(context, "tax_data", None) else {}
+    return _organism_name_candidates(org, tax_info)
+
+
 class ANN0160(BaseRule):
     rule_id = "ANN0160"
     alternate_id = "JP0022"
@@ -5105,4 +5176,65 @@ class ANN6400(BaseRule):
                 except Exception as e:
                     logger.debug(f"Failed to validate transl_except: {e}", exc_info=True)
 
+        return results
+
+
+class ANN0832(BaseRule):
+    """/product に生物名が入っていれば warning。
+
+    INSDC では product に生物名を書かないのが原則だが、歴史的に入っている登録があるため
+    error にはせず warning に留める。生物名の照合は内部 taxonomy DB の別名一式
+    （学名・synonym・common name 等）で行うので requires_rdb。
+    """
+    rule_id = "ANN0832"
+    alternate_id = None
+    target = "FEATURE"
+    description = "Organism name should not appear in /product."
+    requires_rdb = True
+    is_file_level = False
+
+    def validate(self, record, context):
+        results = []
+        cands = _organism_candidates_for(self, record, context)
+        if not cands:
+            return results   # organism 未記載 or DB 未解決。誤検出を避けて何もしない
+        for feature in record.features:
+            for pv in feature.qualifiers.get("product", []):
+                hit = _find_organism_name_in(pv, cands)
+                if hit:
+                    results.append(self.feature_result(
+                        record, feature,
+                        f"{self.description} (product: '{pv}', organism name: '{hit}')",
+                        level="warning", qualifier="product"))
+        return results
+
+
+class ANN0834(BaseRule):
+    """/strain・/isolate に生物名が入っていれば warning。
+
+    strain は "not recommended"、isolate は "discouraged" と文言を分ける（禁止まではしない）。
+    """
+    rule_id = "ANN0834"
+    alternate_id = None
+    target = "source"
+    description = "Organism name should not appear in /strain or /isolate."
+    requires_rdb = True
+    is_file_level = False
+
+    def validate(self, record, context):
+        results = []
+        cands = _organism_candidates_for(self, record, context)
+        if not cands:
+            return results
+        for feature in self.get_features(record, "source"):
+            for qual in ("strain", "isolate"):
+                for v in feature.qualifiers.get(qual, []):
+                    hit = _find_organism_name_in(v, cands)
+                    if hit:
+                        note = "discouraged" if qual == "isolate" else "not recommended"
+                        results.append(self.feature_result(
+                            record, feature,
+                            f"Organism name should not appear in /{qual} ({note}). "
+                            f"(value: '{v}', organism name: '{hit}')",
+                            level="warning", qualifier=qual))
         return results
