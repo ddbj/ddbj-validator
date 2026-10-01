@@ -62,6 +62,7 @@ class ValidatorPipeline(ExternalFetchMixin, BiosampleTsvMixin):
         self.tax_data = {}
         self.bs_data = {}
         self.cv_terms = {}
+        self.ddbj_dict = {}
 
     def run_validation(self):
         """検証パイプライン: 外部参照の一括取得 → 並列ファイル検証を順に実行する。"""
@@ -171,6 +172,7 @@ class ValidatorPipeline(ExternalFetchMixin, BiosampleTsvMixin):
         self.auto_updates_by_file = auto_updates_by_file
         self.updq_data = updq_data
         self.cv_terms = context.cv_terms
+        self.ddbj_dict = context.ddbj_dict
         
         return jsonl_paths
 
@@ -240,7 +242,8 @@ class ValidatorPipeline(ExternalFetchMixin, BiosampleTsvMixin):
             # report_out_dir を引数に追加
             autofix_tasks.append(AutofixTask(
                 ann_path=ann_path, seq_path=seq_path, file_updates=file_updates,
-                tax_data=self.tax_data, cv_terms=self.cv_terms, report_out_dir=self.report_out_dir))
+                tax_data=self.tax_data, cv_terms=self.cv_terms, report_out_dir=self.report_out_dir,
+                ddbj_dict=self.ddbj_dict))
 
         with ProcessPoolExecutor(max_workers=self.jobs) as executor:
             for msg in executor.map(_apply_autofix_worker, autofix_tasks):
