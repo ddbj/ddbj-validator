@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
-from apps.ddbj.utils.features import get_features, is_pseudogene
+from apps.ddbj.utils.features import get_features, is_pseudogene, is_common_template_feature
 from apps.ddbj.db_metadata import get_expected_transl_table
 from apps.ddbj.autofix.proposal import build_proposal, update_qualifier_action
 
@@ -59,7 +59,11 @@ def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None,
     # ファイル上の実体は COMMON ブロックの 1 箇所だけ。entry ごとに突合すると同じ行に対する提案が
     # entry 数ぶん作られ、autofix が COMMON へ同じ qualifier を entry 数ぶん書き込んでしまう。
     # そのため entry ループでは COMMON 由来 source を外し、ループ後に 1 回だけ突合する。
-    common_source_ctx = None
+    # COMMON の値は複製先のすべての entry に効くので、突合相手はそれらの entry が参照する
+    # BioSample 全部（和集合）。entry ごとに BioSample が違い値が食い違えば、_bs_values が
+    # 複数値を返して「混在のためスキップ」になる（どれか 1 つを COMMON に書くのは誤り）。
+    common_record = None
+    common_samds_union = set()
     for entry_id, record in records.items():
         if entry_id == "COMMON": continue
         entry_samds = _extract_samd_from_single_record(record)
@@ -78,15 +82,16 @@ def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None,
         if not valid_samds: continue
 
         # source qualifier 群を BioSample 値と突合（COMMON テンプレート由来は除く）
-        p, w, s = _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, ann_path, target_attrs, emit_additions=emit_additions, common_mode="exclude")
+        p, w, s = _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, ann_path, target_attrs, emit_additions=emit_additions, common_only=False)
         proposals.extend(p)
         validation_warnings.extend(w)
         skipped_warnings.extend(s)
 
-        if common_source_ctx is None and any(getattr(f, "from_common", False) for f in record.features):
-            # COMMON 由来の source は全 entry で同一の行なので、最初に見つけた entry の
-            # BioSample（entry 固有の DBLINK が無ければ COMMON の DBLINK）で代表して突合する。
-            common_source_ctx = (record, valid_samds)
+        if any(is_common_template_feature(f) for f in get_features(record, "source")):
+            # COMMON 由来の source は全 entry で同一の行。record はどれでもよいので最初の 1 つを使う
+            if common_record is None:
+                common_record = record
+            common_samds_union.update(valid_samds)
 
         # locus_tag prefix を BioSample 値と突合。
         # 一般実行（emit_additions=False）は従来どおり。-b 時は mapping に locus_tag がある場合のみ（addition のみ）。
@@ -97,11 +102,10 @@ def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None,
             skipped_warnings.extend(s)
 
     # COMMON テンプレート由来 source の突合（ファイル全体で 1 回。entry は "COMMON" 名義）
-    if common_source_ctx is not None:
-        common_record, common_valid_samds = common_source_ctx
+    if common_record is not None:
         p, w, s = _propose_biosample_qualifier_sync(
-            common_record, "COMMON", common_valid_samds, bs_data, ann_path, target_attrs,
-            emit_additions=emit_additions, common_mode="only")
+            common_record, "COMMON", sorted(common_samds_union), bs_data, ann_path, target_attrs,
+            emit_additions=emit_additions, common_only=True)
         proposals.extend(p)
         validation_warnings.extend(w)
         skipped_warnings.extend(s)

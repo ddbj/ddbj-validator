@@ -11,7 +11,8 @@ entry 数ぶん書き込んでいた（2026-10-01 の報告 NSUB003618。55,076 
 from types import SimpleNamespace
 
 from apps.ddbj.autofix.writer import write_autofix_to_file
-from apps.ddbj.biosample.sync import _filter_by_common, _is_common_template_feature
+from apps.ddbj.biosample.sync import _source_features
+from common.features import is_common_template_feature
 from apps.ddbj.parser import parse_ddbj_submission
 
 
@@ -39,14 +40,14 @@ def test_common_template_source_is_marked_in_every_entry():
         assert len(sources) == 1
         # 複製元は COMMON の 2 行目。どの entry でも同じ行を指す
         assert sources[0].line_number == 2
-        assert _is_common_template_feature(sources[0]) is True
+        assert is_common_template_feature(sources[0]) is True
 
 
 def test_entry_own_features_are_not_marked():
     records = _parse(_COMMON_ANN)
     rrna = [f for f in records["seq1"].features if f.type == "rRNA"]
     assert len(rrna) == 1
-    assert _is_common_template_feature(rrna[0]) is False
+    assert is_common_template_feature(rrna[0]) is False
 
 
 def test_entry_level_source_is_not_marked():
@@ -57,27 +58,36 @@ def test_entry_level_source_is_not_marked():
     ]
     records = _parse(ann, ">seq1\n" + "ATGC" * 10 + "\n//\n")
     source = [f for f in records["seq1"].features if f.type == "source"][0]
-    assert _is_common_template_feature(source) is False
+    assert is_common_template_feature(source) is False
 
 
 # ---------------- 突合対象の絞り込み ----------------
-def _features():
-    return [SimpleNamespace(type="source", from_common=True),
-            SimpleNamespace(type="source", from_common=False)]
+def _record(*features):
+    return SimpleNamespace(features=list(features),
+                           features_by_type={"source": [f for f in features if f.type == "source"]})
 
 
-def test_filter_by_common_modes():
-    common, own = _features()
-    assert _filter_by_common([common, own], "all") == [common, own]
-    assert _filter_by_common([common, own], "exclude") == [own]
-    assert _filter_by_common([common, own], "only") == [common]
+def test_source_features_split_common_and_entry_own():
+    common = SimpleNamespace(type="source", from_common=True)
+    own = SimpleNamespace(type="source", from_common=False)
+    rec = _record(common, own)
+    assert _source_features(rec, common_only=False) == [own]
+    assert _source_features(rec, common_only=True) == [common]
 
 
-def test_filter_by_common_treats_a_missing_flag_as_entry_own():
+def test_source_features_treat_a_missing_flag_as_entry_own():
     """from_common を持たない feature（テスト用のダミー等）は entry 固有として扱う。"""
     plain = SimpleNamespace(type="source")
-    assert _filter_by_common([plain], "exclude") == [plain]
-    assert _filter_by_common([plain], "only") == []
+    rec = _record(plain)
+    assert _source_features(rec, common_only=False) == [plain]
+    assert _source_features(rec, common_only=True) == []
+
+
+def test_source_features_ignore_non_source_features():
+    """突合属性はすべて source 専用なので CDS 等は見ない。"""
+    cds = SimpleNamespace(type="CDS", from_common=False, qualifiers={"strain": ["x"]})
+    rec = SimpleNamespace(features=[cds], features_by_type={"CDS": [cds]})
+    assert _source_features(rec, common_only=False) == []
 
 
 # ---------------- writer の重複ガード ----------------
@@ -104,3 +114,54 @@ def test_add_qualifier_still_writes_different_values_on_the_same_line(tmp_path):
     body = out.read_text()
     assert "\t\t\tisolate\tA\n" in body
     assert "\t\t\tisolation_source\tmarine\n" in body
+
+
+# ---------------- COMMON 由来 source と entry ごとの BioSample ----------------
+from apps.ddbj.autofix.external_db import propose_qualifiers_updates
+
+
+def _entry(entry_id, samd, line_dblink):
+    """entry 固有の DBLINK を持ち、COMMON テンプレート由来の source を共有する record。"""
+    dblink = SimpleNamespace(type="DBLINK", qualifiers={"biosample": [samd]}, line_number=line_dblink)
+    source = SimpleNamespace(type="source", qualifiers={"organism": ["Escherichia coli"]},
+                             line_number=2, from_common=True)
+    return SimpleNamespace(id=entry_id, features=[dblink, source],
+                           features_by_type={"DBLINK": [dblink], "source": [source]})
+
+
+def _records_with_two_biosamples():
+    return {"seq1": _entry("seq1", "SAMD00000001", 10),
+            "seq2": _entry("seq2", "SAMD00000002", 20)}
+
+
+def test_common_source_is_matched_once_against_all_covered_biosamples_when_they_agree():
+    """COMMON の値は複製先の全 entry に効くので、突合相手はそれらの BioSample 全部。値が揃っていれば 1 件。"""
+    bs = {"SAMD00000001": {"isolate": "X1"}, "SAMD00000002": {"isolate": "X1"}}
+    props, warns, skips = propose_qualifiers_updates(_records_with_two_biosamples(), bs, "t.ann")
+    adds = [p for p in props if p["qualifier"] == "isolate"]
+    assert len(adds) == 1
+    assert adds[0]["entry"] == "COMMON"
+    assert adds[0]["new_value"] == "X1"
+    assert [w["entry"] for w in warns if w["qualifier"] == "isolate"] == ["COMMON"]
+    assert skips == []
+
+
+def test_common_source_is_not_filled_when_covered_biosamples_disagree():
+    """entry ごとに BioSample の値が違うなら、どれか 1 つを COMMON に書くのは誤り。追加提案を出さない。"""
+    bs = {"SAMD00000001": {"isolate": "X1"}, "SAMD00000002": {"isolate": "X2"}}
+    props, warns, skips = propose_qualifiers_updates(_records_with_two_biosamples(), bs, "t.ann")
+    assert [p for p in props if p["qualifier"] == "isolate"] == []
+    assert [w for w in warns if w["qualifier"] == "isolate"] == []
+
+
+def test_common_source_mismatch_with_disagreeing_biosamples_is_reported_as_skipped():
+    """ann にも値があり BioSample 側が割れている → 混在スキップとして 1 件（entry は COMMON）。"""
+    records = _records_with_two_biosamples()
+    for r in records.values():
+        r.features[1].qualifiers["isolate"] = ["X0"]
+    bs = {"SAMD00000001": {"isolate": "X1"}, "SAMD00000002": {"isolate": "X2"}}
+    props, warns, skips = propose_qualifiers_updates(records, bs, "t.ann")
+    assert [p for p in props if p["qualifier"] == "isolate"] == []
+    assert len(skips) == 1
+    assert skips[0]["entry"] == "COMMON" and skips[0]["attr"] == "isolate"
+    assert skips[0]["values"] == {"X1", "X2"}

@@ -24,6 +24,9 @@ class AutofixTask:
     tax_data: Any
     cv_terms: Any
     report_out_dir: Any
+    # definitions.json（metadata_field の判定に使う）。空だと再パース時に DBLINK 等が生物学的
+    # フィーチャー扱いになり、COMMON テンプレートの展開先がずれる。
+    ddbj_dict: Any = None
 
 
 # ============================================================================
@@ -36,12 +39,9 @@ def _apply_autofix_worker(task):
     tax_data = task.tax_data
     cv_terms = task.cv_terms
     report_out_dir = task.report_out_dir
-    
-    from apps.ddbj.preprocessor import preprocess_files
-    from apps.ddbj.parser import parse_ddbj_submission
-    
+
     ann_lines, fasta_content, _ = preprocess_files(ann_path, seq_path)
-    records, _, _ = parse_ddbj_submission(fasta_content, ann_path, ann_lines, {})
+    records, _, _ = parse_ddbj_submission(fasta_content, ann_path, ann_lines, task.ddbj_dict or {})
     
     # -o オプションがあればそこへ。なければ入力ファイルの親へ
     base_out_dir = Path(report_out_dir) if report_out_dir else Path(ann_path).parent
