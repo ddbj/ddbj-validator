@@ -64,12 +64,13 @@ def parse_ddbj_submission(fasta_content, ann_path, ann_lines, ddbj_dict=None):
     # ---------------------------------------------------------
     # 2. COMMONテンプレートの展開 (遅延パース用タスクの生成)
     # ---------------------------------------------------------
-    tasks = _expand_common_template(ann_lines, records, METADATA_FIELDS)
+    tasks, common_feature_lines = _expand_common_template(ann_lines, records, METADATA_FIELDS)
 
     # ---------------------------------------------------------
     # 3. アノテーションのパース処理 (メインループ)
     # ---------------------------------------------------------
-    _parse_annotation_tasks(tasks, records, parse_errors, qualifiers_dict, METADATA_FIELDS, ann_path)
+    _parse_annotation_tasks(tasks, records, parse_errors, qualifiers_dict, METADATA_FIELDS, ann_path,
+                            common_feature_lines)
 
     # ---------------------------------------------------------
     # 4. パース後のロケーション後処理 (ANN2020の遅延チェックなど)
@@ -177,7 +178,12 @@ def _parse_fasta_blocks(fasta_content, records, parse_errors, ann_path):
 
 
 def _expand_common_template(ann_lines, records, METADATA_FIELDS):
-    """COMMONエントリの生物学的フィーチャーを全レコードに展開し、解析タスクのリストを返す"""
+    """COMMONエントリの生物学的フィーチャーを全レコードに展開し、解析タスクのリストを返す。
+
+    戻り値は (tasks, common_feature_lines)。common_feature_lines は展開元となった COMMON の
+    生物学的フィーチャー行の行番号集合で、複製された feature を「ファイル上の実体は COMMON の
+    1 箇所だけ」と識別するために使う（autofix が entry 数ぶん重複するのを防ぐ）。
+    """
     has_common = False
     has_source = False
     has_e_location = False
@@ -204,6 +210,7 @@ def _expand_common_template(ann_lines, records, METADATA_FIELDS):
 
     is_template_mode = has_common and has_source and has_e_location
     tasks = []
+    common_feature_lines = set()
     
     if is_template_mode:
         common_metadata_tasks = []
@@ -237,7 +244,8 @@ def _expand_common_template(ann_lines, records, METADATA_FIELDS):
                 other_tasks.append((orig_line_no, clean_line))
                 
         tasks.extend(common_metadata_tasks)
-        
+        common_feature_lines = {ln for ln, _ in common_bio_feature_tasks}
+
         for seq_id, record in records.items():
             if seq_id == "COMMON": continue
             
@@ -256,7 +264,7 @@ def _expand_common_template(ann_lines, records, METADATA_FIELDS):
     else:
         tasks = clean_ann_lines_with_no
 
-    return tasks
+    return tasks, common_feature_lines
 
 
 def _split_annotation_columns(clean_line, line_no, current_entry_id,
@@ -354,15 +362,19 @@ def _resolve_feature_location(loc_str, feat_type, seq_len, line_no, err_entry, a
 
 
 def _register_new_feature(records, current_entry_id, feat_type, location, original_loc_str,
-                          line_no, qualifier, value, METADATA_FIELDS, current_biological_feature):
+                          line_no, qualifier, value, METADATA_FIELDS, current_biological_feature,
+                          from_common=False):
     """新しいフィーチャーを生成してレコードに登録する。
 
     METADATA フィールドか生物学的フィーチャーかで現在の文脈を切り替え、
     更新後の (current_metadata_feature, current_biological_feature) を返す。
+
+    from_common は COMMON テンプレート（source 1..E）から全 entry へ複製された feature を示す。
     """
     new_feature = SeqFeature(location=location, type=feat_type, qualifiers={})
     new_feature.original_location = original_loc_str
     new_feature.line_number = line_no
+    new_feature.from_common = from_common
     new_feature.has_qualifier_on_first_line = bool(qualifier.strip())
 
     if current_entry_id in records:
@@ -421,8 +433,10 @@ def _attach_qualifier_to_feature(records, current_entry_id, current_metadata_fea
                 records[current_entry_id].features_by_locus_tag[tag_val].append(target_feature)
 
 
-def _parse_annotation_tasks(tasks, records, parse_errors, qualifiers_dict, METADATA_FIELDS, ann_path):
+def _parse_annotation_tasks(tasks, records, parse_errors, qualifiers_dict, METADATA_FIELDS, ann_path,
+                            common_feature_lines=None):
     """アノテーションの各行をパースして SeqFeature を構築し、レコードに紐付ける"""
+    common_feature_lines = common_feature_lines or set()
     current_entry_id = None
     current_biological_feature = None
     current_metadata_feature = None
@@ -470,7 +484,8 @@ def _parse_annotation_tasks(tasks, records, parse_errors, qualifiers_dict, METAD
 
             current_metadata_feature, current_biological_feature = _register_new_feature(
                 records, current_entry_id, feat_type, location, original_loc_str,
-                line_no, qualifier, value, METADATA_FIELDS, current_biological_feature)
+                line_no, qualifier, value, METADATA_FIELDS, current_biological_feature,
+                from_common=line_no in common_feature_lines)
 
         # --- Qualifier の追加 ---
         elif qualifier:

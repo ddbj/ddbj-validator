@@ -94,6 +94,9 @@ def write_autofix_to_file(ann_lines, updates, out_path):
     current_feature_line = None
     update_count = 0
     pending_new_features = [u for u in updates if u.get("action") == "add_feature"]
+    # 同じ行に同じ qualifier/値を足す add_qualifier が重複して渡っても 1 回しか書かないための記録。
+    # COMMON テンプレートの source は全 entry へ複製されるため、提案が entry 数ぶん届きうる。
+    added_qualifiers = set()
     
     with open(out_path, "w", encoding="utf-8", newline="\n") as fout:
         for line_no_0, line in enumerate(ann_lines):
@@ -200,6 +203,10 @@ def write_autofix_to_file(ann_lines, updates, out_path):
 
             for u in updates:
                 if u.get("action") == "add_qualifier" and u.get("feature_line") == line_no:
+                    key = (line_no, str(u.get("qualifier", "")), str(u.get("new_value", "")))
+                    if key in added_qualifiers:
+                        continue
+                    added_qualifiers.add(key)
                     fout.write(f"\t\t\t{u['qualifier']}\t{u['new_value']}\n")
                     update_count += 1
                     

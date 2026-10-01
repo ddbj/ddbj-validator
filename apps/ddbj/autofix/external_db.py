@@ -55,6 +55,11 @@ def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None,
         common_samds = _extract_samd_from_single_record(records["COMMON"])
 
     all_valid_samds = set()
+    # COMMON テンプレート（COMMON の source 1..E）の qualifier はパーサが全 entry へ複製するが、
+    # ファイル上の実体は COMMON ブロックの 1 箇所だけ。entry ごとに突合すると同じ行に対する提案が
+    # entry 数ぶん作られ、autofix が COMMON へ同じ qualifier を entry 数ぶん書き込んでしまう。
+    # そのため entry ループでは COMMON 由来 source を外し、ループ後に 1 回だけ突合する。
+    common_source_ctx = None
     for entry_id, record in records.items():
         if entry_id == "COMMON": continue
         entry_samds = _extract_samd_from_single_record(record)
@@ -72,11 +77,16 @@ def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None,
             logger.warning(f"{entry_id}: BioSample data for {', '.join(missing_samds)} not found in DB.")
         if not valid_samds: continue
 
-        # source qualifier 群を BioSample 値と突合
-        p, w, s = _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, ann_path, target_attrs, emit_additions=emit_additions)
+        # source qualifier 群を BioSample 値と突合（COMMON テンプレート由来は除く）
+        p, w, s = _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, ann_path, target_attrs, emit_additions=emit_additions, common_mode="exclude")
         proposals.extend(p)
         validation_warnings.extend(w)
         skipped_warnings.extend(s)
+
+        if common_source_ctx is None and any(getattr(f, "from_common", False) for f in record.features):
+            # COMMON 由来の source は全 entry で同一の行なので、最初に見つけた entry の
+            # BioSample（entry 固有の DBLINK が無ければ COMMON の DBLINK）で代表して突合する。
+            common_source_ctx = (record, valid_samds)
 
         # locus_tag prefix を BioSample 値と突合。
         # 一般実行（emit_additions=False）は従来どおり。-b 時は mapping に locus_tag がある場合のみ（addition のみ）。
@@ -85,6 +95,16 @@ def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None,
             proposals.extend(p)
             validation_warnings.extend(w)
             skipped_warnings.extend(s)
+
+    # COMMON テンプレート由来 source の突合（ファイル全体で 1 回。entry は "COMMON" 名義）
+    if common_source_ctx is not None:
+        common_record, common_valid_samds = common_source_ctx
+        p, w, s = _propose_biosample_qualifier_sync(
+            common_record, "COMMON", common_valid_samds, bs_data, ann_path, target_attrs,
+            emit_additions=emit_additions, common_mode="only")
+        proposals.extend(p)
+        validation_warnings.extend(w)
+        skipped_warnings.extend(s)
 
     # DBLINK project(PRJDB) → bioproject_id。-b 時かつ mapping に "DBLINK project" がある場合のみ。
     if sync_attrs and all_valid_samds and "DBLINK project" in mapping_keys:

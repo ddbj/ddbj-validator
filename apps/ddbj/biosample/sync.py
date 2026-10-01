@@ -14,11 +14,31 @@ from common.format import fix_insdc_lat_lon
 from common.insdc_missing import is_missing_value
 
 
-def _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, ann_path, target_attrs, emit_additions=False):
+def _is_common_template_feature(feature):
+    """COMMON テンプレート（COMMON の source 1..E）から全 entry へ複製された feature か。"""
+    return bool(getattr(feature, "from_common", False))
+
+
+def _filter_by_common(features, common_mode):
+    """突合対象の feature を COMMON テンプレート由来かどうかで絞り込む。
+
+    common_mode: "all"（従来どおり全部）/ "exclude"（entry 固有のみ）/ "only"（COMMON 由来のみ）
+    """
+    if common_mode == "exclude":
+        return [f for f in features if not _is_common_template_feature(f)]
+    if common_mode == "only":
+        return [f for f in features if _is_common_template_feature(f)]
+    return list(features)
+
+
+def _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, ann_path, target_attrs,
+                                      emit_additions=False, common_mode="all"):
     """source qualifier 群を BioSample 属性値と突合し、不一致なら修正提案を作る。
 
     emit_additions=True (-b 時) の場合、ann にのみ値があり BioSample 側が空の qualifier を
     「属性追加候補」として bs_addition 付き proposal で emit する（パッケージ定義ゲートは phase-3）。
+
+    common_mode は COMMON テンプレート由来 feature の扱い（_filter_by_common 参照）。
 
     戻り値: (proposals, validation_warnings, skipped_warnings)
     """
@@ -26,7 +46,7 @@ def _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, an
     validation_warnings = []
     skipped_warnings = []
 
-    for feature in record.features:
+    for feature in _filter_by_common(record.features, common_mode):
         for attr in target_attrs:
             if attr in feature.qualifiers:
                 ann_val_list = feature.qualifiers[attr]
@@ -110,7 +130,8 @@ def _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, an
     # -b（emit_additions=True）は ann→BioSample の TSV 生成が目的なのでこの向きは扱わない。
     if not emit_additions:
         proposals.extend(_propose_missing_qualifier_additions(
-            record, entry_id, valid_samds, bs_data, ann_path, target_attrs, validation_warnings))
+            record, entry_id, valid_samds, bs_data, ann_path, target_attrs, validation_warnings,
+            common_mode=common_mode))
 
     return proposals, validation_warnings, skipped_warnings
 
@@ -169,14 +190,14 @@ def _ann_writable_value(attr, bs_val):
 
 
 def _propose_missing_qualifier_additions(record, entry_id, valid_samds, bs_data, ann_path,
-                                         target_attrs, validation_warnings):
+                                         target_attrs, validation_warnings, common_mode="all"):
     """ann の source に無い qualifier を BioSample 側の値で追加する提案を作る。
 
     同期指針の「BioSample が情報リッチ → 不足分をアノテーションファイルに反映（必須）」に当たる。
     2026-09-29 まではこの向きを見ておらず、**両方に値があるときの不一致しか**検知していなかった。
     """
     proposals = []
-    for feature in get_features(record, "source"):
+    for feature in _filter_by_common(get_features(record, "source"), common_mode):
         for attr in target_attrs:
             if attr in feature.qualifiers:
                 continue
