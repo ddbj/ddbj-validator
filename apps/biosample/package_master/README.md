@@ -46,6 +46,9 @@ python build_attributes_packages_json.py
   - env は base（env_package 空）を持たないため、共通集合（intersection）で core/env を判定する。
   - either_one は MixS にも存在（MIGS.eu/vi・MIMARKS.specimen・MIUVIG）。core 必須の前にグループ化し、内部順は現行を維持。
 - **env_package**: `No environmental package` → `""` に正規化。
+- **説明文**: `attribute-added.txt` の `Description` → 属性の `description`、`package.txt` の `Description` / `Example` →
+  パッケージの `description` / `example`。いずれも HTML タグを外し、実体参照（`&lt;` `&deg;` 等）を戻し、
+  空白を 1 つに畳んだプレーンテキスト（web API `/attribute_list` / `/package_list` が返す）。`DescriptionJa` は未使用。
 - **追加列**（attribute-added.txt）:
   - `allowed_values` / `invalid_values`: JSON 配列文字列（例 `["male", "female"]`）。空欄=無し。
   - `allow_multiple`: `true` / `false`。

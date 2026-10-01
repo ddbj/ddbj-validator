@@ -5,8 +5,8 @@
 を参照する。列順ロジックは `apps/ddbj/biosample/tsv.py` の共通ヘルパを再利用する。
 
 提供する 3 機能（app.py がルーティング）:
-- package_list        … パッケージ一覧（メタ情報付き）
-- attribute_list      … 指定パッケージの属性一覧（定義順・use・format・CV）
+- package_list        … パッケージ一覧（メタ情報・説明文・例付き）
+- attribute_list      … 指定パッケージの属性一覧（定義順・use・either_one の group・説明文・format・CV）
 - attribute_template_file … 登録システムと同一のヘッダ 1 行 TSV テンプレート
 """
 import json
@@ -34,7 +34,11 @@ def has_package(package):
 
 
 def package_list():
-    """全パッケージを (package, full_name, version, package_group, env_package) で返す。"""
+    """全パッケージを (package, full_name, version, package_group, env_package, description, example) で返す。
+
+    description / example は g sheet（package.txt）の Description / Example を HTML タグ抜きにしたもの。
+    登録システムが Instructions に出す。空のパッケージも多い（Generic 等）。
+    """
     return [
         {
             "package": key,
@@ -42,6 +46,8 @@ def package_list():
             "version": p.get("version", ""),
             "package_group": p.get("package_group", ""),
             "env_package": p.get("env_package", ""),
+            "description": p.get("description", ""),
+            "example": p.get("example", ""),
         }
         for key, p in _defs().get("packages", {}).items()
     ]
@@ -50,17 +56,24 @@ def package_list():
 def attribute_list(package):
     """指定パッケージの属性を定義順（fixed_attributes ＋ package.attributes）で返す。
 
-    各属性に use（mandatory/optional 等）と、マスタ定義（top-level attributes）由来の
-    format_pattern / synonyms / allowed_values を付与する。
+    各属性に use（mandatory / optional / either_one_mandatory）、either_one_mandatory の群を示す
+    group（"organism" / "source" / "age/stage" 等。それ以外は ""）、マスタ定義（top-level attributes）由来の
+    description（HTML タグ抜きの説明文）/ format_pattern / synonyms / allowed_values を付与する。
+    group が同じ属性は「どれか 1 つ必須」の 1 組で、登録システムが同じ色で描く。
     """
     d = _defs()
     master = d.get("attributes", {})
+    fixed = d.get("fixed_attributes", {})
+    pkg_attrs = d.get("packages", {}).get(package, {}).get("attributes", {})
     out = []
-    for name, use in ordered_attributes(package, d.get("fixed_attributes", {}), d.get("packages", {})):
+    for name, use in ordered_attributes(package, fixed, d.get("packages", {})):
         m = master.get(name, {})
+        info = pkg_attrs.get(name) or fixed.get(name) or {}
         out.append({
             "name": name,
             "use": use,
+            "group": info.get("group", ""),
+            "description": m.get("description", ""),
             "format_pattern": m.get("format_pattern", ""),
             "synonyms": m.get("synonyms", []),
             "allowed_values": m.get("allowed_values", []),

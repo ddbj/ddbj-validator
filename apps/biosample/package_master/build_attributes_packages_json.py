@@ -5,7 +5,7 @@
 本スクリプトは Virtuoso を介さず、**g sheet のみ**（固定ファイル名の 4 表）から直接 JSON を生成する。
 
 入力（このスクリプトと同じディレクトリ・固定ファイル名。中身は Google Sheets の TSV エクスポート）:
-  - package.txt           : パッケージ定義（DisplayName/Version/Group/EnvPackage 等）
+  - package.txt           : パッケージ定義（DisplayName/Version/Group/EnvPackage/Description/Example 等）
   - package-attribute.txt : パッケージ × 属性の use マトリクス（M/O/-/E:<group>/:N）
   - attribute-added.txt   : 属性定義。カラム順 =
                             Name / Harmonized name / Synonym / type / allowed_values / invalid_values /
@@ -20,9 +20,13 @@ use マトリクスのセル値:
   末尾 ":N"=null 非推奨フラグ（現行 JSON は未使用のため無視）。
 列順（登録 TSV）: package-tsv.txt の並びをそのまま用いる（fixed → 準固定 → 必須α → 選択必須α → 任意α）。
 必須/任意/択一必須の区別は package-attribute.txt から引く。
+説明文（attribute-added.txt の Description、package.txt の Description / Example）は HTML タグを外し
+実体参照を戻した素のテキストで持つ（web API /attribute_list・/package_list が画面の説明に使う）。
 """
 import csv
+import html
 import json
+import re
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -74,6 +78,19 @@ def _parse_use(cell):
 def _json_list(cell):
     c = (cell or "").strip()
     return json.loads(c) if c else []
+
+
+_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def _plain_text(cell):
+    """説明文セル → HTML タグを外し、実体参照（&lt; &deg; 等）を戻し、空白を 1 つに畳んだテキスト。
+
+    g sheet の説明文は属性ページ由来で <a href> / <span class="attention_text"> を含む。
+    API 利用側（登録システムのフォーム）はプレーンテキストで表示するため、リンク先は落として文だけ残す。
+    """
+    text = _TAG_RE.sub("", cell or "")
+    return " ".join(html.unescape(text).split())
 
 
 def _reorder_mixs(packages):
@@ -129,7 +146,7 @@ def build():
         name = r[ah["Name"]].strip()
         syn = r[ah["Synonym"]].strip()
         # キー順は resources/attributes_packages.json に合わせる:
-        # name, synonyms, [type], format_pattern, allowed_values, [allow_multiple], [invalid_values]
+        # name, synonyms, [type], format_pattern, allowed_values, [allow_multiple], [invalid_values], description
         entry = {"name": name,
                  "synonyms": [s.strip() for s in syn.split(",")] if syn else []}
         if "type" in ah and r[ah["type"]].strip():
@@ -140,6 +157,8 @@ def build():
             entry["allow_multiple"] = True
         if "invalid_values" in ah and r[ah["invalid_values"]].strip():
             entry["invalid_values"] = _json_list(r[ah["invalid_values"]])
+        if "Description" in ah:
+            entry["description"] = _plain_text(r[ah["Description"]])
         attributes[name] = entry
 
     # --- use マトリクス: {package: {attr: (use, group)}} ---
@@ -176,6 +195,8 @@ def build():
             "version": r[ph["Version"]].strip(),
             "package_group": r[ph["Group"]].strip(),
             "env_package": "" if env == _NO_ENV else env,
+            "description": _plain_text(r[ph["Description"]]) if "Description" in ph else "",
+            "example": _plain_text(r[ph["Example"]]) if "Example" in ph else "",
         }
         fullname_to_key[full] = key
 
@@ -208,6 +229,8 @@ def build():
             "version": meta["version"],
             "package_group": meta["package_group"],
             "env_package": meta["env_package"],
+            "description": meta["description"],
+            "example": meta["example"],
             "not_recommended_for": [],
             "attributes": attrs,
         }
