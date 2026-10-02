@@ -245,9 +245,16 @@ async def create_validation(
     gea_sdrf: UploadFile = File(None),
     metabobank_idf: UploadFile = File(None),
     metabobank_sdrf: UploadFile = File(None),
+    ddbj_record: UploadFile = File(None),
     submitter_id: str = Form(None),
     submission_id: str = Form(None),
     package: str = Form(None),
+    # ddbj_record 専用。1 ファイルに複数 DB が同居し得るので、どの DB として検証するかを
+    # 呼び出し側が指定する（省略時は top-level から推測。runner._plan_record）。
+    # 名前が record_db なのは、この file 内の「db モード」（MODE_FLAG_DB）と別物だから。
+    record_db: str = Form(
+        None, description="ddbj_record 専用。bioproject / biosample。"
+                          "省略時は record の top-level から推測する（同居していると決まらない）"),
 ):
     uploads = {
         "biosample": biosample, "bioproject": bioproject,
@@ -255,10 +262,36 @@ async def create_validation(
         "dra_run": dra_run, "dra_analysis": dra_analysis,
         "gea_idf": gea_idf, "gea_sdrf": gea_sdrf,
         "metabobank_idf": metabobank_idf, "metabobank_sdrf": metabobank_sdrf,
+        # DDBJ Record（v3 JSON）は DB 別でなく形式で 1 ロール。record_db フォームか、
+        # 無ければ中身を見て振り分ける（runner._plan_record）。
+        "ddbj_record": ddbj_record,
     }
     uploads = {r: f for r, f in uploads.items() if f is not None}
     if not uploads:
         return _err("入力ファイルがありません", 400)
+
+    # 受付時に分かる入力ミスは受付時に断る。background task まで持ち越すと、`202 accepted`
+    # を返したあとの `404`（本文にしか理由が無い）になり、素朴な client からは「知らない
+    # uuid」と区別が付かない。
+    try:
+        normalised_db = runner.normalise_record_db(record_db)
+    except ValueError as e:
+        return _err(str(e), 400)
+
+    mismatch = runner.submission_id_mismatch(normalised_db, submission_id)
+    if mismatch:
+        return _err(mismatch, 400)
+
+    if "ddbj_record" not in uploads:
+        # 黙って捨てると「指定したつもり」で読まれる。以下 package も同じ理由。
+        if record_db:
+            return _err("record_db は ddbj_record と一緒にのみ指定できます", 400)
+    elif package:
+        # biosample CLI が `-p` と `-r` の併用を拒む（`--package` は TSV 用で、record は
+        # サンプルごとに package を持つ）のと同じ判断。web だけ黙って無視すると、
+        # 指定した package で検証されたと読まれる。
+        return _err("package は ddbj_record には指定できません"
+                    "（record は sample ごとに package を持ちます）", 400)
 
     uuid = run_event.new_uuid()
     rdir = run_event.run_dir(config.DATA_DIR, uuid)
@@ -279,7 +312,7 @@ async def create_validation(
         return _err(f"検証を受け付けられません（保存先エラー）: {e}.{hint}", 503)
 
     params = {"account": submitter_id, "submission_id": submission_id,
-              "package": package, "start_time": start}   # mode は db 固定（引数で受けない）
+              "package": package, "record_db": record_db, "start_time": start}   # mode は db 固定（引数で受けない）
     background.add_task(runner.run_validation, rdir, saved, params)
 
     return {"uuid": uuid, "status": run_event.ACCEPTED, "start_time": start}
