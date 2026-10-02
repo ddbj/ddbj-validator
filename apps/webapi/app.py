@@ -245,6 +245,7 @@ async def create_validation(
     gea_sdrf: UploadFile = File(None),
     metabobank_idf: UploadFile = File(None),
     metabobank_sdrf: UploadFile = File(None),
+    ddbj_record: UploadFile = File(None),
     submitter_id: str = Form(None),
     submission_id: str = Form(None),
     package: str = Form(None),
@@ -255,6 +256,8 @@ async def create_validation(
         "dra_run": dra_run, "dra_analysis": dra_analysis,
         "gea_idf": gea_idf, "gea_sdrf": gea_sdrf,
         "metabobank_idf": metabobank_idf, "metabobank_sdrf": metabobank_sdrf,
+        # DDBJ Record（v3 JSON）は DB 別でなく形式で 1 ロール。中身を見て振り分ける（runner._plan_record）。
+        "ddbj_record": ddbj_record,
     }
     uploads = {r: f for r, f in uploads.items() if f is not None}
     if not uploads:
