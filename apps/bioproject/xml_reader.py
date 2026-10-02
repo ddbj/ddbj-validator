@@ -7,7 +7,7 @@
 """
 from pathlib import Path
 import defusedxml.ElementTree as ET
-from apps.bioproject.model import BioProjectRecord, BioProjectSubmission, Publication
+from apps.bioproject.model import BioProjectRecord, BioProjectSubmission, Publication, Grant
 # ソースの素の非 ASCII 集合（文字参照を除くため）。実体は common/xmltext.py。
 from common.xmltext import literal_non_ascii
 
@@ -70,6 +70,11 @@ def _build_record(proj):
         rec.title = _text(descr.find("./Title"))
         rec.description = _text(descr.find("./Description"))
         rec.release_date = _text(descr.find("./ProjectReleaseDate"))
+        for g in descr.findall("./Grant"):
+            rec.grants.append(Grant(
+                grant_id=(g.get("GrantId") or "").strip() or None,
+                title=_text(g.find("./Title")),
+                agency=_text(g.find("./Agency"))))
         for pub in descr.findall("./Publication"):
             rec.publications.append(Publication(
                 id=(pub.get("id") or "").strip() or None,

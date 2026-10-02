@@ -5,8 +5,9 @@
 # BP_R0020 は deprecated で発火しないが、rule 表の記載に合わせて集合には残す。
 # BP_R0015 は 2026-09-28 に追加。StructuredCitation で citation を書いた publication を
 # 誤検知するため（登録を止めないようにする）。誤検知そのものの修正は別途。
+# BP_R0043（Grant に Agency も Title も無い）は 2026-10-02 に追加。
 INTERNAL_IGNORE_RULE_IDS = frozenset({
-    "BP_R0005", "BP_R0006", "BP_R0015", "BP_R0018", "BP_R0020", "BP_R0021",
+    "BP_R0005", "BP_R0006", "BP_R0015", "BP_R0018", "BP_R0020", "BP_R0021", "BP_R0043",
 })
 
 

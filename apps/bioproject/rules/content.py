@@ -9,6 +9,7 @@
 - BP_R0015: publication に id も Reference も StructuredCitation も無い → error。
 - BP_R0019: deprecated（2026-09-27。validator に登録しない）。
 - BP_R0040: ProjectTypeTopSingleOrganism は不正な project type → error。
+- BP_R0043: Grant に Agency も Title も無い → error（internal ignore）。
 """
 import re
 from apps.bioproject.rules.base import BpRule
@@ -273,6 +274,28 @@ class BP_R0015(BpRule):
                 if _empty(pub.id) and _empty(pub.reference) and not pub.structured_citation:
                     out.append(self.result(sample=rec.label, message=self.description))
                     break
+        return out
+
+
+class BP_R0043(BpRule):
+    """Agency と Title の両方が空の Grant → error（internal ignore。Dway 側でも止めている）。
+
+    GrantId だけでは何の研究費か分からないため。どちらか一方があれば通す。
+    Grant ごとに 1 件出し、GrantId を添える。
+    """
+    rule_id = "BP_R0043"
+    level = "error"
+    target = "Grant"
+    description = "Grant must have an agency or a title. Please provide the funding agency or the grant title."
+
+    def validate(self, submission, context):
+        out = []
+        for rec in submission.records:
+            for g in rec.grants:
+                if _empty(g.agency) and _empty(g.title):
+                    gid = g.grant_id or "(no GrantId)"
+                    out.append(self.result(sample=rec.label,
+                                           message=f"{self.description} (GrantId: {gid})"))
         return out
 
 
