@@ -17,7 +17,7 @@ from pathlib import Path
 from common import cli_modes
 from apps.biosample.context import ValidationContext
 from apps.biosample import xml_reader, tsv_to_xml, autofix
-from apps.biosample.validator import Validator
+from apps.biosample.validator import Validator, autocleanup
 from apps.biosample.reporter import (
     build_summary, build_details, build_autofix_lines,
     write_text_reports, write_autofix_confirmation, write_json_report,
@@ -211,6 +211,9 @@ def run(args):
     if not context.account:
         context.skip_auth = True
 
+    # autocleanup は外部参照の取得より前（きれいにした organism / host で Taxonomy を引く）。
+    # 結果は Validator.run の pre_run が返す。
+    autocleanup(submission, context)
     _fetch_references(context, submission)
     results = pre_errors + Validator(context).run(submission)
     fixed_path = _apply_autofix(in_path, is_tsv, xml_for_parse, results, out_dir)

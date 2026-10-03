@@ -19,24 +19,34 @@ from apps.biosample.rules.account import BS_R0006, BS_R0129, BS_R0070, BS_R0095,
 from apps.biosample.rules.controlled import BS_R0002, BS_R0138
 
 
+def autocleanup(submission, context):
+    """autocleanup を 1 回だけ実行し、結果（BS_R0013 / BS_R0012 の warning）を返す。
+
+    **外部参照（Taxonomy・DB）の取得より前に**呼ぶ（2026-10-03）。後で呼ぶと、organism / host を
+    きれいにする前の値で Taxonomy を引くことになり、NBSP や二重空白のせいで提案が付かない、
+    取得した tax_data のキーと後続ルールが読む値が食い違う、といったことが起きる。
+    2 回目以降は最初の結果を返す（値はもう置き換え済み）。
+    """
+    if submission.cleanup_results is None:
+        submission.cleanup_results = (BS_R0013().validate(submission, context)
+                                      + BS_R0012().validate(submission, context))
+    return submission.cleanup_results
+
+
 class Validator(SimpleValidator):
     # モード別スキップ・実行・external 付与は common.rules.simple.SimpleValidator。
     # ここはルールの登録順（手で並べる）と internal ignore 集合だけを持つ。
     ignore_ids = INTERNAL_IGNORE_RULE_IDS
 
-    def __init__(self, context):
-        super().__init__(context)
-        # BS_R0013(空白正規化) と BS_R0012(特殊文字→推奨表記) は autocleanup（前処理）として
-        # 最初に in-place 実行し、以降のルールは置換済みの値を評価する（通常のルール列には含めない）。
-        # 順序: R0013(空白) → R0012(特殊文字)。これにより ℃ 等は R0058 より先に ASCII 化される。
-        self.cleanup_rule = BS_R0013()
-        self.special_char_rule = BS_R0012()
+    # BS_R0013(空白正規化) と BS_R0012(特殊文字→推奨表記) は autocleanup（前処理）として
+    # 最初に in-place 実行し、以降のルールは置換済みの値を評価する（通常のルール列には含めない）。
+    # 順序: R0013(空白) → R0012(特殊文字)。これにより ℃ 等は R0058 より先に ASCII 化される。
 
     def pre_run(self, submission):
         """autocleanup: BS_R0013(空白正規化) → BS_R0012(特殊文字) の順に in-place 置換。
-        後続ルールは cleaned 値を読む（℃ 等は R0058 より先に ASCII 化される）。"""
-        return (self.cleanup_rule.validate(submission, self.context)
-                + self.special_char_rule.validate(submission, self.context))
+        後続ルールは cleaned 値を読む（℃ 等は R0058 より先に ASCII 化される）。
+        cli は Taxonomy などの取得前に autocleanup() を済ませているので、その結果を返す。"""
+        return autocleanup(submission, self.context)
 
     def build_rules(self, context):
         return [

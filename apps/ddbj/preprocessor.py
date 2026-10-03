@@ -2,6 +2,8 @@ import sys
 import re
 from pathlib import Path
 
+from common.cleanup import normalize_space_like
+
 ANN_EXTENSIONS = ('.ann', '.annt.tsv', '.ann.txt')
 FASTA_EXTENSIONS = ('.fasta', '.seq.fa', '.fa', '.fna', '.seq')
 
@@ -32,6 +34,7 @@ def preprocess_files(ann_path_str: str, fasta_path_str: str) -> tuple[list, str,
     ann0180_count = 0
     ann0170_count = 0
     ann0185_count = 0
+    space_like_count = 0
     
     with open(ann_path, 'r', encoding='utf-8', errors='replace') as f:
         content = f.read()
@@ -41,6 +44,13 @@ def preprocess_files(ann_path_str: str, fasta_path_str: str) -> tuple[list, str,
         
     lines = content.splitlines()
     for line_no, clean_line in enumerate(lines, 1):
+        # 空白に似た文字（NBSP・全角空白・ゼロ幅空白など）を半角空白へ（2026-10-03）。
+        # ANN0040（非 ASCII で fatal）の判定より前に行い、これだけで fatal にしない。
+        # 表は common/cleanup（GEA / MetaboBank / BioSample / BioProject と共通）。
+        spaced = normalize_space_like(clean_line)
+        if spaced != clean_line:
+            space_like_count += 1
+            clean_line = spaced
         if not clean_line or clean_line.isspace() or clean_line.startswith('#'):
             cleaned_ann_lines.append(clean_line)
             continue
@@ -115,6 +125,11 @@ def preprocess_files(ann_path_str: str, fasta_path_str: str) -> tuple[list, str,
     if ann0170_count > 0:
         _add_warn("warning", "ANN0170", "qualifier", "ALL", 
                   f"[Auto-cleanup] Consecutive spaces will be automatically reduced to a single space. ({ann0170_count} items)", 
+                  "annotation", is_cleanup=True)
+    if space_like_count > 0:
+        _add_warn("warning", "ANN0170", "qualifier", "ALL",
+                  f"[Auto-cleanup] Space-like characters (no-break space, ideographic space, zero-width space, etc.) "
+                  f"were automatically replaced with a regular space. ({space_like_count} lines)",
                   "annotation", is_cleanup=True)
     if ann0185_count > 0:
         _add_warn("FATAL", "ANN0185", "qualifier", "ALL", 

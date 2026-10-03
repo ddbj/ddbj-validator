@@ -182,8 +182,38 @@ def fetch_taxonomy_name_variants(db_conn, ut_ids):
     return result
 
 
+def _split_db_encodable(db_conn, names):
+    """接続の文字コード（Taxonomy DB は EUC_JP）で表せる名前と表せない名前に分ける。
+
+    表せない文字（NBSP など）を含む名前が 1 つでも IN 句に混ざると、psycopg2 が送信前の
+    エンコードで例外を出し、**クエリ全体**が失敗する。呼び出し側は全 organism を lookup_failed に
+    するので、正しく書かれた organism まで taxonomy 依存の補正（BS_R0045 の taxonomy_id 提案など）を
+    失っていた（SSUB051896 の 817 sample。2026-10-03）。
+    表せない名前は DB に存在し得ないので、個別に not_found として扱う。
+    """
+    enc_name = getattr(db_conn, "encoding", None)
+    codec = psycopg2.extensions.encodings.get(enc_name) if enc_name else None
+    if not codec:
+        return list(names), []
+    ok, ng = [], []
+    for n in names:
+        try:
+            n.encode(codec)
+            ok.append(n)
+        except (UnicodeEncodeError, LookupError):
+            ng.append(n)
+    return ok, ng
+
+
 def fetch_taxonomy_data(db_conn, organism_list):
     tax_data = {}
+    if not organism_list:
+        return tax_data
+
+    organism_list, unencodable = _split_db_encodable(db_conn, organism_list)
+    for org in unencodable:
+        logger.warning(f"Taxonomy DB cannot encode organism name, treated as not found: {org!r}")
+        tax_data[org] = {"status": "not_found", "is_species_or_below": False}
     if not organism_list:
         return tax_data
 
