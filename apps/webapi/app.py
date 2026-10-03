@@ -248,6 +248,7 @@ async def create_validation(
     submitter_id: str = Form(None),
     submission_id: str = Form(None),
     package: str = Form(None),
+    profile: str = Form(None),
 ):
     uploads = {
         "biosample": biosample, "bioproject": bioproject,
@@ -259,6 +260,11 @@ async def create_validation(
     uploads = {r: f for r, f in uploads.items() if f is not None}
     if not uploads:
         return _err("入力ファイルがありません", 400)
+    # profile: 任意。"next"=次期 BioSample（allow_multiple 属性の多値を許す）。無ければ現行 D-way の検証。
+    # 結果 JSON・status には載せない（現行 D-way が受け取る形を変えないため）。
+    profile = (profile or "").strip() or None
+    if profile not in (None, "next"):
+        return _err(f"Unknown profile: '{profile}' (allowed: next)", 400)
 
     uuid = run_event.new_uuid()
     rdir = run_event.run_dir(config.DATA_DIR, uuid)
@@ -279,7 +285,8 @@ async def create_validation(
         return _err(f"検証を受け付けられません（保存先エラー）: {e}.{hint}", 503)
 
     params = {"account": submitter_id, "submission_id": submission_id,
-              "package": package, "start_time": start}   # mode は db 固定（引数で受けない）
+              "package": package, "profile": profile,
+              "start_time": start}   # mode は db 固定（引数で受けない）
     background.add_task(runner.run_validation, rdir, saved, params)
 
     return {"uuid": uuid, "status": run_event.ACCEPTED, "start_time": start}

@@ -36,6 +36,9 @@ def _build_parser():
     p.add_argument("-p", "--package", dest="package", default=None,
                    help="TSV 入力の package full name（例 Human / MIGS.ba）。省略時はファイル名から補完")
     p.add_argument("--account", default=None, help="Submitter id (account) for auth-dependent rules")
+    p.add_argument("--profile", choices=["next"], default=None,
+                   help="Validation profile. 'next' = next BioSample (allow_multiple attributes may have "
+                        "multiple values). Omit for the current BioSample")
     p.add_argument("-o", "--out-dir", default=None, help="Output directory (default: input's parent)")
     p.add_argument("-l", "--local", action="store_true", help="Local mode (skip DB and NCBI API)")
     p.add_argument("-n", "--ncbi-api", action="store_true", help="Use NCBI API, skip internal DB (一般ユーザ既定)")
@@ -185,7 +188,8 @@ def run(args):
               "Use -d/--internal-db or set DDBJ_VALIDATOR_INTERNAL_DB=1; do not combine --account with -n/-l.",
               file=sys.stderr)
         return 2
-    context = ValidationContext(account=args.account, skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
+    context = ValidationContext(account=args.account, profile=args.profile,
+                                skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
 
     if not args.json:
         cli_modes.print_found(1, "file")   # BioSample は TSV/XML 1 ファイル

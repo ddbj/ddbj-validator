@@ -7,7 +7,7 @@
 import json
 from pathlib import Path
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Optional
 
 _RES = Path(__file__).resolve().parent / "resources"
 def load_packages():
@@ -63,6 +63,9 @@ def load_institution_codes():
 @dataclass
 class ValidationContext:
     account: Any = None
+    # 検証プロファイル。None=現行（現 D-way / BioSample）、"next"=次期 BioSample。
+    # "next" では allow_multiple の属性の同名多値を許す（BS_R0061）。web API の `profile` フォーム項目から来る。
+    profile: Optional[str] = None
     skip_db: bool = False
     skip_ncbi: bool = False
     skip_auth: bool = False
