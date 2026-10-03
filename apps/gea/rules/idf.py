@@ -100,11 +100,15 @@ class GEA_G0017(GeaRule):
     description = "Non-ASCII characters in an IDF field."
 
     def validate(self, sub, context):
-        from common.magetab.charnorm import fix_warning_message, residual_error_message
+        from common.magetab.charnorm import (fix_warning_message, residual_error_message,
+                                             whitespace_warning_message)
         out = []
         for fx in getattr(sub, "char_fixes", []):
             if fx["target"] != "IDF":
                 continue
+            if fx.get("whitespace"):   # 空白の auto cleanup（2026-10-03）
+                out.append(self.result(message=whitespace_warning_message(fx["where"], fx["original"], fx["fixed"]),
+                                       level="warning", field=fx["where"]))
             if fx["mapped"]:
                 out.append(self.result(message=fix_warning_message(fx["where"], fx["mapped"]),
                                        level="warning", field=fx["where"]))

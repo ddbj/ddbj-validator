@@ -106,3 +106,73 @@ def test_biosample_ignore_set_matches_the_rule_table():
         if want != got:
             mismatch.append(f"{r.rule_id}: 表={want!r} code={got!r}")
     assert not mismatch, mismatch
+
+
+# --- DB の文字コードで表せない名前（2026-10-03、SSUB051896）---
+# organism / host などに NBSP のような EUC_JP で表せない文字を含む名前が 1 つでもあると、
+# IN 句全体のエンコードで例外になり、全 organism が lookup_failed になっていた。
+# 正しく書かれた organism まで BS_R0045 の taxonomy_id 提案を失っていた（817 sample）。
+
+class _FakeCursor:
+    def __init__(self, rows, seen):
+        self.rows, self.seen = rows, seen
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+    def execute(self, query, params):
+        self.seen.extend(params)
+        for p in params:              # 実接続と同じく、送信前のエンコードで失敗させる
+            p.encode("euc_jp")
+
+    def fetchall(self):
+        return self.rows
+
+
+class _FakeConn:
+    encoding = "EUC_JP"
+
+    def __init__(self, rows):
+        self.rows, self.seen = rows, []
+
+    def cursor(self):
+        return _FakeCursor(self.rows, self.seen)
+
+
+_BSUB_ROW = ("Bacillus subtilis", "scientific name", "Bacillus subtilis", "species",
+             11, 4, 11, 1423, "Bacteria; Bacillota", "BCT")
+
+
+def test_unencodable_name_does_not_fail_the_whole_lookup():
+    from common.db_taxonomy import fetch_taxonomy_data, lookup_failed_organisms
+    conn = _FakeConn([_BSUB_ROW])
+    tax = fetch_taxonomy_data(conn, ["Bacillus subtilis", "Homo sapiens"])
+    assert tax["Bacillus subtilis"]["tax_id"] == 1423
+    assert tax["Bacillus subtilis"]["status"] == "valid"
+    # 表せない名前は DB に存在し得ないので not_found（取得失敗ではない）
+    assert tax["Homo sapiens"]["status"] == "not_found"
+    assert lookup_failed_organisms(tax) == set()
+    assert "Homo sapiens".lower() not in conn.seen     # クエリには渡さない
+
+
+def test_only_unencodable_names_skip_the_query():
+    from common.db_taxonomy import fetch_taxonomy_data
+    conn = _FakeConn([])
+    tax = fetch_taxonomy_data(conn, ["Bacillus subtilis"])
+    assert tax == {"Bacillus subtilis": {"status": "not_found", "is_species_or_below": False}}
+    assert conn.seen == []
+
+
+def test_bs_r0045_is_silent_when_the_lookup_failed():
+    """取得失敗は BS_R0145 が報告する。BS_R0045 が「Taxonomy に無い」と言い切らないこと。"""
+    from apps.biosample.rules.taxonomy import BS_R0045
+    rec = _rec(org="Bacillus subtilis", taxid="")
+    failed = SimpleNamespace(tax_data=mark_all_lookup_failed(["Bacillus subtilis"]), taxid_info={})
+    assert BS_R0045().validate(_sub(rec), failed) == []
+
+    notfound = SimpleNamespace(tax_data={"Bacillus subtilis": {"status": "not_found"}}, taxid_info={})
+    res = BS_R0045().validate(_sub(rec), notfound)
+    assert len(res) == 1 and "not found in the Taxonomy database" in res[0]["message"]

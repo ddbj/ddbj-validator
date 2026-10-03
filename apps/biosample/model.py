@@ -48,3 +48,6 @@ class BioSampleSubmission:
     # XML パーサは `&#x201c;` のような文字参照を実体へ展開してしまうため、展開後の値だけを見ると
     # ASCII だけで書かれたファイルまで非 ASCII と判定してしまう。ソース側の実態をここに持つ。
     source_non_ascii: set = field(default_factory=set)
+    # autocleanup（BS_R0013 → BS_R0012）の結果。None=未実行。cli が Taxonomy 取得の前に 1 回だけ実行し、
+    # Validator.pre_run はここを返す（2 回置換・2 回報告しないため）。
+    cleanup_results: Optional[list] = None

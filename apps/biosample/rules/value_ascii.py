@@ -26,6 +26,7 @@ class BS_R0013(BsRule):
         # **in-place で置換**する。validator.run の最初に実行され、cleanup 後の値で後続ルールが評価される。
         # → 専用 autofix（geo/date 等）との二重提案は起きない（後続は正規化済みの値を見るため）。
         # missing 値は対象外。sample_name は autofix のサンプル同定キーのため除外。Ruby v invalid_data_format 準拠。
+        # 正規化の実体は common/cleanup.clean_value（NBSP・全角空白・ゼロ幅空白も対象。2026-10-03）。
         out = []
         for rec in submission.records:
             for name, vals in rec.attributes.items():
@@ -37,10 +38,25 @@ class BS_R0013(BsRule):
                     fixed = normalize_data_format(v)
                     if fixed and fixed != v:
                         vals[i] = fixed  # in-place cleanup（後続ルールが cleaned 値を読む）
+                        if name == "sample_title" and rec.title == v:
+                            rec.title = fixed   # Description/Title 由来（BS_R0003 の重複判定が読む）
                         out.append(self.autofix_result(
                             sample=rec.sample_id, target=name,
                             message=f"Invalid data format. ({name}: '{v}', Suggested: '{fixed}')",
                             attribute=name, old_value=v, new_value=fixed))
+            # organism（Description/Organism/OrganismName）も対象（2026-10-03）。属性ではないので
+            # 上のループに入らず、NBSP や二重空白のまま Taxonomy を引いて提案が付かなかった。
+            # kind=organism の autofix として fixed XML の OrganismName に書き戻す。
+            org = rec.organism
+            if org and not is_missing_value(org):
+                fixed = normalize_data_format(org)
+                if fixed and fixed != org:
+                    rec.organism = fixed
+                    out.append(self.autofix_result(
+                        sample=rec.sample_id, target="organism", kind="organism",
+                        message=f"Invalid data format. (organism: '{org}', Suggested: '{fixed}')",
+                        anno_cols=[{"key": "organism", "value": org}], target_key="organism",
+                        old_value=org, new_value=fixed))
         return out
 
 

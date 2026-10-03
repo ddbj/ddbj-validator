@@ -5,7 +5,7 @@
 """
 from common.rules.simple import SimpleValidator
 from apps.bioproject.rules.base import INTERNAL_IGNORE_RULE_IDS
-from apps.bioproject.rules.value import BP_R0060, BP_R0059
+from apps.bioproject.rules.value import BP_R0060
 from apps.bioproject.rules.taxonomy import BP_R0018, BP_R0038, BP_R0039
 from apps.bioproject.rules.content import (
     BP_R0004, BP_R0005, BP_R0006, BP_R0014, BP_R0015, BP_R0040, BP_R0043, BP_R0070,
@@ -24,7 +24,7 @@ class Validator(SimpleValidator):
         return [
             # --- 値・文字種（DB 非依存）---
             BP_R0060(),  # 非 ASCII
-            BP_R0059(),  # データ形式（空白）
+            # BP_R0059（データ形式・空白）は xml_reader の auto cleanup が出す（ここには登録しない）。
             # --- 内容（Step3）---
             BP_R0005(),  # title 20-250 字（min spec。旧 BP_R0005 ID 再利用）
             BP_R0006(),  # description 20-4000 字（min spec）

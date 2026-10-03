@@ -3,6 +3,8 @@
 - BP_R0001: XML well-formed（パース失敗で検出）。
 - BP_R0002: XSD スキーマ検証（XSD が bundle され lxml があるときのみ。無ければスキップ）。
 - BP_R0037: 1 XML に複数 project → error。
+- BP_R0059: auto cleanup。パース直後に全要素テキスト・属性値を強制的にきれいにする（warning）。
+  モデル・後続ルール・Taxonomy 取得はきれいにした値を使う。
 戻り値: (BioProjectSubmission | None, pre_errors[])。パース不可なら submission=None。
 """
 from pathlib import Path
@@ -10,6 +12,7 @@ import defusedxml.ElementTree as ET
 from apps.bioproject.model import BioProjectRecord, BioProjectSubmission, Publication, Grant
 # ソースの素の非 ASCII 集合（文字参照を除くため）。実体は common/xmltext.py。
 from common.xmltext import literal_non_ascii
+from apps.bioproject.rules.value import BP_R0059
 
 _XSD = Path(__file__).parent / "resources" / "xsd" / "Package.xsd"
 _SCHEMA_ERR_CAP = 20
@@ -134,6 +137,7 @@ def parse_xml(xml_path, account=None):
         return None, [{"rule_id": "BP_R0001", "level": "error", "target": "#file_format",
                        "sample": None, "message": f"XML document is not well-formed. ({e})"}]
     root = tree.getroot()
+    cleanup = BP_R0059().cleanup(root)   # モデルを組む前に値をきれいにする（auto cleanup）
     projects = root.findall("./Package/Project/Project")
     if not projects:  # 構造が想定外（Project 無し）
         projects = root.findall(".//Project/Project")
@@ -150,6 +154,10 @@ def parse_xml(xml_path, account=None):
     records = [_build_record(p) for p in projects]
     for rec in records:  # 通常 1 project。umbrella 参照は project に紐づける
         rec.umbrella_member_ids = list(umbrella_members)
+    label = records[0].label if records else None
+    for r in cleanup:
+        r["sample"] = label
+    pre_errors = cleanup + pre_errors
     sub = BioProjectSubmission(records=records, account=account,
                                source_non_ascii=literal_non_ascii(xml_path), raw_root=root)
     return sub, pre_errors

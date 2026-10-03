@@ -287,6 +287,9 @@ class BS_R0045(BsRule):
                                  f"(organism: '{rec.organism}')")))
                 continue
             info = context.tax_data.get(rec.organism)
+            if (info or {}).get("lookup_failed"):
+                # 取得そのものの失敗（DB/API 障害）は「Taxonomy に無い」ではない。BS_R0145 が報告する。
+                continue
             if not _resolved(info):
                 out.append(self.result(
                     sample=rec.sample_id,
