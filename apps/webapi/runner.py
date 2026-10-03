@@ -55,6 +55,8 @@ def plan(saved, params):
             args += ["-s", params["submission_id"]]
         if params.get("package"):
             args += ["-p", params["package"]]
+        if params.get("profile"):   # 次期 BioSample（BS_R0061 で allow_multiple 属性の多値を許す）
+            args += ["--profile", params["profile"]]
         return args
     if "bioproject" in saved:
         return ["bioproject", "-x", str(saved["bioproject"])]
