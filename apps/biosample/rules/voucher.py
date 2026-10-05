@@ -35,24 +35,25 @@ class _VoucherBase(BsRule):
     def validate(self, submission, context):
         out = []
         for rec in submission.records:
-            v = rec.attr(self.attr_name)
-            if is_empty(v) or is_missing_value(v):
-                continue
-            val = v.strip()
-            # 形式チェック
-            if self.require_institution and ":" not in val:
-                out.append(self._res(rec, self.format_rule, self.level,
-                                     f"Invalid {self.attr_name} format. (Found: '{val}')", val))
-                continue
-            if _malformed(val):
-                out.append(self._res(rec, self.format_rule, self.level,
-                                     f"Invalid {self.attr_name} format. (Found: '{val}')", val))
-                continue
-            # 機関コード登録チェック
-            code = _institution_code(val)
-            if code and code.lower() not in context.institution_codes:
-                out.append(self._res(rec, self.inst_rule, self.inst_level,
-                                     f"Institution code '{code}' is not registered in NCBI BioCollections.", val))
+            # culture_collection / specimen_voucher は profile=next で同名多値を許すため、先頭値だけでなく全値を検査する
+            for v in rec.attr_values(self.attr_name):
+                if is_empty(v) or is_missing_value(v):
+                    continue
+                val = v.strip()
+                # 形式チェック
+                if self.require_institution and ":" not in val:
+                    out.append(self._res(rec, self.format_rule, self.level,
+                                         f"Invalid {self.attr_name} format. (Found: '{val}')", val))
+                    continue
+                if _malformed(val):
+                    out.append(self._res(rec, self.format_rule, self.level,
+                                         f"Invalid {self.attr_name} format. (Found: '{val}')", val))
+                    continue
+                # 機関コード登録チェック
+                code = _institution_code(val)
+                if code and code.lower() not in context.institution_codes:
+                    out.append(self._res(rec, self.inst_rule, self.inst_level,
+                                         f"Institution code '{code}' is not registered in NCBI BioCollections.", val))
         return out
 
     def _res(self, rec, rule_id, level, message, value=None):
