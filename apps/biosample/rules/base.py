@@ -10,12 +10,14 @@ result dict: {rule_id, level, target, sample, message}（sample は accession �
 # BS_R0096 は以前ここから外していたが、表が ignore と書いているのにコードが true error で
 # 登録を止めていたため 2026-09-26 に表へ合わせた。
 # voucher（R0117/R0119 は非 ignore）等、同一クラスが複数 rule_id を emit するため rule_id 単位で持つ。
+# BS_R0005（BioProject accession 形式）と BS_R0091（登録済み locus_tag_prefix の重複）は
+# 2026-10-04 に ignore へ変更（キュレータ判断で通せるようにする）。
 INTERNAL_IGNORE_RULE_IDS = frozenset({
-    "BS_R0003", "BS_R0007", "BS_R0008", "BS_R0027", "BS_R0028",
+    "BS_R0003", "BS_R0005", "BS_R0007", "BS_R0008", "BS_R0027", "BS_R0028",
     "BS_R0036", "BS_R0040", "BS_R0048", "BS_R0074", "BS_R0075",
     "BS_R0076", "BS_R0077", "BS_R0078", "BS_R0080", "BS_R0081",
     "BS_R0082", "BS_R0083", "BS_R0084", "BS_R0085", "BS_R0086",
-    "BS_R0088", "BS_R0089", "BS_R0093", "BS_R0096", "BS_R0101",
+    "BS_R0088", "BS_R0089", "BS_R0091", "BS_R0093", "BS_R0096", "BS_R0101",
     "BS_R0103",
     "BS_R0104", "BS_R0106", "BS_R0110", "BS_R0111", "BS_R0112",
     "BS_R0113", "BS_R0114", "BS_R0115", "BS_R0116", "BS_R0118",

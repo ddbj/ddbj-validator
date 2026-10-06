@@ -161,7 +161,7 @@ def _fetch_references(context, submission):
 
     # biosample DB 登録済み locus_tag_prefix 取得（R0091。内部DB モードのみ）
     if not context.skip_db:
-        _fetch_registered_prefixes(context)
+        _fetch_registered_prefixes(context, submission)
 
 
 def _apply_autofix(in_path, is_tsv, xml_for_parse, results, out_dir):
@@ -311,14 +311,18 @@ def _fetch_account(context, submission):
         print(f"[WARN] account/bioproject fetch failed: {e}", file=sys.stderr)
 
 
-def _fetch_registered_prefixes(context):
-    """biosample DB 登録済みの locus_tag_prefix を context に取得（R0091 用）。"""
+def _fetch_registered_prefixes(context, submission=None):
+    """biosample DB 登録済みの locus_tag_prefix と、検証中 submission の cancel 済み sample を
+    context に取得（R0091/R0102 用）。"""
     try:
         from common.db_manager import DatabaseManager
-        from apps.biosample.db_meta import fetch_registered_locus_tag_prefixes
+        from apps.biosample.db_meta import fetch_cancelled_samples, fetch_registered_locus_tag_prefixes
         cli_modes.db_checking("BioSample DB", 1, "locus_tag_prefix set")
         bs_conn = DatabaseManager().get_bs_conn()
         context.registered_locus_tag_prefixes = fetch_registered_locus_tag_prefixes(bs_conn) or {}
+        sub_id = getattr(submission, "submission_id", None)
+        if sub_id:
+            context.cancelled_samples = fetch_cancelled_samples(bs_conn, sub_id) or set()
     except Exception as e:
         print(f"[WARN] locus_tag_prefix fetch failed: {e}", file=sys.stderr)
 

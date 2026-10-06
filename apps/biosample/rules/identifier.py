@@ -2,7 +2,7 @@
 
 - BS_R0005: BioProject accession の形式（PRJ[D|E|N]xxxxxx / PSUBxxxxxx）
 - BS_R0099: locus_tag_prefix の形式（3-12 英数字、先頭は数字不可）
-- BS_R0102: submission 内で locus_tag_prefix が重複
+- BS_R0102: submission 内で locus_tag_prefix が重複（DB 上 cancel 済みの sample は除外）
 - BS_R0122: GISAID accession の形式
 """
 import re
@@ -15,6 +15,18 @@ def _skip_ltp(v):
     """locus_tag_prefix として無視すべき値（空 or missing 系）か。
     missing/not applicable/missing: xxx 等の null 相当値は prefix ではないため R0091/R0102/R0099 の対象外。"""
     return is_empty(v) or is_missing_value(v)
+
+
+def _is_cancelled(context, rec):
+    """DB 上 cancel 済みの sample か（context が判定できなければ False）。"""
+    fn = getattr(context, "is_cancelled", None)
+    return bool(fn and fn(rec))
+
+
+def _ltp_values(rec):
+    """検査対象の locus_tag_prefix 値（全値。空・missing 系は除く）。
+    profile=next では locus_tag_prefix の同名多値を許すため、先頭値だけでなく全値を見る。"""
+    return [v for v in rec.attr_values("locus_tag_prefix") if not _skip_ltp(v)]
 
 # BioProject: PRJDB12345 / PRJNA123 / PRJEB456（PRJ＋2文字アーカイブコード＋数字）または PSUB＋数字
 # BioProject accession 形式: PRJ[DEN][A-Z]+数字（桁数は縛らない）／ PSUB＋6-7桁。
@@ -51,13 +63,11 @@ class BS_R0099(BsRule):
     def validate(self, submission, context):
         out = []
         for rec in submission.records:
-            v = rec.attr("locus_tag_prefix")
-            if _skip_ltp(v):
-                continue
-            if not _PREFIX_RE.match(v.strip()):
-                out.append(self.result(sample=rec.sample_id,
-                                       attribute="locus_tag_prefix", old_value=v,
-                                       message=f"Invalid locus tag prefix format. (Found: '{v}')"))
+            for v in _ltp_values(rec):
+                if not _PREFIX_RE.match(v.strip()):
+                    out.append(self.result(sample=rec.sample_id,
+                                           attribute="locus_tag_prefix", old_value=v,
+                                           message=f"Invalid locus tag prefix format. (Found: '{v}')"))
         return out
 
 
@@ -68,16 +78,20 @@ class BS_R0102(BsRule):
     description = "Locus tag prefix is duplicated in the submission."
 
     def validate(self, submission, context):
-        prefixes = [rec.attr("locus_tag_prefix").strip()
-                    for rec in submission.records if not _skip_ltp(rec.attr("locus_tag_prefix"))]
+        # 全サンプルの全値で数える（同一サンプル内で同じ prefix を 2 回書いた場合も重複）。
+        # DB 上 cancel 済みの sample（context.cancelled_samples。内部 DB モードのみ）は数えない・報告しない。
+        records = [rec for rec in submission.records if not _is_cancelled(context, rec)]
+        prefixes = [v.strip() for rec in records for v in _ltp_values(rec)]
         dup = {p for p, c in Counter(prefixes).items() if c > 1}
         out = []
-        for rec in submission.records:
-            v = rec.attr("locus_tag_prefix")
-            if not _skip_ltp(v) and v.strip() in dup:
-                out.append(self.result(sample=rec.sample_id,
-                                       anno_cols=[{"key": "locus_tag_prefix", "value": v}],
-                                       message=f"Locus tag prefix is duplicated in the submission. (prefix: '{v}')"))
+        for rec in records:
+            seen = set()
+            for v in _ltp_values(rec):
+                if v.strip() in dup and v.strip() not in seen:
+                    seen.add(v.strip())
+                    out.append(self.result(sample=rec.sample_id,
+                                           anno_cols=[{"key": "locus_tag_prefix", "value": v}],
+                                           message=f"Locus tag prefix is duplicated in the submission. (prefix: '{v}')"))
         return out
 
 
@@ -145,22 +159,24 @@ class BS_R0091(BsRule):
     def validate(self, submission, context):
         # DB に登録済みで、かつ現サブミッション以外が使用している locus_tag_prefix はエラー。
         # submission 内重複は R0102 が担当（役割分担。Ruby では OR で両方 R0091 だが本実装は分離）。
+        # cancel 済み sample は除外: 登録済み側は SQL（CANCELLED_STATUS_IDS）で、
+        # 検証中 submission 側は context.cancelled_samples で外す。
         registered = context.registered_locus_tag_prefixes or {}
         if not registered:
             return []
         cur_sub = submission.submission_id
         out = []
         for rec in submission.records:
-            v = rec.attr("locus_tag_prefix")
-            if _skip_ltp(v):
+            if _is_cancelled(context, rec):
                 continue
-            subs = registered.get(v.strip())
-            if subs and any(s != cur_sub for s in subs):
-                out.append(self.result(
-                    sample=rec.sample_id,
-                    # メッセージ表に prefix 値も出す（R0102 と列を揃える。どの prefix が重複したか一目で分かる）
-                    anno_cols=[{"key": "locus_tag_prefix", "value": v}],
-                    message=f"Locus tag prefix is duplicated. (Found: '{v}')"))
+            for v in _ltp_values(rec):
+                subs = registered.get(v.strip())
+                if subs and any(s != cur_sub for s in subs):
+                    out.append(self.result(
+                        sample=rec.sample_id,
+                        # メッセージ表に prefix 値も出す（R0102 と列を揃える。どの prefix が重複したか一目で分かる）
+                        anno_cols=[{"key": "locus_tag_prefix", "value": v}],
+                        message=f"Locus tag prefix is duplicated. (Found: '{v}')"))
         return out
 
 
@@ -176,7 +192,7 @@ class BS_R0109(BsRule):
         for rec in submission.records:
             if not pkg_startswith(rec.package, *MIGS_BA_EU):
                 continue
-            if is_empty(rec.attr("locus_tag_prefix")):
+            if all(is_empty(v) for v in rec.attr_values("locus_tag_prefix")):
                 out.append(self.result(
                     sample=rec.sample_id,
                     anno_cols=[{"key": "locus_tag_prefix", "value": rec.attr("locus_tag_prefix") or ""}],

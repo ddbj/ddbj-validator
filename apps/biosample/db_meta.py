@@ -7,28 +7,55 @@ import re
 
 _SAMD_RE = re.compile(r"SAMD\d+", re.IGNORECASE)
 
+# 取り下げ・取消の sample.status_id（5600=withdrawn、5700=cancelled）。locus_tag_prefix の重複判定（R0091/R0102）から除外する。
+CANCELLED_STATUS_IDS = (5600, 5700)
+
 
 def fetch_registered_locus_tag_prefixes(bs_conn):
     """biosample DB 登録済みの locus_tag_prefix -> {submission_id, ...} を返す（R0091）。
 
     Ruby `get_all_locus_tag_prefix` 準拠:
       mass.attribute JOIN mass.sample、attribute_name='locus_tag_prefix'、空値除外、
-      status_id 5600/5700（削除/取消相当）を除外。
+      status_id 5600（withdrawn）/ 5700（cancelled）を除外。
     """
     q = """
         SELECT smp.submission_id, attr.attribute_value
         FROM mass.attribute attr
         JOIN mass.sample smp USING (smp_id)
         WHERE attr.attribute_name = 'locus_tag_prefix' AND attr.attribute_value <> ''
-          AND (smp.status_id IS NULL OR smp.status_id NOT IN (5600, 5700))
+          AND (smp.status_id IS NULL OR smp.status_id NOT IN %s)
     """
     result = {}
     with bs_conn.cursor() as cur:
-        cur.execute(q)
+        cur.execute(q, (CANCELLED_STATUS_IDS,))
         for submission_id, prefix in cur.fetchall():
             if prefix:
                 result.setdefault(prefix.strip(), set()).add(submission_id)
     return result
+
+
+def fetch_cancelled_samples(bs_conn, submission_id):
+    """検証中 submission の cancel 済み sample を {sample_name, SAMD accession, ...} で返す（R0091/R0102）。
+
+    入力 XML には status が無いため、DB の mass.sample を submission_id で引き、
+    status_id が CANCELLED_STATUS_IDS の sample の sample_name と accession を集める。
+    """
+    if not submission_id:
+        return set()
+    q = """
+        SELECT smp.sample_name, acc.accession_id
+        FROM mass.sample smp
+        LEFT JOIN mass.accession acc USING (smp_id)
+        WHERE smp.submission_id = %s AND smp.status_id IN %s
+    """
+    keys = set()
+    with bs_conn.cursor() as cur:
+        cur.execute(q, (submission_id, CANCELLED_STATUS_IDS))
+        for sample_name, accession in cur.fetchall():
+            for k in (sample_name, accession):
+                if k and str(k).strip():
+                    keys.add(str(k).strip())
+    return keys
 
 
 def fetch_authorized_bp_submissions(bp_conn, dra_conn, account_id, referenced=None):

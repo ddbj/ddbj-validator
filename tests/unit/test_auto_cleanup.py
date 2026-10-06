@@ -76,7 +76,7 @@ def test_bs_cleanup_runs_before_taxonomy_fetch(tmp_path, monkeypatch):
         seen["organisms"] = list(organisms)
 
     monkeypatch.setattr(cli, "_fetch_taxonomy", fake_fetch_taxonomy)
-    monkeypatch.setattr(cli, "_fetch_registered_prefixes", lambda context: None)
+    monkeypatch.setattr(cli, "_fetch_registered_prefixes", lambda context, submission=None: None)
     xml = _bs_xml(tmp_path, f"Bacillus{NBSP}subtilis", host=f"Homo  sapiens{IDEO}")
     args = cli._build_parser().parse_args(["-x", str(xml), "-d", "-o", str(tmp_path / "out")])
     cli.run(args)
