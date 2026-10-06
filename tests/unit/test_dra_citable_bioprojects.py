@@ -59,3 +59,23 @@ def test_r0015_passes_permitted_prjda():
     assert DRA_R0015().validate(sub, ctx) == []
     ana.study_ref = "PRJDA99999"
     assert len(DRA_R0015().validate(sub, ctx)) == 1
+
+
+# --- BioSample（DRA_R0042 / R0016）も同じく record-api citable 優先（2026-10-06） ---
+
+def test_biosamples_use_record_api_citable_when_enabled(monkeypatch):
+    monkeypatch.setenv(record_api.BASE_URL_ENV, "https://record.example/")
+    monkeypatch.setattr(record_api, "fetch_citable",
+                        lambda account, id_type: {"SAMN13091859", "SAMD00000001"} if id_type == "biosample" else None)
+    monkeypatch.setattr(db_meta, "fetch_account_biosamples",
+                        lambda *a: (_ for _ in ()).throw(AssertionError("SQL は呼ばない")))
+    dm = SimpleNamespace(get_bs_conn=lambda: None)
+    assert cli._fetch_account_biosamples(dm, None, "mic031", {"SAMN13091859"}, _try) == {"SAMN13091859", "SAMD00000001"}
+
+
+def test_biosamples_fall_back_to_sql(monkeypatch):
+    monkeypatch.setenv(record_api.BASE_URL_ENV, "https://record.example/")
+    monkeypatch.setattr(record_api, "fetch_citable", lambda *a: None)
+    monkeypatch.setattr(db_meta, "fetch_account_biosamples", lambda *a: {"SAMD00000002"})
+    dm = SimpleNamespace(get_bs_conn=lambda: None)
+    assert cli._fetch_account_biosamples(dm, None, "acct", set(), _try) == {"SAMD00000002"}

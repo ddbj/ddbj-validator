@@ -3,8 +3,8 @@ from common.rules.simple import SimpleRule
 
 # internal_ignore（外部由来で無視可）の rule_id 集合。rules.txt の Internal ignore に準拠。
 INTERNAL_IGNORE_RULE_IDS = frozenset({
-    "DRA_R0006", "DRA_R0018", "DRA_R0019", "DRA_R0020",
-    "DRA_R0038", "DRA_R0041", "DRA_R0048", "DRA_R0049",
+    "DRA_R0006", "DRA_R0018", "DRA_R0019", "DRA_R0020", "DRA_R0023", "DRA_R0024", "DRA_R0029",
+    "DRA_R0038", "DRA_R0040", "DRA_R0041", "DRA_R0048", "DRA_R0049",
 })
 
 

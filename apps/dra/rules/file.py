@@ -10,14 +10,36 @@
 - DRA_R0031: Run 内で filetype が混在（系列許容の companion type を除いて 2 種以上）。
 - DRA_R0040: submission 内で同一 filename が複数回登録（min spec: deposited more than once）。
 - DRA_R0049: submission 内で別名だが md5 が同一（＝同一内容ファイルの二重登録）。
+  R0040 / R0049 とも、reference_fasta / tab を複数 Run で使い回すのは認める（各 Run に 1 回ずつなら対象外）。
 """
 from apps.dra.rules.base import DraRule
 from apps.dra.defs import compiled
 
 _FASTQ = {"fastq", "generic_fastq"}
 # 系列の companion（混在チェックから除外する型）
-_SERIES_COMPANION = {"bam", "tab", "reference_fasta", "SOLiD_native_csfasta", "SOLiD_native_qual"}
+# 454_native_qual は 454_native_seq と組で 1 系列（2026-10-06）。seq 側は残すので、454 seq ＋ fastq 等は混在のまま。
+_SERIES_COMPANION = {"bam", "tab", "reference_fasta", "SOLiD_native_csfasta", "SOLiD_native_qual", "454_native_qual"}
 _BAM_SERIES = {"bam", "tab", "reference_fasta"}
+# Run 内の混在として許す filetype の組（2026-10-06）。fastq ＋ Illumina_native_qseq は過去データにあり、新規では来ない。
+_ALLOWED_MIXES = (frozenset({"fastq", "Illumina_native_qseq"}),)
+# Run を跨いで使い回してよい filetype（bam の参照配列と対応表は Run 間で共通になりうる。2026-10-06）
+_REUSABLE_ACROSS_RUNS = {"reference_fasta", "tab"}
+
+
+def _file_entries(submission):
+    """submission 内の全 FILE を (object label, file, Run の使い回し可能ファイルか) で返す。"""
+    for obj in submission.runs:
+        for f in getattr(obj, "files", []):
+            yield obj.label, f, (f.filetype or "") in _REUSABLE_ACROSS_RUNS
+    for obj in submission.analyses:
+        for f in getattr(obj, "files", []):
+            yield obj.label, f, False
+
+
+def _reused_across_runs(entries):
+    """entries（同じ filename / md5 の (label, reusable) 群）が「Run ごとに 1 回ずつの使い回し」だけか。"""
+    labels = [lb for lb, _ in entries]
+    return all(r for _, r in entries) and len(labels) == len(set(labels))
 
 
 def _fname_re(context):
@@ -155,9 +177,13 @@ class DRA_R0027(DraRule):
 
 
 class DRA_R0028(DraRule):
-    """PacBio RS II hdf 系列: bas 1＋bax 3 が揃っていない。"""
+    """PacBio RS II hdf 系列: bas 1＋bax 3 が揃っていない。
+
+    warning（2026-10-06 に error から変更）: 既存の public 5 submission（296 Run）は bas のみ・複数 movie など
+    この形でなくても公開 fastq / sra が正しく生成されている。受付ファイルは今後 fastq / bam に絞るため、
+    このルールが新規登録で効く場面はほぼ無い。"""
     rule_id = "DRA_R0028"
-    level = "error"
+    level = "warning"
     target = "RUN/FILE"
     description = "A series of PacBio RS II hdf files, one bas and three bax files, must be registered per Run."
 
@@ -241,14 +267,15 @@ class DRA_R0040(DraRule):
 
     def validate(self, submission, context):
         by_name = {}
-        for obj in submission.runs + submission.analyses:
-            for f in getattr(obj, "files", []):
-                fn = (f.filename or "").strip()
-                if fn:
-                    by_name.setdefault(fn, []).append(obj.label)
+        for label, f, reusable in _file_entries(submission):
+            fn = (f.filename or "").strip()
+            if fn:
+                by_name.setdefault(fn, []).append((label, reusable))
         out = []
-        for fn, labels in by_name.items():
-            if len(labels) > 1:
+        for fn, entries in by_name.items():
+            labels = [lb for lb, _ in entries]
+            # reference_fasta / tab を複数 Run が 1 回ずつ参照するのは使い回しとして認める
+            if len(labels) > 1 and not _reused_across_runs(entries):
                 out.append(self.result(sample=None,
                                        message=f"Duplicate filename in submission: '{fn}' ({', '.join(labels)})"))
         return out
@@ -268,17 +295,19 @@ class DRA_R0049(DraRule):
 
     def validate(self, submission, context):
         by_md5 = {}
-        for obj in submission.runs + submission.analyses:
-            for f in getattr(obj, "files", []):
-                cs = (f.checksum or "").strip().lower()
-                fn = (f.filename or "").strip()
-                if cs:
-                    by_md5.setdefault(cs, []).append((obj.label, fn))
+        for label, f, reusable in _file_entries(submission):
+            cs = (f.checksum or "").strip().lower()
+            fn = (f.filename or "").strip()
+            if cs:
+                by_md5.setdefault(cs, []).append((label, fn, reusable))
         out = []
         for cs, items in by_md5.items():
             # md5 が同一かつ filename が 2 種以上（＝別名で同一内容）。同名重複は DRA_R0040 の管轄。
-            if len({fn for _, fn in items}) > 1 and len(items) > 1:
-                names = ", ".join(sorted({fn for _, fn in items}))
+            # reference_fasta / tab を Run ごとに 1 回ずつ（別名でも）登録するのは使い回しとして認める。
+            if _reused_across_runs([(lb, r) for lb, _, r in items]):
+                continue
+            if len({fn for _, fn, _ in items}) > 1 and len(items) > 1:
+                names = ", ".join(sorted({fn for _, fn, _ in items}))
                 out.append(self.result(sample=None, message=f"{self.description}: {names}"))
         return out
 
@@ -294,8 +323,8 @@ class DRA_R0031(DraRule):
         out = []
         for r in submission.runs:
             types = [(f.filetype or "") for f in r.files if (f.filetype or "")]
-            core = [t for t in types if t not in _SERIES_COMPANION]
-            if len(set(core)) >= 2:
+            core = {t for t in types if t not in _SERIES_COMPANION}
+            if len(core) >= 2 and core not in _ALLOWED_MIXES:
                 out.append(self.result(sample=r.label,
                                        message=f"{self.description} (Found: {sorted(set(types))})"))
         return out

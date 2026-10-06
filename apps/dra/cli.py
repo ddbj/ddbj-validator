@@ -111,7 +111,7 @@ def _fetch_db_meta(context, submission, account):
     cli_modes.db_checking("DRA DB", len(ref_drr), "DRA Run")
     context.account_org_name = _try("org", lambda: db_meta.fetch_submitter_center_name(dm.get_submitter_conn(), account))
     context.account_bioprojects = _fetch_account_bioprojects(dm, dra_conn, account, ref_bp, _try)
-    context.account_biosamples = _try("bs", lambda: db_meta.fetch_account_biosamples(dm.get_bs_conn(), dra_conn, account, ref_bs))
+    context.account_biosamples = _fetch_account_biosamples(dm, dra_conn, account, ref_bs, _try)
     context.account_runs = _try("runs", lambda: db_meta.fetch_account_runs(dra_conn, account, ref_drr))
     context.account_object_names = _try("obj_names", lambda: db_meta.fetch_account_object_names(dra_conn, account))
 
@@ -130,6 +130,22 @@ def _fetch_account_bioprojects(dm, dra_conn, account, ref_bp, _try):
             return bp
     from apps.dra import db_meta
     return _try("bp", lambda: db_meta.fetch_account_bioprojects(dm.get_bp_conn(), dra_conn, account, ref_bp))
+
+
+def _fetch_account_biosamples(dm, dra_conn, account, ref_bs, _try):
+    """DRA_R0042 / R0016 用: account が引用できる BioSample の集合。
+
+    `DDBJ_RECORD_API_URL` があれば record-api の `?scope=citable`（own ＋ permitted）を使う。
+    ext_permit に SAMN / SAME で登録された外部参照許可も permitted に入る（直 SQL は SAMD しか扱えない）。
+    API が使えない・応答が None（失敗 / truncated）のときは従来の直 SQL にフォールバックする。
+    """
+    if record_api.enabled():
+        cli_modes.db_checking("record-api", 1, "citable list")
+        bs = record_api.fetch_citable(account, "biosample")
+        if bs is not None:
+            return bs
+    from apps.dra import db_meta
+    return _try("bs", lambda: db_meta.fetch_account_biosamples(dm.get_bs_conn(), dra_conn, account, ref_bs))
 
 
 def run(args):
