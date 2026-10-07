@@ -13,7 +13,7 @@ from apps.dra.rules.reference import (
 )
 from apps.dra.rules.content import (
     DRA_R0010, DRA_R0011, DRA_R0012, DRA_R0013, DRA_R0014, DRA_R0018, DRA_R0019, DRA_R0020,
-    DRA_R0050,
+    DRA_R0050, DRA_R0051,
 )
 from apps.dra.rules.file import (
     DRA_R0021, DRA_R0022, DRA_R0023, DRA_R0024, DRA_R0025, DRA_R0026,
@@ -41,6 +41,7 @@ class Validator(SimpleValidator):
             # DRA_R0013(),
             DRA_R0018(), DRA_R0019(), DRA_R0020(),
             DRA_R0050(),   # 非 ASCII 文字（XML 全要素。文字参照は対象外）
+            DRA_R0051(),   # center_name の混在（warning）
             # --- file ---
             DRA_R0021(), DRA_R0022(), DRA_R0023(), DRA_R0024(), DRA_R0025(), DRA_R0026(),
             DRA_R0027(), DRA_R0028(), DRA_R0029(), DRA_R0030(), DRA_R0031(),

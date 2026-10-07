@@ -7,6 +7,7 @@
 - DRA_R0019: PAIRED ライブラリで insert size（NOMINAL_LENGTH）必須。
 - DRA_R0020: insert size は 10,000,000 未満。
 - DRA_R0050: XML のどこかに非 ASCII 文字（2026-09-28 追加。BP_R0060 / BS_R0058 と同趣旨）。
+- DRA_R0051: submission 内で center_name が混在（2026-10-08 追加。warning）。
 """
 from apps.dra.rules.base import DraRule
 from common.text import is_blank as _empty
@@ -137,3 +138,32 @@ class DRA_R0050(DraRule):
                 out.append(self.result(sample=doc["file"], target=path,
                                        message=f"Non-ASCII characters detected in '{path}'. (Found: '{value}')"))
         return out
+
+
+class DRA_R0051(DraRule):
+    """submission 内の object（Submission / Experiment / Run / Analysis）で center_name が混在していれば warning（2026-10-08 追加）。
+
+    center_name は前後の空白を除いて完全一致で比べる（大小文字の違いも別の値）。
+    空・未記載の object は比べない。submission ごとに 1 件だけ出し、値ごとの object 種別と件数を添える。
+    """
+    rule_id = "DRA_R0051"
+    level = "warning"
+    target = "@center_name"
+    description = "Center name is not consistent across the Submission, Experiments, Runs and Analyses in a submission."
+
+    def validate(self, submission, context):
+        objs = ([("Submission", submission.submission)] if submission.submission is not None else []) + \
+            [("Experiment", o) for o in submission.experiments] + \
+            [("Run", o) for o in submission.runs] + \
+            [("Analysis", o) for o in submission.analyses]
+        found = {}   # center_name -> {種別: 件数}（出現順を保つ）
+        for kind, o in objs:
+            cn = (o.center_name or "").strip()
+            if cn:
+                found.setdefault(cn, {}).setdefault(kind, 0)
+                found[cn][kind] += 1
+        if len(found) < 2:
+            return []
+        detail = ", ".join(f"'{cn}' ({', '.join(f'{k} x{n}' for k, n in kinds.items())})" for cn, kinds in found.items())
+        sample = submission.submission.label if submission.submission is not None else "submission"
+        return [self.result(sample=sample, message=f"{self.description} (Found: {detail})")]
