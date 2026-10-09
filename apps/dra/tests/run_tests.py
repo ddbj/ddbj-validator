@@ -4,6 +4,8 @@
 apps/dra/tests/<RULEID>/ 配下の 1 シナリオ = 1 ディレクトリ。ディレクトリ内の *.xml を
 まとめて 1 submission として検証し、`.pass`/`.fail` をディレクトリ名（＝ルール）で判定する。
 ディレクトリに record.json（DDBJ Record v3）があれば、XML の代わりにそれを検証する。
+そのシナリオと XML との parity は `--record` を付けたときだけ。XML 側のルールを変えても、
+Record への追随を待たずに通せるように。
 - ディレクトリ名末尾が `.pass` なら当該ルールが発火しないこと、`.fail` なら発火することを期待。
 - level=info（Record 入力で「読まなかった」を知らせる注記）は発火に数えない。
 """
@@ -56,6 +58,7 @@ def _fired(scenario_dir):
 
 def main(argv):
     targets = [a for a in argv if not a.startswith("-")]
+    record  = "--record" in argv
     dirs = sorted(d for d in HERE.iterdir() if d.is_dir() and d.name.startswith("DRA_R")
                   and (not targets or any(t in d.name for t in targets)))
     runner = E2ERunner("DRA rule")
@@ -64,13 +67,15 @@ def main(argv):
         parts = d.name.split(".")
         if parts[-1] not in ("pass", "fail"):
             continue
+        if (d / RECORD).exists() and not record:
+            continue
         rid = parts[0].split("_")[0] + "_" + parts[0].split("_")[1]  # DRA_R00xx
         runner.check_rule(d.name, rid, parts[-1], _fired(d))
     rule_status = runner.finish()
 
-    # 全件実行のときだけ、XML と Record の同値性も確かめる。
+    # Record を含めた全件実行のときだけ、XML と Record の同値性も確かめる。
     parity_ok = True
-    if not targets:
+    if record and not targets:
         print("\n--- XML / DDBJ Record parity test ---")
         import importlib.util
         path = HERE / "run_record_parity_test.py"

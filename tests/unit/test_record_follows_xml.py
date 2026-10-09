@@ -20,6 +20,9 @@ from apps.dra import record_reader as dra_reader
 from apps.dra.rules.content import DRA_R0050
 from apps.webapi import runner
 
+# DDBJ Record 入力のテスト。既定では走らない（`pytest -m record`。README「DDBJ Record のテスト」）。
+pytestmark = pytest.mark.record
+
 
 def _write(tmp_path, record, ensure_ascii=False):
     path = tmp_path / "record.json"

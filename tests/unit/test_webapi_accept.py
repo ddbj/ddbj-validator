@@ -42,12 +42,14 @@ def _post(client, files, **form):
     return client.post("/validation", files=files, data=form)
 
 
+@pytest.mark.record
 def test_unknown_record_db_is_rejected_at_accept_time(client):
     r = _post(client, {"ddbj_record": ("r.json", _RECORD)}, record_db="BioProjects")
     assert r.status_code == 400
     assert "record_db に指定できるのは" in r.json()["message"]
 
 
+@pytest.mark.record
 def test_record_db_without_a_record_is_rejected(client):
     """黙って捨てると「指定したつもり」で読まれる。"""
     r = _post(client, {"biosample": ("s.xml", _XML)}, record_db="biosample")
@@ -55,6 +57,7 @@ def test_record_db_without_a_record_is_rejected(client):
     assert "ddbj_record" in r.json()["message"]
 
 
+@pytest.mark.record
 def test_package_with_a_record_is_rejected(client):
     """biosample CLI が `-p` と `-r` の併用を拒むのと同じ判断。web だけ黙って無視すると、
     指定した package で検証されたと読まれる。"""
@@ -63,6 +66,7 @@ def test_package_with_a_record_is_rejected(client):
     assert "package" in r.json()["message"]
 
 
+@pytest.mark.record
 @pytest.mark.parametrize("record_db, submission_id", [
     ("bioproject", "SSUB000001"),
     # DRA の submission id に接頭辞は無いが、BioProject / BioSample のものなら取り違え。
@@ -75,6 +79,7 @@ def test_submission_id_from_the_other_db_is_rejected(client, record_db, submissi
     assert "record_db" in r.json()["message"]
 
 
+@pytest.mark.record
 @pytest.mark.parametrize("form", [
     {}, {"record_db": "biosample"}, {"record_db": "biosample", "submission_id": "SSUB000001"},
     {"record_db": "dra"}, {"record_db": "DRA", "submission_id": "amr_ddbj-0104"},

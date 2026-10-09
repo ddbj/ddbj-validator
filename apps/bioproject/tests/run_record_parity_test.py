@@ -20,6 +20,7 @@ sys.path.insert(0, str(_HERE.parents[2]))
 sys.path.insert(0, str(_HERE))
 
 from apps.bioproject import record_reader, xml_reader  # noqa: E402
+from apps.bioproject.rules.value import BP_R0059  # noqa: E402
 from apps.bioproject.validator import Validator  # noqa: E402
 import run_tests as H  # noqa: E402
 
@@ -63,7 +64,45 @@ _DB_TYPE_KEY  = {"ePubmed": "pubmed_id", "eDOI": "doi"}
 
 def _to_record(submission):
     """内部モデル → v3 record。ddbj-repository の BioProject::Converter と同じ載せ方。"""
-    return {"schema_version": "v3", "projects": [_project(rec) for rec in submission.records]}
+    record = {"schema_version": "v3", "projects": [_project(rec) for rec in submission.records]}
+    owner  = _submission_block(submission.raw_root)
+    if owner:
+        record["submission"] = owner
+    return record
+
+
+def _submission_block(root):
+    """XML の Submission の連絡先と組織 → v3 submission.submitters。repository の converter と
+    同じく、組織は連絡先ごとに 1 つ。"""
+    org = root.find(".//Submission/Submission/Description/Organization") if root is not None else None
+    if org is None:
+        return None
+    name = (org.findtext("./Name") or "").strip()
+    submitters = []
+    for contact in org.findall("./Contact"):
+        person = {k: v for k, v in {
+            "email":      (contact.get("email") or "").strip(),
+            "first_name": (contact.findtext("./Name/First") or "").strip(),
+            "last_name":  (contact.findtext("./Name/Last") or "").strip(),
+        }.items() if v}
+        if not person:
+            continue
+        if name:
+            person["organizations"] = [{"name": name}]
+        submitters.append(person)
+    return {"submitters": submitters} if submitters else None
+
+
+def _as_written(xml_path):
+    """XML を、書かれたままの値で読む（BP_R0059 の cleanup をしない）。xml_reader は読んですぐ
+    値をきれいにするので、そのモデルから写すと record にはきれいな値しか載らず、record 側の
+    cleanup（BP_R0059）が比べられない。"""
+    cleanup = BP_R0059.cleanup
+    BP_R0059.cleanup = lambda self, root: []
+    try:
+        return xml_reader.parse_xml(str(xml_path))[0]
+    finally:
+        BP_R0059.cleanup = cleanup
 
 
 def _project(rec):
@@ -85,6 +124,8 @@ def _project(rec):
         # 未知/不在の publication が record 側だけ「ePubmed の id」に化けて、
         # 写像のずれをこのテストが見つけられなくなる。
         "publications": [pub for pub in (_publication(p) for p in rec.publications) if pub] or None,
+        "grants": [{k: v for k, v in (("id", g.grant_id), ("title", g.title), ("agency", g.agency)) if v is not None}
+                   for g in rec.grants] or None,
         "relevance": _relevance(rec),
         "target":    _target(rec),
     }
@@ -177,7 +218,7 @@ def main():
         try:
             with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False,
                                              encoding="utf-8") as f:
-                json.dump(_to_record(submission), f, ensure_ascii=False)
+                json.dump(_to_record(_as_written(xml_path)), f, ensure_ascii=False)
                 record_path = f.name
             got_submission, got_pre = record_reader.parse_record(record_path)
         finally:

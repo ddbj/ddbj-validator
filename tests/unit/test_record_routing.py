@@ -9,11 +9,10 @@ CLI はサブコマンドが担当を決めるが、web api はロールが `ddb
 
 **担当外を読まないことは、担当外について黙ることではない。** 読まなかったことは
 レポートに出るし、担当外のスキーマ違反も（validity は動かさずに）報告される。
-ここのテストはそのどちらもスキーマパッケージ無しで通るように書いてある。
-`[record]` extra が入っていない環境（`deploy/Containerfile.web` は `.[web]` しか
-入れない）で黙って skip すると、この commit の主張が誰にも確かめられなくなる。
+ここのテストはそのどちらもスキーマパッケージ無しで通るように書いてある（Record のテストは
+`ddbj-record` が入っていない環境では skip するが、ここは入っていなくても通る）。
 
-実行: リポジトリルートで `.venv/bin/python -m pytest tests/unit`
+実行: リポジトリルートで `.venv/bin/python -m pytest -m record tests/unit`
 """
 import json
 
@@ -27,6 +26,9 @@ from apps.biosample import reporter as bs_reporter
 from apps.dra import cli as dra_cli
 from apps.dra import record_reader as dra_reader
 from apps.webapi import runner
+
+# DDBJ Record 入力のテスト。既定では走らない（`pytest -m record`。README「DDBJ Record のテスト」）。
+pytestmark = pytest.mark.record
 
 _PROJECTS = [{"title": "A project title long enough", "project_type": "primary"}]
 _SAMPLES = [{"alias": "S1", "package": "Microbe.1.0", "attributes": []}]

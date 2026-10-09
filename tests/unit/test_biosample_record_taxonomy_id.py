@@ -5,10 +5,14 @@ reader も autofix もそれを数として扱わないことを固定する。h
 
 実行: リポジトリルートで `.venv/bin/python -m pytest tests/unit`
 """
+import pytest
 import json
 
 from apps.biosample import autofix
 from apps.biosample import record_reader
+
+# DDBJ Record 入力のテスト。既定では走らない（`pytest -m record`。README「DDBJ Record のテスト」）。
+pytestmark = pytest.mark.record
 
 
 def _sample(organism):

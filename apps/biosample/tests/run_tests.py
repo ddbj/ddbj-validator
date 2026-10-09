@@ -75,9 +75,9 @@ MOCK_PSUB_TO_PRJD = {
 MOCK_REGISTERED_PREFIXES = {"TAKENPFX": {"SSUB999999"}}
 
 
-def _fixtures(d):
-    """fixture 一式（XML / TSV(.txt) / DDBJ Record(.json)）を名前順で返す。"""
-    return sorted(list(d.glob("*.xml")) + list(d.glob("*.txt")) + list(d.glob("*.json")))
+def _fixtures(d, record=False):
+    """fixture 一式（XML / TSV(.txt)、record なら DDBJ Record(.json) も）を名前順で返す。"""
+    return sorted(list(d.glob("*.xml")) + list(d.glob("*.txt")) + (list(d.glob("*.json")) if record else []))
 
 
 def _is_record(path):
@@ -157,9 +157,12 @@ def _check_autofix(fixture_path, golden_path):
     return False, f"fixed output differs from golden (got {len(got)}B, want {len(want)}B)"
 
 
-def run_inprocess_mode(target=None):
+def run_inprocess_mode(target=None, record=False):
     """in-process（mock tax/account, 全ルール有効）でルール pass/fail と autofix golden を検証。
-    ddbj でいう curator/full 相当。DB/NCBI/auth を mock で決定的に有効化する最も網羅的なモード。"""
+    ddbj でいう curator/full 相当。DB/NCBI/auth を mock で決定的に有効化する最も網羅的なモード。
+
+    DDBJ Record（`.json` の fixture と、XML との parity）は record=True（`--record`）のときだけ。
+    XML 側のルールを変えても、Record への追随を待たずに通せるように。"""
     test_dirs = sorted(d for d in HERE.iterdir()
                        if d.is_dir() and d.name.startswith("BS_R")
                        and (target is None or d.name == target))
@@ -169,7 +172,7 @@ def run_inprocess_mode(target=None):
     for d in test_dirs:
         rule_id = d.name
         print(f"Testing: {d.name}")
-        for fx in _fixtures(d):
+        for fx in _fixtures(d, record):
             parts = fx.name.split(".")
             if len(parts) < 3 or parts[-2] not in ("pass", "fail"):
                 continue
@@ -193,7 +196,7 @@ def run_inprocess_mode(target=None):
         # autofix ゴールデン検証: <dir>/expected/<name> があれば、その入力に autofix を適用して突合。
         exp_dir = d / "expected"
         if exp_dir.is_dir():
-            for fx in _fixtures(d):
+            for fx in _fixtures(d, record):
                 # golden の拡張子は autofix 出力の形式に揃える（Record 入力なら .json、他は .xml）。
                 want_suffix = ".json" if _is_record(fx) else ".xml"
                 golden = exp_dir / (fx.name if fx.suffix.lower() == want_suffix
@@ -219,12 +222,14 @@ def run_inprocess_mode(target=None):
         print(f"{RED}[ABORT] BioSample rule tests failed.{END}")
 
     # 変換系・同値性のテストも同時に実行（"含めて test"）。全 fixture 実行時のみ。
+    # XML と Record の同値性は record のときだけ。
     tsv_ok = parity_ok = True
     if target is None:
         print("\n--- tsv_to_xml conversion test ---")
         tsv_ok = (_run_sibling("run_tsv2xml_test") == 0)
-        print("\n--- XML / DDBJ Record parity test ---")
-        parity_ok = (_run_sibling("run_record_parity_test") == 0)
+        if record:
+            print("\n--- XML / DDBJ Record parity test ---")
+            parity_ok = (_run_sibling("run_record_parity_test") == 0)
 
     ok = rule_ok and tsv_ok and parity_ok
     # SUCCESS は全部終わってから出す（先に出すと、落ちた実行の出力が緑の SUCCESS で始まる）。
@@ -444,6 +449,8 @@ if __name__ == "__main__":
                         help="実行モード。full=in-process 全ルール(既定) / local,ncbi=実CLI / *-skip=スキップ検証のみ")
     parser.add_argument("--use-pip", action="store_true",
                         help="pip インストール済み CLI (ddbj-validator) で実行")
+    parser.add_argument("--record", action="store_true",
+                        help="DDBJ Record（.json の fixture と、XML との parity）も実行する（full のみ）")
     parser.add_argument("-d", "--docker", dest="docker_image", default=None,
                         help="指定した Docker イメージで実行 (例: ghcr.io/ddbj/ddbj-validator:v0.1.5-beta)")
     args = parser.parse_args()
@@ -459,7 +466,7 @@ if __name__ == "__main__":
     ok = True
     for m in modes:
         if m == "full":
-            ok = (run_inprocess_mode(args.rule_id) == 0) and ok
+            ok = (run_inprocess_mode(args.rule_id, args.record) == 0) and ok
         elif m == "local":
             ok = run_cli_mode("local", False, args.rule_id, args.use_pip, args.docker_image) and ok
         elif m == "ncbi":

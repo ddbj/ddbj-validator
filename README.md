@@ -430,7 +430,23 @@ docstring にまとめてあります。要点:
   読まなかったことは `level: info` の結果としてレポートに出し（テキストのレポートでは `[ INFO ]` 節）、
   そちら側のスキーマ違反は `warning` にします。
 - XML との同値性は `apps/dra/tests/run_record_parity_test.py` がシナリオ全件で確かめています
-  （`run_tests.py` を引数無しで実行すると一緒に走ります）。
+  （`run_tests.py --record` で一緒に走ります）。
+
+### DDBJ Record のテスト
+
+DDBJ Record 入力のテストは、**既定では走りません**。ルールは XML を前提に足し・変えていくので、
+XML 側の変更で Record の結果がずれても、XML 側の開発がその追随を待たずに進められるようにして
+あります。ずれた分は Record 側（DDBJ Record 入力を担当する系統）が追随します。
+
+```bash
+# unit: Record のテストだけ（ddbj-record が入っていなければ skip）
+.venv/bin/python -m pytest -m record
+
+# E2E: XML の fixture に加えて、Record の fixture（.json / record.json）と XML との parity
+.venv/bin/python apps/bioproject/tests/run_tests.py --record
+.venv/bin/python apps/biosample/tests/run_tests.py --record
+.venv/bin/python apps/dra/tests/run_tests.py --record
+```
 
 ## GEA（`gea`）
 

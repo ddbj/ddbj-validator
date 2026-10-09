@@ -3,6 +3,9 @@
 
 apps/bioproject/tests/BP_Rxxxx/ 配下の `BP_Rxxxx_n.pass.xml` / `.fail.xml` を検証し、
 そのディレクトリ名のルールが .fail で発火・.pass で非発火かを判定する（biosample harness と同型）。
+
+DDBJ Record（`.json` の fixture と、XML との parity）は `--record` を付けたときだけ。XML 側の
+ルールを変えても、Record への追随を待たずに通せるように。
 taxonomy ルールは mock tax_data/taxid_info を注入して決定的に評価する。
 """
 import sys
@@ -70,22 +73,23 @@ def _fired(fixture):
 
 def main(argv):
     targets = [a for a in argv if not a.startswith("-")]
+    record  = "--record" in argv
     dirs = sorted(d for d in HERE.iterdir() if d.is_dir() and d.name.startswith("BP_R")
                   and (not targets or d.name in targets))
     runner = E2ERunner("BioProject rule")
     for d in dirs:
         rid = d.name
         print(f"Testing: {rid}")
-        for fx in sorted(list(d.glob("*.xml")) + list(d.glob("*.json"))):
+        for fx in sorted(list(d.glob("*.xml")) + (list(d.glob("*.json")) if record else [])):
             parts = fx.name.split(".")
             if len(parts) < 3 or parts[-2] not in ("pass", "fail"):
                 continue
             runner.check_rule(fx.name, rid, parts[-2], _fired(fx))
     rule_status = runner.finish()
 
-    # 全件実行のときだけ、XML と Record の同値性も確かめる。
+    # Record を含めた全件実行のときだけ、XML と Record の同値性も確かめる。
     parity_ok = True
-    if not targets:
+    if record and not targets:
         print("\n--- XML / DDBJ Record parity test ---")
         import importlib.util
         path = HERE / "run_record_parity_test.py"

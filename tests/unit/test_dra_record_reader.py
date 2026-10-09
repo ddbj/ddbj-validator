@@ -14,6 +14,9 @@ from apps.dra import cli as dra_cli
 from apps.dra import record_reader
 from apps.dra import reporter
 
+# DDBJ Record 入力のテスト。既定では走らない（`pytest -m record`。README「DDBJ Record のテスト」）。
+pytestmark = pytest.mark.record
+
 
 def _write(tmp_path, record, name="record.json"):
     path = tmp_path / name

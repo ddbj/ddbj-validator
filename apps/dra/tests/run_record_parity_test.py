@@ -42,7 +42,16 @@ _NOTICE_TARGETS = {"#not_validated", "#out_of_scope"}
 #
 # 素通りさせるのではなく列挙するのは、埋まったときに気付くため。ここに挙げた差が
 # 出なくなったらテストは失敗し、この表から消せと言う。
-_KNOWN_GAPS = {}
+_KNOWN_GAPS = {
+    "DRA_R0050_2.pass": {
+        "DRA_R0050": "XML の文字参照（&#x...;）は record では文字そのものになり、区別が残らない。"
+                     "repository の正準形は非 ASCII を素で書くので、record では報告されるのが正しい。",
+    },
+}
+
+# 指摘の sample が、それが見つかったファイルの名前であるルール。XML は 4 つの文書の
+# どれか（sub.xml など）、record は 1 つのファイルなので、名前では比べない。
+_FILE_SAMPLE_RULES = {"DRA_R0050"}
 
 
 def _alias_key(alias):
@@ -169,7 +178,7 @@ def _fired(submission, pre_errors):
     if submission is not None:
         results += Validator(H._context()).run(submission)
 
-    return {(r["rule_id"], r.get("sample"), r.get("level"))
+    return {(r["rule_id"], "(file)" if r["rule_id"] in _FILE_SAMPLE_RULES else r.get("sample"), r.get("level"))
             for r in results
             if r["rule_id"] not in _XML_FORMAT_RULES and r.get("target") not in _NOTICE_TARGETS}
 
