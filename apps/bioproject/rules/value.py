@@ -53,6 +53,10 @@ class BP_R0059(BpRule):
 
     `cleanup(root)` を xml_reader がパース直後に呼ぶ。値を in-place で置き換え、置き換えた値ごとに
     warning を 1 件返す。属性値（accession・taxID など）は囲みクオートを外さない。
+
+    DDBJ Record では record_reader が、BioProject として読む部分（dict）を渡す。文字列値を
+    同じくきれいにし、record の中の位置で報告する。XML の属性値に当たる識別子のキー
+    （`_IDENTIFIER_KEYS`）は、同じく囲みクオートを外さない。
     """
     rule_id = "BP_R0059"
     level = "warning"
@@ -60,6 +64,8 @@ class BP_R0059(BpRule):
     description = "Invalid data format."
 
     def cleanup(self, root):
+        if isinstance(root, (dict, list)):
+            return self._cleanup_json(root, "")
         out = []
         for el, path, attr in _iter_slots(root, root.tag):
             old = el.get(attr) if attr else el.text
@@ -77,6 +83,42 @@ class BP_R0059(BpRule):
             out.append(self.result(target=path, autofix=True, old_value=shown, new_value=new,
                                    message=f"Invalid data format. ({path}: '{shown}', Suggested: '{new}')"))
         return out
+
+
+    def _cleanup_json(self, node, base, list_key=None):
+        """list_key は node が list のときの、その list のキー。要素は親のキーで決める
+        （`data_types` の要素は XML の Data@data_type）。"""
+        out = []
+        items = list(node.items()) if isinstance(node, dict) else list(enumerate(node))
+        for key, old in items:
+            path = f"{base}.{key}" if base else str(key)
+            name = list_key if isinstance(node, list) else key
+            if isinstance(old, (dict, list)):
+                out += self._cleanup_json(old, path, name if isinstance(old, list) else None)
+                continue
+            if not isinstance(old, str):
+                continue
+            new = clean_value(old, unquote=name not in _IDENTIFIER_KEYS)
+            if not new or new == old:
+                continue
+            node[key] = new
+            shown = old.strip(" \t\r\n")
+            if new == shown:
+                continue    # 前後の空白だけの違いは報告しない（XML の整形インデントと同じ扱い）
+            out.append(self.result(target=path, autofix=True, old_value=shown, new_value=new,
+                                   message=f"Invalid data format. ({path}: '{shown}', Suggested: '{new}')"))
+        return out
+
+
+# Record で、XML では属性値として書く（囲みクオートを外さない）キー。外すと、XML では
+# BP_R0070 などが報告する値を Record では黙って直してしまう。
+_IDENTIFIER_KEYS = {
+    "accession", "id", "db", "taxonomy_id", "biosample_id",   # ArchiveID@accession, Grant@GrantId, Organism@taxID …
+    "email", "orcid", "ror_id", "url", "role", "type",        # Contact@email, Organization@role/type/url …
+    "pubmed_id", "doi",                                       # Publication@id
+    "sample_scope", "material", "capture", "method",          # Target@…, Method@method_type
+    "data_types", "umbrella_subtype",                         # Data@data_type, ProjectTypeTopAdmin@subtype
+}
 
 
 def _iter_slots(el, path):

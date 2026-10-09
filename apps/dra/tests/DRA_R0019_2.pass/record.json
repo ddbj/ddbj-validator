@@ -1,0 +1,82 @@
+{
+  "schema_version": "v3",
+  "submission": {
+    "accession": "DRA1",
+    "alias": "s",
+    "hold_date": "2027-06-01"
+  },
+  "experiments": [
+    {
+      "accession": "DRX1",
+      "alias": "E1",
+      "title": "Exp title",
+      "description": "a design description",
+      "library": {
+        "name": "LIB1",
+        "strategy": "WGS",
+        "source": "GENOMIC",
+        "selection": "RANDOM",
+        "layout": "paired",
+        "nominal_length": 300
+      },
+      "platform": {
+        "type": "ILLUMINA",
+        "instrument_model": "Illumina MiSeq"
+      }
+    }
+  ],
+  "runs": [
+    {
+      "accession": "DRR1",
+      "alias": "R1",
+      "title": "Run title",
+      "data_blocks": [
+        {
+          "files": [
+            {
+              "filename": "reads.fastq",
+              "filetype": "fastq",
+              "checksum_method": "MD5",
+              "checksum": "00000000000000000000000000000000"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "relations": [
+    {
+      "type": "part_of",
+      "source": {
+        "type": "experiment",
+        "accession": "DRX1"
+      },
+      "target": {
+        "db": "project",
+        "accession": "PRJDB1"
+      }
+    },
+    {
+      "type": "part_of",
+      "source": {
+        "type": "experiment",
+        "accession": "DRX1"
+      },
+      "target": {
+        "db": "sample",
+        "accession": "SAMD00000001"
+      }
+    },
+    {
+      "type": "part_of",
+      "source": {
+        "type": "run",
+        "accession": "DRR1"
+      },
+      "target": {
+        "db": "experiment",
+        "accession": "DRX1"
+      }
+    }
+  ]
+}

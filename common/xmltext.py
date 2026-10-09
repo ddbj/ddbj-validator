@@ -6,6 +6,12 @@ Organization 名、Grant の名称など、モデルに載せていない要素�
 ここでは XML の **すべての要素テキストと属性値**を (要素, パス, 値) で列挙して、
 各 app のルールが漏れなく検査できるようにする。
 
+DDBJ Record（JSON）も同じ関数で走査できる。root に dict / list を渡すと、すべての文字列値を
+(それを持つ dict / list, パス, 値) で列挙する。パスは record の中の位置を、各 app の
+record_reader がスキーマ違反を指すのと同じ pydantic の loc の書き方で（`projects.0.grants.1.agency`）。
+prefix はその前に付く。JSON の `\u201c` は XML の
+文字参照と同じく、パーサが展開した後の値しか見えないので、literal での絞り込みが同じように効く。
+
 文字参照（`&#x201c;` など）の扱い:
 XML パーサは文字参照を実体へ展開するので、展開後の値だけを見ると「ソースは ASCII だけで
 書かれているファイル」まで非 ASCII と判定してしまう。`literal_non_ascii()` でソースの
@@ -61,12 +67,28 @@ def _walk(el, base):
             yield el, base, child.tail.strip()
 
 
+def _walk_json(node, base):
+    """dict / list 以下の文字列値を (それを持つ dict / list, パス, 値) で列挙する内部関数。"""
+    items = node.items() if isinstance(node, dict) else enumerate(node)
+    for key, value in items:
+        path = f"{base}.{key}" if base else str(key)
+        if isinstance(value, (dict, list)):
+            yield from _walk_json(value, path)
+        elif isinstance(value, str) and value.strip():
+            yield node, path, value.strip()
+
+
 def iter_values(root, prefix=None):
     """root 以下のすべての要素テキスト・属性値を (要素, パス, 値) で列挙する。
 
     パスは `BioSample/Owner/Contacts/Contact/Name/Last` のように要素名を `/` で連結したもの。
     属性は `要素@属性名`。prefix を与えると先頭をその名前に差し替える（既定は root のタグ名）。
+
+    root が dict / list（DDBJ Record）なら、すべての文字列値を record の中の位置
+    （`samples.3.attributes.2.value`）で列挙する。prefix はその前に付く（既定は空）。
     """
+    if isinstance(root, (dict, list)):
+        return _walk_json(root, prefix or "")
     return _walk(root, prefix if prefix is not None else root.tag)
 
 

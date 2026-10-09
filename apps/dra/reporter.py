@@ -79,9 +79,18 @@ def _fmt(r):
     return f"{r['rule_id']}:{_obj_type(r)}:{r.get('sample') or '-'}:{r.get('message','')}"
 
 
-def _section(results, is_err):
+# レポートの節（level, 見出し）。info は validity にも件数にも入らない注記（DDBJ Record 入力で
+# 「読まなかった」を知らせるもの）で、warning の節に混ぜると警告に見える。
+_SECTIONS = (("error", "[ ERROR ]"), ("warning", "[ WARNING ]"), ("info", "[ INFO ]"))
+
+
+def _picked(results, level):
+    return [r for r in results if r.get("level", "error") == level]
+
+
+def _section(results, level):
     """指定レベルの行を object type 順にグルーピングして返す。"""
-    picked = [r for r in results if (r.get("level") == "error") == is_err]
+    picked = _picked(results, level)
     out = []
     for obj in _OBJ_ORDER:
         out += [_fmt(r) for r in picked if _obj_type(r) == obj]
@@ -103,19 +112,18 @@ def _agg_line(rid, obj, rs):
 def _detail_body(results):
     """details 本文（全件展開）。"""
     lines = []
-    errs, wars = _section(results, True), _section(results, False)
-    if errs:
-        lines.append("[ ERROR ]"); lines += errs; lines.append("")
-    if wars:
-        lines.append("[ WARNING ]"); lines += wars
+    for level, hdr in _SECTIONS:
+        section = _section(results, level)
+        if section:
+            lines.append(hdr); lines += section; lines.append("")
     return lines
 
 
 def _summary_body(results):
     """summary 本文（(rule_id, object) 件数集約）。"""
     lines = []
-    for is_err, hdr in ((True, "[ ERROR ]"), (False, "[ WARNING ]")):
-        picked = [r for r in results if (r.get("level") == "error") == is_err]
+    for level, hdr in _SECTIONS:
+        picked = _picked(results, level)
         if not picked:
             continue
         section = []

@@ -21,6 +21,23 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# DDBJ Record（v3 JSON）入力のスキーマ検証（BS_R0098 / BP_R0002 / DRA_R0002）用。
+#
+# PyPI 未公開なので GitHub の tarball を参照する。tarball にしているのは git URL と違って
+# イメージに git を入れずに済むため。
+# ddbj-record-specifications は tag を打たず、利用側は main を追うか commit を固定する。
+# 固定しているのは、v3 の形が変わった（ddbj/ddbj-record-specifications#11: project → projects、
+# taxonomy_id は str）後の main で、ST.26・GEA・SRA の hold_date の規則が入ったもの（#8、#13、#14、#16、
+# #18。BP/BS の形は変わらない）に、ANALYSIS の TARGET を record の種類の名前（"sample" / "run"）で
+# target.db に置く対応表（#19。モデルは変わらない。DRA の reader はこの名前で読む）を足したもの。
+# 上げるときは、reader が前提とする形が変わっていないかを見る。
+#
+# これが無くても Record の検証自体はできる（reader が前提とする形は自前で確かめる）が、
+# スキーマ違反の検出は行われない。インストール: pip install '.[record]'
+record = [
+    "ddbj-record @ https://github.com/ddbj/ddbj-record-specifications/archive/9122d0633dd5edcdaef7388f2d2a18b8e589e0ea.tar.gz",
+]
+
 # Web API（FastAPI）用。validator 本体には不要なので extra に分離。
 # インストール: pip install .[web]
 web = [
@@ -60,3 +77,10 @@ include = ["common*", "apps*"]
 [tool.pytest.ini_options]
 testpaths = ["tests/unit"]
 python_files = ["test_*.py"]
+# DDBJ Record 入力のテストは既定では走らせない（README「DDBJ Record のテスト」）。
+# `pytest -m record` で明示したときだけ（全部なら `-m "record or not record"`）。
+# 後から渡した -m がこちらに勝つ。
+addopts = "-m 'not record'"
+markers = [
+    "record: DDBJ Record（v3 JSON）入力のテスト。`pytest -m record` で実行する",
+]

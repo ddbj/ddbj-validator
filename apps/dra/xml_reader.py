@@ -68,13 +68,27 @@ def _files(node):
     return out
 
 
+def _hold_date(root):
+    """submission の公開予定日。ACTIONS は書かれた順に行われるので、@target の無い（submission
+    全体にかかる）HOLD と RELEASE のうち最後のものが効いている。それが RELEASE か、日付の無い
+    HOLD なら公開予定日は無い。@target の付いた HOLD は個々の object の話で、submission の日付ではない。
+
+    DDBJ Record の submission.hold_date はこの規則で決まる（ddbj/ddbj-record-specifications#14）。
+    以前は最初の HOLD を取っていたので、record_reader と同じ submission で DRA_R0006 の結果が
+    食い違い得た。
+    """
+    in_force = [a for a in root.findall(".//ACTIONS/ACTION/*")
+                if a.tag in ("HOLD", "RELEASE") and not a.get("target")]
+    if not in_force or in_force[-1].tag != "HOLD":
+        return None
+    return in_force[-1].get("HoldUntilDate")
+
+
 def _build_submission(root):
     m = DraSubmissionMeta(alias=root.get("alias"), accession=root.get("accession"),
                           center_name=root.get("center_name"), lab_name=root.get("lab_name"),
                           submission_date=root.get("submission_date"), raw=root)
-    hold = root.find(".//ACTIONS/ACTION/HOLD")
-    if hold is not None:
-        m.hold_date = hold.get("HoldUntilDate")
+    m.hold_date = _hold_date(root)
     for c in root.findall(".//CONTACTS/CONTACT"):
         m.contacts.append({"name": c.get("name"), "inform_on_status": c.get("inform_on_status"),
                            "inform_on_error": c.get("inform_on_error")})
@@ -84,6 +98,9 @@ def _build_submission(root):
 def _build_experiment(exp):
     e = DraExperiment(alias=exp.get("alias"), accession=exp.get("accession"),
                       center_name=exp.get("center_name"), title=_text(exp.find("./TITLE")), raw=exp)
+    e.design_present = exp.find("./DESIGN") is not None
+    e.library_descriptor_present = exp.find("./DESIGN/LIBRARY_DESCRIPTOR") is not None
+    e.platform_present = exp.find("./PLATFORM") is not None
     e.description = _text(exp.find("./DESIGN/DESIGN_DESCRIPTION"))
     sref = exp.find("./STUDY_REF")
     if sref is not None:
@@ -119,6 +136,7 @@ def _build_run(run):
     if ref is not None:
         r.experiment_ref = ref.get("accession")
         r.experiment_refname = ref.get("refname")
+    r.data_block_present = run.find("./DATA_BLOCK") is not None
     r.files = _files(run)
     return r
 
@@ -139,6 +157,7 @@ def _build_analysis(an):
             a.sample_refs.append(acc)
         elif typ == "RUN":
             a.run_refs.append(acc)
+    a.data_block_present = an.find("./DATA_BLOCK") is not None
     a.files = _files(an)
     return a
 
