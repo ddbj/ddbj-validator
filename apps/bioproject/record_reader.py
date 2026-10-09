@@ -84,9 +84,9 @@ _warned_no_schema = False
 # 算入しない（_scoped_schema_errors）。
 _OUT_OF_SCOPE_KEY = 'samples'
 
-# BioProject として読む部分: XML の BioProject 文書が持つもの（Submission の Contact や
-# Organization と、Project）。
-_OWN_KEYS = ('submission', 'projects')
+# submission のうち、XML の BioProject 文書が持つもの（Submission/Description の
+# Organization と Contact）。st26 / sra / gea などは他の DB の部分で、ここでは読まない。
+_SUBMISSION_KEYS = ('submitters',)
 
 
 # v3 project_type -> モデルの project_kind。
@@ -426,8 +426,13 @@ def parse_record(record_path, account=None):
     errors = _schema_validate(record)
 
     # BioProject として読む部分。XML の BioProject 文書に当たるもので、BP_R0059（cleanup）と
-    # BP_R0060（非 ASCII）はこの全体を走査する。同居する samples は読まない（下の BP_R0002）。
-    part = {key: record[key] for key in _OWN_KEYS if key in record}
+    # BP_R0060（非 ASCII）はこの全体を走査する。同居する samples や、submission のうち他の
+    # DB の部分は読まない。値は record のものをそのまま指すので、cleanup は record に効く。
+    part = {key: record[key] for key in ('projects',) if key in record}
+    submission_part = {key: record['submission'][key] for key in _SUBMISSION_KEYS
+                       if isinstance(record.get('submission'), dict) and key in record['submission']}
+    if submission_part:
+        part = {'submission': submission_part, **part}
 
     # モデルを組む前に値をきれいにする（auto cleanup。xml_reader と同じ順）。part の値は
     # record の値そのものなので、以降の組み立ては cleanup 後の値を読む。
@@ -483,7 +488,7 @@ def parse_record(record_path, account=None):
 
     # BP_R0060 は、ソースに素の文字として書かれた非 ASCII だけを見る（XML の文字参照は対象外）。
     # JSON の `\u201c` は XML の `&#x201c;` に当たるので、同じく素で書かれた文字だけを渡す。
-    source_non_ascii = {ch for ch in text if ord(ch) > 0x7F}
+    source_non_ascii = {ch for ch in set(text) if ord(ch) > 0x7F}
 
     return BioProjectSubmission(records=records, account=account, source_non_ascii=source_non_ascii,
                                 raw_root=part), errors

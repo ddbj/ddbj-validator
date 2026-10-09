@@ -148,8 +148,13 @@ class BS_R0058(BsRule):
         # `submission` にある。sample ごとではなく 1 回、record の中の位置で。
         shared = submission.raw_root
         if isinstance(shared, dict) and submission.records:
-            first = submission.records[0]
+            first, seen = submission.records[0], set()
             for _el, path, v in non_ascii_values(shared, literal):
+                # 同じ組織が連絡先ごとに写っている（repository の converter はそう書く）。
+                # XML でも Owner/Name は 1 回なので、値で 1 回にする。
+                if v in seen:
+                    continue
+                seen.add(v)
                 out.append(self._hit(first, path, v))
         return out
 

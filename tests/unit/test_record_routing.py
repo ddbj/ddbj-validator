@@ -9,8 +9,10 @@ CLI はサブコマンドが担当を決めるが、web api はロールが `ddb
 
 **担当外を読まないことは、担当外について黙ることではない。** 読まなかったことは
 レポートに出るし、担当外のスキーマ違反も（validity は動かさずに）報告される。
-ここのテストはそのどちらもスキーマパッケージ無しで通るように書いてある（Record のテストは
-`ddbj-record` が入っていない環境では skip するが、ここは入っていなくても通る）。
+ここのテストはそのどちらもスキーマパッケージ無しで通るように書いてある。
+`[record]` extra が入っていない環境（`deploy/Containerfile.web` は `.[web]` しか
+入れない）で黙って skip すると、この commit の主張が誰にも確かめられなくなる。
+スキーマが要るテストだけが、それぞれ `pytest.importorskip("ddbj_record")` で skip する。
 
 実行: リポジトリルートで `.venv/bin/python -m pytest -m record tests/unit`
 """

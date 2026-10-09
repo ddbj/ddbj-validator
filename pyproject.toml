@@ -78,7 +78,8 @@ include = ["common*", "apps*"]
 testpaths = ["tests/unit"]
 python_files = ["test_*.py"]
 # DDBJ Record 入力のテストは既定では走らせない（README「DDBJ Record のテスト」）。
-# `pytest -m record` で明示したときだけ。後から渡した -m がこちらに勝つ。
+# `pytest -m record` で明示したときだけ（全部なら `-m "record or not record"`）。
+# 後から渡した -m がこちらに勝つ。
 addopts = "-m 'not record'"
 markers = [
     "record: DDBJ Record（v3 JSON）入力のテスト。`pytest -m record` で実行する",

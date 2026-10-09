@@ -4,7 +4,8 @@
 あとの `404`（本文にしか理由が無い）になり、素朴な client からは「知らない uuid」と
 区別が付かない。ここで見ているのはどれも、ファイルを読まずに分かるものだけ。
 
-実行: リポジトリルートで `.venv/bin/python -m pytest tests/unit`
+実行: リポジトリルートで `.venv/bin/python -m pytest tests/unit`（DDBJ Record の受付は
+`@pytest.mark.record` なので、それも含めるなら `-m "record or not record"`）
 """
 import json
 

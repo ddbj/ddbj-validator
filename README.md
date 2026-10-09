@@ -439,8 +439,11 @@ XML 側の変更で Record の結果がずれても、XML 側の開発がその�
 あります。ずれた分は Record 側（DDBJ Record 入力を担当する系統）が追随します。
 
 ```bash
-# unit: Record のテストだけ（ddbj-record が入っていなければ skip）
+# unit: Record のテストだけ。スキーマ（ddbj-record）が要るものは、入っていなければ skip
 .venv/bin/python -m pytest -m record
+
+# unit: XML も Record も全部
+.venv/bin/python -m pytest -m "record or not record"
 
 # E2E: XML の fixture に加えて、Record の fixture（.json / record.json）と XML との parity
 .venv/bin/python apps/bioproject/tests/run_tests.py --record

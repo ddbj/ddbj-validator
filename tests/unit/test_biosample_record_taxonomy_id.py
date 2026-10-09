@@ -3,7 +3,7 @@
 reader も autofix もそれを数として扱わないことを固定する。harness のフィクスチャは
 値のある taxonomy_id しか持たないので、空の slot と autofix の書き戻しはここで見る。
 
-実行: リポジトリルートで `.venv/bin/python -m pytest tests/unit`
+実行: リポジトリルートで `.venv/bin/python -m pytest -m record tests/unit`
 """
 import pytest
 import json

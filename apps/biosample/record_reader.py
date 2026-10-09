@@ -260,6 +260,15 @@ def _attributes(sample):
 _LIFTED_OUT_OF_BAG = ("organism", "taxonomy_id")
 
 
+def _owner_part(record):
+    """XML では各 BioSample の Owner に当たるもの（連絡先と組織）。submission のうち st26 / sra /
+    gea などは他の DB の部分で、ここでは読まない。"""
+    submission = record.get("submission")
+    if not isinstance(submission, dict) or "submitters" not in submission:
+        return None
+    return {"submission": {"submitters": submission["submitters"]}}
+
+
 def _build_record(sample):
     rec = BioSampleRecord(raw=sample)
     rec.attributes = _attributes(sample)
@@ -360,8 +369,8 @@ def parse_record(record_path, submission_id=None, account=None):
     # BS_R0058 は、ソースに素の文字として書かれた非 ASCII だけを見る（XML の文字参照は対象外）。
     # JSON の `\u201c` は XML の `&#x201c;` に当たるので、同じく素で書かれた文字だけを渡す。
     sub = BioSampleSubmission(submission_id=submission_id, account=account,
-                              source_non_ascii={ch for ch in text if ord(ch) > 0x7F},
-                              raw_root={key: record[key] for key in ("submission",) if key in record})
+                              source_non_ascii={ch for ch in set(text) if ord(ch) > 0x7F},
+                              raw_root=_owner_part(record))
     sub.records = [_build_record(s) for s in record.get("samples") or []]
 
     # BS_R0058 が record の中の位置で報告できるように（XML なら BioSample 要素からのパス）。

@@ -59,6 +59,12 @@ def _fired(scenario_dir):
 def main(argv):
     targets = [a for a in argv if not a.startswith("-")]
     record  = "--record" in argv
+
+    # 打ち間違い（--recrod）を黙って XML だけの実行にしない。
+    unknown = [a for a in argv if a.startswith("-") and a != "--record"]
+    if unknown:
+        print(f"unknown option(s): {' '.join(unknown)} (only --record)", file=sys.stderr)
+        return 2
     dirs = sorted(d for d in HERE.iterdir() if d.is_dir() and d.name.startswith("DRA_R")
                   and (not targets or any(t in d.name for t in targets)))
     runner = E2ERunner("DRA rule")

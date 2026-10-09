@@ -85,17 +85,20 @@ class BP_R0059(BpRule):
         return out
 
 
-    def _cleanup_json(self, node, base):
+    def _cleanup_json(self, node, base, list_key=None):
+        """list_key は node が list のときの、その list のキー。要素は親のキーで決める
+        （`data_types` の要素は XML の Data@data_type）。"""
         out = []
         items = list(node.items()) if isinstance(node, dict) else list(enumerate(node))
         for key, old in items:
             path = f"{base}.{key}" if base else str(key)
+            name = list_key if isinstance(node, list) else key
             if isinstance(old, (dict, list)):
-                out += self._cleanup_json(old, path)
+                out += self._cleanup_json(old, path, name if isinstance(old, list) else None)
                 continue
             if not isinstance(old, str):
                 continue
-            new = clean_value(old, unquote=key not in _IDENTIFIER_KEYS)
+            new = clean_value(old, unquote=name not in _IDENTIFIER_KEYS)
             if not new or new == old:
                 continue
             node[key] = new
@@ -107,8 +110,15 @@ class BP_R0059(BpRule):
         return out
 
 
-# Record で、XML の属性値に当たる（囲みクオートを外さない）キー。
-_IDENTIFIER_KEYS = {"accession", "id", "taxonomy_id", "biosample_id", "db"}
+# Record で、XML では属性値として書く（囲みクオートを外さない）キー。外すと、XML では
+# BP_R0070 などが報告する値を Record では黙って直してしまう。
+_IDENTIFIER_KEYS = {
+    "accession", "id", "db", "taxonomy_id", "biosample_id",   # ArchiveID@accession, Grant@GrantId, Organism@taxID …
+    "email", "orcid", "ror_id", "url", "role", "type",        # Contact@email, Organization@role/type/url …
+    "pubmed_id", "doi",                                       # Publication@id
+    "sample_scope", "material", "capture", "method",          # Target@…, Method@method_type
+    "data_types", "umbrella_subtype",                         # Data@data_type, ProjectTypeTopAdmin@subtype
+}
 
 
 def _iter_slots(el, path):

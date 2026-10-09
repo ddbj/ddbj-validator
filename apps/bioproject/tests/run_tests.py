@@ -74,6 +74,12 @@ def _fired(fixture):
 def main(argv):
     targets = [a for a in argv if not a.startswith("-")]
     record  = "--record" in argv
+
+    # 打ち間違い（--recrod）を黙って XML だけの実行にしない。
+    unknown = [a for a in argv if a.startswith("-") and a != "--record"]
+    if unknown:
+        print(f"unknown option(s): {' '.join(unknown)} (only --record)", file=sys.stderr)
+        return 2
     dirs = sorted(d for d in HERE.iterdir() if d.is_dir() and d.name.startswith("BP_R")
                   and (not targets or d.name in targets))
     runner = E2ERunner("BioProject rule")

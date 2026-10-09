@@ -4,7 +4,7 @@ XML と同じ内容なら同じルールが発火すること自体は、シナ�
 （apps/dra/tests/run_record_parity_test.py）が見る。ここは v3 にしか無い書き方
 （relations、小文字の layout、alias と index による source）の読み方を見る。
 
-実行: リポジトリルートで `.venv/bin/python -m pytest tests/unit`
+実行: リポジトリルートで `.venv/bin/python -m pytest -m record tests/unit`
 """
 import json
 

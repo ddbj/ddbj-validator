@@ -110,3 +110,40 @@ def test_web_api_passes_the_biosample_profile_for_a_record(tmp_path):
 
     assert runner._plan_record(path, {"record_db": "biosample", "profile": "next"})[-2:] == ["--profile", "next"]
     assert "--profile" not in runner._plan_record(path, {"record_db": "bioproject", "profile": "next"})
+
+
+def test_other_databases_parts_of_the_submission_are_not_scanned(tmp_path):
+    """submission の st26 / sra / gea は他の DB の部分。BioProject の文書には無いので、
+    BP_R0060 は報告せず BP_R0059 も触らない。"""
+    path = _write(tmp_path, {"submission": {"submitters": [{"first_name": "Hanako"}], "sra": {"title": "é  "}},
+                             "projects": [{"title": "A project title long enough", "project_type": "primary"}]})
+
+    submission, errors = bp_reader.parse_record(path)
+
+    assert BP_R0060().validate(submission, None) == []
+    assert [e for e in errors if e["rule_id"] == "BP_R0059"] == []
+
+
+def test_values_xml_writes_as_attributes_keep_their_quotes(tmp_path):
+    """BP_R0059: XML では属性値（Contact@email、Data@data_type など）は囲みクオートを外さない。
+    外すと、XML では報告される値を Record では黙って直してしまう。"""
+    path = _write(tmp_path, {"submission": {"submitters": [{"email": "'a@x.org'"}]},
+                             "projects": [{"title": "A project title long enough", "project_type": "primary",
+                                           "target": {"sample_scope": "'eMonoisolate'", "data_types": ["'eRawSequenceReads'"]}}]})
+
+    submission, errors = bp_reader.parse_record(path)
+
+    assert [e for e in errors if e["rule_id"] == "BP_R0059"] == []
+    assert submission.records[0].sample_scope == "'eMonoisolate'"
+
+
+def test_biosample_organization_written_for_each_submitter_is_reported_once(tmp_path):
+    """repository の converter は組織を連絡先ごとに写す。XML でも Owner/Name は 1 回。"""
+    organization = [{"name": "Université"}]
+    path = _write(tmp_path, {"submission": {"submitters": [{"first_name": "A", "organizations": organization},
+                                                           {"first_name": "B", "organizations": organization}]},
+                             "samples": [{"alias": "S1", "package": "Microbe.1.0", "attributes": []}]})
+
+    submission, _ = bs_reader.parse_record(path)
+
+    assert [r["target"] for r in BS_R0058().validate(submission, None)] == ["submission.submitters.0.organizations.0.name"]

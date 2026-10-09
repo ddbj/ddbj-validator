@@ -79,6 +79,9 @@ _OUT_OF_SCOPE_KEYS = ('projects', 'samples')
 # DRA として読む部分: XML の Submission / Experiment / Run / Analysis 文書に当たるもの。
 _OWN_KEYS = ('submission', 'experiments', 'runs', 'analyses')
 
+# submission のうち、他の DB の部分（DRA の Submission 文書には無いもの）。
+_OTHER_SUBMISSION_KEYS = ('st26', 'gea')
+
 # relation の source.type（record の種類の名前） -> DraSubmission の list。
 _KINDS = {
     'experiment': 'experiments',
@@ -537,8 +540,10 @@ def parse_record(record_path, account=None):
     # `\u201c` は XML の `&#x201c;` に当たる。
     sub.xml_docs = [{
         'file':    name,
-        'root':    {key: record[key] for key in _OWN_KEYS if key in record},
-        'literal': {ch for ch in text if ord(ch) > 0x7F},
+        'root':    {key: ({k: v for k, v in record[key].items() if k not in _OTHER_SUBMISSION_KEYS}
+                          if key == 'submission' and isinstance(record[key], dict) else record[key])
+                    for key in _OWN_KEYS if key in record},
+        'literal': {ch for ch in set(text) if ord(ch) > 0x7F},
     }]
 
     return sub, errors
