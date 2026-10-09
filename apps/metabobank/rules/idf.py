@@ -456,13 +456,18 @@ class MB_IR0024(MbRule):
     description = "Non-ASCII characters in an IDF field were normalized to ASCII."
 
     def validate(self, sub, context):
-        from apps.metabobank.charnorm import fix_warning_message, residual_error_message
+        from apps.metabobank.charnorm import (fix_warning_message, residual_error_message,
+                                              whitespace_warning_message)
         if not sub.idf:
             return []
         out = []
         for fx in getattr(sub, "char_fixes", []):
             if fx["target"] != "IDF":
                 continue
+            if fx.get("whitespace"):   # 空白の auto cleanup（2026-10-03）
+                out.append(self.result(
+                    message=whitespace_warning_message(fx["where"], fx["original"], fx["fixed"]),
+                    level="warning", field=fx["where"], value=fx["fixed"]))
             if fx["mapped"]:
                 out.append(self.result(
                     message=fix_warning_message(fx["where"], fx["mapped"]), level="warning",

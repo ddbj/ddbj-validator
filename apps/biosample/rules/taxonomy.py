@@ -152,7 +152,9 @@ class BS_R0115(BsRule):
     def validate(self, submission, context):
         out = []
         for rec in submission.records:
-            if is_empty(rec.attr("specimen_voucher")) or is_empty(rec.organism):
+            # specimen_voucher は profile=next で多値可。値のある全値を報告対象にする
+            vouchers = [v for v in rec.attr_values("specimen_voucher") if not is_empty(v)]
+            if not vouchers or is_empty(rec.organism):
                 continue
             info = context.tax_data.get(rec.organism)
             if not info:
@@ -160,9 +162,10 @@ class BS_R0115(BsRule):
             # Bacteria(Cyanobacteria を除く) または unclassified sequences は不可
             is_bacteria = tax_has_lineage(info, ["Bacteria"]) and not tax_has_lineage(info, ["Cyanobacteria"])
             if is_bacteria or tax_has_lineage(info, ["unclassified sequences"]):
-                out.append(self.result(sample=rec.sample_id,
-                                       attribute="specimen_voucher", old_value=rec.attr("specimen_voucher"),
-                                       message="Attribute 'specimen_voucher' is not appropriate for bacteria/unclassified sequences."))
+                for v in vouchers:
+                    out.append(self.result(sample=rec.sample_id,
+                                           attribute="specimen_voucher", old_value=v,
+                                           message="Attribute 'specimen_voucher' is not appropriate for bacteria/unclassified sequences."))
         return out
 
 
@@ -287,6 +290,9 @@ class BS_R0045(BsRule):
                                  f"(organism: '{rec.organism}')")))
                 continue
             info = context.tax_data.get(rec.organism)
+            if (info or {}).get("lookup_failed"):
+                # 取得そのものの失敗（DB/API 障害）は「Taxonomy に無い」ではない。BS_R0145 が報告する。
+                continue
             if not _resolved(info):
                 out.append(self.result(
                     sample=rec.sample_id,

@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 非 ASCII は文字参照で書かれている。ソースは ASCII だけなので error にしない。 -->
+<SUBMISSION alias="s" accession="DRA1"><CONTACTS><CONTACT name="Hanako Mishima (25&#x2103;)" inform_on_status="test@ddbj.nig.ac.jp" inform_on_error="test@ddbj.nig.ac.jp"/></CONTACTS><ACTIONS><ACTION><HOLD HoldUntilDate="2030-01-01"/></ACTION></ACTIONS></SUBMISSION>

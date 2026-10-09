@@ -5,10 +5,10 @@
 """
 from common.rules.simple import SimpleValidator
 from apps.bioproject.rules.base import INTERNAL_IGNORE_RULE_IDS
-from apps.bioproject.rules.value import BP_R0060, BP_R0059
+from apps.bioproject.rules.value import BP_R0060
 from apps.bioproject.rules.taxonomy import BP_R0018, BP_R0038, BP_R0039
 from apps.bioproject.rules.content import (
-    BP_R0004, BP_R0005, BP_R0006, BP_R0014, BP_R0015, BP_R0040, BP_R0070,
+    BP_R0004, BP_R0005, BP_R0006, BP_R0014, BP_R0015, BP_R0040, BP_R0043, BP_R0070,
 )
 from apps.bioproject.rules.locus_tag import (
     BP_R0016, BP_R0021, BP_R0022, BP_R0041, BP_R0042,
@@ -24,7 +24,7 @@ class Validator(SimpleValidator):
         return [
             # --- 値・文字種（DB 非依存）---
             BP_R0060(),  # 非 ASCII
-            BP_R0059(),  # データ形式（空白）
+            # BP_R0059（データ形式・空白）は xml_reader の auto cleanup が出す（ここには登録しない）。
             # --- 内容（Step3）---
             BP_R0005(),  # title 20-250 字（min spec。旧 BP_R0005 ID 再利用）
             BP_R0006(),  # description 20-4000 字（min spec）
@@ -32,6 +32,7 @@ class Validator(SimpleValidator):
             # BP_R0007-BP_R0013 / BP_R0019 は deprecated のため登録しない（eOther の説明欠落を見ていた系統）。
             BP_R0014(),  # publication id 形式
             BP_R0015(),  # publication reference 欠落
+            BP_R0043(),  # Grant の Agency・Title 両方欠落
             BP_R0040(),  # ProjectTypeTopSingleOrganism は不正
             BP_R0070(),  # cv_terms（sample_scope/material/capture/method_type/subtype/data_type/db_type）
             # --- locus_tag / umbrella（Step4）---

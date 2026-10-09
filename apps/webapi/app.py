@@ -249,6 +249,7 @@ async def create_validation(
     submitter_id: str = Form(None),
     submission_id: str = Form(None),
     package: str = Form(None),
+    profile: str = Form(None),
     # ddbj_record 専用。1 ファイルに複数 DB が同居し得るので、どの DB として検証するかを
     # 呼び出し側が指定する（省略時は top-level から推測。runner._plan_record）。
     # 名前が record_db なのは、この file 内の「db モード」（MODE_FLAG_DB）と別物だから。
@@ -269,6 +270,11 @@ async def create_validation(
     uploads = {r: f for r, f in uploads.items() if f is not None}
     if not uploads:
         return _err("入力ファイルがありません", 400)
+    # profile: 任意。"next"=次期 BioSample（allow_multiple 属性の多値を許す）。無ければ現行 D-way の検証。
+    # 結果 JSON・status には載せない（現行 D-way が受け取る形を変えないため）。
+    profile = (profile or "").strip() or None
+    if profile not in (None, "next"):
+        return _err(f"Unknown profile: '{profile}' (allowed: next)", 400)
 
     # 受付時に分かる入力ミスは受付時に断る。background task まで持ち越すと、`202 accepted`
     # を返したあとの `404`（本文にしか理由が無い）になり、素朴な client からは「知らない
@@ -312,7 +318,8 @@ async def create_validation(
         return _err(f"検証を受け付けられません（保存先エラー）: {e}.{hint}", 503)
 
     params = {"account": submitter_id, "submission_id": submission_id,
-              "package": package, "record_db": record_db, "start_time": start}   # mode は db 固定（引数で受けない）
+              "package": package, "profile": profile, "record_db": record_db,
+              "start_time": start}   # mode は db 固定（引数で受けない）
     background.add_task(runner.run_validation, rdir, saved, params)
 
     return {"uuid": uuid, "status": run_event.ACCEPTED, "start_time": start}

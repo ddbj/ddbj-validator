@@ -3,12 +3,16 @@
 - BP_R0001: XML well-formed（パース失敗で検出）。
 - BP_R0002: XSD スキーマ検証（XSD が bundle され lxml があるときのみ。無ければスキップ）。
 - BP_R0037: 1 XML に複数 project → error。
+- BP_R0059: auto cleanup。パース直後に全要素テキスト・属性値を強制的にきれいにする（warning）。
+  モデル・後続ルール・Taxonomy 取得はきれいにした値を使う。
 戻り値: (BioProjectSubmission | None, pre_errors[])。パース不可なら submission=None。
 """
-import re
 from pathlib import Path
 import defusedxml.ElementTree as ET
-from apps.bioproject.model import BioProjectRecord, BioProjectSubmission, Publication
+from apps.bioproject.model import BioProjectRecord, BioProjectSubmission, Publication, Grant
+# ソースの素の非 ASCII 集合（文字参照を除くため）。実体は common/xmltext.py。
+from common.xmltext import literal_non_ascii
+from apps.bioproject.rules.value import BP_R0059
 
 _XSD = Path(__file__).parent / "resources" / "xsd" / "Package.xsd"
 _SCHEMA_ERR_CAP = 20
@@ -69,6 +73,11 @@ def _build_record(proj):
         rec.title = _text(descr.find("./Title"))
         rec.description = _text(descr.find("./Description"))
         rec.release_date = _text(descr.find("./ProjectReleaseDate"))
+        for g in descr.findall("./Grant"):
+            rec.grants.append(Grant(
+                grant_id=(g.get("GrantId") or "").strip() or None,
+                title=_text(g.find("./Title")),
+                agency=_text(g.find("./Agency"))))
         for pub in descr.findall("./Publication"):
             rec.publications.append(Publication(
                 id=(pub.get("id") or "").strip() or None,
@@ -123,30 +132,6 @@ def _build_record(proj):
     return rec
 
 
-_ENCODING_RE = re.compile(rb"""<\?xml[^>]*?encoding\s*=\s*["']([\w.-]+)["']""", re.I)
-
-
-def _source_non_ascii(xml_path):
-    """XML ソースに素の文字として現れる非 ASCII 文字の集合を返す（BP_R0060 用）。
-
-    `&#x201c;` のような文字参照はソース上では ASCII のみで書かれているので、ここには含まれない。
-    バイト列がすべて ASCII ならその時点で空集合（ファイルの大半はこのケース）。
-    """
-    try:
-        raw = Path(xml_path).read_bytes()
-    except OSError:
-        return set()
-    if not any(b > 0x7F for b in raw):
-        return set()
-    m = _ENCODING_RE.search(raw[:200])
-    enc = m.group(1).decode("ascii", "replace") if m else "utf-8"
-    try:
-        text = raw.decode(enc, errors="replace")
-    except LookupError:
-        text = raw.decode("utf-8", errors="replace")
-    return {ch for ch in text if ord(ch) > 0x7F}
-
-
 def parse_xml(xml_path, account=None):
     try:
         tree = ET.parse(xml_path)
@@ -154,6 +139,7 @@ def parse_xml(xml_path, account=None):
         return None, [{"rule_id": "BP_R0001", "level": "error", "target": "#file_format",
                        "sample": None, "message": f"XML document is not well-formed. ({e})"}]
     root = tree.getroot()
+    cleanup = BP_R0059().cleanup(root)   # モデルを組む前に値をきれいにする（auto cleanup）
     projects = root.findall("./Package/Project/Project")
     if not projects:  # 構造が想定外（Project 無し）
         projects = root.findall(".//Project/Project")
@@ -170,6 +156,10 @@ def parse_xml(xml_path, account=None):
     records = [_build_record(p) for p in projects]
     for rec in records:  # 通常 1 project。umbrella 参照は project に紐づける
         rec.umbrella_member_ids = list(umbrella_members)
+    label = records[0].label if records else None
+    for r in cleanup:
+        r["sample"] = label
+    pre_errors = cleanup + pre_errors
     sub = BioProjectSubmission(records=records, account=account,
-                               source_non_ascii=_source_non_ascii(xml_path))
+                               source_non_ascii=literal_non_ascii(xml_path), raw_root=root)
     return sub, pre_errors

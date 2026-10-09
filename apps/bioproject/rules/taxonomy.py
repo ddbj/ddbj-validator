@@ -1,6 +1,7 @@
 """BioProject taxonomy ルール（common/db_taxonomy を biosample と共用）。
 
 - BP_R0018: taxonomy が species 以下（infraspecific）でない（= BS_R0096 相当）。
+  **sample_scope が eMonoisolate / eMultiisolate のときだけ**適用する（2026-09-29）。
 - BP_R0020: deprecated（2026-09-28。validator に登録しない）。
 - BP_R0038: organism と taxonomy_id が不一致（= BS_R0004 相当）。
 - BP_R0039: organism が Taxonomy 未解決の警告（= BS_R0045 warning 相当）。
@@ -14,10 +15,24 @@ def _found(info):
     return bool(info) and info.get("status") != "not_found"
 
 
+# BP_R0018 を適用する sample_scope（XSD 値 eMonoisolate / eMultiisolate）。
+# 単離した 1 株ないし同種の複数株が対象なので、species 以下の taxonomy を要求できる。
+# それ以外（eMultispecies / eEnvironment / eOther / eSynthetic / scope 無しの umbrella 等）は
+# 属より上位の taxonomy を使うのが正しい場合があるため対象外にする（2026-09-29）。
+# 実データ（mass.xml 最新 version 46,670 project）では発火 4,282 件のうち 3,348 件が
+# eMultispecies 以外で、eEnvironment の 772 件は Bacteria / Fungi / metagenomes のような
+# 環境サンプルらしい指定が中心だった。
+_RANK_CHECK_SCOPES = ("emonoisolate", "emultiisolate")
+
+
 class BP_R0018(BpRule):
+    """sample_scope が eMonoisolate / eMultiisolate のとき、taxonomy が species 以下であること。
+
+    taxonomy_id が引ければそちらを優先して rank を判定し、無ければ organism 名の解決結果で判定する。
+    """
     rule_id = "BP_R0018"
     level = "error"
-    target = "taxonomy_id"
+    target = "sample_scope, taxonomy_id"
     description = "Taxonomy should be species or infraspecific level."
     requires_network = True
 
@@ -26,6 +41,8 @@ class BP_R0018(BpRule):
         for rec in submission.records:
             if not rec.organism_name:
                 continue
+            if (rec.sample_scope or "").lower() not in _RANK_CHECK_SCOPES:
+                continue   # 複数種・環境サンプル等は属より上位の taxonomy を使うことがある
             taxid = str(rec.tax_id).strip() if rec.tax_id else None
             tinfo = context.taxid_info.get(taxid) if taxid else None
             if tinfo is not None:

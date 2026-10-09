@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
-from apps.ddbj.utils.features import get_features, is_pseudogene
+from apps.ddbj.utils.features import get_features, is_pseudogene, is_common_template_feature
 from apps.ddbj.db_metadata import get_expected_transl_table
 from apps.ddbj.autofix.proposal import build_proposal, update_qualifier_action
 
@@ -28,6 +28,7 @@ from apps.ddbj.biosample.sync import (
     _propose_locus_tag_prefix_sync,
     _propose_bioproject_sync,
 )
+from apps.ddbj.biosample.tsv import load_biosample_sync_targets
 
 
 def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None, sync_attrs=None, emit_additions=False, mapping_keys=None):
@@ -46,14 +47,23 @@ def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None,
 
     unauth_set = unauthorized_bs or set()
 
-    target_attrs = sync_attrs if sync_attrs else ["bio_material", "collection_date", "geo_loc_name", "culture_collection",
-                    "host", "lat_lon", "sex", "specimen_voucher", "strain", "isolate", "ecotype",
-                    "cultivar", "cell_line"]
+    # 一般実行の突合対象は definitions.biosample_sync（同期指針のレベル 1-3 ＋ extra）から引く。
+    # -b 時は呼び出し側が biosample_sync.common（レベル 1 相当）を sync_attrs で渡す。
+    target_attrs = sync_attrs if sync_attrs else load_biosample_sync_targets()
     common_samds = []
     if "COMMON" in records:
         common_samds = _extract_samd_from_single_record(records["COMMON"])
 
     all_valid_samds = set()
+    # COMMON テンプレート（COMMON の source 1..E）の qualifier はパーサが全 entry へ複製するが、
+    # ファイル上の実体は COMMON ブロックの 1 箇所だけ。entry ごとに突合すると同じ行に対する提案が
+    # entry 数ぶん作られ、autofix が COMMON へ同じ qualifier を entry 数ぶん書き込んでしまう。
+    # そのため entry ループでは COMMON 由来 source を外し、ループ後に 1 回だけ突合する。
+    # COMMON の値は複製先のすべての entry に効くので、突合相手はそれらの entry が参照する
+    # BioSample 全部（和集合）。entry ごとに BioSample が違い値が食い違えば、_bs_values が
+    # 複数値を返して「混在のためスキップ」になる（どれか 1 つを COMMON に書くのは誤り）。
+    common_record = None
+    common_samds_union = set()
     for entry_id, record in records.items():
         if entry_id == "COMMON": continue
         entry_samds = _extract_samd_from_single_record(record)
@@ -71,11 +81,17 @@ def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None,
             logger.warning(f"{entry_id}: BioSample data for {', '.join(missing_samds)} not found in DB.")
         if not valid_samds: continue
 
-        # source qualifier 群を BioSample 値と突合
-        p, w, s = _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, ann_path, target_attrs, emit_additions=emit_additions)
+        # source qualifier 群を BioSample 値と突合（COMMON テンプレート由来は除く）
+        p, w, s = _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, ann_path, target_attrs, emit_additions=emit_additions, common_only=False)
         proposals.extend(p)
         validation_warnings.extend(w)
         skipped_warnings.extend(s)
+
+        if any(is_common_template_feature(f) for f in get_features(record, "source")):
+            # COMMON 由来の source は全 entry で同一の行。record はどれでもよいので最初の 1 つを使う
+            if common_record is None:
+                common_record = record
+            common_samds_union.update(valid_samds)
 
         # locus_tag prefix を BioSample 値と突合。
         # 一般実行（emit_additions=False）は従来どおり。-b 時は mapping に locus_tag がある場合のみ（addition のみ）。
@@ -84,6 +100,15 @@ def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None,
             proposals.extend(p)
             validation_warnings.extend(w)
             skipped_warnings.extend(s)
+
+    # COMMON テンプレート由来 source の突合（ファイル全体で 1 回。entry は "COMMON" 名義）
+    if common_record is not None:
+        p, w, s = _propose_biosample_qualifier_sync(
+            common_record, "COMMON", sorted(common_samds_union), bs_data, ann_path, target_attrs,
+            emit_additions=emit_additions, common_only=True)
+        proposals.extend(p)
+        validation_warnings.extend(w)
+        skipped_warnings.extend(s)
 
     # DBLINK project(PRJDB) → bioproject_id。-b 時かつ mapping に "DBLINK project" がある場合のみ。
     if sync_attrs and all_valid_samds and "DBLINK project" in mapping_keys:

@@ -22,11 +22,11 @@ def is_blank(v):
 
 def normalize_data_format(v):
     """連続空白の畳み込み（前後 strip＋タブ/改行/連続空白→半角空白1つ）＋前後を囲む対クオートの除去。
-    Ruby v invalid_data_format(String#squish 相当) に準拠。補正不要なら元の値と同じ文字列を返す。"""
-    s = _WS_RE.sub(" ", v.strip())
-    if len(s) >= 2 and s[0] == s[-1] and s[0] in ('"', "'"):
-        s = _WS_RE.sub(" ", s[1:-1].strip())
-    return s
+    Ruby v invalid_data_format(String#squish 相当) に準拠。補正不要なら元の値と同じ文字列を返す。
+    2026-10-03 から実体は common/cleanup.clean_value（NBSP・全角空白・ゼロ幅空白・BOM など
+    空白系の文字も半角空白にする）。"""
+    from common.cleanup import clean_value
+    return clean_value(v)
 
 
 def apply_special_chars(value, special_chars):

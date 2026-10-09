@@ -617,7 +617,8 @@ class MB_SR0030(MbRule):
     description = "Non-ASCII or control characters in an SDRF cell."
 
     def validate(self, sub, context):
-        from apps.metabobank.charnorm import fix_warning_message, residual_error_message
+        from apps.metabobank.charnorm import (fix_warning_message, residual_error_message,
+                                              whitespace_warning_message)
         if not sub.sdrf:
             return []
         out = []
@@ -628,7 +629,13 @@ class MB_SR0030(MbRule):
                 continue
             line = fx["line"]
             row = rows[line - 1] if line and line - 1 < len(rows) else []
-            where = f"{fx['where']}, row {line}"
+            # line=None は列名そのもの（値のセルではない）
+            where = fx["where"] if line is None else f"{fx['where']}, row {line}"
+            if fx.get("whitespace"):   # 空白の auto cleanup（2026-10-03）
+                out.append(self.result(message=whitespace_warning_message(where, fx["original"], fx["fixed"]),
+                                       level="warning", assay=_assay(sub, row), line=line,
+                                       column=fx["where"], value=fx["fixed"],
+                                       source_name=_source_name(sub, row)))
             if fx["mapped"]:
                 out.append(self.result(message=fix_warning_message(where, fx["mapped"]),
                                        level="warning", assay=_assay(sub, row), line=line,

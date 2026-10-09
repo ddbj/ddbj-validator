@@ -9,9 +9,14 @@ symbol / greek / quote / superscript / subscript / fraction）を 1 つの置換
 common/resources へ置き、GEA と MetaboBank で同じ表を使う（二重管理の防止）。
 
 正規化対象外: タブ `\t`・改行（列区切り・レコード構造のため）。
+
+2026-10-03 から `apply_to_submission` は空白の auto cleanup（common/cleanup.clean_value。前後の空白除去・
+連続空白の畳み込み）も行う。改行は残す（IDF の Protocol Description など、改行に意味がある欄のため。
+SDRF セルの改行は従来どおり制御文字として error）。囲みクオートは csv が処理するので触らない。
 """
 import functools
 
+from common.cleanup import clean_value
 from common.definitions import load_common_definitions as load_definitions
 
 
@@ -69,6 +74,27 @@ def fix_warning_message(where, mapped):
     return f"{_WARN_MSG} ({where}: {chars})"
 
 
+def whitespace_warning_message(where, original, fixed):
+    """空白の auto cleanup（前後の空白・連続空白）を適用した報告（warning）用メッセージ。"""
+    return (f"Leading/trailing or consecutive whitespace was removed. "
+            f"({where}: '{_short(original)}' -> '{_short(fixed)}')")
+
+
+def _short(s, n=80):
+    """報告用に長い値（Protocol Description など）を切り詰める。改行は見えるように \\n にする。"""
+    s = s.replace("\n", "\\n")
+    return s if len(s) <= n else s[:n] + "..."
+
+
+def _clean(text):
+    """文字の正規化（normalize）＋空白の cleanup。戻り値 (new, mapped, residual, whitespace_changed)。"""
+    new, mapped, residual = normalize(text)
+    if not new:
+        return new, mapped, residual, False
+    cleaned = clean_value(new, keep_newlines=True, unquote=False)
+    return cleaned, mapped, residual, cleaned != new
+
+
 def residual_error_message(where, residual):
     """autofix 後に残った非 ASCII / 制御文字（error）用メッセージ。IDF/SDRF 共通体裁。"""
     chars = ", ".join(f"'{_disp(c)}'" for c in sorted(residual))
@@ -76,35 +102,49 @@ def residual_error_message(where, residual):
 
 
 def apply_to_submission(sub):
-    """IDF フィールド値・SDRF セルの非 ASCII を強制正規化する（in-place）。
+    """IDF フィールド値・SDRF セルの非 ASCII を強制正規化し、空白を auto cleanup する（in-place）。
 
     正規化した文字と、ASCII 化できず残った文字を `sub.char_fixes` に積む。
+    **IDF の項目名・SDRF の列名は書き換えない**（列の同定が変わるため）。非 ASCII があれば
+    residual（error）として報告するだけにする（line=None で値のセルと区別する）。
     報告は各 app のルール（MB_IR0024 / MB_SR0030、GEA_G0017 / GEA_SR0016）が行う。
     **値を書き換えるので、報告するルールを必ず登録しておくこと**（黙って直すのを避けるため）。
     """
     fixes = []
     if getattr(sub, "idf", None):
+        for name in sub.idf.field_order:   # 項目名そのものの非 ASCII（値ではない）は書き換えず error に
+            res = {ch for ch in name if ord(ch) > 0x7F}
+            if res:
+                fixes.append({"target": "IDF", "where": name, "line": None,
+                              "original": name, "fixed": name, "mapped": set(), "residual": res})
         for name in sub.idf.field_order:
             vals = sub.idf.fields.get(name)
             if not vals:
                 continue
             for i, v in enumerate(vals):
-                new, mapped, residual = normalize(v)
-                if mapped or residual:
+                new, mapped, residual, ws = _clean(v)
+                if mapped or residual or ws:
                     vals[i] = new
                     fixes.append({"target": "IDF", "where": name, "line": None,
                                   "original": v, "fixed": new,
-                                  "mapped": mapped, "residual": residual})
+                                  "mapped": mapped, "residual": residual, "whitespace": ws})
     if getattr(sub, "sdrf", None):
         header = sub.sdrf.header
+        # 列名は書き換えない（列の同定が変わるため）。非 ASCII があれば residual（error）として
+        # 報告するだけにする。IDF の項目名も同じ扱い（下の _name_check）。
+        for col in header:
+            res = {ch for ch in col if ord(ch) > 0x7F}
+            if res:
+                fixes.append({"target": "SDRF", "where": col, "line": None,
+                              "original": col, "fixed": col, "mapped": set(), "residual": res})
         for r, row in enumerate(sub.sdrf.rows):
             for c, cell in enumerate(row):
-                new, mapped, residual = normalize(cell)
-                if mapped or residual:
+                new, mapped, residual, ws = _clean(cell)
+                if mapped or residual or ws:
                     row[c] = new
                     col = header[c] if c < len(header) else f"col{c + 1}"
                     fixes.append({"target": "SDRF", "where": col, "line": r + 1,
                                   "original": cell, "fixed": new,
-                                  "mapped": mapped, "residual": residual})
+                                  "mapped": mapped, "residual": residual, "whitespace": ws})
     sub.char_fixes = fixes
     return fixes

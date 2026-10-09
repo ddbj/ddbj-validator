@@ -21,6 +21,15 @@ def get_features(record, feature_type=None):
     # インデックスがない場合のフォールバック（通常のリスト検索）
     return [f for f in record.features if f.type == feature_type]
 
+def is_common_template_feature(feature):
+    """COMMON テンプレート（COMMON の source 1..E）から全 entry へ複製された feature か。
+
+    パーサ（apps/ddbj/parser.py）が複製時に from_common を立てる。ファイル上の実体は COMMON ブロックの
+    1 箇所だけなので、entry ごとに同じ提案・報告を重ねたくない処理はこれで判定する。
+    """
+    return bool(getattr(feature, "from_common", False))
+
+
 def is_pseudogene(feature):
     """pseudogene（/pseudo または /pseudogene 付き）のフィーチャーか。
 

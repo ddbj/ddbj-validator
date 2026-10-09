@@ -568,14 +568,19 @@ class GEA_SR0016(GeaRule):
     description = "Non-ASCII or control characters in an SDRF cell."
 
     def validate(self, sub, context):
-        from common.magetab.charnorm import fix_warning_message, residual_error_message
+        from common.magetab.charnorm import (fix_warning_message, residual_error_message,
+                                             whitespace_warning_message)
         if not sub.sdrf:
             return []
         out = []
         for fx in getattr(sub, "char_fixes", []):
             if fx["target"] != "SDRF":
                 continue
-            where = f"{fx['where']}, row {fx['line']}"
+            # line=None は列名そのもの（値のセルではない）
+            where = fx["where"] if fx["line"] is None else f"{fx['where']}, row {fx['line']}"
+            if fx.get("whitespace"):   # 空白の auto cleanup（2026-10-03）
+                out.append(self.result(message=whitespace_warning_message(where, fx["original"], fx["fixed"]),
+                                       level="warning", column=fx["where"], line=fx["line"]))
             if fx["mapped"]:
                 out.append(self.result(message=fix_warning_message(where, fx["mapped"]),
                                        level="warning", column=fx["where"], line=fx["line"]))

@@ -19,7 +19,7 @@ from pathlib import Path
 from common import cli_modes
 from apps.biosample.context import ValidationContext
 from apps.biosample import xml_reader, tsv_to_xml, record_reader, autofix
-from apps.biosample.validator import Validator
+from apps.biosample.validator import Validator, autocleanup
 from apps.biosample.reporter import (
     build_summary, build_details, build_autofix_lines,
     write_text_reports, write_autofix_confirmation, write_json_report,
@@ -41,6 +41,9 @@ def _build_parser():
     p.add_argument("-p", "--package", dest="package", default=None,
                    help="TSV 入力の package full name（例 Human / MIGS.ba）。省略時はファイル名から補完")
     p.add_argument("--account", default=None, help="Submitter id (account) for auth-dependent rules")
+    p.add_argument("--profile", choices=["next"], default=None,
+                   help="Validation profile. 'next' = next BioSample (allow_multiple attributes may have "
+                        "multiple values). Omit for the current BioSample")
     p.add_argument("-o", "--out-dir", default=None, help="Output directory (default: input's parent)")
     p.add_argument("-l", "--local", action="store_true", help="Local mode (skip DB and NCBI API)")
     p.add_argument("-n", "--ncbi-api", action="store_true", help="Use NCBI API, skip internal DB (一般ユーザ既定)")
@@ -168,7 +171,7 @@ def _fetch_references(context, submission):
 
     # biosample DB 登録済み locus_tag_prefix 取得（R0091。内部DB モードのみ）
     if not context.skip_db:
-        _fetch_registered_prefixes(context)
+        _fetch_registered_prefixes(context, submission)
 
 
 def _apply_autofix(in_path, is_tsv, is_record, parse_source, results, out_dir):
@@ -207,7 +210,8 @@ def run(args):
               "Use -d/--internal-db or set DDBJ_VALIDATOR_INTERNAL_DB=1; do not combine --account with -n/-l.",
               file=sys.stderr)
         return 2
-    context = ValidationContext(account=args.account, skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
+    context = ValidationContext(account=args.account, profile=args.profile,
+                                skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=skip_auth)
 
     if not args.json:
         cli_modes.print_found(1, "file")   # BioSample は TSV/XML/Record いずれも 1 ファイル
@@ -259,6 +263,9 @@ def run(args):
     if not context.account:
         context.skip_auth = True
 
+    # autocleanup は外部参照の取得より前（きれいにした organism / host で Taxonomy を引く）。
+    # 結果は Validator.run の pre_run が返す。
+    autocleanup(submission, context)
     _fetch_references(context, submission)
     results = pre_errors + Validator(context).run(submission)
     fixed_path = _apply_autofix(in_path, is_tsv, is_record, parse_source, results, out_dir)
@@ -352,14 +359,18 @@ def _fetch_account(context, submission):
         print(f"[WARN] account/bioproject fetch failed: {e}", file=sys.stderr)
 
 
-def _fetch_registered_prefixes(context):
-    """biosample DB 登録済みの locus_tag_prefix を context に取得（R0091 用）。"""
+def _fetch_registered_prefixes(context, submission=None):
+    """biosample DB 登録済みの locus_tag_prefix と、検証中 submission の cancel 済み sample を
+    context に取得（R0091/R0102 用）。"""
     try:
         from common.db_manager import DatabaseManager
-        from apps.biosample.db_meta import fetch_registered_locus_tag_prefixes
+        from apps.biosample.db_meta import fetch_cancelled_samples, fetch_registered_locus_tag_prefixes
         cli_modes.db_checking("BioSample DB", 1, "locus_tag_prefix set")
         bs_conn = DatabaseManager().get_bs_conn()
         context.registered_locus_tag_prefixes = fetch_registered_locus_tag_prefixes(bs_conn) or {}
+        sub_id = getattr(submission, "submission_id", None)
+        if sub_id:
+            context.cancelled_samples = fetch_cancelled_samples(bs_conn, sub_id) or set()
     except Exception as e:
         print(f"[WARN] locus_tag_prefix fetch failed: {e}", file=sys.stderr)
 

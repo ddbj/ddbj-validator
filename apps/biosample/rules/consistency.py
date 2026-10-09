@@ -150,20 +150,24 @@ class BS_R0062(BsRule):
         out = []
         for rec in submission.records:
             # 各 voucher 属性の institution-code（最初の ':' より前）を収集
+            # profile=next では culture_collection / specimen_voucher の多値を許すため全値を見る。
+            # 比較するのは「異なる voucher 属性どうし」。同じ属性の多値（例 JCM:1 と JCM:2）は対象外。
             inst = {}
             for name in self._VOUCHERS:
-                v = rec.attr(name)
-                # missing 系の値（not applicable / not collected / missing 等）は機関コード比較から除外。
-                if is_empty(v) or is_missing_value(v):
-                    continue
-                code = v.split(":", 1)[0].strip()
-                if code:
-                    inst.setdefault(code, []).append(name)
-            for code, names in inst.items():
+                for v in rec.attr_values(name):
+                    # missing 系の値（not applicable / not collected / missing 等）は機関コード比較から除外。
+                    if is_empty(v) or is_missing_value(v):
+                        continue
+                    code = v.split(":", 1)[0].strip()
+                    if code:
+                        inst.setdefault(code, {}).setdefault(name, []).append(v)
+            for code, by_name in inst.items():
+                names = list(by_name)
                 if len(names) > 1:
+                    vals = ", ".join(f"[{n} : {v}]" for n in names for v in by_name[n])
                     out.append(self.result(sample=rec.sample_id,
                                            anno_cols=[{"key": "Attributes", "value": ", ".join(names)},
-                                                      {"key": "Values", "value": ", ".join(f"[{n} : {rec.attr(n)}]" for n in names)}],
+                                                      {"key": "Values", "value": vals}],
                                            message=f"Multiple voucher attributes with the same institution code '{code}': {', '.join(names)}"))
         return out
 

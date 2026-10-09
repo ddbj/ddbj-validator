@@ -33,6 +33,30 @@ def load_biosample_sync():
     return data.get("biosample_sync", {"common": [], "mapping": []})
 
 
+_SYNC_TARGETS_CACHE = None
+
+
+def load_biosample_sync_targets():
+    """一般実行（ANN1130）で BioSample と突合する qualifier 名のリストを返す。
+
+    同期指針（Confluence「BioSample attributeとTrad source/qualifier valueの内容の同期の指針」）の
+    **レベル 1-3 全部** ＋ `extra`（指針には無いが従来から突合していたもの）。
+    2026-09-29 まではこの一覧が external_db.py にハードコードされていて、organism /
+    metagenome_source / isolation_source / lab_host が抜けていた。
+    ワーカーごとに毎回 JSON を読まないようプロセス内でキャッシュする。
+    """
+    global _SYNC_TARGETS_CACHE
+    if _SYNC_TARGETS_CACHE is None:
+        sync = load_biosample_sync()
+        names = []
+        for lv in ("1", "2", "3"):
+            names.extend(sync.get("levels", {}).get(lv, []))
+        names.extend(sync.get("extra", []))
+        seen = set()
+        _SYNC_TARGETS_CACHE = [n for n in names if not (n in seen or seen.add(n))]
+    return list(_SYNC_TARGETS_CACHE)
+
+
 def resolve_package_key(package, env_package, package_group, packages):
     """DB の (package, env_package, package_group) から attributes_packages.json のキーを解決する。
 

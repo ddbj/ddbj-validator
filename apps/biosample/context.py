@@ -7,7 +7,7 @@
 import json
 from pathlib import Path
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Optional
 
 _RES = Path(__file__).resolve().parent / "resources"
 def load_packages():
@@ -63,6 +63,9 @@ def load_institution_codes():
 @dataclass
 class ValidationContext:
     account: Any = None
+    # 検証プロファイル。None=現行（現 D-way / BioSample）、"next"=次期 BioSample。
+    # "next" では allow_multiple の属性の同名多値を許す（BS_R0061）。web API の `profile` フォーム項目から来る。
+    profile: Optional[str] = None
     skip_db: bool = False
     skip_ncbi: bool = False
     skip_auth: bool = False
@@ -93,6 +96,15 @@ class ValidationContext:
     psub_to_prjd: dict = field(default_factory=dict)
     # biosample DB 登録済み locus_tag_prefix -> {submission_id, ...}（R0091 DB 重複）
     registered_locus_tag_prefixes: dict = field(default_factory=dict)
+    # 検証中 submission の cancel 済み sample の sample_name / SAMD（R0091/R0102 の重複判定から除外）
+    cancelled_samples: set = field(default_factory=set)
+
+    def is_cancelled(self, rec):
+        """レコードが DB 上で cancel 済みの sample か（sample_name か accession で照合）。"""
+        if not self.cancelled_samples:
+            return False
+        return any(k and k.strip() in self.cancelled_samples
+                   for k in (rec.sample_name, getattr(rec, "accession", None)))
 
     def __post_init__(self):
         if not self.packages:

@@ -28,9 +28,16 @@ class BS_R0061(BsRule):
     description = "Multiple values detected. Only one value is allowed. First value was used for subsequent validation."
 
     def validate(self, submission, context):
+        # profile=next（次期 BioSample）では、属性定義で allow_multiple: true の属性
+        # （locus_tag_prefix / component_organism / culture_collection / metagenome_source /
+        #  specimen_voucher / virus_enrich_appr。attributes_packages.json）は同名多値を許す。
+        # profile 無し（現行 D-way / BioSample）は DB が多値を持てないので、従来どおり全部 error。
+        allow = set()
+        if getattr(context, "profile", None) == "next":
+            allow = {n for n, a in (context.attributes or {}).items() if a.get("allow_multiple")}
         out = []
         for rec in submission.records:
-            multi = [name for name, vals in rec.attributes.items() if len(vals) > 1]
+            multi = [name for name, vals in rec.attributes.items() if len(vals) > 1 and name not in allow]
             for name in sorted(multi):
                 out.append(self.result(sample=rec.sample_id, target=name,
                                        attribute=name, old_value=", ".join(rec.attributes.get(name, [])),

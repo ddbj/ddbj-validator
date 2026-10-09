@@ -14,6 +14,8 @@ import defusedxml.ElementTree as ET
 from apps.dra.model import (
     DraSubmission, DraSubmissionMeta, DraExperiment, DraRun, DraAnalysis, DraFile,
 )
+# ソースの素の非 ASCII 集合（文字参照を除くため）。DRA_R0050 が使う。
+from common.xmltext import literal_non_ascii
 
 _XSD_DIR = Path(__file__).parent / "resources" / "xsd"
 # role -> (XSD ファイル, rule_id)。R0044-0047: 各 XML が XSD スキーマに不適合。
@@ -175,6 +177,7 @@ def parse_files(paths, account=None):
         except Exception as e:
             pre.append(_err("DRA_R0001", f"XML document is not well-formed. ({e})", sample=str(p)))
             continue
+        sub.xml_docs.append({"file": Path(p).name, "root": root, "literal": literal_non_ascii(p)})
         role = _ROOTS.get(root.tag)
         if role:   # R0044-0047: XSD スキーマ検証（lxml。無ければスキップ）
             sub.role_files.setdefault(role, []).append(Path(p).name)

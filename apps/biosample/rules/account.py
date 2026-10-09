@@ -132,10 +132,12 @@ class BS_R0128(BsRule):
     def validate(self, submission, context):
         out = []
         for rec in submission.records:
-            if not is_empty(rec.attr("locus_tag_prefix")) and is_empty(rec.attr("bioproject_id")):
+            # locus_tag_prefix は profile=next で多値可。どれか 1 つでも値があれば対象、表示は全値
+            ltps = [v for v in rec.attr_values("locus_tag_prefix") if not is_empty(v)]
+            if ltps and is_empty(rec.attr("bioproject_id")):
                 out.append(self.result(sample=rec.sample_id,
                                        anno_cols=[{"key": "Attribute", "value": "locus_tag_prefix, bioproject_id"},
-                                                  {"key": "Attribute value(locus_tag_prefix)", "value": rec.attr("locus_tag_prefix") or ""},
+                                                  {"key": "Attribute value(locus_tag_prefix)", "value": ", ".join(ltps)},
                                                   {"key": "Attribute value(bioproject_id)", "value": rec.attr("bioproject_id") or ""}],
                                        message="Provide a BioProject ID for a locus tag prefix."))
         return out

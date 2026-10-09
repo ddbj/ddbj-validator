@@ -74,8 +74,9 @@ def _permit(dra_conn, account, acc_type):
 
 
 def _psub_to_prjdb(bp_conn, psubs):
-    """許可 PSUB（submission_id）→ PRJDB。ref_name が既に PRJDB のものはそのまま通す。"""
-    out = {p.upper() for p in psubs if p.upper().startswith("PRJDB")}
+    """許可 PSUB（submission_id）→ PRJDB。ref_name が既に BioProject accession のものはそのまま通す。
+    古い外部参照許可は PRJDA / PRJNA などで登録されているため、PRJDB に限らず PRJ* を通す。"""
+    out = {p.upper() for p in psubs if p.upper().startswith("PRJ")}
     subs = [p for p in psubs if p.upper().startswith("PSUB")]
     if bp_conn and subs:
         try:

@@ -1,5 +1,5 @@
 COMMON	DBLINK		project	PRJDB36006
-			biosample	SAMD00000328
+			biosample	SAMD01616568
 			sequence read archive	DRR726430
 	SUBMITTER		ab_name	Kubomura,A.
 			ab_name	Lee,K.
@@ -27,11 +27,11 @@ COMMON	DBLINK		project	PRJDB36006
 			Genome Coverage	117x
 			Sequencing Technology	Illumina MiSeq; Nanopore MinION
 chromosome	source	1..4924793	organism	Escherichia coli
-			strain	MTB313
+			strain	JNE25-001
 			mol_type	genomic DNA
 			ff_definition	@@[organism]@@ @@[strain]@@ DNA, complete genome
 			geo_loc_name	Japan
-			collection_date	2011
+			collection_date	2025
 			host	Homo sapiens
 			serovar	OUT:H18
 	TOPOLOGY		circular

@@ -25,6 +25,14 @@ class Publication:
 
 
 @dataclass
+class Grant:
+    """ProjectDescr/Grant（研究費）。XSD 上 Title は任意、Agency は必須だが空要素でも XSD は通る。"""
+    grant_id: Optional[str] = None      # @GrantId
+    title: Optional[str] = None         # Title
+    agency: Optional[str] = None        # Agency（本文。@abbr は見ない）
+
+
+@dataclass
 class BioProjectRecord:
     """1 BioProject（XML の内側 Project 要素）に対応。"""
     accession: Optional[str] = None          # ProjectID/ArchiveID@accession（PRJDBxxxx）
@@ -33,6 +41,7 @@ class BioProjectRecord:
     description: Optional[str] = None        # ProjectDescr/Description
     release_date: Optional[str] = None       # ProjectDescr/ProjectReleaseDate
     publications: list = field(default_factory=list)   # [Publication]
+    grants: list = field(default_factory=list)         # [Grant]（BP_R0043）
     project_kind: Optional[str] = None       # umbrella / submission / single_organism / other
     top_admin_subtype: Optional[str] = None  # ProjectTypeTopAdmin@subtype（umbrella 用）
     sample_scope: Optional[str] = None       # Target@sample_scope（eMonoisolate/eEnvironment/eMultispecies/eOther…）
@@ -72,3 +81,6 @@ class BioProjectSubmission:
     # XML パーサは `&#x201c;` のような文字参照を実体へ展開してしまうため、展開後の値だけを見ると
     # ASCII だけで書かれたファイルまで非 ASCII と判定してしまう。ソース側の実態をここに持つ。
     source_non_ascii: set = field(default_factory=set)
+    # XML のルート要素（PackageSet）。BP_R0060 が Project の外（Submission/Organization/Contact 等）まで
+    # 含めて全要素を走査するために持つ。
+    raw_root: Any = None
