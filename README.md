@@ -207,9 +207,9 @@ NCBI_API_EMAIL=あなたのメールアドレス
 | サブコマンド | 対象 | 入力 |
 |---|---|---|
 | `ddbj`（省略可・既定） | 塩基配列アノテーション | `.ann` ＋ FASTA のペア（ディレクトリ） |
-| `bioproject` | BioProject | XML |
-| `biosample` | BioSample | XML または TSV |
-| `dra` | DRA（Sequence Read Archive） | Submission/Experiment/Run/Analysis XML |
+| `bioproject` | BioProject | XML / DDBJ Record（v3 JSON） |
+| `biosample` | BioSample | XML / TSV / DDBJ Record（v3 JSON） |
+| `dra` | DRA（Sequence Read Archive） | Submission/Experiment/Run/Analysis XML / DDBJ Record（v3 JSON） |
 | `gea` | GEA（Genomic Expression Archive） | MAGE-TAB（IDF/SDRF） |
 | `metabobank`（`mb`） | MetaboBank | MAGE-TAB（IDF/SDRF） |
 
@@ -228,22 +228,102 @@ NCBI_API_EMAIL=あなたのメールアドレス
   - 注: `-j` の意味はサブコマンドで異なります。**`ddbj` のみ `-j` は並列数**（JSON は `--json`）。
     それ以外（`bioproject`/`biosample`/`dra`/`gea`/`metabobank`）は **`-j`/`--json` が JSON 出力**です。
 
+## Web API（`apps/webapi`）
+
+`POST /validation` にアップロードして非同期に検証し、`GET /validation/{uuid}/status` で
+状態を、`GET /validation/{uuid}` で結果を取ります。**どの validator を動かすかは
+アップロードのフィールド名（ロール）で決まります**。
+
+| ロール | 中身 |
+|---|---|
+| `biosample` | BioSample XML（`.xml`）または TSV |
+| `bioproject` | BioProject XML |
+| `dra_submission` / `dra_experiment` / `dra_run` / `dra_analysis` | DRA XML |
+| `gea_idf` / `gea_sdrf`、`metabobank_idf` / `metabobank_sdrf` | IDF / SDRF |
+| `ddbj_record` | DDBJ Record（v3 JSON） |
+
+同時に送れるフォームフィールド:
+
+| フィールド | 対象 | 意味 |
+|---|---|---|
+| `submitter_id` | 全部 | 権限系ルールが使う account。内部 DB モードでのみ効きます |
+| `submission_id` | 全部 | 自分自身を除外するために使う（`BP_R0004` / `BS_R0091`）。DRA の `ddbj_record` では submission id（省略時は submission の alias から導く）。`record_db` と接頭辞が食い違えば 400（`record_db` を省略したときは推測した DB と比べ、食い違えば run が `error`） |
+| `package` | `biosample` の XML / TSV | TSV の package。**`ddbj_record` と併用すると 400**（record は sample ごとに package を持つため） |
+| `record_db` | `ddbj_record` | `bioproject` / `biosample` / `dra`。省略時は record の top-level から推測 |
+
+**`ddbj_record` だけはロールで validator が決まりません。** DDBJ Record は 1 ドキュメントに
+projects と samples（と DRA の experiments / runs / analyses）を同居させられるためで、
+`record_db` で指定します。省略した場合は top-level（`projects` → `bioproject`、`samples` →
+`biosample`、`experiments` / `runs` / `analyses` → `dra`）を見て決めますが、同居していると
+決められないので断ります。SRA の STUDY / SAMPLE から来た projects / samples を持つ DRA の
+record もこれに当たります。指定すると振り分けの
+ために全文をパースしなくて済むので、サンプル数の多い record では指定するほうが軽くなります。
+
+受付時に分かる入力の誤り（未知の `record_db`、ロールと合わないフィールド）は `400` で
+返します。ファイルを読んで初めて分かる誤りは `202` のあと `GET /validation/{uuid}` の
+`404`＋本文で返ります。
+
 ## BioProject（`bioproject`）
 
-BioProject 登録 XML を検証します。
+BioProject 登録データ（XML または DDBJ Record）を検証します。
 
 ```bash
-# XML を指定（-x は必須）
+# XML 入力
 ddbj-validator bioproject -x PSUB012060.xml
+
+# DDBJ Record 入力（v3 JSON。record の projects[] を検証する）
+ddbj-validator bioproject -r PSUB012060.json
 ```
 
-- 入力: `-x`, `--xml`（BioProject XML、**必須**）。
+- 入力: `-x`, `--xml` または `-r`, `--record`（どちらか必須）。
 - モード: 既定 NCBI API。内部 DB モード（`-d`）では umbrella/locus_tag/重複チェック用のメタ情報を取得します。
 - サンプル: `docs/bioproject/PSUB003313.xml` ほか。
 
+### DDBJ Record（v3 JSON）入力について
+
+BioSample と同じ考え方で、`record_reader` が XML と同じ内部モデルを組みます。対応関係は
+`apps/bioproject/record_reader.py` の docstring にまとめてあります。要点:
+
+- **`projects[]` のみを見ます。** `projects` が無い（空の）record は「指摘ゼロ」ではなく
+  入力エラーとして落とします。XML と同じく 1 登録 = 1 project で、2 つ以上あれば
+  `BP_R0037` です（v3 の `projects` が list なのは SRA の study なども載せるため）。
+- **`projects` と `samples` が同居していても `projects` だけを読みます。** 登録は DB ごとに
+  行い、BioProject として登録するときに読まれるのは `projects` だけなので、片方だけを
+  検証するのが正しい振る舞いです。読まなかったことは **`level: info` の結果として
+  レポートに出します**（`validity` にも error/warning 数にも影響しません）。
+  web api では**どちらとして検証するかが決まらない**ので、`record_db` フォーム
+  フィールド（`bioproject` / `biosample`）で指定してください。省略時は top-level から
+  推測し、同居していれば「推測できない」として断ります。空の list は無いのと同じですが、
+  list でない値（`"samples": {}` など）は形が違うだけで在るものとして数えます。
+- スキーマ検証はドキュメント全体にかけますが、**担当外（`samples` 側）の違反は
+  `warning`** にします。v3 モデルは `extra="forbid"` なので `samples` 側の独自キー 1 つで
+  ドキュメント全体が invalid になり、それを error にすると BioProject の curator が
+  直せない瑕疵で BioProject の `validity` が false になるためです。
+  なお **`[record]` extra が入っていない環境ではスキーマ検証そのものが動きません**
+  （`_shape_errors` は `projects` しか見ないので、壊れた `samples` は何も報告されません）。
+- **同一ドキュメント内の相互参照は解決されません。** `BP_R0021` は locus_tag prefix と
+  BioSample の組を **BioSample DB に問い合わせて**確かめ、`BP_R0022` は accession の形を
+  見ます。同居する sample を `locus_tag_prefix[].biosample_id` から指しても accession は
+  登録後にしか存在しないので通りません。実際にはそういう書き方は起こりません
+  （参照先は必ず登録済み）が、落ちるときは黙って通らず error になります。
+- 語彙は XML と同じ e- 接頭辞付き（`eOther` / `eMonoisolate`）。変換表は置いていません。
+- **v3 が XML を表現しきれず、評価できないルールが 3 つあります。**
+  `BP_R0016`（umbrella の member を表す関係が v3 で未確定 — 該当する record では
+  `level: info` の結果としてレポートに「評価できなかった」と出します。`validity` にも
+  error/warning 数にも影響しません）、
+  `BP_R0040`（`ProjectTypeTopSingleOrganism` を表現できない）、
+  `BP_R0015`（Publication の自由記述 reference にあたる slot が無い）。
+  `apps/bioproject/tests/run_record_parity_test.py` の `_KNOWN_GAPS` に理由付きで
+  列挙してあり、埋まったらテストが落ちて表から消せと言います。
+- `locus_tag_prefix` は `{prefix, biosample_id}` の対である必要があります
+  （v3 の途中まで `list[str]` でした。古い形は `BP_R0002` で弾きます）。
+- `-s`, `--submission-id`: PSUB id。省略時はファイル名から拾いますが、Record は
+  ファイル名に PSUB を含まないので、`BP_R0004`（既提出 project との重複）の自己除外を
+  効かせたい場合は明示的に渡します。
+
 ## BioSample（`biosample`）
 
-BioSample 登録データ（XML または TSV）を検証します。
+BioSample 登録データ（XML / TSV / DDBJ Record）を検証します。
 
 ```bash
 # XML 入力
@@ -251,13 +331,54 @@ ddbj-validator biosample -x SSUB045342.xml
 
 # TSV 入力（submission id / package はファイル名 SSUBxxxx.<Package>.txt から補完。-s/-p で明示指定可）
 ddbj-validator biosample -t SSUB045342.Human.txt [-s SSUB045342] [-p Human]
+
+# DDBJ Record 入力（v3 JSON。record の samples[] を検証する）
+ddbj-validator biosample -r SSUB045342.json [-s SSUB045342]
 ```
 
-- 入力: `-x`, `--xml` または `-t`, `--tsv`（どちらか必須）。TSV は内部で XML に変換して検証します。
+- 入力: `-x`, `--xml` / `-t`, `--tsv` / `-r`, `--record`（いずれか 1 つ必須）。TSV は内部で XML に変換して検証します。
 - `-s`, `--submission-id` / `-p`, `--package`: TSV の submission id / package。省略時はファイル名（`SSUBxxxx.<Package>.txt`）から補完。
-- autofix は常に自動適用され、修正済み XML を `fixed/` に出力します（`reports/` には autofix 確認ファイルも出力）。
+  Record は submission id を持たないため `-s` で渡します（`-p` は Record では使えません。package は
+  `samples[].package` から取るため、併用するとエラーになります）。
+- autofix は常に自動適用され、修正済みファイルを `fixed/` に出力します。**形式は入力に従います**
+  （XML/TSV 入力なら XML、Record 入力なら Record）。`reports/` には autofix 確認ファイルも出力します。
 - モード: 既定 NCBI API。`-d` で内部 DB（account / BioProject / 登録済み locus_tag_prefix の取得）。
 - サンプル: `docs/biosample/SSUB045342.xml` / `SSUB045342.txt` ほか。
+
+### DDBJ Record（v3 JSON）入力について
+
+[ddbj/ddbj-record-specifications](https://github.com/ddbj/ddbj-record-specifications) の v3 レコードを
+そのまま入力にできます。検証ルールは XML/TSV と同じものが同じように動きます（`record_reader` が
+XML と同じ内部モデルを組むため、ルールは入力形式を区別しません）。
+
+対応関係と、v3 に無いために呼び出し側から渡す必要があるものは `apps/biosample/record_reader.py`
+の docstring にまとめてあります。要点:
+
+- **`samples[]` のみを見ます。** `projects` が同居していても読みません（BioProject として
+  検証したいときは `bioproject` サブコマンド、web api なら `record_db=bioproject`）。
+  読まなかったことは `level: info` の結果としてレポートに出します。
+  `samples` が無い record は「指摘ゼロ」ではなく入力エラーとして落とします。
+- BioProject 側と同じく、**スキーマ検証はドキュメント全体にかけ、担当外（`projects` 側）の
+  違反は `warning`** にします。`[record]` extra が無ければスキーマ検証は動きません
+  （`_shape_errors` は `samples` しか見ません）。
+- `submission_id` は record が持たないので `-s` で渡します。**省略すると `BS_R0091` が
+  そのサブミッション自身の locus_tag_prefix を重複として報告します**（警告を出します）。
+  `--account` も同様に record からは取れず、省略すると権限系ルール（`BS_R0006` 等）は動きません。
+- 値が typed slot（`organism` / `title` / …）と属性バッグのどちらに載っていても拾います。
+  値は XML 入力と同じく全て strip します。
+- **`organism` / `taxonomy_id` は typed slot へ引き上げたあと属性バッグから外します。**
+  BioSample の XML はこの 2 つを `Description/Organism` に置き `<Attributes>` には残さないためで、
+  バッグにも残すと属性を総なめするルールが余分な行を見ます（`BS_R0024` が、organism だけが
+  違う 2 サンプルを「区別情報あり」と見なして警告を出さなくなります）。ルール側はこの 2 つを
+  属性としては読んでいないので、外して失われる判定はありません。typed slot と属性の値が
+  食い違う場合は typed slot を採り、その旨を stderr に警告します。
+- **`attributes[].unit` は見ていません。** BioSample の XML/TSV に単位の概念が無く、ルールも
+  単位を見ないためです。単位付きの値をどう扱うかは未決で、現状は値だけを検証します。
+- スキーマ検証（`BS_R0098`）は `ddbj-record` パッケージを使います（`[record]` extra。
+  Docker イメージには同梱済み）。入っていない場合でも reader が前提とする形の検査は行い、
+  スキーマ検証を行わなかったことを stderr に警告します。
+- autofix は typed slot と属性バッグの両方を揃えて書き戻します（片方だけ直すと、
+  直したはずの record を再検証したときに同じ指摘が出なくなるため）。
 
 ## DRA（`dra`）
 
@@ -272,8 +393,63 @@ ddbj-validator dra --sub xxx_submission.xml --exp xxx_experiment.xml --run xxx_r
 ```
 
 - 入力: positional でディレクトリ、または `--sub`/`--exp`/`--run`/`--ana`（各複数指定可）で個別に。両者併用可。
+  DDBJ Record は `-r`, `--record`（XML の指定とは併用不可）。
+- `-s`, `--submission-id`: submission id。省略時は submission の alias から導きます（例 `amr_ddbj-0104_Submission`
+  → `amr_ddbj-0104`）。`--account` が無ければ account もここから導きます。
 - モード: 既定 NCBI API。`-d` で内部 DB（account・DB 依存ルール用メタ取得）。
 - サンプル: `docs/dra/dradev-0062/`（analysis 無し）、`docs/dra/amr_ddbj-0104/`（analysis 有り）。
+
+### DDBJ Record（v3 JSON）入力について
+
+```bash
+# DDBJ Record 入力（v3 JSON。record の submission / experiments / runs / analyses を検証する）
+ddbj-validator dra -r DRA000001.json
+```
+
+BioProject / BioSample と同じ考え方で、`record_reader` が XML と同じ内部モデルを組みます。
+SRA XML の各要素が v3 のどこに載るかは spec の対応表（ddbj-record-specifications の
+`tests/fixtures/v3/mapping/sra.yml`）が正本で、読み方は `apps/dra/record_reader.py` の
+docstring にまとめてあります。要点:
+
+- **参照（`STUDY_REF` / `SAMPLE_DESCRIPTOR` / `EXPERIMENT_REF` / Analysis の `TARGET`）は
+  object の中でなく、ルートの `relations` に書きます。** `source` がその object（accession で、
+  無ければ alias で。同じ alias が複数あれば、その中での位置を `index` に）、`target.db` が相手の
+  種類（`project` / `sample` / `experiment` / `run`）です。experiment → project / sample と
+  run → experiment は `part_of`、analysis → project は `part_of`、analysis → sample / run は
+  `derived_from` です。
+- `library.layout` は要素名を小文字にした値（`single` / `paired`）です。それ以外は `DRA_R0002`。
+- `submission.hold_date` を公開予定日として読みます（`DRA_R0006`）。XML 入力も同じ規則
+  （`@target` の無い `HOLD` と `RELEASE` のうち最後のもの）で決めています。
+- **XML では XSD が止めていたが v3 のスキーマは止めないもの**は、reader が `DRA_R0002` の
+  error として報告します: `source` が record の中の何も指さない relation、XML では 1 つしか
+  書けない参照（`STUDY_REF` など）が 2 つある object、未知の `library.layout`。
+- `submission` の無い record に experiments / runs / analyses があれば `DRA_R0032` です。
+  experiments / runs / analyses のどれも無い record は「指摘ゼロ」ではなく入力エラーとして落とします
+  （submission だけでは数えません。BioProject / BioSample の record も submission を持つためです）。
+- **`projects` / `samples` が同居していても読みません**（BioProject / BioSample として別に検証します）。
+  読まなかったことは `level: info` の結果としてレポートに出し（テキストのレポートでは `[ INFO ]` 節）、
+  そちら側のスキーマ違反は `warning` にします。
+- XML との同値性は `apps/dra/tests/run_record_parity_test.py` がシナリオ全件で確かめています
+  （`run_tests.py --record` で一緒に走ります）。
+
+### DDBJ Record のテスト
+
+DDBJ Record 入力のテストは、**既定では走りません**。ルールは XML を前提に足し・変えていくので、
+XML 側の変更で Record の結果がずれても、XML 側の開発がその追随を待たずに進められるようにして
+あります。ずれた分は Record 側（DDBJ Record 入力を担当する系統）が追随します。
+
+```bash
+# unit: Record のテストだけ。スキーマ（ddbj-record）が要るものは、入っていなければ skip
+.venv/bin/python -m pytest -m record
+
+# unit: XML も Record も全部
+.venv/bin/python -m pytest -m "record or not record"
+
+# E2E: XML の fixture に加えて、Record の fixture（.json / record.json）と XML との parity
+.venv/bin/python apps/bioproject/tests/run_tests.py --record
+.venv/bin/python apps/biosample/tests/run_tests.py --record
+.venv/bin/python apps/dra/tests/run_tests.py --record
+```
 
 ## GEA（`gea`）
 

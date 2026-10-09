@@ -1,7 +1,8 @@
 """BioSample validator の内部レコード表現。
 
-入力（XML、または TSV→XML 変換後の XML）をパースしてこの構造へ。
-ルールはこの構造だけを見る（XML/TSV の差異を意識しない）。
+入力をパースしてこの構造へ。対応する入力は XML / TSV（→XML 変換後）/ DDBJ Record（v3 JSON）。
+ルールはこの構造だけを見る（入力形式の差異を意識しない）。新しい入力形式に対応するとは、
+ここへ組み直す reader を 1 本足すこと以上の意味を持たない。
 """
 from dataclasses import dataclass, field
 from typing import Any, Optional
@@ -19,7 +20,11 @@ class BioSampleRecord:
     # 属性名 -> 値リスト（同名属性が複数あり得るためリストで保持。R0061 等の検出に使う）
     attributes: dict = field(default_factory=dict)
     access: Optional[str] = None             # BioSample@access
-    raw: Any = None                          # 元 XML 要素（必要時の参照用）
+    # 元の入力（XML 入力なら Element、Record 入力なら v3 の sample dict）。
+    # ルールは参照しない。参照すると入力形式に依存してしまい、上の契約が崩れる。
+    raw: Any = None
+    # Record 入力で raw（sample の dict）が record のどこにあるか（`samples.3`）。XML では None。
+    raw_path: Optional[str] = None
 
     @property
     def sample_id(self):
@@ -38,12 +43,14 @@ class BioSampleRecord:
 
 @dataclass
 class BioSampleSubmission:
-    """1 サブミッション（XML の <BioSampleSet>）。複数 BioSample を保持。"""
+    """1 サブミッション（XML の <BioSampleSet>、Record の samples[]）。複数 BioSample を保持。"""
     records: list = field(default_factory=list)
     submission_id: Optional[str] = None      # SSUB（ファイル名などから）
     package: Optional[str] = None            # サブミッション代表パッケージ（通常全サンプル共通）
     account: Optional[str] = None            # --account（submitter id）
-    raw_root: Any = None                     # 元 XML のルート要素（BioSampleSet）。BS_R0058 が全要素を走査する
+    # 元 XML のルート要素（BioSampleSet）。Record では sample の外で BioSample が持つもの
+    # （`submission`。XML では各 BioSample の Owner に当たる）で、BS_R0058 が 1 回だけ走査する。
+    raw_root: Any = None
     # XML ソースに **素の文字として** 現れる非 ASCII 文字の集合（BS_R0058）。
     # XML パーサは `&#x201c;` のような文字参照を実体へ展開してしまうため、展開後の値だけを見ると
     # ASCII だけで書かれたファイルまで非 ASCII と判定してしまう。ソース側の実態をここに持つ。
