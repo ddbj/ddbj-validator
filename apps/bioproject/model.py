@@ -27,7 +27,7 @@ class Publication:
 @dataclass
 class Grant:
     """ProjectDescr/Grant（研究費）。XSD 上 Title は任意、Agency は必須だが空要素でも XSD は通る。"""
-    grant_id: Optional[str] = None      # @GrantId
+    grant_id: Optional[str] = None      # @GrantId（Record では grants[].id）
     title: Optional[str] = None         # Title
     agency: Optional[str] = None        # Agency（本文。@abbr は見ない）
 

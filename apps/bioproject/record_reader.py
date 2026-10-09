@@ -73,7 +73,8 @@ import json
 import sys
 from pathlib import Path
 
-from apps.bioproject.model import BioProjectRecord, BioProjectSubmission, Publication
+from apps.bioproject.model import BioProjectRecord, BioProjectSubmission, Publication, Grant
+from apps.bioproject.rules.value import BP_R0059
 from common.record_keys import carries
 
 _SCHEMA_ERR_CAP = 20
@@ -82,6 +83,10 @@ _warned_no_schema = False
 # BioProject が読まない側。同居していても検証対象にせず、スキーマ違反も validity へ
 # 算入しない（_scoped_schema_errors）。
 _OUT_OF_SCOPE_KEY = 'samples'
+
+# BioProject として読む部分: XML の BioProject 文書が持つもの（Submission の Contact や
+# Organization と、Project）。
+_OWN_KEYS = ('submission', 'projects')
 
 
 # v3 project_type -> モデルの project_kind。
@@ -194,6 +199,20 @@ def _project_shape_errors(project, at, bad):
             for i, pub in enumerate(publications):
                 if not isinstance(pub, dict):
                     bad(f'{at}.publications.{i}', 'an object', pub)
+
+    grants = project.get('grants')
+    if grants is not None:
+        if not isinstance(grants, list):
+            bad(f'{at}.grants', 'a list', grants)
+        else:
+            for i, grant in enumerate(grants):
+                if not isinstance(grant, dict):
+                    bad(f'{at}.grants.{i}', 'an object', grant)
+                    continue
+                for key in ('id', 'title', 'agency'):
+                    value = grant.get(key)
+                    if value is not None and not isinstance(value, str):
+                        bad(f'{at}.grants.{i}.{key}', 'a string', value)
 
     target = project.get('target')
     if target is not None:
@@ -360,6 +379,11 @@ def _build_record(project):
 
     rec.publications = _publications(project)
 
+    rec.grants = [
+        Grant(grant_id=_text(grant.get('id')), title=_text(grant.get('title')), agency=_text(grant.get('agency')))
+        for grant in project.get('grants') or []
+    ]
+
     # xml_reader は Target/Method/Objectives を ProjectTypeSubmission の下でだけ読む。
     # umbrella に target が付いた record で、Target を見る規則（BP_R0070 など）の結果が XML と
     # 食い違わないよう、同じ条件にする。
@@ -399,8 +423,21 @@ def parse_record(record_path, account=None):
     if shape_errors:
         return None, shape_errors
 
-    errors  = _schema_validate(record)
+    errors = _schema_validate(record)
+
+    # BioProject として読む部分。XML の BioProject 文書に当たるもので、BP_R0059（cleanup）と
+    # BP_R0060（非 ASCII）はこの全体を走査する。同居する samples は読まない（下の BP_R0002）。
+    part = {key: record[key] for key in _OWN_KEYS if key in record}
+
+    # モデルを組む前に値をきれいにする（auto cleanup。xml_reader と同じ順）。part の値は
+    # record の値そのものなので、以降の組み立ては cleanup 後の値を読む。
+    cleanup = BP_R0059().cleanup(part)
     records = [_build_record(project) for project in record.get('projects') or []]
+
+    label = records[0].label if records else None
+    for result in cleanup:
+        result['sample'] = label
+    errors = cleanup + errors
 
     if len(records) > 1:
         # 2 つ目以降も検証はする（XML と同じ）。どれを残すべきかは reader には決められない。
@@ -448,4 +485,5 @@ def parse_record(record_path, account=None):
     # JSON の `\u201c` は XML の `&#x201c;` に当たるので、同じく素で書かれた文字だけを渡す。
     source_non_ascii = {ch for ch in text if ord(ch) > 0x7F}
 
-    return BioProjectSubmission(records=records, account=account, source_non_ascii=source_non_ascii), errors
+    return BioProjectSubmission(records=records, account=account, source_non_ascii=source_non_ascii,
+                                raw_root=part), errors

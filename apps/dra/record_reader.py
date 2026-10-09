@@ -76,6 +76,9 @@ _warned_no_schema = False
 # DRA が読まない側。同居していても検証せず、スキーマ違反も validity へ算入しない。
 _OUT_OF_SCOPE_KEYS = ('projects', 'samples')
 
+# DRA として読む部分: XML の Submission / Experiment / Run / Analysis 文書に当たるもの。
+_OWN_KEYS = ('submission', 'experiments', 'runs', 'analyses')
+
 # relation の source.type（record の種類の名前） -> DraSubmission の list。
 _KINDS = {
     'experiment': 'experiments',
@@ -484,7 +487,8 @@ def parse_record(record_path, account=None):
     「指摘ゼロ」と混同させないため、どう扱うかは呼び出し側（CLI）の責任にしてある。
     """
     try:
-        record = json.loads(Path(record_path).read_text(encoding='utf-8'))
+        text   = Path(record_path).read_text(encoding='utf-8')
+        record = json.loads(text)
     except (OSError, UnicodeDecodeError, json.JSONDecodeError, RecursionError) as e:
         return None, [_format_error('JSON document is not well-formed.', detail=str(e), rule_id='DRA_R0001')]
     if not isinstance(record, dict):
@@ -527,5 +531,14 @@ def parse_record(record_path, account=None):
             level='info', target='#not_validated'))
         print(f'[INFO] この record は {" / ".join(carried)} を持っていますが、DRA の検証対象ではないので読みません。',
               file=sys.stderr)
+
+    # DRA_R0050 が非 ASCII を探す範囲: DRA として読む部分の全体を、XML の 4 つの文書に当たる
+    # 1 つとして。ソースに素の文字として書かれた非 ASCII だけを見るのは XML と同じで、JSON の
+    # `\u201c` は XML の `&#x201c;` に当たる。
+    sub.xml_docs = [{
+        'file':    name,
+        'root':    {key: record[key] for key in _OWN_KEYS if key in record},
+        'literal': {ch for ch in text if ord(ch) > 0x7F},
+    }]
 
     return sub, errors

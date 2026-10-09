@@ -53,6 +53,10 @@ class BP_R0059(BpRule):
 
     `cleanup(root)` を xml_reader がパース直後に呼ぶ。値を in-place で置き換え、置き換えた値ごとに
     warning を 1 件返す。属性値（accession・taxID など）は囲みクオートを外さない。
+
+    DDBJ Record では record_reader が、BioProject として読む部分（dict）を渡す。文字列値を
+    同じくきれいにし、record の中の位置で報告する。XML の属性値に当たる識別子のキー
+    （`_IDENTIFIER_KEYS`）は、同じく囲みクオートを外さない。
     """
     rule_id = "BP_R0059"
     level = "warning"
@@ -60,6 +64,8 @@ class BP_R0059(BpRule):
     description = "Invalid data format."
 
     def cleanup(self, root):
+        if isinstance(root, (dict, list)):
+            return self._cleanup_json(root, "")
         out = []
         for el, path, attr in _iter_slots(root, root.tag):
             old = el.get(attr) if attr else el.text
@@ -77,6 +83,32 @@ class BP_R0059(BpRule):
             out.append(self.result(target=path, autofix=True, old_value=shown, new_value=new,
                                    message=f"Invalid data format. ({path}: '{shown}', Suggested: '{new}')"))
         return out
+
+
+    def _cleanup_json(self, node, base):
+        out = []
+        items = list(node.items()) if isinstance(node, dict) else list(enumerate(node))
+        for key, old in items:
+            path = f"{base}.{key}" if base else str(key)
+            if isinstance(old, (dict, list)):
+                out += self._cleanup_json(old, path)
+                continue
+            if not isinstance(old, str):
+                continue
+            new = clean_value(old, unquote=key not in _IDENTIFIER_KEYS)
+            if not new or new == old:
+                continue
+            node[key] = new
+            shown = old.strip(" \t\r\n")
+            if new == shown:
+                continue    # 前後の空白だけの違いは報告しない（XML の整形インデントと同じ扱い）
+            out.append(self.result(target=path, autofix=True, old_value=shown, new_value=new,
+                                   message=f"Invalid data format. ({path}: '{shown}', Suggested: '{new}')"))
+        return out
+
+
+# Record で、XML の属性値に当たる（囲みクオートを外さない）キー。
+_IDENTIFIER_KEYS = {"accession", "id", "taxonomy_id", "biosample_id", "db"}
 
 
 def _iter_slots(el, path):

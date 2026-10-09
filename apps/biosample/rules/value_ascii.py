@@ -63,6 +63,17 @@ class BS_R0013(BsRule):
 # 属性モデル側（rec.attributes / rec.organism）で既に見ている要素のパス。
 # これらは BS_R0013(空白正規化) → BS_R0012(特殊文字) の autocleanup 後の値で評価されるので、
 # XML 走査では飛ばす（℃ 等を R0012 と R0058 で二重に出さないため）。`Attributes/Attribute` も同様。
+# 上の属性の検査で見たもの。Record ではその sample の中の位置。
+_RECORD_MODEL_COVERED = {"alias", "title", "description", "organism.name"}
+
+
+def _model_covered(el, path, raw_path):
+    if raw_path is None:
+        return el.tag == "Attribute" or path in _MODEL_COVERED
+    within = path[len(raw_path) + 1:]
+    return within.startswith("attributes.") or within in _RECORD_MODEL_COVERED
+
+
 _MODEL_COVERED = {
     "BioSample/Description/Title",
     "BioSample/Description/SampleName",
@@ -122,14 +133,24 @@ class BS_R0058(BsRule):
                         reported.add(v)
                         out.append(self._hit(rec, name, v))
                         break
-            # 属性モデルに載っていない要素（Owner / Contact / Address / Ids など）を XML から拾う
+            # 属性モデルに載っていない要素（Owner / Contact / Address / Ids など）を XML から拾う。
+            # Record（raw が dict）なら record の中の値すべてを、record の中の位置で。
             if rec.raw is None:
                 continue
-            for el, path, v in non_ascii_values(rec.raw, literal, prefix="BioSample"):
-                if el.tag == "Attribute" or path in _MODEL_COVERED or v in reported:
+            prefix = rec.raw_path or "BioSample"
+            for el, path, v in non_ascii_values(rec.raw, literal, prefix=prefix):
+                if _model_covered(el, path, rec.raw_path) or v in reported:
                     continue
                 reported.add(v)
                 out.append(self._hit(rec, path, v))
+
+        # Record では、XML なら各 BioSample の Owner にある連絡先・組織が sample の外の
+        # `submission` にある。sample ごとではなく 1 回、record の中の位置で。
+        shared = submission.raw_root
+        if isinstance(shared, dict) and submission.records:
+            first = submission.records[0]
+            for _el, path, v in non_ascii_values(shared, literal):
+                out.append(self._hit(first, path, v))
         return out
 
 

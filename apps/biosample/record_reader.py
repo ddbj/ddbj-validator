@@ -324,7 +324,8 @@ def parse_record(record_path, submission_id=None, account=None):
     混同させないため、どう扱うかは呼び出し側の責任にしてある。
     """
     try:
-        record = json.loads(Path(record_path).read_text(encoding="utf-8"))
+        text   = Path(record_path).read_text(encoding="utf-8")
+        record = json.loads(text)
     except (OSError, UnicodeDecodeError, json.JSONDecodeError, RecursionError) as e:
         return None, [_format_error("BS_R0097", "JSON document is not well-formed.", detail=str(e))]
     if not isinstance(record, dict):
@@ -356,8 +357,16 @@ def parse_record(record_path, submission_id=None, account=None):
     global _disagreements
     _disagreements = 0
 
-    sub = BioSampleSubmission(submission_id=submission_id, account=account)
+    # BS_R0058 は、ソースに素の文字として書かれた非 ASCII だけを見る（XML の文字参照は対象外）。
+    # JSON の `\u201c` は XML の `&#x201c;` に当たるので、同じく素で書かれた文字だけを渡す。
+    sub = BioSampleSubmission(submission_id=submission_id, account=account,
+                              source_non_ascii={ch for ch in text if ord(ch) > 0x7F},
+                              raw_root={key: record[key] for key in ("submission",) if key in record})
     sub.records = [_build_record(s) for s in record.get("samples") or []]
+
+    # BS_R0058 が record の中の位置で報告できるように（XML なら BioSample 要素からのパス）。
+    for i, rec in enumerate(sub.records):
+        rec.raw_path = f"samples.{i}"
 
     # サブミッション代表パッケージ（xml_reader と同じ決め方。通常は全サンプル共通）
     pkgs = {r.package for r in sub.records if r.package}

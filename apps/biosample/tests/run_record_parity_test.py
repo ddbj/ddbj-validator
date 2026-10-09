@@ -53,7 +53,33 @@ def _to_record(submission):
                            for value in values] or None,
         }
         samples.append({k: v for k, v in sample.items() if v is not None})
-    return {"schema_version": "v3", "samples": samples}
+    record = {"schema_version": "v3", "samples": samples}
+    owner = _submission_block(submission.raw_root)
+    if owner:
+        record["submission"] = owner
+    return record
+
+
+def _submission_block(root):
+    """XML の Owner（連絡先と組織）→ v3 submission.submitters。repository の converter と同じく、
+    組織は連絡先ごとに 1 つ。D-way の BioSample では Owner は全 sample で同じなので、最初のものを。"""
+    owner = root.find("./BioSample/Owner") if root is not None else None
+    if owner is None:
+        return None
+    organization = (owner.findtext("./Name") or "").strip()
+    submitters = []
+    for contact in owner.findall("./Contacts/Contact"):
+        person = {k: v for k, v in {
+            "email":      (contact.get("email") or "").strip(),
+            "first_name": (contact.findtext("./Name/First") or "").strip(),
+            "last_name":  (contact.findtext("./Name/Last") or "").strip(),
+        }.items() if v}
+        if not person:
+            continue
+        if organization:
+            person["organizations"] = [{"name": organization}]
+        submitters.append(person)
+    return {"submitters": submitters} if submitters else None
 
 
 def _context():

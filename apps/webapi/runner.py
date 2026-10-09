@@ -193,6 +193,9 @@ def _plan_record(path, params):
         # 持たず、web api の一時ファイル名も PSUB / SSUB を含まない（CLI はファイル名から拾う）。
         # DRA は submission の alias から導くが、渡されればそちらを使う。
         args += ["-s", params["submission_id"]]
+    if db == "biosample" and params.get("profile"):
+        # XML と同じく次期 BioSample の検証にする。profile は BioSample の CLI にしか無い。
+        args += ["--profile", params["profile"]]
     return args
 
 
