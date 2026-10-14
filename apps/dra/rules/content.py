@@ -4,7 +4,7 @@
 - DRA_R0013: Experiment description（DESIGN/DESIGN_DESCRIPTION）必須。
 - DRA_R0014: Analysis description（DESCRIPTION）必須。
 - DRA_R0018: Experiment の LIBRARY_NAME 必須。
-- DRA_R0019: PAIRED ライブラリで insert size（NOMINAL_LENGTH）必須。
+- DRA_R0019: PAIRED ライブラリで insert size（NOMINAL_LENGTH）が無い → warning。
 - DRA_R0020: insert size は 10,000,000 未満。
 - DRA_R0050: XML のどこかに非 ASCII 文字（2026-09-28 追加。BP_R0060 / BS_R0058 と同趣旨）。
 - DRA_R0051: submission 内で center_name が混在（2026-10-08 追加。warning）。
@@ -82,8 +82,12 @@ class DRA_R0018(DraRule):
 
 
 class DRA_R0019(DraRule):
+    """PAIRED ライブラリで insert size（NOMINAL_LENGTH）が無い → warning（2026-10-14 に error＋internal ignore から変更）。
+
+    error で止めるのはやめ、記載を促す warning として出す（internal ignore も外した）。
+    """
     rule_id = "DRA_R0019"
-    level = "error"
+    level = "warning"
     target = "PAIRED/@NOMINAL_LENGTH"
     description = "Insert size (nominal length) is required for paired library."
 
