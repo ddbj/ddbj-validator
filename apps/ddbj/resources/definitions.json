@@ -4939,11 +4939,13 @@
         "Published",
         "In Press",
         "Published Only in Database",
-        "In Preparation",
         "Unpublished",
         "In Press with E-pub",
         "Pure E-pub"
       ],
+      "value_aliases": {
+        "in preparation": "Unpublished"
+      },
       "value_rule": {
         "rule_id": "ANN3290",
         "alternate_id": "JP0177, JP0178",
