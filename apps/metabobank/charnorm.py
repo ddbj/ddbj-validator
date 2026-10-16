@@ -4,4 +4,5 @@ GEA でも同じ正規化を使うようになったため common へ寄せた�
 """
 from common.magetab.charnorm import (  # noqa: F401
     normalize, fix_warning_message, residual_error_message, whitespace_warning_message,
+    location_text,
 )

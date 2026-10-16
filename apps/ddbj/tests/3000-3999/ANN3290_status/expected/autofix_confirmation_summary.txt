@@ -1,0 +1,7 @@
+=== Auto-Fix Confirmation ===
+
+[ Target: qualifier ]
+  ANN3290_1.fail
+    1 entry, 1 feature, 1 qualifier: 'In preparation' -> 'Unpublished' [Rule: ANN3290]
+  ANN3290_2.fail
+    1 entry, 1 feature, 1 qualifier: 'In Preparation' -> 'Unpublished' [Rule: ANN3290]

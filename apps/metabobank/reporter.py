@@ -85,6 +85,8 @@ def _sdrf_cell(r):
         anno.append(_kv("Column", r.get("column")))
     if r.get("value") is not None:
         anno.append(_kv("Value", r.get("value")))
+    if r.get("location"):   # 非 ASCII 文字のセル内の位置（MB_SR0030）
+        anno.append(_kv("Location", r["location"]))
     # MB_SR0021 / 0022 / 0023: 参照 BioSample と、その属性値
     if r.get("samd"):
         anno.append(_kv("BioSample", r["samd"]))
@@ -114,6 +116,8 @@ def _idf_field(r):
         anno.append(_kv("Field", r["field"]))
     if r.get("value") is not None:
         anno.append(_kv("Value", r["value"]))
+    if r.get("location"):   # 非 ASCII 文字の位置（MB_IR0024）
+        anno.append(_kv("Location", r["location"]))
     if r.get("autofix") and r.get("new_value") is not None:
         anno.append({"key": "Suggested value", "suggested_value": [r["new_value"]],
                      "target_key": r.get("target_key") or "Value", "is_auto_annotation": True})

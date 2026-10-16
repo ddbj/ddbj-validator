@@ -379,7 +379,7 @@ class ANN_DICT_VALIDATOR(BaseRule):
             if allowed:
                 for val in q_values:
                     is_valid, custom_msg, suggested_fix = self._resolve_allowed_value(
-                        q_name, val, allowed, rule_info)
+                        q_name, val, allowed, rule_info, q_def.get("value_aliases"))
                     if not is_valid:
                         base_msg = custom_msg if custom_msg else rule_info.get('message', '')
                         msg = f"{base_msg} (Found: '{val}')".strip()
@@ -483,7 +483,7 @@ class ANN_DICT_VALIDATOR(BaseRule):
                         
         return results
 
-    def _resolve_allowed_value(self, q_name, val, allowed, rule_info):
+    def _resolve_allowed_value(self, q_name, val, allowed, rule_info, aliases=None):
         """
         allowed_values チェックにおける値判定（qualifier 種別ごとの特例）。
         (is_valid, custom_msg, suggested_fix) を返す。挙動は従来のインライン分岐と同一。
@@ -518,8 +518,16 @@ class ANN_DICT_VALIDATOR(BaseRule):
             str_val = str(val)
             allowed_strs = [str(a) for a in allowed]
 
+            # value_aliases: 許容値ではないが置き換え先が決まっている値（小文字キー）。
+            # 例: status 'In preparation' → 'Unpublished'（DDBJ file-format の REFERENCE status は
+            # Unpublished / In press / Published のみ）。
+            alias_fix = (aliases or {}).get(str_val.strip().lower())
+
             if str_val in allowed_strs:
                 is_valid = True
+            elif alias_fix:
+                suggested_fix = alias_fix
+                custom_msg = f"{rule_info.get('message', '')}"
             else:
                 val_lower = str_val.lower()
                 for a_str in allowed_strs:

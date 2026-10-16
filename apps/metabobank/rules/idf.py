@@ -457,7 +457,7 @@ class MB_IR0024(MbRule):
 
     def validate(self, sub, context):
         from apps.metabobank.charnorm import (fix_warning_message, residual_error_message,
-                                              whitespace_warning_message)
+                                              whitespace_warning_message, location_text)
         if not sub.idf:
             return []
         out = []
@@ -471,9 +471,11 @@ class MB_IR0024(MbRule):
             if fx["mapped"]:
                 out.append(self.result(
                     message=fix_warning_message(fx["where"], fx["mapped"]), level="warning",
-                    field=fx["where"], value="".join(sorted(fx["mapped"]))))
+                    field=fx["where"], value="".join(sorted(fx["mapped"])),
+                    location=location_text(fx, fx["mapped"])))
             if fx["residual"]:
                 out.append(self.result(
                     message=residual_error_message(fx["where"], fx["residual"]), level="error",
-                    field=fx["where"], value="".join(sorted(fx["residual"]))))
+                    field=fx["where"], value="".join(sorted(fx["residual"])),
+                    location=location_text(fx, fx["residual"])))
         return out

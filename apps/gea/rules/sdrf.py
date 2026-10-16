@@ -569,7 +569,7 @@ class GEA_SR0016(GeaRule):
 
     def validate(self, sub, context):
         from common.magetab.charnorm import (fix_warning_message, residual_error_message,
-                                             whitespace_warning_message)
+                                             whitespace_warning_message, location_text)
         if not sub.sdrf:
             return []
         out = []
@@ -583,10 +583,12 @@ class GEA_SR0016(GeaRule):
                                        level="warning", column=fx["where"], line=fx["line"]))
             if fx["mapped"]:
                 out.append(self.result(message=fix_warning_message(where, fx["mapped"]),
-                                       level="warning", column=fx["where"], line=fx["line"]))
+                                       level="warning", column=fx["where"], line=fx["line"],
+                                       location=location_text(fx, fx["mapped"])))
             if fx["residual"]:
                 out.append(self.result(message=residual_error_message(where, fx["residual"]),
-                                       level="error", column=fx["where"], line=fx["line"]))
+                                       level="error", column=fx["where"], line=fx["line"],
+                                       location=location_text(fx, fx["residual"])))
         # 制御文字（ord<32・タブ除く）は正規化表の対象外なので、ここで直接見る
         for r, row in enumerate(sub.sdrf.rows, start=1):
             ctrl = {ch for cell in row for ch in cell if ord(ch) < 32 and ch != "\t"}
