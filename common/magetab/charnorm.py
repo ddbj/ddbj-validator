@@ -95,10 +95,57 @@ def _clean(text):
     return cleaned, mapped, residual, cleaned != new
 
 
+def snippets(text, chars, ctx=20, limit=10):
+    """text 中の chars（set）の出現箇所ごとに前後 ctx 文字の抜粋を返す（details の位置表示用）。
+
+    対象文字は `[ ]` で囲み、改行は `\\n`、印字不可は U+XXXX で表示する。最大 limit 箇所で、
+    超えた分は `+N more` を付ける。旧 ruby mb_validator の `#NG#` 置換に相当する手がかり。
+    """
+    if not text or not chars:
+        return ""
+    hits = [i for i, ch in enumerate(text) if ch in chars]
+    out = []
+    for i in hits[:limit]:
+        pre = text[max(0, i - ctx):i]
+        post = text[i + 1:i + 1 + ctx]
+        s = "".join((pre, f"[{_disp(text[i])}]", post)).replace("\n", "\\n")
+        out.append('"' + ("..." if i > ctx else "") + s + ("..." if i + 1 + ctx < len(text) else "") + '"')
+    if len(hits) > limit:
+        out.append(f"+{len(hits) - limit} more")
+    return ", ".join(out)
+
+
+def location_text(fx, chars):
+    """char_fixes の 1 件から details 用の位置文字列を作る。
+
+    IDF: `<フィールド名> #k (Protocol Name: X): "...[°]..."`（#k は値が複数のときのみ、
+    Protocol Name は Protocol 系の欄で同じ列の名前が引けるときのみ）。
+    SDRF: セル位置は message に出ているので抜粋だけ。項目名・列名自体（line=None）は名前の抜粋。
+    """
+    snip = snippets(fx.get("original", ""), chars)
+    if not snip:
+        return ""
+    label = fx.get("label")
+    return f"{label}: {snip}" if label else snip
+
+
 def residual_error_message(where, residual):
     """autofix 後に残った非 ASCII / 制御文字（error）用メッセージ。IDF/SDRF 共通体裁。"""
     chars = ", ".join(f"'{_disp(c)}'" for c in sorted(residual))
     return f"Invalid characters: {chars} ({where})"
+
+
+def _idf_label(idf, name, i, n):
+    """IDF 値の位置ラベル。複数値なら `#k`、Protocol 系の欄なら同じ列の Protocol Name を添える。
+
+    正規化前の Protocol Name を引く（Protocol Name 自体も正規化されうるが、位置の手がかりなので十分）。
+    """
+    label = f"{name} #{i + 1}" if n > 1 else name
+    if name.startswith("Protocol ") and name != "Protocol Name":
+        pnames = idf.fields.get("Protocol Name") or []
+        if i < len(pnames) and pnames[i]:
+            label += f" (Protocol Name: {pnames[i]})"
+    return label
 
 
 def apply_to_submission(sub):
@@ -127,7 +174,8 @@ def apply_to_submission(sub):
                     vals[i] = new
                     fixes.append({"target": "IDF", "where": name, "line": None,
                                   "original": v, "fixed": new,
-                                  "mapped": mapped, "residual": residual, "whitespace": ws})
+                                  "mapped": mapped, "residual": residual, "whitespace": ws,
+                                  "label": _idf_label(sub.idf, name, i, len(vals))})
     if getattr(sub, "sdrf", None):
         header = sub.sdrf.header
         # 列名は書き換えない（列の同定が変わるため）。非 ASCII があれば residual（error）として

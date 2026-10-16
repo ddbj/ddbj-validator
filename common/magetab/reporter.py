@@ -72,10 +72,17 @@ def _nonrow_summary(results, is_err, is_row_level):
 
 
 def fmt_detail(r, is_row_level, row_fmt):
-    """details の 1 行。非行単位は共通形式、SDRF 行単位は app 固有 row_fmt に委譲。"""
+    """details の 1 行。非行単位は共通形式、SDRF 行単位は app 固有 row_fmt に委譲。
+
+    `location`（非 ASCII 文字の位置の抜粋。charnorm.location_text）があれば details だけ行末に足す。
+    summary は message で集約するので付けない（抜粋ごとに行が分かれて集約が効かなくなるため）。
+    """
     if is_row_level(r):
-        return row_fmt(r)
-    return f"{r['rule_id']}:{tag(r)}:{r.get('target') or '-'}:{r.get('message','')}"
+        line = row_fmt(r)
+    else:
+        line = f"{r['rule_id']}:{tag(r)}:{r.get('target') or '-'}:{r.get('message','')}"
+    loc = r.get("location")
+    return f"{line} at {loc}" if loc else line
 
 
 def build_summary(results, fname, version, when, elapsed, *, app_title, data,

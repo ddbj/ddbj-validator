@@ -101,7 +101,7 @@ class GEA_G0017(GeaRule):
 
     def validate(self, sub, context):
         from common.magetab.charnorm import (fix_warning_message, residual_error_message,
-                                             whitespace_warning_message)
+                                             whitespace_warning_message, location_text)
         out = []
         for fx in getattr(sub, "char_fixes", []):
             if fx["target"] != "IDF":
@@ -111,10 +111,12 @@ class GEA_G0017(GeaRule):
                                        level="warning", field=fx["where"]))
             if fx["mapped"]:
                 out.append(self.result(message=fix_warning_message(fx["where"], fx["mapped"]),
-                                       level="warning", field=fx["where"]))
+                                       level="warning", field=fx["where"],
+                                       location=location_text(fx, fx["mapped"])))
             if fx["residual"]:
                 out.append(self.result(message=residual_error_message(fx["where"], fx["residual"]),
-                                       level="error", field=fx["where"]))
+                                       level="error", field=fx["where"],
+                                       location=location_text(fx, fx["residual"])))
         return out
 
 

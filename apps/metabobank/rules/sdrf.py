@@ -618,7 +618,7 @@ class MB_SR0030(MbRule):
 
     def validate(self, sub, context):
         from apps.metabobank.charnorm import (fix_warning_message, residual_error_message,
-                                              whitespace_warning_message)
+                                              whitespace_warning_message, location_text)
         if not sub.sdrf:
             return []
         out = []
@@ -640,12 +640,14 @@ class MB_SR0030(MbRule):
                 out.append(self.result(message=fix_warning_message(where, fx["mapped"]),
                                        level="warning", assay=_assay(sub, row), line=line,
                                        column=fx["where"], value="".join(sorted(fx["mapped"])),
-                                       source_name=_source_name(sub, row)))
+                                       source_name=_source_name(sub, row),
+                                       location=location_text(fx, fx["mapped"])))
             if fx["residual"]:
                 out.append(self.result(message=residual_error_message(where, fx["residual"]),
                                        level="error", assay=_assay(sub, row), line=line,
                                        column=fx["where"], value="".join(sorted(fx["residual"])),
-                                       source_name=_source_name(sub, row)))
+                                       source_name=_source_name(sub, row),
+                                       location=location_text(fx, fx["residual"])))
         # (2) 制御文字（ord<32・タブ除く）は残存非 ASCII と同様に error
         for r, row in enumerate(rows):
             ctrl = {ch for cell in row for ch in cell if ord(ch) < 32 and ch != "\t"}
