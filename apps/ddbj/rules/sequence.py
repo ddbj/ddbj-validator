@@ -6,7 +6,8 @@ from apps.ddbj.parser import fasta_entry_name
 # マジックナンバーの名前付き定数
 MAX_N_RATIO = 0.5                    # N 塩基の許容割合の上限（超で警告）
 MIN_SEQUENCE_LENGTH = 100            # 最小推奨配列長(塩基)
-MAX_SEQUENCE_LENGTH = 1_000_000_000  # 1エントリの最大配列長(塩基)
+MAX_SEQUENCE_LENGTH = 2_140_000_000  # 1エントリの最大配列長(塩基)。DDBJ システム仕様の上限（2026-10-19 に 1G から緩和）
+LONG_SEQUENCE_LENGTH = 1_000_000_000  # これを超えたら SEQ5052（info）でキュレータへ知らせる
 
 class FASTA_FORMAT_VALIDATOR(BaseRule):
     rule_id = "FASTA_FORMAT_MASTER"
@@ -274,7 +275,7 @@ class SEQ5050(BaseRule):
     rule_id = "SEQ5050"
     alternate_id = "SEQ0005"
     target = "sequence"
-    description = "Sequence longer than 1Gbases."
+    description = "Sequence longer than 2.14Gbases."
     requires_rdb = False
     is_file_level = False
 
@@ -284,7 +285,7 @@ class SEQ5050(BaseRule):
         if record.id == "COMMON":
             return results
             
-        # 1Gbases (1,000,000,000 bases) を超える場合にエラー
+        # 2.14Gbases (2,140,000,000 bases) を超える場合にエラー（DB 投入できない）
         if len(record.seq) > MAX_SEQUENCE_LENGTH:
             msg = f"{self.description} (Length: {len(record.seq):,} bases)"
             res = self.format_result(
@@ -298,4 +299,34 @@ class SEQ5050(BaseRule):
             results.append(res)
             
         return results
+
+
+class SEQ5052(BaseRule):
+    """1Gbases を超える配列（2.14G 以下）を info で知らせる（2026-10-19 追加）。
+
+    1G 超の配列も DB 投入できるようになったので SEQ5050 の上限は 2.14G に緩和したが、
+    長大配列は処理・確認に注意が要るためキュレータへのリマインドとして出す。
+    2.14G 超は SEQ5050（error）が出るので、ここでは出さない（二重報告を避ける）。
+    """
+    rule_id = "SEQ5052"
+    target = "sequence"
+    description = "Sequence longer than 1Gbases."
+    requires_rdb = False
+    is_file_level = False
+
+    def validate(self, record, context):
+        if record.id == "COMMON":
+            return []
+        n = len(record.seq)
+        if not (LONG_SEQUENCE_LENGTH < n <= MAX_SEQUENCE_LENGTH):
+            return []
+        res = self.format_result(
+            entry_id=record.id,
+            message=f"{self.description} (Length: {n:,} bases)",
+            level="info",
+            feature_type="sequence"
+        )
+        res["rule"] = self.rule_id
+        res["target"] = self.target
+        return [res]
         
