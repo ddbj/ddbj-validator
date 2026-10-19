@@ -71,7 +71,8 @@ class Validator:
             SEQ5020(), # [WARNING] Sequences do not begin or end with Ns
             SEQ5040(), # [ERROR] Sequence shorter than 100 bases
             ANN5045(), # [ERROR] Minimal size for sequences in a eukaryote or prokaryotic genome is 1,000 nucleotides
-            SEQ5050(), # [ERROR] Sequence longer than 1Gbases
+            SEQ5050(), # [ERROR] Sequence longer than 2.14Gbases
+            SEQ5052(), # [INFO] Sequence longer than 1Gbases（キュレータへのリマインド）
 
             # 【フェーズ6】ロケーション構文・範囲チェック
             ANN2010(), # [ERROR] Location is missing
