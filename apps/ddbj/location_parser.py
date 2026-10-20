@@ -68,6 +68,7 @@ def _parse_location_string(loc_str, seq_length=0, default_strand=1):
         out_of_order_err = None
         suggest_slippage = False
         join_diffs = [] 
+        spans_origin = False
         
         local_locations = [loc for loc in locations if getattr(loc, 'ref', None) is None]
         
@@ -87,23 +88,29 @@ def _parse_location_string(loc_str, seq_length=0, default_strand=1):
                 B_val = int(prev_loc.end)
                 C_val = int(next_loc.start) + 1
                 
+                # origin（全長 L → 1）を跨ぐ継ぎ目 `n..L,1..m`。plus / minus（complement(join(...))）とも
+                # join 内は書いた順なので鎖を問わない（2026-10-20 に strand == 1 の条件を外した）。
+                # circular かどうかは parse 時点で判らないので印だけ付け、
+                # linear なら parser._validate_locations_post_parse が ANN2020 error にする。
+                # 継ぎ目の差（1 - L）は ribosomal_slippage の間隔判定に入れない。
+                if seq_length > 0 and B_val == seq_length and C_val == 1:
+                    spans_origin = True
+                    continue
+                
                 user_diff = C_val - B_val
                 join_diffs.append(user_diff)
                 
                 if B_val >= C_val:
-                    if strand == 1 and seq_length > 0 and B_val == seq_length and C_val == 1:
-                        pass
+                    if user_diff in (0, -1):
+                        out_of_order_err = "Overlapping location intervals."
+                        suggest_slippage = True
                     else:
-                        if user_diff in (0, -1):
-                            out_of_order_err = "Overlapping location intervals."
-                            suggest_slippage = True
+                        is_spanning_origin = (seq_length > 0 and B_val > seq_length * 0.5 and C_val < seq_length * 0.5) or (B_val - C_val > 1000)
+                        if is_spanning_origin:
+                            out_of_order_err = f"The location interval appears to span the origin of a circular sequence improperly. Consider shifting the starting coordinate of the sequence. (Found end {B_val} >= next start {C_val})"
                         else:
-                            is_spanning_origin = (seq_length > 0 and B_val > seq_length * 0.5 and C_val < seq_length * 0.5) or (B_val - C_val > 1000)
-                            if is_spanning_origin:
-                                out_of_order_err = f"The location interval appears to span the origin of a circular sequence improperly. Consider shifting the starting coordinate of the sequence. (Found end {B_val} >= next start {C_val})"
-                            else:
-                                out_of_order_err = f"Joined segments must be in increasing order. (Found end {B_val} >= next start {C_val})"
-                        break
+                            out_of_order_err = f"Joined segments must be in increasing order. (Found end {B_val} >= next start {C_val})"
+                    break
                         
         if strand == -1:
             locations.reverse()
@@ -111,6 +118,8 @@ def _parse_location_string(loc_str, seq_length=0, default_strand=1):
         comp_loc = CompoundLocation(locations)
         
         comp_loc._join_diffs = join_diffs
+        if spans_origin:
+            comp_loc._spans_origin = True
                 
         if out_of_order_err:
             comp_loc._out_of_order_error = out_of_order_err

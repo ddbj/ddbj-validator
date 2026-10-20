@@ -6,7 +6,7 @@ from common.rules.base import BaseRule
 from apps.ddbj.rules.division_datatype import get_active_divisions
 from apps.ddbj.autofix.format import _VALID_METHOD_PATTERN, _FIX_METHOD_PATTERN
 from collections import defaultdict
-from apps.ddbj.utils.location import get_introns_from_join
+from apps.ddbj.utils.location import get_introns_from_join, crosses_origin
 from apps.ddbj.utils.features import is_pseudogene
 from common.jst import today as jst_today
 from common.db_taxonomy import get_expected_transl_table, tax_rank_invalid
@@ -3903,19 +3903,10 @@ class ANN4210(BaseRule):
             if "ribosomal_slippage" in feature.qualifiers or "trans_splicing" in feature.qualifiers:
                 continue
 
-            # origin (起点) をまたぐ結合かどうかを判定
-            crosses_origin = False
-            if seq_len > 0:
-                parts = feature.location.parts
-                for i in range(len(parts) - 1):
-                    part_end = int(parts[i].end)
-                    next_start = int(parts[i+1].start)
-                    
-                    if part_end == seq_len and next_start == 0:
-                        crosses_origin = True
-                        break
-
-            if crosses_origin:
+            # circular 配列で origin（起点）を跨ぐ結合は対象外。minus 鎖（complement(join(n..L,1..m))）は
+            # parts が逆順に並ぶので、鎖を考慮する crosses_origin で判定する（2026-10-20 修正）。
+            # linear の origin 跨ぎは parser 側の ANN2020 が error にする。
+            if record.id in context.circular_ids and crosses_origin(feature.location, seq_len):
                 continue
 
             results.append(self.feature_result(record, feature, self.description, level="warning"))
@@ -4855,7 +4846,7 @@ class ANN6840(BaseRule):
 
             if feature.type in ("CDS", "mRNA"):
                 # get_introns_from_join はそのままインポート元から利用                
-                for intron in get_introns_from_join(feature):
+                for intron in get_introns_from_join(feature, len(record.seq)):
                     if intron["length"] < 10:
                         msg = f"{self.description} (length = {intron['length']} bases)"
                         results.append(self.feature_result(record, feature, msg, level="warning"))
