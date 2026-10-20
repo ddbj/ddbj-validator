@@ -314,7 +314,7 @@ class AXS6810(BaseRule):
             strand = feature.location.strand
             loc_str = getattr(feature, 'original_location', str(feature.location))
             
-            for intron in get_introns_from_join(feature):
+            for intron in get_introns_from_join(feature, len(record.seq)):
                 intron_seq = record.seq[intron["start"]:intron["end"]]
                 if strand == -1:
                     intron_seq = intron_seq.reverse_complement()
@@ -370,7 +370,7 @@ class AXS6820(BaseRule):
                 continue
                 
             strand = feature.location.strand
-            for intron in get_introns_from_join(feature):
+            for intron in get_introns_from_join(feature, len(record.seq)):
                 if intron["length"] in [3, 6, 9]:
                     intron_seq = record.seq[intron["start"]:intron["end"]]
                     if strand == -1:

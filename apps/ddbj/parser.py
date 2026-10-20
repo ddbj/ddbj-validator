@@ -11,6 +11,7 @@ from apps.ddbj.location_parser import (
     LocationParseError, LocationRangeError, LocationPartialDescriptorError,
     _parse_location_string, _parse_single_location, _parse_position,
 )
+from apps.ddbj.utils.location import circular_entry_ids
 
 
 def _parse_error(ann_path, rule, message, *, entry, level="error",
@@ -516,9 +517,20 @@ def _feature_allows_qualifier(features_dict, feature_type, qualifier):
 def _validate_locations_post_parse(records, parse_errors, ann_path, features_dict=None):
     """パース完了後のオブジェクトに対する遅延ロケーション検証 (順序、スリッページ等)"""
     features_dict = features_dict or {}
+    circular_ids = circular_entry_ids(records)
     for seq_id, record in records.items():
         for feature in record.features:
             
+            # origin（全長 L → 1）を跨ぐ join は circular（TOPOLOGY circular）のときだけ許す（2026-10-20）
+            if getattr(feature.location, "_spans_origin", False) and seq_id not in circular_ids:
+                parse_errors.append(_parse_error(
+                    ann_path, "ANN2020",
+                    "Invalid location. A join across the sequence origin (end of the sequence to position 1) "
+                    "is only allowed for a circular sequence (TOPOLOGY circular). "
+                    f"(Found: '{getattr(feature, 'original_location', '')}')",
+                    entry=seq_id, target="location",
+                    feature_type=feature.type, line_number=getattr(feature, 'line_number', 0)))
+
             if hasattr(feature.location, "_out_of_order_error") or hasattr(feature.location, "_join_diffs"):
                 exception_quals = ["artificial_location", "trans_splicing", "circular_RNA"]
                 

@@ -3,6 +3,7 @@ import importlib.resources
 from pathlib import Path
 from dataclasses import dataclass, field
 from apps.ddbj.db_metadata import fetch_valid_journals
+from apps.ddbj.utils.location import circular_entry_ids
 
 # DATATYPE 値 → セットすべき is_* フラグ名（複合タイプは複数フラグ）
 _DATATYPE_FLAGS = {
@@ -68,6 +69,7 @@ class ValidationContext:
     is_syn: bool = False
     is_web_mode: bool = False
     active_datatypes: set = field(default_factory=set)
+    circular_ids: set = field(default_factory=set)  # TOPOLOGY circular のエントリ ID（analyze_records で設定）
     active_divisions: set = field(default_factory=set)    
     
     def __post_init__(self):
@@ -160,6 +162,8 @@ class ValidationContext:
         self.is_syn = False
         self.active_datatypes = set()
         self.active_divisions = set()
+        # TOPOLOGY circular のエントリ（COMMON に付いていれば全エントリ）。origin 跨ぎ join の判定用
+        self.circular_ids = circular_entry_ids(records)
         
         # 1. DATATYPE と DIVISION の解析 (COMMONレコードから取得)
         common_rec = records.get("COMMON")
