@@ -25,6 +25,16 @@ def _found(info):
 _RANK_CHECK_SCOPES = ("emonoisolate", "emultiisolate")
 
 
+def _message(detail):
+    """BP_R0018 の文。いつ効く規則か（Monoisolate / Multiisolate のときだけ）と直し方を入れる（2026-10-22）。
+
+    「Taxonomy should be species or infraspecific level.」だけだと、Multi-species と Other 以外で
+    効く規則と読まれたため。Dway の保存時チェック（species_level_error）と同じ内容。
+    """
+    return ("For a Monoisolate or Multiisolate project, taxonomy should be at the species or infraspecific level "
+            f"({detail}). Use the species name or change the sample scope.")
+
+
 class BP_R0018(BpRule):
     """sample_scope が eMonoisolate / eMultiisolate のとき、taxonomy が species 以下であること。
 
@@ -33,7 +43,7 @@ class BP_R0018(BpRule):
     rule_id = "BP_R0018"
     level = "error"
     target = "sample_scope, taxonomy_id"
-    description = "Taxonomy should be species or infraspecific level."
+    description = "For a Monoisolate or Multiisolate project, taxonomy should be at the species or infraspecific level."
     requires_network = True
 
     def validate(self, submission, context):
@@ -48,12 +58,12 @@ class BP_R0018(BpRule):
             if tinfo is not None:
                 if tinfo.get("is_species_or_below") is False:
                     out.append(self.result(sample=rec.label,
-                                           message=f"Taxonomy should be species or infraspecific level. (taxonomy_id: '{taxid}', rank: '{tinfo.get('rank')}')"))
+                                           message=_message(f"taxonomy_id: '{taxid}', rank: '{tinfo.get('rank')}'")))
                 continue
             info = context.tax_data.get(rec.organism_name)
             if tax_rank_invalid(info):
                 out.append(self.result(sample=rec.label,
-                                       message=f"Taxonomy should be species or infraspecific level. (organism: '{rec.organism_name}', rank: '{info.get('rank')}')"))
+                                       message=_message(f"organism: '{rec.organism_name}', rank: '{info.get('rank')}'")))
         return out
 
 
