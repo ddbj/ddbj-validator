@@ -6,7 +6,7 @@ from common.rules.base import BaseRule
 from apps.ddbj.rules.division_datatype import get_active_divisions
 from apps.ddbj.autofix.format import _VALID_METHOD_PATTERN, _FIX_METHOD_PATTERN
 from collections import defaultdict
-from apps.ddbj.utils.location import get_introns_from_join, crosses_origin
+from apps.ddbj.utils.location import get_introns_from_join, crosses_origin, is_origin_junction
 from apps.ddbj.utils.features import is_pseudogene
 from common.jst import today as jst_today
 from common.db_taxonomy import get_expected_transl_table, tax_rank_invalid
@@ -2792,6 +2792,104 @@ class ANN2545(BaseRule):
                     
         return results
                 
+class ANN2552(BaseRule):
+    """locus_tag が同じ CDS と mRNA の location の整合（2026-10-23）。
+
+    - 向き: 同じ locus_tag の CDS と mRNA は全部同じ strand であること。1 組でも違えば、その CDS の行に出す。
+      trans_splicing などで strand が混在する location（Biopython の strand が None）は向きを比べない。
+    - 範囲: 各 CDS の両端が、同じ locus_tag の mRNA のどれか 1 本の両端の内側にあること。
+      選択的スプライシングで mRNA が複数あっても、どれとペアかは推測しない（1 本に収まればよい）。
+    - 内部の境界（エクソン構造）は比べない（ANN2556 の範囲）。ribosomal_slippage / trans_splicing も対象。
+    - mRNA が無い locus_tag は対象外。
+    - circular 配列で origin を跨ぐ join(n..L,1..m) は、origin より後ろの部分に L を足して直線化して比べる。
+    """
+    rule_id = "ANN2552"
+    alternate_id = ""
+    target = "feature"
+    description = ("CDS and mRNA features with the same locus_tag must be on the same strand, "
+                   "and each CDS must lie within the span of an mRNA with that locus_tag.")
+    requires_rdb = False
+    is_file_level = False
+
+    @staticmethod
+    def _span(location, seq_len, circular):
+        """location の範囲を 0-based 半開区間 (start, end) で返す。
+
+        circular で origin を跨ぐ join は、origin より後ろ（1 塩基目側）の parts に seq_len を足して
+        直線化する（end が seq_len を超える）。parser は minus 鎖の parts を逆順に並べるので、
+        plus は継ぎ目より後ろ、minus は継ぎ目より前の parts が 1 塩基目側になる。
+        """
+        parts = getattr(location, "parts", [location])
+        ivs = [(int(p.start), int(p.end)) for p in parts]
+        if circular and seq_len:
+            for i in range(len(parts) - 1):
+                if is_origin_junction(parts[i], parts[i + 1], seq_len):
+                    shifted = range(i + 1, len(parts)) if parts[i].strand != -1 else range(0, i + 1)
+                    for k in shifted:
+                        ivs[k] = (ivs[k][0] + seq_len, ivs[k][1] + seq_len)
+                    break
+        return min(s for s, _ in ivs), max(e for _, e in ivs)
+
+    @staticmethod
+    def _within(cds_span, mrna_span, seq_len, circular):
+        """CDS の範囲が mRNA の範囲に収まるか。circular では origin を跨ぐ mRNA の 1 塩基目側も見る。"""
+        cs, ce = cds_span
+        ms, me = mrna_span
+        if ms <= cs and ce <= me:
+            return True
+        return bool(circular and seq_len) and ms <= cs + seq_len and ce + seq_len <= me
+
+    @staticmethod
+    def _strand_name(strand):
+        return {1: "plus", -1: "minus"}.get(strand, "mixed")
+
+    def validate(self, record, context):
+        results = []
+        if record.id == "COMMON":
+            return results
+        circular = record.id in context.circular_ids
+        seq_len = len(record.seq) if record.seq else 0
+
+        mrna_by_lt = defaultdict(list)
+        for feature in self.get_features(record, "mRNA"):
+            if feature.location is None:
+                continue
+            for lt in feature.qualifiers.get("locus_tag", []):
+                mrna_by_lt[lt].append(feature)
+
+        for cds in self.get_features(record, "CDS"):
+            if cds.location is None:
+                continue
+            for lt in cds.qualifiers.get("locus_tag", []):
+                mrnas = mrna_by_lt.get(lt)
+                if not mrnas:
+                    continue  # mRNA が無い locus_tag は対象外
+
+                # 向き: strand が混在する location（None）は比べない
+                c_strand = cds.location.strand
+                diff = sorted({m.location.strand for m in mrnas
+                               if c_strand is not None and m.location.strand is not None
+                               and m.location.strand != c_strand})
+                if diff:
+                    results.append(self.feature_result(
+                        record, cds,
+                        f"CDS and mRNA features with the same locus_tag are on different strands: locus_tag:{lt} "
+                        f"(CDS: {self._strand_name(c_strand)}, mRNA: {self._strand_name(diff[0])})",
+                        level="warning"))
+
+                # 範囲: どれか 1 本の mRNA に収まればよい
+                c_span = self._span(cds.location, seq_len, circular)
+                m_spans = [self._span(m.location, seq_len, circular) for m in mrnas]
+                if not any(self._within(c_span, ms, seq_len, circular) for ms in m_spans):
+                    shown = ", ".join(f"{s + 1}..{e}" for s, e in m_spans)
+                    results.append(self.feature_result(
+                        record, cds,
+                        f"CDS is not within the span of any mRNA with the same locus_tag: locus_tag:{lt} "
+                        f"(CDS: {c_span[0] + 1}..{c_span[1]}, mRNA: {shown})",
+                        level="warning"))
+        return results
+
+
 class ANN2555(BaseRule):
     rule_id = "ANN2555"
     alternate_id = "SVP0200"

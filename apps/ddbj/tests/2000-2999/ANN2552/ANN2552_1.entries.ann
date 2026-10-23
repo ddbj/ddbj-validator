@@ -1,0 +1,138 @@
+COMMON	SUBMITTER		ab_name	Mishima,H.
+			contact	Hanako Mishima
+			email	mishima@ddbj.nig.ac.jp
+			institute	National Institute of Genetics
+			department	DNA Data Bank of Japan
+			country	Japan
+			state	Shizuoka
+			city	Mishima
+			street	Yata 1111
+			zip	411-8540
+	REFERENCE		title	Test
+			ab_name	Mishima,H.
+			year	2026
+			status	Unpublished
+seqA	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	101..1200	locus_tag	LTA
+			note	ANN2552 pass CDS inside mRNA with UTRs
+	CDS	151..1101	locus_tag	LTA
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+seqB	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	join(101..300,501..900)	locus_tag	LTB
+			note	ANN2552 pass CDS identical to mRNA
+	CDS	join(101..300,501..900)	locus_tag	LTB
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+seqC	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	101..700	locus_tag	LTC
+			note	ANN2552 pass two mRNAs, CDS within the second only
+	mRNA	301..1200	locus_tag	LTC
+	CDS	401..1100	locus_tag	LTC
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+seqD	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	101..800	locus_tag	LTD
+			note	ANN2552 pass ribosomal_slippage CDS within mRNA (checked)
+	CDS	join(101..400,400..699)	locus_tag	LTD
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+			ribosomal_slippage	
+seqE	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	101..1200	locus_tag	LTX
+			note	ANN2552 pass CDS locus_tag has no mRNA
+	CDS	151..1101	locus_tag	LTE
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+seqF	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	complement(101..1200)	locus_tag	LTF
+			note	ANN2552 pass both minus strand, CDS inside
+	CDS	complement(151..1101)	locus_tag	LTF
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+seqG	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	join(101..300,501..900)	locus_tag	LTG
+			note	ANN2552 pass internal exon boundaries differ but inside (not checked here)
+	CDS	join(151..250,601..801)	locus_tag	LTG
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+seqH	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	101..1200	locus_tag	LTH
+			note	ANN2552 fail CDS 3' end beyond mRNA
+	CDS	151..1300	locus_tag	LTH
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+seqI	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	complement(101..1200)	locus_tag	LTI
+			note	ANN2552 fail strand differs
+	CDS	151..1101	locus_tag	LTI
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+seqJ	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	101..700	locus_tag	LTJ
+			note	ANN2552 fail two mRNAs, CDS within neither
+	mRNA	301..900	locus_tag	LTJ
+	CDS	151..851	locus_tag	LTJ
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+seqK	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	101..800	locus_tag	LTK
+			note	ANN2552 fail ribosomal_slippage CDS starts before mRNA
+	CDS	join(51..400,400..699)	locus_tag	LTK
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+			ribosomal_slippage	
+seqL	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	<101..>1200	locus_tag	LTL
+			note	ANN2552 fail partial CDS starts before partial mRNA
+	CDS	<90..1100	locus_tag	LTL
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
