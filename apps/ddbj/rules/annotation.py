@@ -2796,11 +2796,12 @@ class ANN2552(BaseRule):
     """locus_tag が同じ CDS と mRNA の location の整合（2026-10-23）。
 
     - 向き: 同じ locus_tag の CDS と mRNA は全部同じ strand であること。1 組でも違えば、その CDS の行に出す。
-      trans_splicing などで strand が混在する location（Biopython の strand が None）は向きを比べない。
+      strand が混在する location（Biopython の strand が None）は向きを比べない。
     - 範囲: 各 CDS の両端が、同じ locus_tag の mRNA のどれか 1 本の両端の内側にあること。
       選択的スプライシングで mRNA が複数あっても、どれとペアかは推測しない（1 本に収まればよい）。
-    - 内部の境界（エクソン構造）は比べない（ANN2556 の範囲）。ribosomal_slippage / trans_splicing も対象。
-    - mRNA が無い locus_tag は対象外。
+    - 内部の境界（エクソン構造）は比べない（ANN2556 の範囲）。ribosomal_slippage は対象。
+    - 対象外: mRNA が無い locus_tag。CDS か、同じ locus_tag の mRNA のどれかに trans_splicing がある場合
+      （別の転写産物をつなぐので、向きも範囲も 1 本の mRNA と揃わないことがある。2026-10-23）。
     - circular 配列で origin を跨ぐ join(n..L,1..m) は、origin より後ろの部分に L を足して直線化して比べる。
     """
     rule_id = "ANN2552"
@@ -2864,6 +2865,8 @@ class ANN2552(BaseRule):
                 mrnas = mrna_by_lt.get(lt)
                 if not mrnas:
                     continue  # mRNA が無い locus_tag は対象外
+                if "trans_splicing" in cds.qualifiers or any("trans_splicing" in m.qualifiers for m in mrnas):
+                    continue  # trans_splicing は対象外
 
                 # 向き: strand が混在する location（None）は比べない
                 c_strand = cds.location.strand
