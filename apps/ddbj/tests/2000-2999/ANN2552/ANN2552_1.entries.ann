@@ -136,3 +136,25 @@ seqL	source	1..1500	organism	Mus musculus
 			transl_table	1
 			codon_start	1
 			product	hypothetical protein
+seqM	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	101..1200	locus_tag	LTM
+			note	ANN2552 pass trans_splicing on CDS excluded (CDS outside mRNA)
+	CDS	join(51..300,complement(801..1100))	locus_tag	LTM
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+			trans_splicing	
+seqN	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	complement(101..1200)	locus_tag	LTN
+			note	ANN2552 pass trans_splicing on mRNA excluded (strand differs)
+			trans_splicing	
+	CDS	151..1101	locus_tag	LTN
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
