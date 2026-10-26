@@ -3176,6 +3176,10 @@ class ANN2570(BaseRule):
                     if not val: warnings.append("must not be empty")
                     else:
                         if v_lower == "plasmid": warnings.append("'plasmid' is not allowed")
+                        # "plasmid pEC332_01" のような接頭辞付きも検出する（CONST-1142）。大文字小文字は区別しない。
+                        # 値そのものが "megaplasmid" の場合は下の 'p' 始まり検査と同様に許容する。
+                        elif "plasmid" in v_lower and v_lower != "megaplasmid":
+                            warnings.append("must not contain 'plasmid'")
                         if "/" in val: warnings.append("must not contain a slash ('/')")
                         if not val.startswith("p") and v_lower != "megaplasmid":
                             warnings.append("should start with lowercase 'p'")
@@ -3185,6 +3189,59 @@ class ANN2570(BaseRule):
                         res = self.feature_result(record, feature, msg, level="warning", qualifier="plasmid", entry=entry_id)
                         results.append(res)
         return results
+
+class ANN2575(BaseRule):
+    """ファイル内で /chromosome・/plasmid の名前が重複していないかを調べる（CONST-1142）。
+
+    アセンブリ登録の chromosome.txt では chromosome 名と plasmid 名が同じ列
+    （CHROMOSOME_NAME）に並び、名前が重複すると登録エラーになる。そのため
+    chromosome と plasmid を 1 つの名前空間として扱い、どちらの qualifier 同士でも
+    （chromosome "1" と plasmid "1" のように種類をまたいでも）重複とみなす。
+    - 比較は前後の空白を除いた値の完全一致（大文字小文字は区別する）。
+    - 判定単位は 1 つの ann ファイル。COMMON テンプレート（source 1..E）から全 entry へ
+      複製された source（from_common）は、ファイル上の記載が 1 か所なので数えない。
+    - 同じ entry 内で同じ値が複数回出ても 1 回と数える（1 source 内の複数記載は ANN3190 の対象）。
+    - 重複した値を持つ source それぞれに warning を出し、相手の entry をメッセージに示す。
+    """
+    rule_id = "ANN2575"
+    alternate_id = "V200"
+    target = "feature"
+    description = "Duplicate chromosome or plasmid names within the submission."
+    requires_rdb = False
+    is_file_level = True
+
+    _target_qualifiers = ("chromosome", "plasmid")
+
+    def validate_file(self, records, context, ann_path=None, seq_path=None):
+        results = []
+        # 名前 -> [(record, feature, qualifier名), ...]（出現順）
+        name_registry = {}
+
+        for entry_id, record in records.items():
+            if entry_id == "COMMON":
+                continue
+            seen_in_entry = set()
+            for feature in self.get_features(record, "source"):
+                if getattr(feature, "from_common", False):
+                    continue
+                for q_name in self._target_qualifiers:
+                    for raw_value in feature.qualifiers.get(q_name, []):
+                        name = (raw_value or "").strip()
+                        if not name or name in seen_in_entry:
+                            continue
+                        seen_in_entry.add(name)
+                        name_registry.setdefault(name, []).append((record, feature, q_name))
+
+        for name, occurrences in name_registry.items():
+            if len(occurrences) < 2:
+                continue
+            for record, feature, q_name in occurrences:
+                others = [r.id for r, _f, _q in occurrences if r is not record]
+                msg = f"{self.description} ('{name}' is also used in {', '.join(others)})"
+                results.append(self.feature_result(record, feature, msg, level="warning", qualifier=q_name))
+
+        return results
+
 
 class ANN2580(BaseRule):
     rule_id = "ANN2580"

@@ -133,6 +133,7 @@ class Validator:
             ANN2556(), # [WARNING] mRNA exon is not present in paired CDS
             ANN2560(), # [ERROR] Invalid chromosome name
             ANN2570(), # [ERROR] Invalid plasmid name
+            ANN2575(), # [WARNING] Duplicate chromosome or plasmid names within the submission
             ANN2580(), # [WARNING] Partial rRNA feature annotated by DFAST
             ANN2590(), # [ERROR] Complement CDS/mRNA/tRNA/rRNA features in TSA
             ANN2594(), # [ERROR] Multiple CDS features are not permitted in TSA entries
