@@ -79,3 +79,100 @@ def test_no_pair_is_marked_done_without_running(tmp_path):
 def test_has_pair_extensions():
     assert av.has_pair([("x.ann.txt", 1, 0), ("x.fa", 1, 0)])
     assert not av.has_pair([("x.ann.txt", 1, 0)])
+
+
+# --- autofix の有無の記録（2026-10-27）---
+# validator は autofix 提案があるときだけ reports/autofix_confirmation_summary.txt を書く。
+# その有無を .validator.done・validator.log・cron ログに出す。
+
+_SUMMARY = """=== Auto-Fix Confirmation ===
+
+[ Target: collection_date ]
+  ANN1130_1.fail
+    1 entry, 1 feature, 1 qualifier: '2019-01-01' -> '2020-01-01' (SAMD00133774) [Rule: ANN1130]
+  ANN1130_4.fail
+    1 entry, 1 feature, 1 qualifier: '2019-01-01' -> '2020-01-01' (SAMD00133774) [Rule: ANN1130]
+
+[ Target: ecotype ]
+  ANN1130_1.fail
+    1 entry, 1 feature, 1 qualifier: 'none' -> 'Col-0' (SAMD00133774) [Rule: ANN1130]
+"""
+
+
+def _write_summary(out, text=_SUMMARY, mtime=None):
+    p = out / av.CONFIRMATION_REPORT
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(text)
+    if mtime is not None:
+        os.utime(p, (mtime, mtime))
+
+
+def test_autofix_result_counts_change_lines(tmp_path):
+    _write_summary(tmp_path)
+    assert av.autofix_result(tmp_path, 0) == (True, 3)
+
+
+def test_autofix_result_none_when_no_summary(tmp_path):
+    assert av.autofix_result(tmp_path, 0) == (False, 0)
+
+
+def test_autofix_result_ignores_summary_from_previous_run(tmp_path):
+    # 印を消して再実行したとき、前回の確認サマリーを今回の autofix と数えない
+    _write_summary(tmp_path, mtime=OLD)
+    assert av.autofix_result(tmp_path, int(time.time()) - 10) == (False, 0)
+
+
+def test_autofix_message():
+    assert av.autofix_message({"autofix": False, "autofix_changes": 0}) == "autofix=none"
+    assert av.autofix_message({"autofix": None, "autofix_changes": None}) == "autofix=unknown"
+    assert av.autofix_message({"autofix": True, "autofix_changes": 1}) == \
+        "autofix=applied (1 change, see reports/autofix_confirmation_summary.txt)"
+    assert av.autofix_message({"autofix": True, "autofix_changes": 3}).startswith("autofix=applied (3 changes,")
+
+
+def _fake_validator(write_summary):
+    """subprocess.run の代わり。-o の出力 dir に、必要なら確認サマリーを書く。"""
+    def run(cmd, stdout=None, **kw):
+        out = Path(cmd[cmd.index("-o") + 1])
+        stdout.write("validator output\n")
+        if write_summary:
+            _write_summary(out)
+        return type("P", (), {"returncode": 0})()
+    return run
+
+
+def test_run_one_records_autofix_applied(tmp_path, monkeypatch, capsys):
+    d = _upload(tmp_path, "NSUB000001", "20261023-100000")
+    monkeypatch.setattr(av.subprocess, "run", _fake_validator(write_summary=True))
+    rec = av.run_one(d, _out(tmp_path), jobs=1, timeout_sec=10)
+    out = av.out_dir_for(_out(tmp_path), d)
+    done = json.loads((out / av.DONE_MARK).read_text())
+    assert (done["autofix"], done["autofix_changes"]) == (True, 3)
+    assert rec["autofix"] is True
+    assert (out / av.RUN_LOG).read_text().endswith(
+        "[auto_validate_uploads] autofix=applied (3 changes, see reports/autofix_confirmation_summary.txt)\n")
+    assert "autofix=applied (3 changes" in capsys.readouterr().out
+
+
+def test_run_one_records_no_autofix(tmp_path, monkeypatch, capsys):
+    d = _upload(tmp_path, "NSUB000001", "20261023-100000")
+    monkeypatch.setattr(av.subprocess, "run", _fake_validator(write_summary=False))
+    av.run_one(d, _out(tmp_path), jobs=1, timeout_sec=10)
+    out = av.out_dir_for(_out(tmp_path), d)
+    done = json.loads((out / av.DONE_MARK).read_text())
+    assert (done["autofix"], done["autofix_changes"]) == (False, 0)
+    assert (out / av.RUN_LOG).read_text().endswith("[auto_validate_uploads] autofix=none\n")
+    assert "autofix=none" in capsys.readouterr().out
+
+
+def test_run_one_timeout_autofix_unknown(tmp_path, monkeypatch):
+    d = _upload(tmp_path, "NSUB000001", "20261023-100000")
+
+    def run(cmd, **kw):
+        raise av.subprocess.TimeoutExpired(cmd, 1)
+    monkeypatch.setattr(av.subprocess, "run", run)
+    av.run_one(d, _out(tmp_path), jobs=1, timeout_sec=1)
+    out = av.out_dir_for(_out(tmp_path), d)
+    done = json.loads((out / av.DONE_MARK).read_text())
+    assert done["status"] == "timeout" and done["autofix"] is None
+    assert (out / av.RUN_LOG).read_text().endswith("[auto_validate_uploads] autofix=unknown\n")

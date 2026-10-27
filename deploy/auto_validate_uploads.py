@@ -27,6 +27,8 @@ mss form で登録者から見えてしまうため（2026-10-23）。結果も�
 実行内容: `<repo>/.venv/bin/python <repo>/main.py ddbj -f -j 2 -o <出力dir> <日時dir>`（内部 DB モード）。
 -o なので reports/ fixed/ aa/ と作業用の .val_tmp はすべて出力 dir にできる。
 validator の標準出力・エラーは <出力dir>/validator.log に残す。
+autofix の有無は reports/autofix_confirmation_summary.txt（validator が提案ありのときだけ書く）で判定し、
+.validator.done の "autofix" / "autofix_changes"、validator.log の末尾、cron ログの [DONE] 行に出す（2026-10-27）。
 出力は umask 027（dir 750 / file 640）で作る。
 """
 import argparse
@@ -54,6 +56,8 @@ DISABLE_MARK = "disable-upload"
 RUNNING_MARK = ".validator.running"
 DONE_MARK = ".validator.done"
 RUN_LOG = "validator.log"
+# validator（apps/ddbj/autofix/manager.py）が autofix 提案ありのときだけ書く確認サマリー
+CONFIRMATION_REPORT = Path("reports") / "autofix_confirmation_summary.txt"
 
 
 def log(msg):
@@ -135,6 +139,33 @@ def find_candidates(root, out_root, since, quiet_sec, now=None):
     return found
 
 
+def autofix_result(out, since_ts):
+    """出力 dir の確認サマリーから autofix の有無と変更行数を返す: (applied, changes)。
+
+    確認サマリーは提案が 1 件以上あるときだけ validator が書く。印を消して再実行した場合に
+    前回のファイルを数えないよう、since_ts（今回の実行開始時刻）以降に書かれたものだけを見る。
+    changes は「'旧値' -> '新値'」の行（4 字下げ）の数。ファイル × 値の組み合わせごとに 1 行。
+    """
+    path = out / CONFIRMATION_REPORT
+    try:
+        if path.stat().st_mtime < since_ts:
+            return False, 0
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except FileNotFoundError:
+        return False, 0
+    return True, sum(1 for ln in lines if ln.startswith("    ") and ln.strip())
+
+
+def autofix_message(rec):
+    """ログ用の autofix 表示。実行できなかった（timeout 等）ときは unknown。"""
+    if rec.get("autofix") is None:
+        return "autofix=unknown"
+    if rec["autofix"]:
+        n = rec["autofix_changes"]
+        return f"autofix=applied ({n} change{'' if n == 1 else 's'}, see {CONFIRMATION_REPORT})"
+    return "autofix=none"
+
+
 def write_json(path, data):
     tmp = path.with_name(path.name + ".tmp")
     tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n")
@@ -172,10 +203,17 @@ def run_one(upload_dir, out_root, jobs, timeout_sec, dry_run=False):
             rec.update(status="done", exit_code=p.returncode)
         except subprocess.TimeoutExpired:
             rec.update(status="timeout", exit_code=None)
+        # autofix の有無。validator が最後まで走ったときだけ判定する（timeout 時は不明 = None）
+        if rec["status"] == "done":
+            applied, changes = autofix_result(out, int(t0))
+            rec.update(autofix=applied, autofix_changes=changes)
+        else:
+            rec.update(autofix=None, autofix_changes=None)
+        fh.write(f"\n[auto_validate_uploads] {autofix_message(rec)}\n")
     rec.update(end=datetime.now().isoformat(timespec="seconds"), elapsed_sec=round(time.time() - t0))
     write_json(out / DONE_MARK, rec)
     (out / RUNNING_MARK).unlink(missing_ok=True)
-    log(f"[{rec['status'].upper()}] {upload_dir} exit={rec['exit_code']} {rec['elapsed_sec']}s")
+    log(f"[{rec['status'].upper()}] {upload_dir} exit={rec['exit_code']} {rec['elapsed_sec']}s {autofix_message(rec)}")
     return rec
 
 
