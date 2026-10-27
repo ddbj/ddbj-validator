@@ -3337,6 +3337,9 @@ class ANN2600(BaseRule):
             return results
 
         for feature in self.get_features(record, "rRNA"):
+            # location を読めなかった feature（ANN2020 で報告済み、location=None）は長さを測れないので飛ばす
+            if feature.location is None:
+                continue
             loc_str = getattr(feature, 'original_location', str(feature.location))
             # 不完全なLocationは長さチェックをスキップ
             if "<" in loc_str or ">" in loc_str:
@@ -3389,6 +3392,9 @@ class ANN2610(BaseRule):
         max_len = bounds.get("max")
 
         for feature in self.get_features(record, "tRNA"):
+            # location を読めなかった feature（ANN2020 で報告済み、location=None）は長さを測れないので飛ばす
+            if feature.location is None:
+                continue
             length = len(feature.location)
             if (min_len is not None and length < min_len) or (max_len is not None and length > max_len):
                 msg = f"{self.description} ({length} bp, expected: {min_len}-{max_len} bp)"
@@ -3415,6 +3421,9 @@ class ANN2620(BaseRule):
         max_len = bounds.get("max")
 
         for feature in self.get_features(record, "tmRNA"):
+            # location を読めなかった feature（ANN2020 で報告済み、location=None）は長さを測れないので飛ばす
+            if feature.location is None:
+                continue
             length = len(feature.location)
             if (min_len is not None and length < min_len) or (max_len is not None and length > max_len):
                 msg = f"{self.description} ({length} bp, expected: {min_len}-{max_len} bp)"
@@ -3583,7 +3592,8 @@ class ANTICODON_VALIDATOR(BaseRule):
         code_to_aa["X"] = "Xaa"
 
         for feature in self.get_features(record, "tRNA"):
-            if "anticodon" in feature.qualifiers:
+            # location を読めなかった feature（ANN2020 で報告済み、location=None）は配列を取り出せないので飛ばす
+            if "anticodon" in feature.qualifiers and feature.location is not None:
                 trna_seq = feature.extract(record.seq)
                 trna_len = len(trna_seq)
 
@@ -4355,7 +4365,8 @@ class ANN5220(BaseRule):
             est_len = feature.qualifiers.get("estimated_length", [])
             
             # リストが空でなく、値が "unknown" であるかチェック
-            if est_len and est_len[0] == "unknown":
+            # location を読めなかった feature（ANN2020 で報告済み、location=None）は長さを測れないので飛ばす
+            if est_len and est_len[0] == "unknown" and feature.location is not None:
                 length = len(feature.location)
                 if length > 1000:
                     start, end = feature.location.start + 1, feature.location.end
@@ -4378,7 +4389,8 @@ class ANN5230(BaseRule):
         
         for feature in self.get_features(record, "assembly_gap"):
             est_len = feature.qualifiers.get("estimated_length", [])
-            if est_len and est_len[0] == "unknown":
+            # location を読めなかった feature（ANN2020 で報告済み、location=None）は長さを測れないので飛ばす
+            if est_len and est_len[0] == "unknown" and feature.location is not None:
                 unknown_gap_lengths.add(len(feature.location))
         
         if len(unknown_gap_lengths) > 1:
@@ -4406,7 +4418,8 @@ class ANN5240(BaseRule):
         
         for feature in self.get_features(record, "assembly_gap"):
             est_len = feature.qualifiers.get("estimated_length", [])
-            if est_len and est_len[0] != "unknown":
+            # location を読めなかった feature（ANN2020 で報告済み、location=None）は長さを測れないので飛ばす
+            if est_len and est_len[0] != "unknown" and feature.location is not None:
                 known_gap_lengths.add(len(feature.location))
                 known_gap_count += 1
                     
