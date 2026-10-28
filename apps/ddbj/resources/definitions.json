@@ -4933,6 +4933,10 @@
     "Coverage": {
       "qualifier_type": "metadata_field"
     },
+    "Diploid": {
+      "qualifier_type": "metadata_field",
+      "max_length": 256
+    },
     "status": {
       "qualifier_type": "metadata_field",
       "allowed_values": [
