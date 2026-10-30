@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BioSampleSet>
+  <BioSample access="public">
+    <Ids><Id namespace="BioSample" is_primary="1">SAMD00000001</Id></Ids>
+    <Description>
+      <SampleName>S1</SampleName>
+      <Title>E. coli K-12 from soil</Title>
+      <Organism taxonomy_id="562"><OrganismName>Escherichia coli</OrganismName></Organism>
+    </Description>
+    <Owner><Name>BSI</Name><Contacts><Contact email="test1@ddbj.nig.ac.jp"><Name><First>Hanako</First><Last>Mishima</Last></Name></Contact></Contacts></Owner>
+    <Models><Model>Microbe</Model></Models>
+    <Attributes>
+        <Attribute attribute_name="sample_name">S1</Attribute>
+        <Attribute attribute_name="strain">K-12</Attribute>
+        <Attribute attribute_name="isolate">missing</Attribute>
+        <Attribute attribute_name="isolation_source">isolation source of soil</Attribute>
+        <Attribute attribute_name="sample_type">cell culture</Attribute>
+        <Attribute attribute_name="collection_date">2020-06-30</Attribute>
+        <Attribute attribute_name="geo_loc_name">Japan:Tsukuba</Attribute>
+        <Attribute attribute_name="smoker">smoker</Attribute>
+        <Attribute attribute_name="treatment">treatment</Attribute>
+    </Attributes>
+  </BioSample>
+</BioSampleSet>
