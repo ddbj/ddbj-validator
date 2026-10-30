@@ -4,6 +4,7 @@
 - BS_R0040: collection_date が未来日
 - BS_R0009: lat_lon の形式不正
 - BS_R0093: 整数であるべき属性が非整数（taxonomy_id, host_spec_range, host_taxid, num_replicons）
+- BS_R0146: 属性名をそのまま値に書いている（isolate に "isolate" など）
 missing 値（not collected / not applicable / missing[: term]）は値検証の対象外（別ルールで扱う）。
 """
 import datetime
@@ -238,4 +239,62 @@ class BS_R0093(BsRule):
                     out.append(self.result(sample=rec.sample_id, target=name,
                                            attribute=name, old_value=v,
                                            message=f"Attribute value must be integer. ({name}: '{v}')"))
+        return out
+
+
+# BS_R0146 の対象のうち、パッケージによらず常に見る主要属性（TSV の前方に来る固定・準固定と主要な必須属性）。
+# これにそのサンプルのパッケージの mandatory / either_one_mandatory 属性を加えて対象にする。
+_SELF_NAMED_MAIN_ATTRS = (
+    "sample_name", "sample_title", "description", "organism", "taxonomy_id", "bioproject_id",
+    "locus_tag_prefix", "strain", "isolate", "breed", "cultivar", "ecotype", "isolation_source",
+    "host", "lab_host", "age", "dev_stage", "tissue", "sex", "biomaterial_provider", "sample_type",
+    "collection_date", "geo_loc_name", "lat_lon", "env_broad_scale", "env_local_scale", "env_medium",
+    "depth", "elev", "altitude", "isol_growth_condt", "propagation", "ref_biomaterial",
+    "num_replicons", "collected_by", "host_disease", "metagenome_source", "derived_from",
+)
+
+_SELF_NAME_SEP_RE = re.compile(r"[\s_\-]+")
+
+
+def _self_name_key(s):
+    """属性名と値の比較キー。大文字小文字と _・空白・- の違いを無視する（連続は 1 つにまとめる）。"""
+    return _SELF_NAME_SEP_RE.sub(" ", str(s).strip().lower()).strip()
+
+
+class BS_R0146(BsRule):
+    """属性名をそのまま値に書いた登録を検出する（2026-10-30 追加）。
+
+    isolate に "isolate"、isolation_source に "isolation source" のように、TSV の見出しを
+    値として写した登録があった。BioSample DB でも cultivar / breed / isolate などで
+    数千サンプルに同じ書き方があり、いずれも情報を持たない。
+    値全体が属性名と一致する場合だけを対象にする（"non_smoker" は smoker に一致しない）。
+    smoker（喫煙者）や treatment（処理群）は値として正当に使われるが、主要属性にも
+    どのパッケージの必須・選択必須にも入らないので対象外になる。
+    """
+    rule_id = "BS_R0146"
+    level = "error"
+    target = "#attributes"
+    description = "Attribute value is the same as the attribute name."
+
+    def validate(self, submission, context):
+        out = []
+        for rec in submission.records:
+            uses = context.attribute_uses(rec.package) if rec.package else {}
+            targets = set(_SELF_NAMED_MAIN_ATTRS) | {
+                n for n, u in uses.items() if u in ("mandatory", "either_one_mandatory")}
+            checked = {n: vals for n, vals in rec.attributes.items() if n in targets}
+            # XML では Description 側にだけ書かれる固定属性も見る
+            extra = {"sample_name": rec.sample_name, "sample_title": rec.title, "organism": rec.organism}
+            for name, v in extra.items():
+                if v:
+                    checked.setdefault(name, [v])
+            for name in sorted(checked):
+                key = _self_name_key(name)
+                for v in checked[name]:
+                    if not v or is_missing_value(v) or _self_name_key(v) != key:
+                        continue
+                    out.append(self.result(
+                        sample=rec.sample_id, target=name, attribute=name, old_value=v,
+                        message=("Attribute value is the same as the attribute name. "
+                                 f"Provide the actual value or a missing value. ({name}: '{v}')")))
         return out

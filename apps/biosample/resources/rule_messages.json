@@ -98,5 +98,6 @@
   "BS_R0141": "Organism names containing 'uncultured' cannot be used for Metagenome-assembled Genome Sequences (MIMAG) package.",
   "BS_R0142": "HTML markup is not allowed in metadata; remove HTML tags.",
   "BS_R0143": "Sample name is duplicated in the submission.",
-  "BS_R0144": "The number of samples in a submission must not exceed 1,000. Please split your submission."
+  "BS_R0144": "The number of samples in a submission must not exceed 1,000. Please split your submission.",
+  "BS_R0146": "Attribute value is the same as the attribute name. Provide the actual value or a missing value."
 }
