@@ -13,6 +13,8 @@ class ENTRY_CONSISTENCY_VALIDATOR(BaseRule):
     target = "file"
     description = "Check consistency of entry names, counts, and order between FASTA and ANN files"
     requires_rdb = False
+    # ann のエントリと FASTA の突合なので --common-only では行わない
+    requires_entries = True
     is_file_level = True
 
     def validate_file(self, records, context, ann_path=None, seq_path=None, ann_lines=None,

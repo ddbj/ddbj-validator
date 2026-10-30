@@ -27,6 +27,9 @@ def _build_parser():
     parser.add_argument("-w", "--web", action="store_true", help="NSSS (web submission) mode")
     parser.add_argument("--json", action="store_true", help="Output report as JSON (validation_report.json). -j is --jobs, not JSON")
     parser.add_argument("-f", "--force-fix", action="store_true", help="Automatically apply all auto-fixes without prompting")
+    # COMMON だけを検証（エントリ部・FASTA は読まない。FASTA が無くても実行できる。レポートのみで autofix しない）
+    parser.add_argument("--common-only", action="store_true",
+                        help="Validate only the COMMON entry of annotation files (entries and FASTA are not read; FASTA files are optional; report only, no auto-fix)")
     # 関連 BioSample を SSUB 単位の更新用 TSV として出力（内部使用のみ・要内部DB）
     parser.add_argument("-b", "--biosample", action="store_true", help="Generate SSUB-unit BioSample update TSV from DBLINK biosample accessions (internal use; requires internal DB)")
     # -f -b 時の同期方向（内部/テスト用）。ann2bs は「全 [b]（ann 値で BioSample を更新）」を非対話で再現する。
@@ -156,7 +159,7 @@ def _resolve_targets(args):
         for d in dirs:
             if not report_out_dir: report_out_dir = d
             
-            sub_pairs, file_errors = find_file_pairs(d)
+            sub_pairs, file_errors = find_file_pairs(d, require_fasta=not args.common_only)
             
             if file_errors:
                 for err in file_errors:
@@ -164,7 +167,10 @@ def _resolve_targets(args):
                 sys.exit(1)
 
             if not sub_pairs:
-                print(f"[FATAL] No matching ANN/FASTA file pairs found in '{d}'.", file=sys.stderr)
+                if args.common_only:
+                    print(f"[FATAL] No annotation files found in '{d}'.", file=sys.stderr)
+                else:
+                    print(f"[FATAL] No matching ANN/FASTA file pairs found in '{d}'.", file=sys.stderr)
                 sys.exit(1)
                 
             pairs.extend(sub_pairs)
@@ -218,7 +224,12 @@ def _resolve_targets(args):
                         ann_path = str(candidate)
                         break
             
-            if not ann_path or not seq_path:
+            if args.common_only:
+                # COMMON だけを見るので FASTA は不要。FASTA だけが指定された場合は対応する .ann が要る
+                if not ann_path:
+                    print(f"[FATAL] Corresponding annotation file not found for '{f}'.", file=sys.stderr)
+                    sys.exit(1)
+            elif not ann_path or not seq_path:
                 print(f"[FATAL] Corresponding paired file not found for '{f}'.", file=sys.stderr)
                 sys.exit(1)
             
@@ -248,6 +259,14 @@ def _run(args, pairs, report_out_dir, target_dirs_for_report, skip_db, skip_ncbi
         print("[WARN] Local mode or --skip-db is enabled. The --biosample (-b) option will be ignored.", file=sys.stderr)
         emit_biosample_tsv = False
 
+    # --common-only はレポートだけを出す（autofix・-b の TSV はエントリ部が要るので行わない）
+    if args.common_only:
+        if emit_biosample_tsv:
+            print("[WARN] --common-only is enabled. The --biosample (-b) option will be ignored.", file=sys.stderr)
+            emit_biosample_tsv = False
+        if args.force_fix:
+            print("[WARN] --common-only is enabled. The --force-fix (-f) option will be ignored.", file=sys.stderr)
+
     # NSUB = ann/fasta のサブミッションID（TSV ファイル名 SSUBID_NSUBID.txt に使用）。
     # 対象ディレクトリのパス／ann ファイル名から NSUB/DSUB を抽出する
     # （例: ".../NSUB003703/20260608/" や "20260608NSUB003703....ann" → "NSUB003703"）。
@@ -272,7 +291,7 @@ def _run(args, pairs, report_out_dir, target_dirs_for_report, skip_db, skip_ncbi
         skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=args.skip_auth,
         account_id=account_id, is_curator_mode=is_curator_mode,
         emit_biosample_tsv=emit_biosample_tsv, nsub=nsub,
-        biosample_apply=args.biosample_apply
+        biosample_apply=args.biosample_apply, common_only=args.common_only
     )
         
     import time
@@ -294,15 +313,17 @@ def _run(args, pairs, report_out_dir, target_dirs_for_report, skip_db, skip_ncbi
         # -o オプションがあればそれを最優先に、なければ対象ディレクトリに出力
         target_dir = report_out_dir if args.out_dir else (target_dirs_for_report[0] if target_dirs_for_report else Path(report_out_dir))
         reporter = ValidationReporter(out_dir=target_dir)
+        scope = "common_only" if args.common_only else None
         if args.json:
-            reporter.write_json_report(jsonl_paths, version=tool_version)
+            reporter.write_json_report(jsonl_paths, version=tool_version, scope=scope)
             report_files = ["validation_report.json"]
         else:
-            reporter.generate_report(jsonl_paths, print_console=True, start_time=start_time, end_time=end_time, version=tool_version)
+            reporter.generate_report(jsonl_paths, print_console=True, start_time=start_time, end_time=end_time, version=tool_version, scope=scope)
             report_files = ["validation_report_summary.txt", "validation_report_details.txt"]
 
-        # 3. Autofix の承認と適用
-        pipeline.run_autofix()
+        # 3. Autofix の承認と適用（--common-only はレポートのみ。fixed/ aa/ は作らない）
+        if not args.common_only:
+            pipeline.run_autofix()
 
         # --- 変更点: 表示用パスに reports ディレクトリを追加 ---
         reports_dir = target_dir / "reports"

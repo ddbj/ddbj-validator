@@ -14,6 +14,8 @@ class FASTA_FORMAT_VALIDATOR(BaseRule):
     target = "file"
     description = "Check FASTA sequence format"
     requires_rdb = False
+    # FASTA を読まない --common-only では行わない
+    requires_entries = True
     is_file_level = True
 
     def validate_file(self, records, context, ann_path=None, seq_path=None, fasta_content=None):

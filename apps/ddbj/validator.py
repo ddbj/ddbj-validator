@@ -22,12 +22,12 @@ class Validator:
         ctx = self.context
         
         # 【フェーズ1 & 2】フォーマットチェックと静的辞書ルール
-        self.active_rules.append(ENTRY_CONSISTENCY_VALIDATOR()) # [FATAL/ERROR] Entry count/name mismatch
-        self.active_rules.append(FASTA_FORMAT_VALIDATOR())      # [ERROR/WARNING] Missing FASTA definition line / Sequence not terminated by "//"
-        self.active_rules.append(DIV_TYPE_STATIC_VALIDATOR())   # [ERROR] DATATYPE static checks
-        self.active_rules.append(DIV_TYPE_DYNAMIC_VALIDATOR())  # [ERROR] Dynamic DATATYPE edge cases
-        
         available_rules = [
+            ENTRY_CONSISTENCY_VALIDATOR(), # [FATAL/ERROR] Entry count/name mismatch
+            FASTA_FORMAT_VALIDATOR(),      # [ERROR/WARNING] Missing FASTA definition line / Sequence not terminated by "//"
+            DIV_TYPE_STATIC_VALIDATOR(),   # [ERROR] DATATYPE static checks
+            DIV_TYPE_DYNAMIC_VALIDATOR(),  # [ERROR] Dynamic DATATYPE edge cases
+
             # 【フェーズ1続き】塩基配列文字やエントリ名のエラー
             SEQ0090(), # [ERROR] Invalid nucleotide code [#LETTER] at [#N] position
             ANN0160(), # [ERROR] Invalid entry name
@@ -213,6 +213,9 @@ class Validator:
             
             # 認証が必要なルールを、skip_auth 指定時にスキップ
             if ctx.skip_auth and getattr(rule, 'requires_auth', False):
+                continue
+            # エントリ部が要るルールは --common-only でスキップ
+            if ctx.common_only and getattr(rule, 'requires_entries', False):
                 continue
 
             self.active_rules.append(rule)

@@ -785,6 +785,103 @@ def run_e2e_tests(target_rule_id=None, mode="curator", skip_only=False, docker_i
         "confirmation_errors": confirmation_errors
     }
 
+# ==============================================================================
+# COMMON モード（--common-only の誤検出チェック）
+# ==============================================================================
+_RESULT_LINE_RE = re.compile(r'^([A-Z0-9_]+):(ERR|WAR|FAT|INFO|AUTO-CLEANUP):([^:]*):')
+_LINE_NO_RE = re.compile(r'Line\[(\d+)\]')
+
+
+def _common_result_keys(report_path):
+    """details レポートから {(file set, rule, level, entry, 行番号)} を返す。
+
+    メッセージ本文は比べない（DATATYPE 名の並び順や auto-cleanup の件数は
+    読む範囲で変わりうるため）。レポートが無ければ None。
+    """
+    if not report_path.exists():
+        return None
+    keys = set()
+    current = None
+    for line in report_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        m = re.match(r'^\d+\.\s+(.+)', line)
+        if m:
+            current = m.group(1)
+            continue
+        m = _RESULT_LINE_RE.match(line)
+        if current and m:
+            ln = _LINE_NO_RE.search(line)
+            keys.add((current, m.group(1), m.group(2), m.group(3), ln.group(1) if ln else ""))
+    return keys
+
+
+def run_common_only_tests(target_rule_id=None, use_pip=False, jobs=8):
+    """全 fixture を通常実行と --common-only で実行し、--common-only でだけ出る結果を不一致として数える。
+
+    --common-only は COMMON しか読まないので、出してよいのは通常実行でも出る結果だけ。
+    それ以外は「エントリが無いことによる誤検出」で、そのルールに requires_entries を付ける必要がある。
+    通常実行で出て --common-only で出ない結果（エントリ側の検査）は問題にしない。
+    内部 DB を使う既定モードで実行する（DB 依存ルールの誤検出も拾うため）。
+    """
+    import tempfile
+    from concurrent.futures import ThreadPoolExecutor
+
+    res = get_empty_result()
+    if use_pip:
+        cli = [str(project_root / ".venv" / "bin" / "ddbj-validator")]
+    else:
+        cli = [str(project_root / ".venv" / "bin" / "python"), str(project_root / "main.py"), "ddbj"]
+
+    target_dirs = []
+    for d in sorted(tests_dir.rglob("*")):
+        if not d.is_dir() or set(d.parts).intersection({".pytest_cache", "reports", "fixed", "aa", "expected", "__pycache__"}):
+            continue
+        rel = d.relative_to(tests_dir).parts
+        if rel and rel[0] == "biosample":
+            continue
+        if any(f.is_file() and f.name.endswith(".ann") for f in d.iterdir()):
+            target_dirs.append(d)
+    if target_rule_id:
+        rules = set(target_rule_id.split('-'))
+        target_dirs = [d for d in target_dirs if any(r in d.parts for r in rules)]
+
+    with tempfile.TemporaryDirectory(prefix="common_only_e2e_") as tmp:
+        tmp = Path(tmp)
+
+        def _run_one(idx_dir):
+            idx, d = idx_dir
+            outs = {}
+            for label, extra in (("normal", ["-f"]), ("common", ["--common-only"])):
+                out = tmp / f"{idx}_{label}"
+                subprocess.run(cli + extra + ["-j", "1", "-o", str(out), str(d)],
+                               stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                outs[label] = out / "reports" / "validation_report_details.txt"
+            return d, outs
+
+        with ThreadPoolExecutor(max_workers=jobs) as ex:
+            for d, outs in ex.map(_run_one, enumerate(target_dirs)):
+                rel = d.relative_to(tests_dir)
+                normal = _common_result_keys(outs["normal"])
+                common = _common_result_keys(outs["common"])
+                if normal is None or common is None:
+                    res["mismatched"] += 1
+                    res["errors"].append(f"{rel}: report not generated ({'normal' if normal is None else '--common-only'})")
+                    continue
+                if "Scope: COMMON only" not in outs["common"].read_text(encoding="utf-8"):
+                    res["mismatched"] += 1
+                    res["errors"].append(f"{rel}: --common-only report lacks the 'Scope: COMMON only' header")
+                    continue
+                extra = sorted(common - normal)
+                if extra:
+                    res["mismatched"] += 1
+                    for fs, rule, level, entry, ln in extra:
+                        res["errors"].append(f"{rel} {fs}: {rule}:{level}:{entry}{(' Line[' + ln + ']') if ln else ''} only with --common-only")
+                    print(f"{Colors.FAILRED}[MISMATCH] {rel}{Colors.ENDC}")
+                else:
+                    res["passed"] += 1
+    return res
+
+
 def print_header(title, color):
     print(f"\n{color}============================================================{Colors.ENDC}")
     print(f"{color}  {title.ljust(56)}{Colors.ENDC}")
@@ -802,7 +899,7 @@ def print_summary(results_list, docker_image=None):
     
     for title, res, color in results_list:
         print(f"\n{color}[ {title} ]{Colors.ENDC}")
-        passed_label = "Matched" if "CURATOR MODE" in title or "WEB APP MODE" in title else "Matched (Normal Rules)"
+        passed_label = "Matched" if any(t in title for t in ("CURATOR MODE", "WEB APP MODE", "COMMON ONLY")) else "Matched (Normal Rules)"
         print(f"  {passed_label}: {res['passed']}")
         print(f"  Mismatched:             {Colors.FAILRED if res['mismatched'] > 0 else Colors.OKGREEN}{res['mismatched']}{Colors.ENDC}")
         
@@ -840,7 +937,7 @@ def print_summary(results_list, docker_image=None):
             for e in general_errors:
                 print(f"    - {e}")
                 
-        if "CURATOR MODE" not in title and "WEB APP MODE" not in title:
+        if not any(t in title for t in ("CURATOR MODE", "WEB APP MODE", "COMMON ONLY")):
             print(f"  Expectedly Skipped:     {Colors.OKGREEN}{res['skipped']}{Colors.ENDC}")
             print(f"  Not Skipped (Error!):   {Colors.FAILRED if len(res['not_skipped_errors']) > 0 else Colors.OKGREEN}{len(res['not_skipped_errors'])}{Colors.ENDC}")
             if res['not_skipped_errors']:
@@ -870,8 +967,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--mode",
         nargs="+",
-        choices=["curator", "web-app", "local", "local-skip", "ncbi", "ncbi-skip", "auth-skip", "biosample", "all"],
-        default=["curator", "web-app", "local-skip", "ncbi-skip", "auth-skip"],
+        choices=["curator", "web-app", "local", "local-skip", "ncbi", "ncbi-skip", "auth-skip", "common", "biosample", "all"],
+        default=["curator", "web-app", "local-skip", "ncbi-skip", "auth-skip", "common"],
         help="Execution mode(s). Multiple modes can be specified."
     )
 
@@ -891,14 +988,14 @@ if __name__ == "__main__":
 
     modes = args.mode
 
-    if args.docker_image and modes == ["curator", "web-app", "local-skip", "ncbi-skip", "auth-skip"]:
+    if args.docker_image and modes == ["curator", "web-app", "local-skip", "ncbi-skip", "auth-skip", "common"]:
         modes = ["local", "ncbi", "auth-skip"]
 
     if "all" in modes:
         if args.docker_image:
             modes = ["local", "ncbi", "auth-skip"]
         else:
-            modes = ["curator", "web-app", "local", "ncbi", "auth-skip"]
+            modes = ["curator", "web-app", "local", "ncbi", "auth-skip", "common"]
 
     # 確認サマリ系フラグは CURATOR モードでのみ作用する。対象モードが無ければ無効である旨を通知。
     if (args.check_confirmation or args.update_confirmation) and "curator" not in modes:
@@ -943,8 +1040,16 @@ if __name__ == "__main__":
         res_auth = run_e2e_tests(target_rule_id=args.rule_id, mode="auth-skip", skip_only=True, docker_image=args.docker_image, use_pip=args.use_pip)
         results_to_print.append(("AUTH SKIP MODE RESULTS (SKIP ONLY)", res_auth, Colors.OKBLUE))
 
+    if "common" in modes:
+        if args.docker_image:
+            print(f"{Colors.WARNINGYEL}[WARN] COMMON モードは docker 実行に未対応のためスキップします。{Colors.ENDC}")
+        else:
+            print_header("PHASE 6: COMMON ONLY MODE TESTING (--common-only must not add results)", Colors.OKBLUE)
+            res_common = run_common_only_tests(target_rule_id=args.rule_id, use_pip=args.use_pip)
+            results_to_print.append(("COMMON ONLY MODE RESULTS", res_common, Colors.OKBLUE))
+
     if "biosample" in modes:
-        print_header("PHASE 6: BIOSAMPLE MODE TESTING (-b ann->bs SSUB TSV / internal DB)", Colors.OKCYAN)
+        print_header("PHASE 7: BIOSAMPLE MODE TESTING (-b ann->bs SSUB TSV / internal DB)", Colors.OKCYAN)
         res_bs = run_e2e_tests(target_rule_id=args.rule_id, mode="biosample", skip_only=False,
                                docker_image=args.docker_image, use_pip=args.use_pip)
         results_to_print.append(("BIOSAMPLE MODE RESULTS", res_bs, Colors.OKCYAN))

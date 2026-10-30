@@ -32,6 +32,8 @@ class ValidationContext:
     skip_db: bool = False
     skip_ncbi: bool = False
     skip_auth: bool = False
+    # --common-only: COMMON だけを検証する（requires_entries のルールは登録しない）
+    common_only: bool = False
     bp_psubs: dict = field(default_factory=dict)
     dra_refs: dict = field(default_factory=dict)
     drr_status: dict = field(default_factory=dict)

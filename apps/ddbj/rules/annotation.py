@@ -260,6 +260,9 @@ class ANN0250(BaseRule):
                 if "biosample" in f.qualifiers:
                     for bs in f.qualifiers["biosample"]:
                         file_samds.add(bs)
+        # このファイルが BioSample を参照していなければ比べる相手が無い（他ファイルの BioSample とは比べない）
+        if not file_samds:
+            return results
 
         valid_names = set()
         for samd in file_samds:
@@ -312,6 +315,8 @@ class ANN0260(BaseRule):
             for f in self.get_features(record, "DBLINK"):
                 if "biosample" in f.qualifiers:
                     file_samds.update(f.qualifiers["biosample"])
+        if not file_samds:
+            return results
 
         valid_emails = set()
         for samd in file_samds:
@@ -347,6 +352,8 @@ class ANN0270(BaseRule):
             for f in self.get_features(record, "DBLINK"):
                 if "biosample" in f.qualifiers:
                     file_samds.update(f.qualifiers["biosample"])
+        if not file_samds:
+            return results
 
         valid_abnames = set()
         for samd in file_samds:
@@ -650,6 +657,8 @@ class ANN0410(BaseRule):
     description = "Missing BioProject accession."
     requires_rdb = False
     is_file_level = True
+    # ファイル内のどこか（エントリ側でもよい）にあるかを見るので、COMMON だけでは判定できない
+    requires_entries = True
 
     def validate_file(self, records, context):
         if not self.has_qualifier_anywhere(records, "DBLINK", "project"):
@@ -802,6 +811,8 @@ class ANN0450(BaseRule):
     description = "Missing BioSample accession."
     requires_rdb = False
     is_file_level = True
+    # ファイル内のどこか（エントリ側でもよい）にあるかを見るので、COMMON だけでは判定できない
+    requires_entries = True
 
     def validate_file(self, records, context):
         if not self.has_qualifier_anywhere(records, "DBLINK", "biosample"):
@@ -943,6 +954,8 @@ class ANN0470(BaseRule):
     description = "Missing SRA Run accession."
     requires_rdb = False
     is_file_level = True
+    # ファイル内のどこか（エントリ側でもよい）にあるかを見るので、COMMON だけでは判定できない
+    requires_entries = True
 
     def validate_file(self, records, context):
         if not self.has_qualifier_anywhere(records, "DBLINK", "sequence read archive"):
@@ -1103,6 +1116,8 @@ class ANN0820(BaseRule):
     description = "Assembly Name required for eukaryotes."
     requires_rdb = True
     is_file_level = True
+    # エントリ側の organism と、ファイル内のどこか（エントリ側でもよい）の ST_COMMENT を見るので、COMMON だけでは判定できない
+    requires_entries = True
 
     def validate_file(self, records, context, ann_path=None, seq_path=None):
         results = []
@@ -1226,6 +1241,8 @@ class ANN1010(BaseRule):
     description = "Missing organism."
     requires_rdb = False
     is_file_level = True
+    # ファイル内のどこか（エントリ側でもよい）にあるかを見るので、COMMON だけでは判定できない
+    requires_entries = True
 
     def validate_file(self, records, context):
         if not self.has_qualifier_anywhere(records, "source", "organism"):

@@ -42,6 +42,8 @@ class ValidateTask:
     emit_biosample_tsv: Any
     biosample_sync_common: Any
     biosample_sync_mapping_keys: Any
+    # --common-only: COMMON だけを読んで検証し、autofix 提案・locus_tag 収集は行わない
+    common_only: bool = False
 
 
 # ============================================================================
@@ -60,12 +62,13 @@ def _validate_single_file_set(task):
     emit_biosample_tsv = task.emit_biosample_tsv
     biosample_sync_common = task.biosample_sync_common
     biosample_sync_mapping_keys = task.biosample_sync_mapping_keys
+    common_only = task.common_only
 
     from apps.ddbj.preprocessor import preprocess_files
     from apps.ddbj.parser import parse_ddbj_submission
     from apps.ddbj.utils.features import get_features # 追加
     
-    ann_lines, fasta_content, pre_warnings = preprocess_files(ann_path, seq_path)
+    ann_lines, fasta_content, pre_warnings = preprocess_files(ann_path, seq_path, common_only=common_only)
     records, parse_errors, fasta_only_records = parse_ddbj_submission(
         fasta_content=fasta_content, 
         ann_path=ann_path, 
@@ -107,7 +110,11 @@ def _validate_single_file_set(task):
     val_results = validator.run(records, ann_path, seq_path, ann_lines=ann_lines,
                                 fasta_content=fasta_content, fasta_only_records=fasta_only_records)
     file_results.extend(val_results)
-    
+
+    # --common-only はレポートだけ出す（autofix 提案・ファイル横断用の locus_tag は作らない）
+    if common_only:
+        return _write_worker_jsonl(ann_path, tmp_dir_str, is_web_mode, file_results, [], [], [], [])
+
     for res in val_results:
         if res.get("autofix") and "new_value" in res:
             entry_name = res.get("entry", res.get("entry_id", ""))
@@ -245,6 +252,12 @@ def _validate_single_file_set(task):
                         "line_number": getattr(feature, 'line_number', None)
                     })
 
+    return _write_worker_jsonl(ann_path, tmp_dir_str, is_web_mode, file_results, file_proposals,
+                               file_locus_tags, file_skipped_autofixes, file_updq_data)
+
+
+def _write_worker_jsonl(ann_path, tmp_dir_str, is_web_mode, file_results, file_proposals,
+                        file_locus_tags, file_skipped_autofixes, file_updq_data):
     # ====================================================
     # メインプロセスにデータを返さず、専用のテンポラリJSONLに書き捨てる
     # ====================================================

@@ -7,6 +7,9 @@ class BaseRule:
     requires_rdb = False
     requires_network = False
     requires_auth = False
+    # エントリ部（または FASTA）が無いと正しく判定できないルール。
+    # ddbj の --common-only（COMMON だけを検証）では登録しない（apps/ddbj/validator.py）。
+    requires_entries = False
     is_file_level = False
     is_submission_level = False   
     internal_ignore = True
