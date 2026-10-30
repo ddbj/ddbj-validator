@@ -3,7 +3,12 @@ from pathlib import Path
 from collections import defaultdict
 from apps.ddbj.preprocessor import ANN_EXTENSIONS, FASTA_EXTENSIONS
 
-def find_file_pairs(directory_path):
+def find_file_pairs(directory_path, require_fasta=True):
+    """ディレクトリ内の (ann, fasta) ペアを返す。
+
+    require_fasta=False（--common-only）のときは FASTA の無い .ann も (ann, None) で返す。
+    FASTA は読まないので、FASTA だけのファイルは無視する。.ann が複数ある base 名は従来どおりエラー。
+    """
     dir_path = Path(directory_path)
     if not dir_path.is_dir():
         print(f"[FATAL ERROR] Directory not found: {directory_path}", file=sys.stderr)
@@ -57,7 +62,14 @@ def find_file_pairs(directory_path):
         
         ann_count = len(ann_list)
         seq_count = len(fasta_list)
-        
+
+        if not require_fasta:
+            if ann_count == 0:
+                continue
+            if ann_count == 1:
+                pairs.append((ann_list[0], fasta_list[0] if seq_count == 1 else None))
+                continue
+
         # ---------------------------------------------------
         # ANN0020: ペアの不整合チェック
         # 1対1でない場合（欠損・複数存在）は全てこのエラーにする

@@ -131,6 +131,7 @@ ddbj-validator [オプション] [検証対象ディレクトリ]
 * `-l`, `--local` 完全にローカルな環境で動作します。DB および API へのアクセスをスキップし、ファイルのチェックのみを行います。
 * `-f`, `--force-fix` フォーマットエラーや修正事項（Autofix）が見つかった際、対話プロンプトでの確認をスキップしてすべて自動適用します。
 * `-j`, `--jobs` 並列処理するプロセス数を指定します。指定しない場合は環境に合わせて自動設定されます（最大8）。`0` を指定すると、利用可能なすべての CPU コアを使用します。
+* `--common-only` アノテーションファイルの COMMON エントリだけを検証します（SUBMITTER / REFERENCE / DBLINK / ST_COMMENT / KEYWORD / DATATYPE / DIVISION など）。エントリ部と FASTA は読まないため、大きなファイルでもすぐに終わり、FASTA が無くても実行できます。レポートだけを出力し、自動修正（`fixed/`）は行いません（`-f` は無視されます）。エントリ部が無いと判定できないチェック（DBLINK や organism がファイル内のどこにも無い、など）は行いません。
 * `--ncbi-api-key` NCBI API へのリクエスト制限を緩和するための API キーを指定します。
 * `--help` 利用可能なすべてのオプションと詳細を確認します。
 
@@ -628,6 +629,7 @@ If the virtual environment is not activated, you must specify the direct path to
 * `-l`, `--local`: Runs in a completely local environment. Skips access to databases and APIs, performing only file checks.
 * `-f`, `--force-fix`: Automatically applies all fixes (Autofix) found, skipping the interactive confirmation prompt.
 * `-j`, `--jobs`: Specifies the number of parallel processes. If not specified, it is automatically set according to the environment (maximum of 8). If `0` is specified, all available CPU cores will be used.
+* `--common-only`: Validates only the COMMON entry of the annotation files (SUBMITTER, REFERENCE, DBLINK, ST_COMMENT, KEYWORD, DATATYPE, DIVISION, etc.). Entries and FASTA files are not read, so it finishes quickly even for large files and runs without FASTA files. Only reports are written; no auto-fix is applied (`-f` is ignored). Checks that need the entries, such as a DBLINK or organism missing from the whole file, are not run.
 * `--ncbi-api-key`: Specifies an API key to ease request limits to the NCBI API.
 * `--help`: Displays all available options and details.
 

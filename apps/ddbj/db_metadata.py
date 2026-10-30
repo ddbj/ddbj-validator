@@ -25,16 +25,20 @@ _META_PATTERN = re.compile(r'\tmetagenome_source\t([^\t\r\n]+)')
 _HOST_PATTERN = re.compile(r'\t(?:host|lab_host)\t([^\t\r\n]+)', re.IGNORECASE)
 _JRN_PATTERN = re.compile(r'\tjournal\t([^\t\r\n]+)', re.IGNORECASE)
 
-def fast_extract_db_keys(ann_path, seq_path):
+def fast_extract_db_keys(ann_path, seq_path, common_only=False):
     """
     BioPythonのパースを待たずに、ANNファイルをテキストとして1行ずつ走査し、
     DB検索用のキーを高速に抽出する。
+    common_only=True（--common-only）のときは COMMON 部分だけを走査し、organism（Taxonomy 用）は集めない。
     """
+    from apps.ddbj.preprocessor import starts_non_common_entry
     samds, projects, drrs, organisms, journals = set(), set(), set(), set(), set()
     
     try:
         with open(ann_path, 'r', encoding='utf-8', errors='replace') as f:
             for line in f:
+                if common_only and starts_non_common_entry(line):
+                    break
                 # 処理の高速化のため、まずは対象Qualifierの文字列が含まれるかin句で足切り
                 if '\tproject\t' in line:
                     if m := _PRJ_PATTERN.search(line):
@@ -64,6 +68,9 @@ def fast_extract_db_keys(ann_path, seq_path):
                         
     except Exception as e:
         logger.warning(f"Failed to fast-scan {ann_path}: {e}")
+
+    if common_only:
+        organisms = set()
 
     # NCBI APIとDDBJローカルDBで問い合わせを振り分けるためのセットもここで作ってしまう
     from common.ncbi_api import filter_target_accessions

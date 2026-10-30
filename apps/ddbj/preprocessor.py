@@ -11,10 +11,26 @@ MULTI_SPACE_PATTERN = re.compile(r' {2,}')
 # 全角空白も削除
 STRIP_CHARS = ' \t\r\n"　'
 
+def starts_non_common_entry(line):
+    """ann の行が COMMON 以外のエントリの開始行なら True。
+
+    --common-only は COMMON 部分だけを読むので、この行で読み込みを打ち切る。
+    空行・コメント行・継続行（1 列目が空）・ヘッダー行（Entry Feature ...）は False。
+    """
+    if not line or line.isspace() or line.startswith('#'):
+        return False
+    entry = line.split('\t', 1)[0].strip(STRIP_CHARS)
+    if not entry or entry == "COMMON":
+        return False
+    return not re.sub(r'\s+', '', line).lower().startswith("entryfeature")
+
+
 # 戻り値の2つ目は「FASTAのパス」ではなく「FASTAのファイル内容(文字列)」になる
-def preprocess_files(ann_path_str: str, fasta_path_str: str) -> tuple[list, str, list]:
+# common_only=True（--common-only）のときは COMMON 部分だけを読み、FASTA は読まない
+# （fasta_path_str は None でもよい。FASTA 内容は "" を返す）。
+def preprocess_files(ann_path_str: str, fasta_path_str, common_only: bool = False) -> tuple[list, str, list]:
     ann_path = Path(ann_path_str)
-    fasta_path = Path(fasta_path_str)
+    fasta_path = Path(fasta_path_str) if fasta_path_str else None
     warnings = []
 
     def _add_warn(level, rule, target, entry, msg, category, is_cleanup=False, file_name=ann_path.name, full_path=ann_path_str):
@@ -36,13 +52,27 @@ def preprocess_files(ann_path_str: str, fasta_path_str: str) -> tuple[list, str,
     ann0185_count = 0
     space_like_count = 0
     
-    with open(ann_path, 'r', encoding='utf-8', errors='replace') as f:
-        content = f.read()
-        
-    if '\r\n' in content:
-        ann_crlf_detected = True
-        
-    lines = content.splitlines()
+    if common_only:
+        # 最初の COMMON 以外のエントリ行で読むのをやめる（数百 MB の ann を丸ごと読まない）。
+        # 行番号は先頭からなので変わらない。改行の扱い（open の既定・行ごとの splitlines）は通常時と揃える。
+        lines = []
+        with open(ann_path, 'r', encoding='utf-8', errors='replace') as f:
+            for raw in f:
+                if '\r\n' in raw:
+                    ann_crlf_detected = True
+                parts = raw.splitlines()
+                stop = next((i for i, part in enumerate(parts) if starts_non_common_entry(part)), None)
+                lines.extend(parts if stop is None else parts[:stop])
+                if stop is not None:
+                    break
+    else:
+        with open(ann_path, 'r', encoding='utf-8', errors='replace') as f:
+            content = f.read()
+
+        if '\r\n' in content:
+            ann_crlf_detected = True
+
+        lines = content.splitlines()
     for line_no, clean_line in enumerate(lines, 1):
         # 空白に似た文字（NBSP・全角空白・ゼロ幅空白など）を半角空白へ（2026-10-03）。
         # ANN0040（非 ASCII で fatal）の判定より前に行い、これだけで fatal にしない。
@@ -140,11 +170,13 @@ def preprocess_files(ann_path_str: str, fasta_path_str: str) -> tuple[list, str,
     # 3. FASTAファイルのCRLFチェックとインメモリ読み込み
     # =========================================================
     fasta_crlf_detected = False
-    
-    with open(fasta_path, 'r', encoding='utf-8', errors='replace') as fin:
-        fasta_content = fin.read()
-        if '\r\n' in fasta_content:
-            fasta_crlf_detected = True
+    fasta_content = ""
+
+    if not common_only:
+        with open(fasta_path, 'r', encoding='utf-8', errors='replace') as fin:
+            fasta_content = fin.read()
+            if '\r\n' in fasta_content:
+                fasta_crlf_detected = True
 
     if fasta_crlf_detected:
         _add_warn("warning", "ANN0035", "file/format", "ALL", 

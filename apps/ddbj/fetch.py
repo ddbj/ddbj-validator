@@ -62,7 +62,7 @@ class ExternalFetchMixin:
                 print("\nScanning annotation files for DB/API queries...")
                 
             with ProcessPoolExecutor(max_workers=self.jobs) as executor:
-                futures = [executor.submit(fast_extract_db_keys, ann, seq) for ann, seq in self.pairs]
+                futures = [executor.submit(fast_extract_db_keys, ann, seq, self.common_only) for ann, seq in self.pairs]
                 for (ann, seq), future in zip(self.pairs, futures):
                     res = future.result()
                     # -b 用: ann ファイル単位の参照 BioSample 集合（ann↔bs マッピングの曖昧性判定に使う）
@@ -258,6 +258,7 @@ class ExternalFetchMixin:
             skip_db=self.skip_db,
             skip_ncbi=self.skip_ncbi,
             skip_auth=self.skip_auth,
+            common_only=self.common_only,
             bp_psubs=bp_psubs,
             dra_refs=dra_refs,
             drr_status=drr_status,
