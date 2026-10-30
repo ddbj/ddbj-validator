@@ -1,0 +1,95 @@
+COMMON	SUBMITTER		ab_name	Mishima,H.
+			ab_name	Robertson,G.R.
+			contact	Hanako Mishima
+			email	mishima@ddbj.nig.ac.jp
+			institute	National Institute of Genetics
+			department	DNA Data Bank of Japan
+			country	Japan
+			state	Shizuoka
+			city	Mishima
+			street	Yata 1111
+			zip	411-8540
+	REFERENCE		title	Mouse Genome Sequencing
+			ab_name	Robertson,G.R.
+			ab_name	Mishima,H.
+			year	2026
+			status	Unpublished
+slip1	source	1..120	organism	Severe acute respiratory syndrome coronavirus 2
+			mol_type	genomic RNA
+			collection_date	2025-08-18
+			geo_loc_name	Japan
+	CDS	join(1..90,90..119)	product	test polyprotein
+			codon_start	1
+			transl_table	1
+			ribosomal_slippage	
+	mat_peptide	join(85..90,90..110)	product	RNA-dependent RNA polymerase
+			note	ANN2020 pass: overlaps only at the slippage junction of the CDS
+slip2	source	1..120	organism	Severe acute respiratory syndrome coronavirus 2
+			mol_type	genomic RNA
+			collection_date	2025-08-18
+			geo_loc_name	Japan
+	CDS	complement(join(1..90,90..119))	product	test polyprotein
+			codon_start	1
+			transl_table	1
+			ribosomal_slippage	
+	mat_peptide	complement(join(85..90,90..110))	product	RNA-dependent RNA polymerase
+			note	ANN2020 pass: minus strand, same junction
+slip3	source	1..120	organism	Severe acute respiratory syndrome coronavirus 2
+			mol_type	genomic RNA
+			collection_date	2025-08-18
+			geo_loc_name	Japan
+	CDS	join(1..90,89..119)	product	test polyprotein
+			codon_start	1
+			transl_table	1
+			ribosomal_slippage	
+	mat_peptide	join(85..90,89..110)	product	RNA-dependent RNA polymerase
+			note	ANN2020 pass: overlap of 2 bases at the slippage junction
+slip4	source	1..120	organism	Severe acute respiratory syndrome coronavirus 2
+			mol_type	genomic RNA
+			collection_date	2025-08-18
+			geo_loc_name	Japan
+	CDS	join(1..90,90..119)	product	test polyprotein
+			codon_start	1
+			transl_table	1
+			ribosomal_slippage	
+	mat_peptide	join(80..85,85..110)	product	RNA-dependent RNA polymerase
+			note	ANN2020 fail: junction differs from the CDS
+slip5	source	1..120	organism	Severe acute respiratory syndrome coronavirus 2
+			mol_type	genomic RNA
+			collection_date	2025-08-18
+			geo_loc_name	Japan
+	CDS	join(1..90,90..119)	product	test polyprotein
+			codon_start	1
+			transl_table	1
+			ribosomal_slippage	
+	mat_peptide	join(85..90,90..100,95..110)	product	RNA-dependent RNA polymerase
+			note	ANN2020 fail: another overlap besides the slippage junction
+slip6	source	1..120	organism	Severe acute respiratory syndrome coronavirus 2
+			mol_type	genomic RNA
+			collection_date	2025-08-18
+			geo_loc_name	Japan
+	CDS	join(1..90,91..119)	product	test polyprotein
+			codon_start	1
+			transl_table	1
+	mat_peptide	join(85..90,90..110)	product	RNA-dependent RNA polymerase
+			note	ANN2020 fail: no CDS with ribosomal_slippage
+slip7	source	1..120	organism	Severe acute respiratory syndrome coronavirus 2
+			mol_type	genomic RNA
+			collection_date	2025-08-18
+			geo_loc_name	Japan
+	CDS	join(1..90,90..119)	product	test polyprotein
+			codon_start	1
+			transl_table	1
+			ribosomal_slippage	
+	mat_peptide	complement(join(85..90,90..110))	product	RNA-dependent RNA polymerase
+			note	ANN2020 fail: strand differs from the CDS
+slip8	source	1..120	organism	Severe acute respiratory syndrome coronavirus 2
+			mol_type	genomic RNA
+			collection_date	2025-08-18
+			geo_loc_name	Japan
+	CDS	join(1..90,90..119)	product	test polyprotein
+			codon_start	1
+			transl_table	1
+			ribosomal_slippage	
+	mat_peptide	join(85..90,85..90,90..110)	product	RNA-dependent RNA polymerase
+			note	ANN2020 fail: duplicated interval

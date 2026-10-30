@@ -205,6 +205,11 @@ class ANN0230(BaseRule):
                     contacts = feature.qualifiers["contact"]
                     # ab_name が存在しない場合は空リストとして扱う
                     ab_names = feature.qualifiers.get("ab_name", [])
+                    # 著者を consrtm だけで書く SUBMITTER も認める（GitHub issue #12）。
+                    # ab_name が無ければ照合相手が無いので本ルールは適用しない。
+                    # ab_name も consrtm も無い場合は ANN0340 が error にする。
+                    if not ab_names and "consrtm" in feature.qualifiers:
+                        continue
 
                     for contact in contacts:
                         valid_names = self._get_valid_names(contact)

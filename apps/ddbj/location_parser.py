@@ -112,12 +112,25 @@ def _parse_location_string(loc_str, seq_length=0, default_strand=1):
                             out_of_order_err = f"Joined segments must be in increasing order. (Found end {B_val} >= next start {C_val})"
                     break
                         
+        # 書かれた順の継ぎ目 (前パートの終端, 次パートの開始, 鎖)（1-based）を全ペア記録する。
+        # 下の complement の並べ替えより前に取るので、minus 鎖でも書いたとおりの座標になる。
+        # 上のループは最初の順序不正で break するため別に回す。origin を跨ぐ継ぎ目は含めない。
+        # parser._validate_locations_post_parse が、/ribosomal_slippage 付き CDS と同じ継ぎ目で
+        # 重なる mat_peptide 等を ANN2020 から外すのに使う（GitHub issue #11）。
+        join_junctions = []
+        for prev_loc, next_loc in zip(local_locations, local_locations[1:]):
+            b_val, c_val = int(prev_loc.end), int(next_loc.start) + 1
+            if seq_length > 0 and b_val == seq_length and c_val == 1:
+                continue
+            join_junctions.append((b_val, c_val, strand))
+
         if strand == -1:
             locations.reverse()
             
         comp_loc = CompoundLocation(locations)
         
         comp_loc._join_diffs = join_diffs
+        comp_loc._join_junctions = join_junctions
         if spans_origin:
             comp_loc._spans_origin = True
                 

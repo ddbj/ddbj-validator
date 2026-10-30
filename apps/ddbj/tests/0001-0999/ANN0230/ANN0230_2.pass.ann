@@ -1,0 +1,13 @@
+COMMON	SUBMITTER		consrtm	Example Genome Consortium
+			contact	Taro Yamada
+			email	taro@example.ac.jp
+			institute	Example Institute
+			country	Japan
+			street	Example 1-1-1
+	REFERENCE		title	Example submission
+			consrtm	Example Genome Consortium
+			status	Unpublished
+seq1	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2025-08-18
+			geo_loc_name	Japan

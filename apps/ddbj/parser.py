@@ -514,11 +514,34 @@ def _feature_allows_qualifier(features_dict, feature_type, qualifier):
     return False
 
 
+def _slippage_junctions(record):
+    """エントリ内の /ribosomal_slippage 付き CDS が持つ継ぎ目 (終端, 次の開始, 鎖) の集合。"""
+    junctions = set()
+    for feature in record.features:
+        if feature.type == "CDS" and "ribosomal_slippage" in feature.qualifiers:
+            junctions.update(getattr(feature.location, "_join_junctions", ()))
+    return junctions
+
+
+def _overlaps_only_at_slippage(location, slippage_junctions):
+    """join の重なり・逆順の継ぎ目が、すべてスリッページ付き CDS の継ぎ目と一致するか。
+
+    同じ区間の繰り返し（Duplicated）はスリッページでは説明できないので対象外。
+    """
+    if not slippage_junctions:
+        return False
+    if str(getattr(location, "_out_of_order_error", "")).startswith("Duplicated"):
+        return False
+    bad = [j for j in getattr(location, "_join_junctions", ()) if j[0] >= j[1]]
+    return bool(bad) and all(j in slippage_junctions for j in bad)
+
+
 def _validate_locations_post_parse(records, parse_errors, ann_path, features_dict=None):
     """パース完了後のオブジェクトに対する遅延ロケーション検証 (順序、スリッページ等)"""
     features_dict = features_dict or {}
     circular_ids = circular_entry_ids(records)
     for seq_id, record in records.items():
+        slippage_junctions = _slippage_junctions(record)
         for feature in record.features:
             
             # origin（全長 L → 1）を跨ぐ join は circular（TOPOLOGY circular）のときだけ許す（2026-10-20）
@@ -554,6 +577,14 @@ def _validate_locations_post_parse(records, parse_errors, ann_path, features_dic
                                     entry=seq_id, level="warning", target="location",
                                     feature_type=feature.type, line_number=getattr(feature, 'line_number', 0)))
                                 
+                elif hasattr(feature.location, "_out_of_order_error") and \
+                        not _feature_allows_qualifier(features_dict, feature.type, "ribosomal_slippage") and \
+                        _overlaps_only_at_slippage(feature.location, slippage_junctions):
+                    # mat_peptide のように /ribosomal_slippage を記載できない feature が、同じエントリの
+                    # /ribosomal_slippage 付き CDS と同じ継ぎ目（鎖も同じ）でだけ重なっている場合は、
+                    # ポリプロテイン内の正当な記載なので ANN2020 にしない（GitHub issue #11）。
+                    pass
+
                 elif hasattr(feature.location, "_out_of_order_error"):
                     msg = f"Invalid location. {feature.location._out_of_order_error}"
                     # ribosomal_slippage を記載できる feature（definitions.json 上で許可）の場合のみ、
