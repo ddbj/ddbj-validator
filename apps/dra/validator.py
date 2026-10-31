@@ -17,7 +17,7 @@ from apps.dra.rules.content import (
 )
 from apps.dra.rules.file import (
     DRA_R0021, DRA_R0022, DRA_R0023, DRA_R0024, DRA_R0025, DRA_R0026,
-    DRA_R0027, DRA_R0028, DRA_R0029, DRA_R0030, DRA_R0031, DRA_R0040, DRA_R0049,
+    DRA_R0027, DRA_R0028, DRA_R0029, DRA_R0030, DRA_R0031, DRA_R0040, DRA_R0049, DRA_R0052,
 )
 from apps.dra.rules.account import (
     DRA_R0004, DRA_R0006, DRA_R0009, DRA_R0015, DRA_R0016,
@@ -44,7 +44,9 @@ class Validator(SimpleValidator):
             DRA_R0051(),   # center_name の混在（warning）
             # --- file ---
             DRA_R0021(), DRA_R0022(), DRA_R0023(), DRA_R0024(), DRA_R0025(), DRA_R0026(),
-            DRA_R0027(), DRA_R0028(), DRA_R0029(), DRA_R0030(), DRA_R0031(),
+            DRA_R0027(),
+            DRA_R0052(),   # SINGLE なのに R1/R2 の fastq の組（R0027 の逆向き）
+            DRA_R0028(), DRA_R0029(), DRA_R0030(), DRA_R0031(),
             DRA_R0040(),   # 同一 filename の重複
             DRA_R0049(),   # 別名だが md5 同一（同一内容の二重登録）
             # --- 参照整合 ---
