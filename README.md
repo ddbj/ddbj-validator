@@ -153,6 +153,41 @@ ddbj-validator -n -o output_directory -j 4 target_directory
 
 ```
 
+### COMMON だけを検証する（`--common-only`）
+
+アノテーションファイル（`.ann`）の COMMON エントリだけを検証します。エントリ部が大きいファイルでも数秒で終わるので、配列やエントリ部のアノテーションを用意する前に、登録者情報・文献・DBLINK などを先に確認したいときに使います。
+
+```bash
+# Docker (ラッパースクリプト)
+./ddbj-validator-seq.sh --common-only target_directory
+
+# pip
+ddbj-validator --common-only target_directory
+
+# .ann ファイルを直接指定（FASTA は不要）
+ddbj-validator --common-only submission.ann
+```
+
+- **検証する項目**: COMMON に書かれた SUBMITTER、REFERENCE、DBLINK、ST_COMMENT、KEYWORD、DATATYPE、DIVISION、DATE、TOPOLOGY など
+  - 書式や管理語彙のチェックをします。
+  - DATATYPE に必要な KEYWORD、ST_COMMENT、DBLINK がそろっているかを確かめます。
+  - 内部 DB を使う既定モードでは、DBLINK の BioProject / BioSample / DRR が登録されているかと、その状態を確かめます。`-n` では NCBI/EBI の accession が公開されているかだけを確かめます。
+  - 内部 DB を使う既定モードでは、連絡先が BioSample の登録者と一致するかも確かめます。
+- **読まないもの**
+  - `.ann` は最初のエントリ（COMMON 以外）の行で読むのをやめます。
+  - FASTA は読みません。`.ann` だけのディレクトリやファイルでも実行できます。
+- **行わないこと**
+  - エントリや配列のチェックは行いません。source の organism、feature とその location、翻訳、Taxonomy の照合も含みます。
+  - エントリ部が無いと判定できないチェックも行いません。例: ファイル内のどこにも DBLINK や organism が無い場合の警告。
+    - 例えば DBLINK をエントリ側に書いた登録では、COMMON に無くても警告しません。
+  - COMMON テンプレート（COMMON に書いた source などをエントリへ展開する書き方）の feature は検証しません。
+- **出力**
+  - `reports/` のレポートだけを出力します。ヘッダーに `Scope: COMMON only (entries and sequences were not validated)` と書かれます。`--json` では `"scope": "common_only"` が付きます。
+  - 自動修正は行わず、`fixed/` と `aa/` は作りません。`-f` は無視されます。
+- `-n`、`-l`、`-o`、`--json` などのほかのオプションと一緒に使えます。
+
+エントリ部まで含めた最終確認は、`--common-only` を付けない通常の実行で行ってください。
+
 ### NCBI API の設定（推奨）
 
 `-n` オプションで NCBI API（E-utilities）を利用する場合、NCBI の利用ガイドラインに沿って
@@ -650,6 +685,41 @@ When using the NCBI API (`-n`), outputting results to an `output_directory` (`-o
 ddbj-validator -n -o output_directory -j 4 target_directory
 
 ```
+
+### Validating only COMMON (`--common-only`)
+
+Validates only the COMMON entry of the annotation files (`.ann`). It finishes in seconds even when the entries are large. Use it to check the submitter, reference and DBLINK information before the sequences and entry annotations are ready.
+
+```bash
+# Docker (wrapper script)
+./ddbj-validator-seq.sh --common-only target_directory
+
+# pip
+ddbj-validator --common-only target_directory
+
+# Specify an .ann file directly (no FASTA needed)
+ddbj-validator --common-only submission.ann
+```
+
+- **What is checked**: the SUBMITTER, REFERENCE, DBLINK, ST_COMMENT, KEYWORD, DATATYPE, DIVISION, DATE, TOPOLOGY and other fields written in COMMON.
+  - Format and controlled vocabularies.
+  - The KEYWORD, ST_COMMENT and DBLINK values required for the DATATYPE.
+  - In the default mode, which uses the internal DB, whether the BioProject, BioSample and DRR accessions in DBLINK are registered and what their status is. With `-n`, only whether NCBI/EBI accessions are public.
+  - In the default mode, also whether the contact matches the BioSample submitters.
+- **What is not read**
+  - The `.ann` file is read only up to the first line of a non-COMMON entry.
+  - FASTA files are not read. A directory or file with only `.ann` files can be validated.
+- **What is not done**
+  - Entries and sequences are not checked. This includes the source organism, features and their locations, translation and Taxonomy lookups.
+  - Checks that need the entries are not run. An example is the warning for a DBLINK or organism missing from the whole file.
+    - So if a submission writes DBLINK in the entries, nothing is reported when it is missing from COMMON.
+  - Features of a COMMON template (a source or other feature written in COMMON and copied into the entries) are not validated.
+- **Output**
+  - Only the reports in `reports/` are written. The header contains `Scope: COMMON only (entries and sequences were not validated)`, and `--json` adds `"scope": "common_only"`.
+  - No auto-fix is applied and `fixed/` and `aa/` are not created. `-f` is ignored.
+- It can be combined with `-n`, `-l`, `-o`, `--json` and the other options.
+
+For the final check including the entries, run the validator without `--common-only`.
 
 ### Setting up the NCBI API (Recommended)
 

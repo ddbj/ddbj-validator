@@ -103,6 +103,25 @@ def fasta_entry_name(def_line):
     return parts[0].strip() if parts else ""
 
 
+# 配列から消す文字（タブ・スペース等の空白、ハイフン、途中の //）。FASTA の読み込みと fixed/ の書き出しで共通。
+SEQ_CLEANUP_PATTERN = re.compile(r'[ \t\f\v　]|-|//')
+_SEQ_CLEANUP_CHARS = (' ', '\t', '\f', '\v', '　', '-', '//')
+
+
+def strip_terminator(seq):
+    """末尾の '//'（後ろの空白・改行ごと）を 1 つ外す。正規表現 //\\s*$ で置き換えるのと同じ結果。
+
+    数 GB の配列に正規表現をかけると遅いので、末尾だけを見る（2026-10-31）。
+    """
+    tail = seq.rstrip()
+    return tail[:-2] if tail.endswith('//') else seq
+
+
+def has_seq_cleanup_chars(seq):
+    """SEQ_CLEANUP_PATTERN に当たる文字を含むか。正規表現で全長を検索するより速い str の in で調べる。"""
+    return any(c in seq for c in _SEQ_CLEANUP_CHARS)
+
+
 def _parse_fasta_blocks(fasta_content, records, parse_errors, ann_path):
     """FASTA文字列をパースして SeqRecord を初期化する"""
     if not fasta_content:
@@ -130,17 +149,15 @@ def _parse_fasta_blocks(fasta_content, records, parse_errors, ann_path):
 
         if raw_seq:
             # 末尾の正しい '//' を安全に除去（改行や空白が連続していても対応）
-            raw_seq = re.sub(r'//\s*$', '', raw_seq)
+            raw_seq = strip_terminator(raw_seq)
 
             # 1. まず、正常なフォーマットである「改行」だけを削除する（ここは警告の対象外）
-            seq_no_newlines = re.sub(r'[\r\n]+', '', raw_seq)
+            seq_no_newlines = raw_seq.replace('\n', '').replace('\r', '')
 
             # 2. 不正な文字（タブ、スペース等の空白、ハイフン、途中の //）が含まれているかチェック
-            cleanup_pattern = re.compile(r'[ \t\f\v　]|-|//')
-            
-            if cleanup_pattern.search(seq_no_newlines):
+            if has_seq_cleanup_chars(seq_no_newlines):
                 # 不正な文字が含まれていた場合、それらを削除
-                clean_seq = cleanup_pattern.sub('', seq_no_newlines)
+                clean_seq = SEQ_CLEANUP_PATTERN.sub('', seq_no_newlines)
                 
                 # Auto-cleanup の警告（SEQ0085）を parse_errors に追加
                 fasta_filename = Path(ann_path).with_suffix('.fasta').name if ann_path else "Sequence File"

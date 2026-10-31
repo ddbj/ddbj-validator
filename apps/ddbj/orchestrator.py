@@ -246,7 +246,7 @@ class ValidatorPipeline(ExternalFetchMixin, BiosampleTsvMixin):
             autofix_tasks.append(AutofixTask(
                 ann_path=ann_path, seq_path=seq_path, file_updates=file_updates,
                 tax_data=self.tax_data, cv_terms=self.cv_terms, report_out_dir=self.report_out_dir,
-                ddbj_dict=self.ddbj_dict))
+                ddbj_dict=self.ddbj_dict, tmp_dir_str=str(self.tmp_dir)))
 
         with ProcessPoolExecutor(max_workers=self.jobs) as executor:
             for msg in executor.map(_apply_autofix_worker, autofix_tasks):
