@@ -1,3 +1,4 @@
+import bisect
 import re
 import logging
 from common.rules.base import BaseRule
@@ -199,11 +200,12 @@ class AXS5290(BaseRule):
         if record.id == "COMMON":
             return results
 
-        seq_str = str(record.seq).upper()
+        # 配列は小文字で持っているので upper() で全長をコピーせず、大小どちらの N も拾う
+        seq_str = str(record.seq)
         if not seq_str:
             return results
 
-        n_stretches = [(m.start(), m.end()) for m in re.finditer(r'N{100,}', seq_str)]
+        n_stretches = [(m.start(), m.end()) for m in re.finditer(r'[Nn]{100,}', seq_str)]
         if not n_stretches:
             return results
 
@@ -215,14 +217,27 @@ class AXS5290(BaseRule):
                     for part in parts:
                         gap_intervals.append((int(part.start), int(part.end)))
 
+        # gap を並べて、接する・重なるものをまとめた区間にしておく（2026-10-31）。
+        # 以前は N の連続ごとに gap を全部調べ直していて、assembly_gap が 100 万ある登録で
+        # このルールだけで数分かかっていた。N の連続の先頭から gap で途切れずに覆える範囲は、
+        # 先頭を含むまとめた区間の終わりまでなので、二分探索で 1 回引けばよい。
+        merged = []
+        for g_start, g_end in sorted(gap_intervals):
+            if g_end <= g_start:
+                continue
+            if merged and g_start <= merged[-1][1]:
+                if g_end > merged[-1][1]:
+                    merged[-1][1] = g_end
+            else:
+                merged.append([g_start, g_end])
+        merged_starts = [m[0] for m in merged]
+
         for n_start, n_end in n_stretches:
             uncovered_start = n_start
-            overlapping_gaps = sorted([g for g in gap_intervals if g[1] > n_start and g[0] < n_end])
-            
-            for g_start, g_end in overlapping_gaps:
-                if g_start <= uncovered_start:
-                    uncovered_start = max(uncovered_start, g_end)
-                    
+            i = bisect.bisect_right(merged_starts, n_start) - 1
+            if i >= 0 and merged[i][1] > n_start:
+                uncovered_start = merged[i][1]
+
             if uncovered_start < n_end:
                 msg = f"{self.description} (Found >= 100 'N's at {n_start + 1}..{n_end})"
                 results.append(self.format_result(

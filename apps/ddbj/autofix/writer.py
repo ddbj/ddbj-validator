@@ -4,13 +4,14 @@
 （pickle 可能である必要がある）。他はファイル書き出しの純粋な関数。
 2026-09-15 に apps/ddbj/orchestrator.py から移動（中身は不変）。
 """
-import re
+import pickle
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from apps.ddbj.preprocessor import preprocess_files, ANN_EXTENSIONS
-from apps.ddbj.parser import parse_ddbj_submission
+from apps.ddbj.parser import parse_ddbj_submission, strip_terminator, has_seq_cleanup_chars, SEQ_CLEANUP_PATTERN
 from apps.ddbj.utils.translation import get_cds_translation_params, get_insdc_translation
 from common.features import get_features, get_expected_transl_table
 
@@ -27,6 +28,37 @@ class AutofixTask:
     # definitions.json（metadata_field の判定に使う）。空だと再パース時に DBLINK 等が生物学的
     # フィーチャー扱いになり、COMMON テンプレートの展開先がずれる。
     ddbj_dict: Any = None
+    # 検証ワーカーが書いた前処理済みの ann 行・クリーンな FASTA・AA FASTA の置き場（.val_tmp）。
+    # あればそれを使い、ファイルの読み直しと再パースをしない。
+    tmp_dir_str: Any = None
+
+
+def phase3_cache_paths(tmp_dir_str, ann_path):
+    """検証ワーカー（フェーズ 2）が書き、ここ（フェーズ 3）が使う中間ファイルのパス。
+
+    以前はフェーズ 3 で .ann と FASTA を読み直して前処理・パースをやり直しており、
+    数 GB のゲノムでは全体の 2〜4 割がそれだった（2026-10-31）。
+    名前は検証結果の JSONL（<ann ファイル名>.jsonl）にそろえる。
+    """
+    base = Path(tmp_dir_str) / Path(ann_path).name
+    return {
+        "ann_lines": base.with_name(base.name + ".annlines.pkl"),
+        "fasta": base.with_name(base.name + ".fixed.fasta"),
+        "aa": base.with_name(base.name + ".aa.faa"),
+    }
+
+
+def write_phase3_cache(tmp_dir_str, ann_path, ann_lines, fasta_content, records, tax_data, cv_terms):
+    """フェーズ 3 で要るもの（前処理済みの ann 行・クリーンな FASTA・AA FASTA）を中間ファイルに書く。
+
+    records はパース直後（検証で触る前）のものを渡す。フェーズ 3 で再パースした結果と同じにするため。
+    """
+    paths = phase3_cache_paths(tmp_dir_str, ann_path)
+    fast_copy_and_fix_fasta(fasta_content, paths["fasta"])
+    write_aa_fasta(records, paths["aa"], tax_data, cv_terms)
+    # ann 行は最後に書く。これがあることを「中間ファイルがそろっている」印にする
+    with open(paths["ann_lines"], "wb") as f:
+        pickle.dump(ann_lines, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 # ============================================================================
@@ -40,8 +72,15 @@ def _apply_autofix_worker(task):
     cv_terms = task.cv_terms
     report_out_dir = task.report_out_dir
 
-    ann_lines, fasta_content, _ = preprocess_files(ann_path, seq_path)
-    records, _, _ = parse_ddbj_submission(fasta_content, ann_path, ann_lines, task.ddbj_dict or {})
+    cache = phase3_cache_paths(task.tmp_dir_str, ann_path) if task.tmp_dir_str else None
+    use_cache = cache is not None and cache["ann_lines"].exists()
+    if use_cache:
+        with open(cache["ann_lines"], "rb") as f:
+            ann_lines = pickle.load(f)
+        records = None
+    else:
+        ann_lines, fasta_content, _ = preprocess_files(ann_path, seq_path)
+        records, _, _ = parse_ddbj_submission(fasta_content, ann_path, ann_lines, task.ddbj_dict or {})
     
     # -o オプションがあればそこへ。なければ入力ファイルの親へ
     base_out_dir = Path(report_out_dir) if report_out_dir else Path(ann_path).parent
@@ -50,7 +89,12 @@ def _apply_autofix_worker(task):
     fixed_dir.mkdir(parents=True, exist_ok=True)
     
     fixed_fasta = fixed_dir / Path(seq_path).name 
-    fast_copy_and_fix_fasta(fasta_content, fixed_fasta)
+    if use_cache:
+        # FASTA が空のときは中間ファイルもできない（fast_copy_and_fix_fasta と同じ）
+        if cache["fasta"].exists():
+            shutil.move(str(cache["fasta"]), str(fixed_fasta))
+    else:
+        fast_copy_and_fix_fasta(fasta_content, fixed_fasta)
                 
     original_ann_name = Path(ann_path).name
     for ext in ANN_EXTENSIONS:
@@ -71,7 +115,13 @@ def _apply_autofix_worker(task):
     base_name = original_ann_name[:-4] if original_ann_name.endswith('.ann') else Path(original_ann_name).stem
     aa_fasta_path = aa_dir / f"AA_{base_name}.faa"
     
-    is_aa_written = write_aa_fasta(records, aa_fasta_path, tax_data, cv_terms)
+    if use_cache:
+        is_aa_written = cache["aa"].exists()
+        if is_aa_written:
+            aa_fasta_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(cache["aa"]), str(aa_fasta_path))
+    else:
+        is_aa_written = write_aa_fasta(records, aa_fasta_path, tax_data, cv_terms)
     
     msgs = []
     if file_updates:
@@ -295,11 +345,11 @@ def fast_copy_and_fix_fasta(fasta_content, dst_fasta_path):
                 raw_seq = block[idx+1:].lower()
                 
                 # 1. 末尾の正しい '//' を安全に除去（改行や空白が連続していても対応）
-                raw_seq = re.sub(r'//\s*$', '', raw_seq)
+                raw_seq = strip_terminator(raw_seq)
                 
                 # 2. 不正な文字（タブ、スペース等の空白、ハイフン、途中の //）のみを削除
-                # 元の改行（折り返し）はそのまま維持される
-                clean_seq = re.sub(r'[ \t\f\v　]|-|//', '', raw_seq)
+                # 元の改行（折り返し）はそのまま維持される。含まないときは正規表現をかけない（全長を作り直すため）
+                clean_seq = SEQ_CLEANUP_PATTERN.sub('', raw_seq) if has_seq_cleanup_chars(raw_seq) else raw_seq
                 
                 # 3. ヘッダー出力後、配列を出力し、最後に // を追加
                 f.write(f">{header}\n")

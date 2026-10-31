@@ -20,6 +20,7 @@ from apps.ddbj.autofix import (
     propose_location_whitespace_fixes
 )
 from apps.ddbj.rule_modes import get_web_mode_skip_rules
+from apps.ddbj.autofix.writer import write_phase3_cache
 from common.features import get_features
 
 
@@ -75,6 +76,13 @@ def _validate_single_file_set(task):
         ann_lines=ann_lines, 
         ddbj_dict=context.ddbj_dict
     )
+
+    # フェーズ 3（fixed/・aa/ の書き出し）で使う中間ファイルを、検証で records に触る前に書いておく。
+    # フェーズ 3 でファイルを読み直して前処理・パースをやり直さないため（2026-10-31）。
+    # --common-only はフェーズ 3 を行わないので書かない。
+    if not common_only:
+        write_phase3_cache(tmp_dir_str, ann_path, ann_lines, fasta_content, records,
+                           tax_data, context.cv_terms)
 
     context.analyze_records(records)
     validator = Validator(context)

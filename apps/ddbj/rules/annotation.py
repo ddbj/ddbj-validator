@@ -1,3 +1,4 @@
+import functools
 import re
 import os
 import json
@@ -1582,8 +1583,23 @@ class ANN1140(BaseRule):
             ))
 
         return results
-        
-                                
+
+
+@functools.lru_cache(maxsize=65536)
+def _parse_date_cached(clean_part, today):
+    """ANN1240 用。dateutil で日付を解釈し、解釈できなければ None を返す。
+
+    数十万エントリの登録では同じ collection_date が繰り返し現れ、dateutil の解釈が
+    1 件ずつ走って遅かったので、同じ値は結果を使い回す（2026-10-31）。
+    dateutil は欠けた月・日を当日で補うので、当日（today）もキーに含める。
+    """
+    try:
+        return parser.parse(clean_part)
+    except Exception as e:
+        logger.debug(f"Failed to check future collection_date: {e}", exc_info=True)
+        return None
+
+
 class ANN1240(BaseRule):
     rule_id = "ANN1240"
     alternate_id = "BS_R0040"
@@ -1608,7 +1624,9 @@ class ANN1240(BaseRule):
                         
                     try:
                         clean_part = re.sub(r'[\s.,]+', '-', val_str)
-                        dt = parser.parse(clean_part)
+                        dt = _parse_date_cached(clean_part, today)
+                        if dt is None:
+                            continue
                         
                         has_time = 'T' in val_str.upper() or ':' in val_str
                         has_month_word = bool(re.search(r'[A-Za-z]{3,}', val_str))
