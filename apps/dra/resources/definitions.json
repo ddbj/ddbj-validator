@@ -319,6 +319,11 @@
       ]
     }
   },
+  "paired_capable_platforms": {
+    "platforms": ["ILLUMINA", "BGISEQ", "DNBSEQ", "ELEMENT", "GENEMIND"],
+    "include_instrument_models": ["Onso"],
+    "exclude_instrument_models": ["CycloneSEQ"]
+  },
   "formats": {
     "filename": "^[A-Za-z0-9._-]+$",
     "md5_checksum": "^[A-Za-z0-9]{32}$",

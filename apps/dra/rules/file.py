@@ -4,6 +4,7 @@
 - DRA_R0023/0024: Run/Analysis の filename 文字種（英数・ハイフン・アンダースコア・ドットのみ）。
 - DRA_R0025/0026: Run/Analysis の md5 checksum（32 英数字）。
 - DRA_R0027: paired experiment を参照する Run に fastq が 1 本だけ → warning。
+- DRA_R0052: single experiment を参照する Run に R1/R2 の対になった fastq がある → warning（R0027 の逆向き）。
 - DRA_R0028: PacBio RS II hdf 系列（bas 1＋bax 3）が Run 単位で揃っていない。
 - DRA_R0029: bam alignment 系列（bam/tab/reference_fasta のうち 2 種以上混在）。
 - DRA_R0030: filetype が受理値でない（cv_terms run_filetype/analysis_filetype）。
@@ -12,6 +13,8 @@
 - DRA_R0049: submission 内で別名だが md5 が同一（＝同一内容ファイルの二重登録）。
   R0040 / R0049 とも、reference_fasta / tab を複数 Run で使い回すのは認める（各 Run に 1 回ずつなら対象外）。
 """
+import re
+
 from apps.dra.rules.base import DraRule
 from apps.dra.defs import compiled
 
@@ -40,6 +43,20 @@ def _reused_across_runs(entries):
     """entries（同じ filename / md5 の (label, reusable) 群）が「Run ごとに 1 回ずつの使い回し」だけか。"""
     labels = [lb for lb, _ in entries]
     return all(r for _, r in entries) and len(labels) == len(set(labels))
+
+
+def _experiment_index(submission):
+    """Experiment を accession/alias で引ける dict（Run の EXPERIMENT_REF@accession / @refname 用）。"""
+    index = {}
+    for e in submission.experiments:
+        for k in (e.accession, e.alias):
+            if k:
+                index[k.strip()] = e
+    return index
+
+
+def _run_experiment(run, index):
+    return index.get((run.experiment_ref or "").strip()) or index.get((run.experiment_refname or "").strip())
 
 
 def _fname_re(context):
@@ -159,20 +176,87 @@ class DRA_R0027(DraRule):
                   "for paired sequencing Experiment.")
 
     def validate(self, submission, context):
-        # Experiment の layout を accession/alias で索引
-        layout = {}
-        for e in submission.experiments:
-            for k in (e.accession, e.alias):
-                if k:
-                    layout[k.strip()] = (e.library_layout or "")
+        index = _experiment_index(submission)
         out = []
         for r in submission.runs:
-            lay = layout.get((r.experiment_ref or "").strip()) or layout.get((r.experiment_refname or "").strip())
-            if lay != "PAIRED":
+            e = _run_experiment(r, index)
+            if e is None or (e.library_layout or "") != "PAIRED":
                 continue
             n_fastq = sum(1 for f in r.files if (f.filetype or "") in _FASTQ)
             if n_fastq == 1:
                 out.append(self.result(sample=r.label, message=self.description))
+        return out
+
+
+# 区切り（. _ -）で挟まれた読み番号のトークン（R1 / R2 / 1 / 2。数字の部分で束ねる）
+_FNAME_SEP = re.compile(r"([._-])")
+_MATE_TOKEN = re.compile(r"^(R?)(\d+)$", re.IGNORECASE)
+
+
+def _paired_capable(e, context):
+    """Experiment のシーケンサーがペアエンドで読める機種か（definitions.json の paired_capable_platforms）。"""
+    conf = (context.definitions or {}).get("paired_capable_platforms", {}) if context else {}
+    model = (e.instrument_model or "").strip()
+    if model in conf.get("exclude_instrument_models", []):
+        return False
+    if model in conf.get("include_instrument_models", []):
+        return True
+    return (e.platform or "").strip().upper() in conf.get("platforms", [])
+
+
+def _mate_pairs(filenames):
+    """読み番号のトークンだけが違う 2 ファイル（1 と 2）の組を返す。
+
+    トークンを 1 つずつ '#' に置き換えたキーで束ね、そのキーの番号がちょうど {1, 2} のときだけ組とする。
+    _0, _1, _2 … のようなチャンク分割は番号が 3 つ以上になるので組にならない。
+    Illumina の x_R1_001 は R# のキーで R1/R2 が、#（001）のキーでは 1 つだけになる。
+    """
+    groups = {}
+    for fn in filenames:
+        tokens = _FNAME_SEP.split(fn)
+        for i in range(0, len(tokens), 2):   # 偶数番目がトークン、奇数番目が区切り
+            m = _MATE_TOKEN.match(tokens[i])
+            if not m:
+                continue
+            key = "".join(tokens[:i]) + m.group(1).upper() + "#" + "".join(tokens[i + 1:])
+            groups.setdefault(key, {}).setdefault(int(m.group(2)), []).append(fn)
+    pairs = []
+    for mates in groups.values():
+        if set(mates) == {1, 2} and len(mates[1]) == 1 and len(mates[2]) == 1:
+            pair = (mates[1][0], mates[2][0])
+            if pair not in pairs:
+                pairs.append(pair)
+    return pairs
+
+
+class DRA_R0052(DraRule):
+    """single experiment を参照する Run に、R1/R2 の対になった fastq がある → warning。
+
+    DRA_R0027（PAIRED なのに fastq が 1 本）の逆向き。ペアエンドで読める機種（ILLUMINA 等）に限る。
+    ナノポア等のロングリードは SINGLE で _1/_2 のようなファイルを持つのが普通なので対象外。
+    参照先の Experiment が同じ submission に無い Run は layout が分からないので見ない（R0027 と同じ）。
+    """
+    rule_id = "DRA_R0052"
+    level = "warning"
+    target = "RUN/FILE"
+    description = ("Paired fastq files (R1/R2) are registered for a SINGLE library Experiment. "
+                   "If the reads are paired-end, the library layout should be PAIRED.")
+
+    def validate(self, submission, context):
+        index = _experiment_index(submission)
+        out = []
+        for r in submission.runs:
+            e = _run_experiment(r, index)
+            if e is None or (e.library_layout or "") != "SINGLE" or not _paired_capable(e, context):
+                continue
+            fastq = [(f.filename or "").strip() for f in r.files
+                     if (f.filetype or "") in _FASTQ and (f.filename or "").strip()]
+            pairs = _mate_pairs(fastq)
+            if pairs:
+                a, b = pairs[0]
+                more = f" and {len(pairs) - 1} more pair(s)" if len(pairs) > 1 else ""
+                out.append(self.result(sample=r.label,
+                                       message=f"{self.description} (Found: '{a}', '{b}'{more})"))
         return out
 
 
