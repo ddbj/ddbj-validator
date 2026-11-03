@@ -241,7 +241,53 @@ def _resolve_targets(args):
     return pairs, report_out_dir, target_dirs_for_report
 
 
+# 実行ごとに中身を空にする出力ディレクトリ（出力先 = -o、無ければ対象ディレクトリ）
+OUTPUT_DIR_NAMES = ("fixed", "aa", "reports", "biosample")
+
+
+def clear_output_dirs(base_dir, pairs=()):
+    """前回の実行結果を出力先から消す（2026-11-03）。
+
+    同名ファイルは上書きされるが、登録ファイル名を変えて再実行すると前回の fixed/ が残り、
+    そのまま load-nsub すると二重登録になる。そのため fixed/ aa/ reports/ biosample/ を毎回空にする。
+    - symlink のディレクトリはたどらない（リンク先を消さない）
+    - 入力ファイルを含むディレクトリは消さない（例: -o . fixed/ で fixed/ の登録ファイルを検証する場合）
+    戻り値: [(ディレクトリ名, 消したファイル数)]
+    """
+    import shutil
+    base = Path(base_dir)
+    inputs = [Path(p).resolve() for pair in pairs for p in pair if p]
+    cleared = []
+    for name in OUTPUT_DIR_NAMES:
+        d = base / name
+        if d.is_symlink():
+            print(f"[WARN] {d} is a symbolic link. Previous outputs in it are not cleared.", file=sys.stderr)
+            continue
+        if not d.is_dir():
+            continue
+        real = d.resolve()
+        if any(real in p.parents for p in inputs):
+            print(f"[WARN] {d} contains input files. Previous outputs in it are not cleared.", file=sys.stderr)
+            continue
+        n = sum(1 for p in d.rglob("*") if p.is_file() or p.is_symlink())
+        for child in d.iterdir():
+            if child.is_dir() and not child.is_symlink():
+                shutil.rmtree(child)
+            else:
+                child.unlink()
+        if n:
+            cleared.append((name, n))
+    return cleared
+
+
 def _run(args, pairs, report_out_dir, target_dirs_for_report, skip_db, skip_ncbi, jobs):
+    # 前回の出力（fixed/ aa/ reports/ biosample/）を消してから実行する。
+    # 検証の前に消すので、途中で落ちても新しいレポートと古い fixed/ が並んで残らない
+    if report_out_dir:
+        cleared = clear_output_dirs(report_out_dir, pairs)
+        if cleared:
+            print("[INFO] Cleared previous outputs: " + ", ".join(f"{n}/ ({c} files)" for n, c in cleared))
+
     # --- パイプラインの実行とレポート出力 --- #
     account_id = args.account
     
