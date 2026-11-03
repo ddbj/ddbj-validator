@@ -49,3 +49,47 @@ def test_does_not_follow_symlinked_dir(tmp_path):
     os.symlink(real, out / "fixed")
     assert clear_output_dirs(out, []) == []
     assert (real / "keep.ann").exists()
+
+
+# ---- --clean option と前回の残りの警告 ----
+import time
+
+from apps.ddbj.cli import _build_parser, find_stale_outputs, warn_stale_outputs
+
+
+def test_clean_option_default_off(monkeypatch):
+    monkeypatch.delenv("DDBJ_VALIDATOR_CLEAN", raising=False)
+    assert _build_parser().parse_args(["x"]).clean is False
+    assert _build_parser().parse_args(["--clean", "x"]).clean is True
+
+
+def test_clean_option_env_default_and_no_clean(monkeypatch):
+    # curator 用 wrapper（ddbj-validator.sh）が設定する
+    monkeypatch.setenv("DDBJ_VALIDATOR_CLEAN", "1")
+    assert _build_parser().parse_args(["x"]).clean is True
+    assert _build_parser().parse_args(["--no-clean", "x"]).clean is False
+
+
+def test_stale_outputs_warned_not_removed(tmp_path, capsys):
+    old = tmp_path / "fixed/SAMD00000001.ann"
+    _touch(old)
+    past = time.time() - 3600
+    os.utime(old, (past, past))
+    since = time.time() - 1
+    _touch(tmp_path / "fixed/SAMD00000001a.ann")  # 今回書いたファイル
+    assert find_stale_outputs(tmp_path, since) == {"fixed": ["SAMD00000001.ann"]}
+    warn_stale_outputs(tmp_path, since)
+    err = capsys.readouterr().err
+    assert "fixed/ has 1 file(s) not written by this run" in err and "SAMD00000001.ann" in err
+    assert "--clean" in err
+    assert old.exists()
+
+
+def test_stale_outputs_many_are_truncated(tmp_path, capsys):
+    past = time.time() - 3600
+    for i in range(7):
+        p = tmp_path / f"aa/AA_{i}.faa"
+        _touch(p)
+        os.utime(p, (past, past))
+    warn_stale_outputs(tmp_path, time.time())
+    assert "and 2 more" in capsys.readouterr().err

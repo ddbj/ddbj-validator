@@ -47,7 +47,7 @@ class BiosampleTsvMixin:
 
         print("\n=== BioSample Submission TSV ===")
 
-        # 出力先（既存の SSUB TSV を削除して旧命名の残留を防ぐ。biosample/ は cli.clear_output_dirs でも実行の最初に空にしている）
+        # 出力先（既存の SSUB TSV を削除して旧命名の残留を防ぐ。--clean のときは cli.clear_output_dirs が実行の最初に空にしている）
         out_dir = Path(self.report_out_dir) / "biosample" if self.report_out_dir else Path("biosample")
         out_dir.mkdir(parents=True, exist_ok=True)
         for f in out_dir.glob("*.txt"):
