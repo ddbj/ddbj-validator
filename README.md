@@ -131,6 +131,7 @@ ddbj-validator [オプション] [検証対象ディレクトリ]
 * `-l`, `--local` 完全にローカルな環境で動作します。DB および API へのアクセスをスキップし、ファイルのチェックのみを行います。
 * `-f`, `--force-fix` フォーマットエラーや修正事項（Autofix）が見つかった際、対話プロンプトでの確認をスキップしてすべて自動適用します。
 * `-j`, `--jobs` 並列処理するプロセス数を指定します。指定しない場合は環境に合わせて自動設定されます（最大8）。`0` を指定すると、利用可能なすべての CPU コアを使用します。
+* `--clean` 実行の前に、出力ディレクトリの `fixed/`・`aa/`・`reports/` の中身を消します。指定しない場合は、同じ名前のファイルを上書きするだけで、ほかのファイルは残ります。これらのディレクトリに自分のファイルを置いている場合は、付けないでください。
 * `--common-only` アノテーションファイルの COMMON エントリだけを検証します（SUBMITTER / REFERENCE / DBLINK / ST_COMMENT / KEYWORD / DATATYPE / DIVISION など）。エントリ部と FASTA は読まないため、大きなファイルでもすぐに終わり、FASTA が無くても実行できます。レポートだけを出力し、自動修正（`fixed/`）は行いません（`-f` は無視されます）。エントリ部が無いと判定できないチェック（DBLINK や organism がファイル内のどこにも無い、など）は行いません。
 * `--ncbi-api-key` NCBI API へのリクエスト制限を緩和するための API キーを指定します。
 * `--help` 利用可能なすべてのオプションと詳細を確認します。
@@ -234,7 +235,7 @@ NCBI_API_EMAIL=あなたのメールアドレス
 * `fixed/` 承認された Autofix（または、`-f` オプションで自動適用された修正）が反映されたファイルが格納されます。
 * `aa/` CDS feature から翻訳されたアミノ酸配列（FASTA 形式）が格納されます。
 
-実行のたびに、出力ディレクトリの `reports/`・`fixed/`・`aa/`・`biosample/` の中身は消してから作り直します。登録ファイルの名前を変えて再実行しても、前回のファイルは残りません。必要な結果は、再実行の前に別の場所へ移してください。
+再実行すると、同じ名前のファイルは上書きされますが、それ以外の前回のファイルは残ります（登録ファイルの名前を変えて再実行した場合など）。今回の実行で書かれなかったファイルが `fixed/` や `aa/` にあると、実行の最後に警告を表示します。前回の出力を消してから実行するには `--clean` を付けてください。
 
 # 各データベースの検証（サブコマンド）
 
@@ -666,6 +667,7 @@ If the virtual environment is not activated, you must specify the direct path to
 * `-l`, `--local`: Runs in a completely local environment. Skips access to databases and APIs, performing only file checks.
 * `-f`, `--force-fix`: Automatically applies all fixes (Autofix) found, skipping the interactive confirmation prompt.
 * `-j`, `--jobs`: Specifies the number of parallel processes. If not specified, it is automatically set according to the environment (maximum of 8). If `0` is specified, all available CPU cores will be used.
+* `--clean`: Empties `fixed/`, `aa/` and `reports/` in the output directory before running. Without it, only files with the same names are overwritten and other files remain. Do not use it if you keep your own files in these directories.
 * `--common-only`: Validates only the COMMON entry of the annotation files (SUBMITTER, REFERENCE, DBLINK, ST_COMMENT, KEYWORD, DATATYPE, DIVISION, etc.). Entries and FASTA files are not read, so it finishes quickly even for large files and runs without FASTA files. Only reports are written; no auto-fix is applied (`-f` is ignored). Checks that need the entries, such as a DBLINK or organism missing from the whole file, are not run.
 * `--ncbi-api-key`: Specifies an API key to ease request limits to the NCBI API.
 * `--help`: Displays all available options and details.
@@ -768,7 +770,7 @@ When the tool is executed, it automatically searches for and validates `*.ann` a
 * `fixed/`: Stores files reflecting the approved Autofixes (or those automatically applied via the `-f` option).
 * `aa/`: Stores amino acid sequences (FASTA format) translated from CDS features.
 
-Each run empties `reports/`, `fixed/`, `aa/` and `biosample/` in the output directory before writing, so files from a previous run (for example, under a file name you have since changed) do not remain. Move any results you want to keep before running again.
+When you run the tool again, files with the same names are overwritten, but other files from the previous run remain (for example, after renaming the submission files). If `fixed/` or `aa/` contains files that were not written by this run, a warning is shown at the end. To empty the previous outputs before running, add `--clean`.
 
 ## Acknowledgments
 

@@ -30,6 +30,11 @@ def _build_parser():
     # COMMON だけを検証（エントリ部・FASTA は読まない。FASTA が無くても実行できる。レポートのみで autofix しない）
     parser.add_argument("--common-only", action="store_true",
                         help="Validate only the COMMON entry of annotation files (entries and FASTA are not read; FASTA files are optional; report only, no auto-fix)")
+    # 前回の出力を消してから実行（既定は消さず同名上書き）。curator は wrapper（ddbj-validator.sh）が
+    # DDBJ_VALIDATOR_CLEAN=1 を設定して既定を有効にする。--no-clean で打ち消せる
+    parser.add_argument("--clean", action=argparse.BooleanOptionalAction,
+                        default=os.environ.get("DDBJ_VALIDATOR_CLEAN") == "1",
+                        help="Empty fixed/, aa/ and reports/ in the output directory before running (default: overwrite same-name files only)")
     # 関連 BioSample を SSUB 単位の更新用 TSV として出力（内部使用のみ・要内部DB）
     parser.add_argument("-b", "--biosample", action="store_true", help="Generate SSUB-unit BioSample update TSV from DBLINK biosample accessions (internal use; requires internal DB)")
     # -f -b 時の同期方向（内部/テスト用）。ann2bs は「全 [b]（ann 値で BioSample を更新）」を非対話で再現する。
@@ -246,10 +251,11 @@ OUTPUT_DIR_NAMES = ("fixed", "aa", "reports", "biosample")
 
 
 def clear_output_dirs(base_dir, pairs=()):
-    """前回の実行結果を出力先から消す（2026-11-03）。
+    """前回の実行結果を出力先から消す（--clean のとき、2026-11-03）。
 
     同名ファイルは上書きされるが、登録ファイル名を変えて再実行すると前回の fixed/ が残り、
-    そのまま load-nsub すると二重登録になる。そのため fixed/ aa/ reports/ biosample/ を毎回空にする。
+    そのまま load-nsub すると二重登録になる。--clean では fixed/ aa/ reports/ biosample/ を空にする。
+    一般ユーザが fixed/ に別のファイルを置いていることもあるので、既定では消さない。
     - symlink のディレクトリはたどらない（リンク先を消さない）
     - 入力ファイルを含むディレクトリは消さない（例: -o . fixed/ で fixed/ の登録ファイルを検証する場合）
     戻り値: [(ディレクトリ名, 消したファイル数)]
@@ -280,10 +286,39 @@ def clear_output_dirs(base_dir, pairs=()):
     return cleared
 
 
+# 前回の残りを警告するディレクトリ（登録ファイルが置かれ、名前が変わると残るもの）
+STALE_CHECK_DIR_NAMES = ("fixed", "aa")
+
+
+def find_stale_outputs(base_dir, since):
+    """今回の実行で書かなかった（mtime が since より前の）ファイルを返す。{ディレクトリ名: [ファイル名]}"""
+    stale = {}
+    for name in STALE_CHECK_DIR_NAMES:
+        d = Path(base_dir) / name
+        if not d.is_dir():
+            continue
+        old = sorted(p.name for p in d.iterdir() if p.is_file() and p.stat().st_mtime < since)
+        if old:
+            stale[name] = old
+    return stale
+
+
+def warn_stale_outputs(base_dir, since):
+    """前回の残りがあれば警告する（消さない）。load-nsub で前回のファイルまで登録するのを防ぐため"""
+    for name, files in find_stale_outputs(base_dir, since).items():
+        shown = ", ".join(files[:5]) + (f" and {len(files) - 5} more" if len(files) > 5 else "")
+        print(f"[WARN] {name}/ has {len(files)} file(s) not written by this run (from an earlier run?): {shown}", file=sys.stderr)
+        print("       Remove them, or run with --clean to empty fixed/, aa/ and reports/ first.", file=sys.stderr)
+
+
 def _run(args, pairs, report_out_dir, target_dirs_for_report, skip_db, skip_ncbi, jobs):
-    # 前回の出力（fixed/ aa/ reports/ biosample/）を消してから実行する。
+    import time
+    # 前回の残りの判定基準（mtime 比較。少し余裕を持たせる）
+    run_started = time.time() - 1
+
+    # --clean: 前回の出力（fixed/ aa/ reports/ biosample/）を消してから実行する。
     # 検証の前に消すので、途中で落ちても新しいレポートと古い fixed/ が並んで残らない
-    if report_out_dir:
+    if args.clean and report_out_dir:
         cleared = clear_output_dirs(report_out_dir, pairs)
         if cleared:
             print("[INFO] Cleared previous outputs: " + ", ".join(f"{n}/ ({c} files)" for n, c in cleared))
@@ -340,7 +375,6 @@ def _run(args, pairs, report_out_dir, target_dirs_for_report, skip_db, skip_ncbi
         biosample_apply=args.biosample_apply, common_only=args.common_only
     )
         
-    import time
     start_time = time.time()
     
     # バージョンは biosample と独立管理（apps/ddbj/__init__.py の __version__）
@@ -370,6 +404,10 @@ def _run(args, pairs, report_out_dir, target_dirs_for_report, skip_db, skip_ncbi
         # 3. Autofix の承認と適用（--common-only はレポートのみ。fixed/ aa/ は作らない）
         if not args.common_only:
             pipeline.run_autofix()
+
+        # 既定（--clean 無し）では前回の fixed/ aa/ が残りうるので、今回書かなかったファイルを警告する
+        if not args.clean and report_out_dir:
+            warn_stale_outputs(report_out_dir, run_started)
 
         # --- 変更点: 表示用パスに reports ディレクトリを追加 ---
         reports_dir = target_dir / "reports"
