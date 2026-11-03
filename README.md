@@ -234,6 +234,8 @@ NCBI_API_EMAIL=あなたのメールアドレス
 * `fixed/` 承認された Autofix（または、`-f` オプションで自動適用された修正）が反映されたファイルが格納されます。
 * `aa/` CDS feature から翻訳されたアミノ酸配列（FASTA 形式）が格納されます。
 
+実行のたびに、出力ディレクトリの `reports/`・`fixed/`・`aa/`・`biosample/` の中身は消してから作り直します。登録ファイルの名前を変えて再実行しても、前回のファイルは残りません。必要な結果は、再実行の前に別の場所へ移してください。
+
 # 各データベースの検証（サブコマンド）
 
 本ツールは塩基配列アノテーション（`ddbj`）以外にも、DDBJ の各データベースの登録データを
@@ -765,6 +767,8 @@ When the tool is executed, it automatically searches for and validates `*.ann` a
     * `autofix_confirmation_summary.txt`: A list of proposed automatic fixes (Autofix).
 * `fixed/`: Stores files reflecting the approved Autofixes (or those automatically applied via the `-f` option).
 * `aa/`: Stores amino acid sequences (FASTA format) translated from CDS features.
+
+Each run empties `reports/`, `fixed/`, `aa/` and `biosample/` in the output directory before writing, so files from a previous run (for example, under a file name you have since changed) do not remain. Move any results you want to keep before running again.
 
 ## Acknowledgments
 
