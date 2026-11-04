@@ -95,3 +95,20 @@ def test_package_still_allowed_with_the_xml_role(client):
     """既存の XML / TSV 経路は素通し。`package` の拒否は record だけの話。"""
     r = _post(client, {"biosample": ("s.xml", _XML)}, package="Microbe")
     assert r.status_code == 200, r.text
+
+
+def test_unknown_ddbj_scope_is_rejected_at_accept_time(client):
+    r = _post(client, {"ddbj_annotation": ("a.ann", b"COMMON\tDATATYPE\t\ttype\tWGS\n")}, scope="all")
+    assert r.status_code == 400
+
+
+def test_scope_without_an_annotation_is_rejected(client):
+    r = _post(client, {"biosample": ("SSUB1.xml", _XML)}, scope="source")
+    assert r.status_code == 400
+
+
+@pytest.mark.parametrize("scope", [None, "common", "source"])
+def test_ddbj_annotation_is_accepted(client, scope):
+    form = {"scope": scope} if scope else {}
+    r = _post(client, {"ddbj_annotation": ("a.ann", b"COMMON\tDATATYPE\t\ttype\tWGS\n")}, **form)
+    assert r.status_code == 200, r.text

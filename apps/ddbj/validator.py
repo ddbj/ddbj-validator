@@ -217,6 +217,9 @@ class Validator:
             # エントリ部が要るルールは --common-only でスキップ
             if ctx.common_only and getattr(rule, 'requires_entries', False):
                 continue
+            # source 以外の feature か FASTA が要るルールは --scope source でスキップ
+            if ctx.source_only and getattr(rule, 'requires_features', False):
+                continue
 
             self.active_rules.append(rule)
 

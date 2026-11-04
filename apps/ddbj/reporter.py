@@ -9,11 +9,45 @@ logger = logging.getLogger(__name__)
 # --common-only のときヘッダーに足す行（エントリ部・配列を検証していないことを明示する）
 _SCOPE_LINES = {
     "common_only": "Scope: COMMON only (entries and sequences were not validated)\n",
+    "common_source": "Scope: COMMON and source features (other features and sequences were not validated)\n",
 }
 
 
 def _scope_line(scope):
     return _SCOPE_LINES.get(scope, "") if scope else ""
+
+
+def read_submission_types(jsonl_paths):
+    """ワーカー JSONL の submission_type レコード（--common-only のとき）をファイル順に返す。"""
+    out = []
+    for jsonl_path in jsonl_paths:
+        try:
+            with open(jsonl_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    rec = json.loads(line)
+                    if rec.get("type") == "submission_type":
+                        out.append(rec["data"])
+        except FileNotFoundError:
+            continue
+    return out
+
+
+def overall_submission_type(types):
+    """全ファイルで同じ type ならそれを、ばらつく・無いなら None を返す。"""
+    vals = {t.get("submission_type") for t in types}
+    return vals.pop() if len(vals) == 1 else None
+
+
+def _submission_type_lines(types):
+    """テキストレポートのヘッダーに足す行。複数ファイルならファイルごとに 1 行。"""
+    lines = ""
+    for t in types:
+        st = t.get("submission_type") or "not declared"
+        if t.get("candidates"):
+            st += f" (keywords suggest: {', '.join(t['candidates'])})"
+        suffix = f" [{t.get('file')}]" if len(types) > 1 else ""
+        lines += f"Submission Type: {st}{suffix}\n"
+    return lines
 
 
 class ValidationReporter:
@@ -55,10 +89,13 @@ class ValidationReporter:
                         })
             except FileNotFoundError:
                 continue
+        # --common-only のときだけ submission type を返す（COMMON の申告から決まる）
+        types = read_submission_types(jsonl_paths)
         payload = {
             "version": version,
             # --common-only のときだけ "common_only"（エントリ部・配列は未検証であることを示す）
             **({"scope": scope} if scope else {}),
+            **({"submission_type": overall_submission_type(types), "submission_types": types} if types else {}),
             "validity": counts.get("error", 0) == 0,
             "stats": {"error": counts.get("error", 0), "warning": counts.get("warning", 0),
                       "info": counts.get("info", 0), "auto-cleanup": counts.get("auto-cleanup", 0)},
@@ -104,6 +141,10 @@ class ValidationReporter:
             f"Process Time: {process_time_str}\n"
             f"Version: {version_str}\n"
         ) + _scope_line(scope)
+        type_lines = _submission_type_lines(read_submission_types(jsonl_paths))
+        header_info += type_lines
+        if print_console and type_lines:
+            print(type_lines, end="")
 
         # レポートファイルを初期化 (上書き)
         set_str = "1 file set" if num_sets == 1 else f"{num_sets} file sets"

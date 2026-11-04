@@ -23,10 +23,14 @@ UPLOAD_ROLES = (
     "gea_idf", "gea_sdrf",
     "metabobank_idf", "metabobank_sdrf",
     "ddbj_record",
+    "ddbj_annotation",
 )
 
-# ロール既定の拡張子（アップロードがファイル名を持たないとき用）。ddbj_record 以外は XML。
-_ROLE_SUFFIX = {"ddbj_record": ".json"}
+# ロール既定の拡張子（アップロードがファイル名を持たないとき用）。ddbj_record / ddbj_annotation 以外は XML。
+_ROLE_SUFFIX = {"ddbj_record": ".json", "ddbj_annotation": ".ann"}
+
+# ddbj の CLI が受け付ける .ann の拡張子（apps/ddbj/preprocessor.ANN_EXTENSIONS と同じ）
+_ANN_EXTENSIONS = (".ann", ".annt.tsv", ".ann.txt")
 
 
 def save_upload(rdir, role, filename, data):
@@ -41,6 +45,9 @@ def save_upload(rdir, role, filename, data):
     dest_dir = Path(rdir)
     dest_dir.mkdir(parents=True, exist_ok=True)
     safe = Path(filename or f"{role}{_ROLE_SUFFIX.get(role, '.xml')}").name
+    if role == "ddbj_annotation" and not safe.lower().endswith(_ANN_EXTENSIONS):
+        # ddbj の CLI は拡張子で .ann を見分けるので、付いていなければ足す
+        safe += ".ann"
     if run_event.is_run_output(safe):
         safe = f"{role}_{safe}"
     dest = dest_dir / safe
@@ -54,6 +61,15 @@ def plan(saved, params):
     決められなければ None を返す（呼び出し側が入力エラーにする）。"""
     if "ddbj_record" in saved:
         return _plan_record(saved["ddbj_record"], params)
+    if "ddbj_annotation" in saved:
+        # 塩基配列（.ann）は COMMON（scope=source なら COMMON と source）だけを検証し、submission type を返す。
+        # エントリ部全体・FASTA の検証は大きなアップロードを伴うので web api では行わない。
+        # source は autofix を全部当てて fixed/ に .ann を書く（対話はできないので -f）
+        scope = normalise_ddbj_scope(params.get("scope")) or "common"
+        args = ["ddbj", "--scope", scope, str(saved["ddbj_annotation"])]
+        if scope == "source":
+            args.append("-f")
+        return args
     if "biosample" in saved:
         f = saved["biosample"]
         # 拡張子 .xml、または D-way 由来の拡張子なしフォールバック名 "biosample" は XML と決め打ち。
@@ -153,6 +169,20 @@ def submission_id_mismatch(db, submission_id):
     return None
 
 
+# ddbj_annotation で選べる検証範囲（ddbj の --scope。all は FASTA が要るので受けない）
+DDBJ_SCOPES = ("common", "source")
+
+
+def normalise_ddbj_scope(value):
+    """`scope` フォームの値を正規化する。空/未指定は None、未知の値は ValueError。"""
+    v = (value or "").strip().lower()
+    if not v:
+        return None
+    if v not in DDBJ_SCOPES:
+        raise ValueError(f"scope に指定できるのは {' / '.join(DDBJ_SCOPES)} です: {value!r}")
+    return v
+
+
 def normalise_record_db(value):
     """`record_db` フォームの値を正規化する。空/未指定は None、未知の値は ValueError。
 
@@ -246,7 +276,11 @@ def run_validation(rdir, saved, params):
                 raise ValueError("有効な入力がありません（対応ロールのファイルが無い）")
 
             args = list(base_args)
-            args += [config.MODE_FLAG_DB, "-j", "-o", str(rdir)]   # web api は内部 DB モード固定（-d）
+            if args[0] == "ddbj":
+                # ddbj の CLI は既定が内部 DB モードで、-d は --dir、-j は --jobs（JSON は --json）
+                args += ["--json", "-o", str(rdir)]
+            else:
+                args += [config.MODE_FLAG_DB, "-j", "-o", str(rdir)]   # web api は内部 DB モード固定（-d）
             if params.get("account"):
                 args += ["--account", params["account"]]
 

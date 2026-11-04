@@ -132,7 +132,8 @@ ddbj-validator [オプション] [検証対象ディレクトリ]
 * `-f`, `--force-fix` フォーマットエラーや修正事項（Autofix）が見つかった際、対話プロンプトでの確認をスキップしてすべて自動適用します。
 * `-j`, `--jobs` 並列処理するプロセス数を指定します。指定しない場合は環境に合わせて自動設定されます（最大8）。`0` を指定すると、利用可能なすべての CPU コアを使用します。
 * `--clean` 実行の前に、出力ディレクトリの `fixed/`・`aa/`・`reports/` の中身を消します。指定しない場合は、同じ名前のファイルを上書きするだけで、ほかのファイルは残ります。これらのディレクトリに自分のファイルを置いている場合は、付けないでください。
-* `--common-only` アノテーションファイルの COMMON エントリだけを検証します（SUBMITTER / REFERENCE / DBLINK / ST_COMMENT / KEYWORD / DATATYPE / DIVISION など）。エントリ部と FASTA は読まないため、大きなファイルでもすぐに終わり、FASTA が無くても実行できます。レポートだけを出力し、自動修正（`fixed/`）は行いません（`-f` は無視されます）。エントリ部が無いと判定できないチェック（DBLINK や organism がファイル内のどこにも無い、など）は行いません。
+* `--scope {common,source,all}` 検証する範囲を選びます。`common` は COMMON だけ（`--common-only` と同じ）、`source` は COMMON と各エントリの source feature だけ、`all`（既定）はすべてです。`common` と `source` は FASTA を読みません。下の「検証する範囲を絞る」を参照してください。
+* `--common-only` `--scope common` と同じです（後方互換）。アノテーションファイルの COMMON エントリだけを検証します（SUBMITTER / REFERENCE / DBLINK / ST_COMMENT / KEYWORD / DATATYPE / DIVISION など）。エントリ部と FASTA は読まないため、大きなファイルでもすぐに終わり、FASTA が無くても実行できます。レポートだけを出力し、自動修正（`fixed/`）は行いません（`-f` は無視されます）。エントリ部が無いと判定できないチェック（DBLINK や organism がファイル内のどこにも無い、など）は行いません。
 * `--ncbi-api-key` NCBI API へのリクエスト制限を緩和するための API キーを指定します。
 * `--help` 利用可能なすべてのオプションと詳細を確認します。
 
@@ -184,10 +185,58 @@ ddbj-validator --common-only submission.ann
   - COMMON テンプレート（COMMON に書いた source などをエントリへ展開する書き方）の feature は検証しません。
 - **出力**
   - `reports/` のレポートだけを出力します。ヘッダーに `Scope: COMMON only (entries and sequences were not validated)` と書かれます。`--json` では `"scope": "common_only"` が付きます。
+  - submission type（WGS、TSA、EST など）も出力します。推定はせず、COMMON の DATATYPE と DIVISION の申告から決めます（TPA と WGS を分けて書いた場合は `TPA-WGS`）。ヘッダーに `Submission Type: WGS` と書かれ、`--json` では `"submission_type"`（全ファイルで同じならその値、ばらつけば `null`）と、ファイルごとの `"submission_types"`（`datatypes`、`divisions`、`keywords`、`candidates`）が付きます。申告が無いときや KEYWORD と合わないときは、KEYWORD から逆引きした type を `candidates` に入れます。
   - 自動修正は行わず、`fixed/` と `aa/` は作りません。`-f` は無視されます。
 - `-n`、`-l`、`-o`、`--json` などのほかのオプションと一緒に使えます。
 
 エントリ部まで含めた最終確認は、`--common-only` を付けない通常の実行で行ってください。
+
+### COMMON と source だけを検証する（`--scope source`）
+
+COMMON と、各エントリの source feature（とエントリに書いた DBLINK などのメタデータ）だけを検証します。CDS などほかの feature と FASTA は読まないので、大きな登録でも短時間で終わります。生物名・採取地・採取日などのサンプル情報を先に確認したいときに使います。
+
+```bash
+ddbj-validator --scope source target_directory
+ddbj-validator --scope source -f submission.ann   # FASTA は不要
+```
+
+- **検証する項目**: `--common-only` の項目に加えて、source の qualifier（organism、mol_type、collection_date、geo_loc_name、lat_lon、strain など）、Taxonomy の照合、BioSample との突合、DATATYPE ごとに必要な source qualifier と mol_type。ファイル内のどこにも organism や DBLINK が無い場合の警告も出します。
+- **行わないこと**: source 以外の feature（CDS、gene など）とその location、翻訳、配列のチェック、ann と FASTA のエントリの突合。
+  - COMMON テンプレート（COMMON に書いた `source 1..E` を FASTA の各エントリへ展開する書き方）の source は、展開先のエントリが FASTA にしか無いので検証しません。
+- **出力**
+  - ヘッダーに `Scope: COMMON and source features (other features and sequences were not validated)` と書かれ、`--json` では `"scope": "common_source"` が付きます。submission type も `--common-only` と同じ形で出力します。
+  - 自動修正（`-f` または対話）は行い、`fixed/` に修正済みの `.ann` を書きます。`.ann` は全行を出力します（読み飛ばした CDS なども元のまま残ります）。FASTA は読まないので、`fixed/` の FASTA と `aa/` は作りません。
+  - `-b` は無視されます。
+
+最終確認は `--scope` を付けない通常の実行で行ってください。
+
+### submission type を返す（`--scope common` / `--scope source`）
+
+`--scope common`（`--common-only`）と `--scope source` では、検証結果と一緒に submission type（WGS、TSA、EST など）を返します。COMMON だけで決まるので、大きな登録でもすぐに分かります。通常の実行（`--scope all`）では返しません。
+
+- **決め方**: 推定はせず、COMMON に書かれた申告から決めます。
+  - DATATYPE（WGS、TSA、TLS、TPA、MGA、TPA-WGS など）を優先します。TPA と WGS を別々に書いた場合は `TPA-WGS` にまとめます。
+  - DATATYPE が無ければ、type にあたる DIVISION（CON、ENV、EST、GSS、HTC、HTG、STS、SYN、TSA）を使います。
+  - どちらも無ければ `null`（テキストでは `not declared`）です。
+  - 申告が無いときや KEYWORD と合わないときは、KEYWORD から逆引きした type を `candidates` に入れます（例: KEYWORD `WGS` があるのに DATATYPE が無い → `["WGS"]`）。
+- **テキスト**: ヘッダーとコンソールに `Submission Type: WGS` と出ます。複数ファイルならファイルごとに `[ファイル名]` を付けた行になります。
+- **JSON（`--json`）**:
+
+```json
+{
+  "scope": "common_only",
+  "submission_type": "WGS",
+  "submission_types": [
+    {"file": "a.ann", "submission_type": "WGS", "datatypes": ["WGS"], "divisions": [],
+     "keywords": ["WGS", "STANDARD_DRAFT"], "candidates": []}
+  ],
+  "validity": true, "stats": {"...": 0}, "messages": []
+}
+```
+
+  - `submission_type` は全ファイルで同じならその値、ばらつけば `null` です。ファイルごとの値は `submission_types` を見てください。
+  - `scope` は `--scope source` のとき `"common_source"` です。
+- **Web API**: `ddbj_annotation` ロールに `.ann` を送ると、同じ形で `result` に入ります。`scope` フォームで `common`（既定）か `source` を選べます。
 
 ### NCBI API の設定（推奨）
 
@@ -280,6 +329,7 @@ NCBI_API_EMAIL=あなたのメールアドレス
 | `dra_submission` / `dra_experiment` / `dra_run` / `dra_analysis` | DRA XML |
 | `gea_idf` / `gea_sdrf`、`metabobank_idf` / `metabobank_sdrf` | IDF / SDRF |
 | `ddbj_record` | DDBJ Record（v3 JSON） |
+| `ddbj_annotation` | 塩基配列のアノテーションファイル（`.ann`）。**COMMON（`scope=source` なら COMMON と source）だけを検証**し（`ddbj --scope`）、結果に `submission_type` / `submission_types` が付きます。FASTA は受け付けません |
 
 同時に送れるフォームフィールド:
 
@@ -289,6 +339,7 @@ NCBI_API_EMAIL=あなたのメールアドレス
 | `submission_id` | 全部 | 自分自身を除外するために使う（`BP_R0004` / `BS_R0091`）。DRA の `ddbj_record` では submission id（省略時は submission の alias から導く）。`record_db` と接頭辞が食い違えば 400（`record_db` を省略したときは推測した DB と比べ、食い違えば run が `error`） |
 | `package` | `biosample` の XML / TSV | TSV の package。**`ddbj_record` と併用すると 400**（record は sample ごとに package を持つため） |
 | `record_db` | `ddbj_record` | `bioproject` / `biosample` / `dra`。省略時は record の top-level から推測 |
+| `scope` | `ddbj_annotation` | `common`（既定）/ `source`。`source` は自動修正を全部当て、修正済みの `.ann` を `GET /validation/{uuid}/fixed` で取れます。ほかの値や、`ddbj_annotation` 以外と併用すると 400 |
 
 **`ddbj_record` だけはロールで validator が決まりません。** DDBJ Record は 1 ドキュメントに
 projects と samples（と DRA の experiments / runs / analyses）を同居させられるためで、
@@ -668,7 +719,8 @@ If the virtual environment is not activated, you must specify the direct path to
 * `-f`, `--force-fix`: Automatically applies all fixes (Autofix) found, skipping the interactive confirmation prompt.
 * `-j`, `--jobs`: Specifies the number of parallel processes. If not specified, it is automatically set according to the environment (maximum of 8). If `0` is specified, all available CPU cores will be used.
 * `--clean`: Empties `fixed/`, `aa/` and `reports/` in the output directory before running. Without it, only files with the same names are overwritten and other files remain. Do not use it if you keep your own files in these directories.
-* `--common-only`: Validates only the COMMON entry of the annotation files (SUBMITTER, REFERENCE, DBLINK, ST_COMMENT, KEYWORD, DATATYPE, DIVISION, etc.). Entries and FASTA files are not read, so it finishes quickly even for large files and runs without FASTA files. Only reports are written; no auto-fix is applied (`-f` is ignored). Checks that need the entries, such as a DBLINK or organism missing from the whole file, are not run.
+* `--scope {common,source,all}`: Selects what to validate. `common` is the COMMON entry only (same as `--common-only`), `source` is COMMON and the source feature of each entry, and `all` (default) is everything. `common` and `source` do not read FASTA files. See "Narrowing the scope" below.
+* `--common-only`: Same as `--scope common` (kept for backward compatibility). Validates only the COMMON entry of the annotation files (SUBMITTER, REFERENCE, DBLINK, ST_COMMENT, KEYWORD, DATATYPE, DIVISION, etc.). Entries and FASTA files are not read, so it finishes quickly even for large files and runs without FASTA files. Only reports are written; no auto-fix is applied (`-f` is ignored). Checks that need the entries, such as a DBLINK or organism missing from the whole file, are not run.
 * `--ncbi-api-key`: Specifies an API key to ease request limits to the NCBI API.
 * `--help`: Displays all available options and details.
 
@@ -720,10 +772,58 @@ ddbj-validator --common-only submission.ann
   - Features of a COMMON template (a source or other feature written in COMMON and copied into the entries) are not validated.
 - **Output**
   - Only the reports in `reports/` are written. The header contains `Scope: COMMON only (entries and sequences were not validated)`, and `--json` adds `"scope": "common_only"`.
+  - The submission type (WGS, TSA, EST, etc.) is also reported. It is not inferred: it comes from DATATYPE and DIVISION declared in COMMON (TPA and WGS written separately become `TPA-WGS`). The header contains `Submission Type: WGS`, and `--json` adds `"submission_type"` (the value when all files agree, otherwise `null`) and per-file `"submission_types"` (`datatypes`, `divisions`, `keywords`, `candidates`). When nothing is declared, or the KEYWORDs disagree, the types implied by the KEYWORDs are listed in `candidates`.
   - No auto-fix is applied and `fixed/` and `aa/` are not created. `-f` is ignored.
 - It can be combined with `-n`, `-l`, `-o`, `--json` and the other options.
 
 For the final check including the entries, run the validator without `--common-only`.
+
+### Validating only COMMON and source (`--scope source`)
+
+Validates COMMON and the source feature of each entry (plus metadata such as DBLINK written in entries). Other features such as CDS, and FASTA files, are not read, so it finishes quickly even for large submissions. Use it to check sample information (organism, place and date of collection, etc.) first.
+
+```bash
+ddbj-validator --scope source target_directory
+ddbj-validator --scope source -f submission.ann   # no FASTA needed
+```
+
+- **Checked**: everything `--common-only` checks, plus the source qualifiers (organism, mol_type, collection_date, geo_loc_name, lat_lon, strain, etc.), the Taxonomy lookup, the comparison with BioSample, and the source qualifiers and mol_type required by each DATATYPE. A missing organism or DBLINK in the whole file is also reported.
+- **Not done**: features other than source (CDS, gene, etc.) and their locations, translation, sequence checks, and matching the entries of the .ann and FASTA files.
+  - The source of a COMMON template (`source 1..E` in COMMON, expanded to every FASTA entry) is not validated, because the entries it expands to exist only in the FASTA file.
+- **Output**
+  - The header contains `Scope: COMMON and source features (other features and sequences were not validated)`, and `--json` adds `"scope": "common_source"`. The submission type is reported as with `--common-only`.
+  - Auto-fix (`-f` or interactive) is applied and the fixed `.ann` is written to `fixed/`. All lines are written, including the CDS and other lines that were skipped. FASTA files are not read, so no FASTA in `fixed/` and no `aa/` are written.
+  - `-b` is ignored.
+
+For the final check, run the validator without `--scope`.
+
+### Getting the submission type (`--scope common` / `--scope source`)
+
+With `--scope common` (`--common-only`) and `--scope source`, the submission type (WGS, TSA, EST, etc.) is returned together with the validation results. It is determined by COMMON alone, so it is available quickly even for large submissions. It is not returned in a normal run (`--scope all`).
+
+- **How it is determined**: it is not inferred; it comes from what COMMON declares.
+  - DATATYPE (WGS, TSA, TLS, TPA, MGA, TPA-WGS, etc.) comes first. TPA and WGS written separately become `TPA-WGS`.
+  - Without DATATYPE, a DIVISION that denotes a type (CON, ENV, EST, GSS, HTC, HTG, STS, SYN, TSA) is used.
+  - Otherwise it is `null` (`not declared` in the text report).
+  - When nothing is declared, or the KEYWORDs disagree, the types implied by the KEYWORDs are listed in `candidates` (e.g. KEYWORD `WGS` without DATATYPE → `["WGS"]`).
+- **Text**: the header and the console show `Submission Type: WGS`; with several files, one line per file with `[file name]`.
+- **JSON (`--json`)**:
+
+```json
+{
+  "scope": "common_only",
+  "submission_type": "WGS",
+  "submission_types": [
+    {"file": "a.ann", "submission_type": "WGS", "datatypes": ["WGS"], "divisions": [],
+     "keywords": ["WGS", "STANDARD_DRAFT"], "candidates": []}
+  ],
+  "validity": true, "stats": {"...": 0}, "messages": []
+}
+```
+
+  - `submission_type` is the value when all files agree, otherwise `null`; see `submission_types` for each file.
+  - `scope` is `"common_source"` with `--scope source`.
+- **Web API**: sending an `.ann` as the `ddbj_annotation` role returns the same fields in `result`. The `scope` form field selects `common` (default) or `source`.
 
 ### Setting up the NCBI API (Recommended)
 

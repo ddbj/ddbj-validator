@@ -259,6 +259,7 @@ class ExternalFetchMixin:
             skip_ncbi=self.skip_ncbi,
             skip_auth=self.skip_auth,
             common_only=self.common_only,
+            source_only=self.source_only,
             bp_psubs=bp_psubs,
             dra_refs=dra_refs,
             drr_status=drr_status,

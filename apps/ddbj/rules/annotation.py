@@ -1235,6 +1235,26 @@ class ANN0940(BaseRule):
 
         return results
 
+def _common_source_has_organism(ann_lines):
+    """ann 行の COMMON に source feature があり、その中に organism があれば True。"""
+    entry = feature = None
+    for line in ann_lines or ():
+        cols = line.split("\t")
+        if len(cols) < 3:
+            continue
+        if cols[0].strip():
+            entry, feature = cols[0].strip(), None
+        if cols[1].strip():
+            feature = cols[1].strip()
+        if entry != "COMMON":
+            if entry is not None:
+                return False
+            continue
+        if feature == "source" and len(cols) >= 4 and cols[3].strip() == "organism":
+            return True
+    return False
+
+
 class ANN1010(BaseRule):
     rule_id = "ANN1010"
     alternate_id = "BLP0009"
@@ -1245,8 +1265,13 @@ class ANN1010(BaseRule):
     # ファイル内のどこか（エントリ側でもよい）にあるかを見るので、COMMON だけでは判定できない
     requires_entries = True
 
-    def validate_file(self, records, context):
+    def validate_file(self, records, context, ann_lines=None):
         if not self.has_qualifier_anywhere(records, "source", "organism"):
+            # --scope source は FASTA を読まないので、COMMON テンプレートの source（1..E）を展開する先の
+            # エントリが無い（パーサーはテンプレートを COMMON から外して各エントリへ複製する）。
+            # COMMON の source に organism があれば、通常実行と同じく「ある」とみなす
+            if getattr(context, "source_only", False) and _common_source_has_organism(ann_lines):
+                return []
             return [self.format_result(entry_id="ALL", message=self.description, level="error")]
         return []
 

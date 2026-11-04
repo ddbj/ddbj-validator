@@ -12,6 +12,21 @@ from apps.ddbj.reporter import ValidationReporter
 load_dotenv()
 
 
+SCOPES = ("common", "source", "all")
+
+
+def _resolve_scope(args):
+    """--scope と --common-only（後方互換）から範囲を決め、args.common_only / args.source_only を立てる。"""
+    if args.common_only and args.scope not in (None, "common"):
+        print(f"[ERROR] --common-only cannot be used with --scope {args.scope}.", file=sys.stderr)
+        sys.exit(1)
+    args.scope = "common" if args.common_only else (args.scope or "all")
+    args.common_only = args.scope == "common"
+    args.source_only = args.scope == "source"
+    # FASTA を読まない範囲（.ann だけでも実行できる）
+    args.ann_only = args.common_only or args.source_only
+
+
 def _build_parser():
     parser = argparse.ArgumentParser(description="DDBJ Validator")
     
@@ -27,9 +42,15 @@ def _build_parser():
     parser.add_argument("-w", "--web", action="store_true", help="NSSS (web submission) mode")
     parser.add_argument("--json", action="store_true", help="Output report as JSON (validation_report.json). -j is --jobs, not JSON")
     parser.add_argument("-f", "--force-fix", action="store_true", help="Automatically apply all auto-fixes without prompting")
-    # COMMON だけを検証（エントリ部・FASTA は読まない。FASTA が無くても実行できる。レポートのみで autofix しない）
+    # 検証する範囲（2026-11-04）。common = COMMON だけ（レポートのみ）、source = COMMON と source だけ
+    # （FASTA は読まない。fixed/ には .ann だけを書く）、all = すべて（既定）
+    parser.add_argument("--scope", choices=SCOPES, default=None,
+                        help="What to validate: common = the COMMON entry only (report only, no auto-fix); "
+                             "source = COMMON and source features (other features and FASTA are not read; fixed/ gets the .ann only); "
+                             "all = everything (default)")
+    # 後方互換: --scope common と同じ
     parser.add_argument("--common-only", action="store_true",
-                        help="Validate only the COMMON entry of annotation files (entries and FASTA are not read; FASTA files are optional; report only, no auto-fix)")
+                        help="Same as --scope common")
     # 前回の出力を消してから実行（既定は消さず同名上書き）。curator は wrapper（ddbj-validator.sh）が
     # DDBJ_VALIDATOR_CLEAN=1 を設定して既定を有効にする。--no-clean で打ち消せる
     parser.add_argument("--clean", action=argparse.BooleanOptionalAction,
@@ -164,7 +185,7 @@ def _resolve_targets(args):
         for d in dirs:
             if not report_out_dir: report_out_dir = d
             
-            sub_pairs, file_errors = find_file_pairs(d, require_fasta=not args.common_only)
+            sub_pairs, file_errors = find_file_pairs(d, require_fasta=not args.ann_only)
             
             if file_errors:
                 for err in file_errors:
@@ -172,7 +193,7 @@ def _resolve_targets(args):
                 sys.exit(1)
 
             if not sub_pairs:
-                if args.common_only:
+                if args.ann_only:
                     print(f"[FATAL] No annotation files found in '{d}'.", file=sys.stderr)
                 else:
                     print(f"[FATAL] No matching ANN/FASTA file pairs found in '{d}'.", file=sys.stderr)
@@ -229,8 +250,8 @@ def _resolve_targets(args):
                         ann_path = str(candidate)
                         break
             
-            if args.common_only:
-                # COMMON だけを見るので FASTA は不要。FASTA だけが指定された場合は対応する .ann が要る
+            if args.ann_only:
+                # COMMON（と source）だけを見るので FASTA は不要。FASTA だけが指定された場合は対応する .ann が要る
                 if not ann_path:
                     print(f"[FATAL] Corresponding annotation file not found for '{f}'.", file=sys.stderr)
                     sys.exit(1)
@@ -347,6 +368,10 @@ def _run(args, pairs, report_out_dir, target_dirs_for_report, skip_db, skip_ncbi
             emit_biosample_tsv = False
         if args.force_fix:
             print("[WARN] --common-only is enabled. The --force-fix (-f) option will be ignored.", file=sys.stderr)
+    # --scope source の -b は ann の一部しか読まないので行わない（BioSample の突合と autofix は行う）
+    if args.source_only and emit_biosample_tsv:
+        print("[WARN] --scope source is enabled. The --biosample (-b) option will be ignored.", file=sys.stderr)
+        emit_biosample_tsv = False
 
     # NSUB = ann/fasta のサブミッションID（TSV ファイル名 SSUBID_NSUBID.txt に使用）。
     # 対象ディレクトリのパス／ann ファイル名から NSUB/DSUB を抽出する
@@ -372,7 +397,8 @@ def _run(args, pairs, report_out_dir, target_dirs_for_report, skip_db, skip_ncbi
         skip_db=skip_db, skip_ncbi=skip_ncbi, skip_auth=args.skip_auth,
         account_id=account_id, is_curator_mode=is_curator_mode,
         emit_biosample_tsv=emit_biosample_tsv, nsub=nsub,
-        biosample_apply=args.biosample_apply, common_only=args.common_only
+        biosample_apply=args.biosample_apply, common_only=args.common_only,
+        source_only=args.source_only
     )
         
     start_time = time.time()
@@ -393,7 +419,7 @@ def _run(args, pairs, report_out_dir, target_dirs_for_report, skip_db, skip_ncbi
         # -o オプションがあればそれを最優先に、なければ対象ディレクトリに出力
         target_dir = report_out_dir if args.out_dir else (target_dirs_for_report[0] if target_dirs_for_report else Path(report_out_dir))
         reporter = ValidationReporter(out_dir=target_dir)
-        scope = "common_only" if args.common_only else None
+        scope = {"common": "common_only", "source": "common_source"}.get(args.scope)
         if args.json:
             reporter.write_json_report(jsonl_paths, version=tool_version, scope=scope)
             report_files = ["validation_report.json"]
@@ -422,6 +448,7 @@ def _run(args, pairs, report_out_dir, target_dirs_for_report, skip_db, skip_ncbi
 
 def main():
     args = _build_parser().parse_args()
+    _resolve_scope(args)
     _init_logging(args)
     skip_db, skip_ncbi, skip_auth, jobs = _resolve_modes(args)
     pairs, report_out_dir, target_dirs_for_report = _resolve_targets(args)
