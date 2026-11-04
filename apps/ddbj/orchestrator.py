@@ -30,10 +30,11 @@ from apps.ddbj.autofix.writer import (  # noqa: F401
 
 
 class ValidatorPipeline(ExternalFetchMixin, BiosampleTsvMixin):
-    def __init__(self, pairs, report_out_dir, is_web_mode, force_fix, jobs=1, skip_db=False, skip_ncbi=False, skip_auth=False, account_id=None, is_curator_mode=True, emit_biosample_tsv=False, nsub=None, biosample_apply="bs2ann", common_only=False):
+    def __init__(self, pairs, report_out_dir, is_web_mode, force_fix, jobs=1, skip_db=False, skip_ncbi=False, skip_auth=False, account_id=None, is_curator_mode=True, emit_biosample_tsv=False, nsub=None, biosample_apply="bs2ann", common_only=False, source_only=False):
         self.pairs = pairs
         # --common-only: COMMON だけを検証（FASTA・エントリ部は読まない。レポートのみ）
         self.common_only = common_only
+        self.source_only = source_only
         self.report_out_dir = report_out_dir
         self.is_web_mode = is_web_mode
         self.force_fix = force_fix
@@ -104,7 +105,7 @@ class ValidatorPipeline(ExternalFetchMixin, BiosampleTsvMixin):
                 unauthorized_accs=self.unauthorized_accs, emit_biosample_tsv=self.emit_biosample_tsv,
                 biosample_sync_common=biosample_sync_common,
                 biosample_sync_mapping_keys=biosample_sync_mapping_keys,
-                common_only=self.common_only))
+                common_only=self.common_only, source_only=self.source_only))
             
         jsonl_paths = []
         with ProcessPoolExecutor(max_workers=self.jobs) as executor:
@@ -246,7 +247,7 @@ class ValidatorPipeline(ExternalFetchMixin, BiosampleTsvMixin):
             autofix_tasks.append(AutofixTask(
                 ann_path=ann_path, seq_path=seq_path, file_updates=file_updates,
                 tax_data=self.tax_data, cv_terms=self.cv_terms, report_out_dir=self.report_out_dir,
-                ddbj_dict=self.ddbj_dict, tmp_dir_str=str(self.tmp_dir)))
+                ddbj_dict=self.ddbj_dict, tmp_dir_str=str(self.tmp_dir), source_only=self.source_only))
 
         with ProcessPoolExecutor(max_workers=self.jobs) as executor:
             for msg in executor.map(_apply_autofix_worker, autofix_tasks):

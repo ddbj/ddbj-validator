@@ -31,6 +31,8 @@ class AutofixTask:
     # 検証ワーカーが書いた前処理済みの ann 行・クリーンな FASTA・AA FASTA の置き場（.val_tmp）。
     # あればそれを使い、ファイルの読み直しと再パースをしない。
     tmp_dir_str: Any = None
+    # --scope source: fixed/ には .ann だけを書く（FASTA は読まないので、FASTA と aa/ は作らない）
+    source_only: bool = False
 
 
 def phase3_cache_paths(tmp_dir_str, ann_path):
@@ -72,6 +74,9 @@ def _apply_autofix_worker(task):
     cv_terms = task.cv_terms
     report_out_dir = task.report_out_dir
 
+    if task.source_only:
+        return _write_source_scope_ann(ann_path, file_updates, report_out_dir)
+
     cache = phase3_cache_paths(task.tmp_dir_str, ann_path) if task.tmp_dir_str else None
     use_cache = cache is not None and cache["ann_lines"].exists()
     if use_cache:
@@ -96,14 +101,7 @@ def _apply_autofix_worker(task):
     else:
         fast_copy_and_fix_fasta(fasta_content, fixed_fasta)
                 
-    original_ann_name = Path(ann_path).name
-    for ext in ANN_EXTENSIONS:
-        if original_ann_name.endswith(ext):
-            original_ann_name = original_ann_name[:-len(ext)] + ".ann"
-            break
-    else:
-        original_ann_name = Path(ann_path).with_suffix(".ann").name
-        
+    original_ann_name = _fixed_ann_name(ann_path)
     fixed_ann = fixed_dir / original_ann_name
     
     if file_updates:
@@ -135,6 +133,33 @@ def _apply_autofix_worker(task):
     return "\n".join(msgs)
     
     
+
+
+def _fixed_ann_name(ann_path):
+    """fixed/ に書く .ann の名前（.annt.tsv / .ann.txt も .ann にそろえる）。"""
+    name = Path(ann_path).name
+    for ext in ANN_EXTENSIONS:
+        if name.endswith(ext):
+            return name[:-len(ext)] + ".ann"
+    return Path(ann_path).with_suffix(".ann").name
+
+
+def _write_source_scope_ann(ann_path, file_updates, report_out_dir):
+    """--scope source のフェーズ 3: .ann を全部読み直して autofix を当て、fixed/ に .ann だけを書く。
+
+    検証は COMMON と source の行だけで行ったが、autofix の行指定は元の行番号なので、全行に当てられる。
+    FASTA は読まないので fixed/ の FASTA と aa/ は作らない。
+    """
+    ann_lines, _, _ = preprocess_files(ann_path, None, read_fasta=False)
+    base_out_dir = Path(report_out_dir) if report_out_dir else Path(ann_path).parent
+    fixed_dir = base_out_dir / "fixed"
+    fixed_dir.mkdir(parents=True, exist_ok=True)
+    fixed_ann = fixed_dir / _fixed_ann_name(ann_path)
+    if file_updates:
+        write_autofix_to_file(ann_lines, file_updates, fixed_ann)
+        return f"  => Auto-fixed ANN saved to: {fixed_ann}"
+    write_clean_ann(ann_lines, fixed_ann)
+    return f"  => Cleaned ANN saved to: {fixed_ann}"
 
 
 def write_autofix_to_file(ann_lines, updates, out_path):

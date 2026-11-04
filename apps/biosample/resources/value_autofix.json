@@ -12,6 +12,9 @@
     "N\\. ?A\\.?",
     "Unknown",
     "\\.",
-    "\\-"
+    "\\-",
+    "not yet( clear| determined| known)?",
+    "unclear",
+    "TBD"
   ]
 }

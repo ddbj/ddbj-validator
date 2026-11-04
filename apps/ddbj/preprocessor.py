@@ -25,10 +25,66 @@ def starts_non_common_entry(line):
     return not re.sub(r'\s+', '', line).lower().startswith("entryfeature")
 
 
+# --scope source でエントリ部から残す feature（source と、エントリにも書ける DDBJ のメタデータ feature）。
+# definitions.json の features のうち大文字のもの（STS は生物学的 feature なので除く）
+SOURCE_SCOPE_FEATURES = {
+    "source", "SUBMITTER", "REFERENCE", "COMMENT", "ST_COMMENT", "DIVISION", "TOPOLOGY",
+    "KEYWORD", "DATE", "DATATYPE", "PRIMARY_CONTIG", "SUBCONTACT", "DBLINK",
+}
+
+
+def _is_header_line(line):
+    return re.sub(r'\s+', '', line).lower().startswith("entryfeature")
+
+
+def keep_source_scope_lines(lines):
+    """--scope source: COMMON と、エントリ部の source / メタデータ feature の行だけを残す。
+
+    捨てる行は空行に置き換える（行番号を変えないため。レポートの Line と autofix の行指定が通常実行と揃う）。
+    捨てた行が entry 名を持っていた場合（entry の最初の feature が CDS など）は、その entry の
+    次に残す行の 1 列目へ entry 名を移す（でないと前の entry の続きと読まれる）。
+    """
+    out = []
+    cur_entry = None
+    cur_feature = None
+    pending_entry = None
+    for line in lines:
+        if not line or line.isspace() or line.startswith('#') or _is_header_line(line):
+            out.append(line)
+            continue
+        cols = line.split('\t')
+        if len(cols) < 3:
+            # 列数の足りない行（ANN0140）は通常実行と同じ扱いになるよう、そのまま残して状態も変えない
+            out.append(line)
+            continue
+        entry = cols[0].strip(STRIP_CHARS)
+        if entry:
+            cur_entry, cur_feature, pending_entry = entry, None, None
+        feature = cols[1].strip(STRIP_CHARS) if len(cols) > 1 else ""
+        if feature:
+            cur_feature = feature
+        if cur_entry in (None, "COMMON") or cur_feature in SOURCE_SCOPE_FEATURES:
+            if not entry and pending_entry:
+                cols[0] = pending_entry
+                line = '\t'.join(cols)
+            pending_entry = None
+            out.append(line)
+        else:
+            if entry:
+                pending_entry = entry
+            out.append("")
+    return out
+
+
 # 戻り値の2つ目は「FASTAのパス」ではなく「FASTAのファイル内容(文字列)」になる
 # common_only=True（--common-only）のときは COMMON 部分だけを読み、FASTA は読まない
 # （fasta_path_str は None でもよい。FASTA 内容は "" を返す）。
-def preprocess_files(ann_path_str: str, fasta_path_str, common_only: bool = False) -> tuple[list, str, list]:
+# source_only=True（--scope source）のときは .ann を最後まで読むが COMMON と source だけを残し、FASTA は読まない。
+# read_fasta=False は .ann を全部読んで FASTA だけ読まない（--scope source のフェーズ 3。fixed/ の .ann を書く）
+def preprocess_files(ann_path_str: str, fasta_path_str, common_only: bool = False,
+                     source_only: bool = False, read_fasta=None) -> tuple[list, str, list]:
+    if read_fasta is None:
+        read_fasta = not (common_only or source_only)
     ann_path = Path(ann_path_str)
     fasta_path = Path(fasta_path_str) if fasta_path_str else None
     warnings = []
@@ -73,6 +129,8 @@ def preprocess_files(ann_path_str: str, fasta_path_str, common_only: bool = Fals
             ann_crlf_detected = True
 
         lines = content.splitlines()
+        if source_only:
+            lines = keep_source_scope_lines(lines)
     for line_no, clean_line in enumerate(lines, 1):
         # 空白に似た文字（NBSP・全角空白・ゼロ幅空白など）を半角空白へ（2026-10-03）。
         # ANN0040（非 ASCII で fatal）の判定より前に行い、これだけで fatal にしない。
@@ -172,7 +230,7 @@ def preprocess_files(ann_path_str: str, fasta_path_str, common_only: bool = Fals
     fasta_crlf_detected = False
     fasta_content = ""
 
-    if not common_only:
+    if read_fasta:
         with open(fasta_path, 'r', encoding='utf-8', errors='replace') as fin:
             fasta_content = fin.read()
             if '\r\n' in fasta_content:

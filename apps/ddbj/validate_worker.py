@@ -45,6 +45,8 @@ class ValidateTask:
     biosample_sync_mapping_keys: Any
     # --common-only: COMMON だけを読んで検証し、autofix 提案・locus_tag 収集は行わない
     common_only: bool = False
+    # --scope source: COMMON と source だけを読んで検証する（FASTA は読まない。autofix 提案は作る）
+    source_only: bool = False
 
 
 # ============================================================================
@@ -64,12 +66,14 @@ def _validate_single_file_set(task):
     biosample_sync_common = task.biosample_sync_common
     biosample_sync_mapping_keys = task.biosample_sync_mapping_keys
     common_only = task.common_only
+    source_only = task.source_only
 
     from apps.ddbj.preprocessor import preprocess_files
     from apps.ddbj.parser import parse_ddbj_submission
     from apps.ddbj.utils.features import get_features # 追加
     
-    ann_lines, fasta_content, pre_warnings = preprocess_files(ann_path, seq_path, common_only=common_only)
+    ann_lines, fasta_content, pre_warnings = preprocess_files(ann_path, seq_path, common_only=common_only,
+                                                           source_only=source_only)
     records, parse_errors, fasta_only_records = parse_ddbj_submission(
         fasta_content=fasta_content, 
         ann_path=ann_path, 
@@ -79,8 +83,9 @@ def _validate_single_file_set(task):
 
     # フェーズ 3（fixed/・aa/ の書き出し）で使う中間ファイルを、検証で records に触る前に書いておく。
     # フェーズ 3 でファイルを読み直して前処理・パースをやり直さないため（2026-10-31）。
-    # --common-only はフェーズ 3 を行わないので書かない。
-    if not common_only:
+    # --common-only はフェーズ 3 を行わないので書かない。--scope source は ann 行が source だけなので
+    # 使えない（フェーズ 3 で .ann を全部読み直す）。
+    if not common_only and not source_only:
         write_phase3_cache(tmp_dir_str, ann_path, ann_lines, fasta_content, records,
                            tax_data, context.cv_terms)
 
@@ -120,8 +125,15 @@ def _validate_single_file_set(task):
     file_results.extend(val_results)
 
     # --common-only はレポートだけ出す（autofix 提案・ファイル横断用の locus_tag は作らない）
+    # submission type は COMMON の申告だけで決まるので一緒に返す（レポートの submission_types）。
+    # --common-only と --scope source のとき
+    sub_type = None
+    if common_only or source_only:
+        from apps.ddbj.submission_type import detect_submission_type
+        sub_type = {"file": Path(ann_path).name, **detect_submission_type(records, context.ddbj_dict)}
     if common_only:
-        return _write_worker_jsonl(ann_path, tmp_dir_str, is_web_mode, file_results, [], [], [], [])
+        return _write_worker_jsonl(ann_path, tmp_dir_str, is_web_mode, file_results, [], [], [], [],
+                                   submission_type=sub_type)
 
     for res in val_results:
         if res.get("autofix") and "new_value" in res:
@@ -261,11 +273,12 @@ def _validate_single_file_set(task):
                     })
 
     return _write_worker_jsonl(ann_path, tmp_dir_str, is_web_mode, file_results, file_proposals,
-                               file_locus_tags, file_skipped_autofixes, file_updq_data)
+                               file_locus_tags, file_skipped_autofixes, file_updq_data,
+                               submission_type=sub_type)
 
 
 def _write_worker_jsonl(ann_path, tmp_dir_str, is_web_mode, file_results, file_proposals,
-                        file_locus_tags, file_skipped_autofixes, file_updq_data):
+                        file_locus_tags, file_skipped_autofixes, file_updq_data, submission_type=None):
     # ====================================================
     # メインプロセスにデータを返さず、専用のテンポラリJSONLに書き捨てる
     # ====================================================
@@ -289,6 +302,9 @@ def _write_worker_jsonl(ann_path, tmp_dir_str, is_web_mode, file_results, file_p
             
         for loc in file_locus_tags:
             write_record("locus_tag", loc)
+
+        if submission_type is not None:
+            write_record("submission_type", submission_type)
             
     return {
         "jsonl_path": str(tmp_jsonl_path),

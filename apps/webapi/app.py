@@ -246,6 +246,8 @@ async def create_validation(
     metabobank_idf: UploadFile = File(None),
     metabobank_sdrf: UploadFile = File(None),
     ddbj_record: UploadFile = File(None),
+    # 塩基配列のアノテーションファイル（.ann）。COMMON だけを検証し submission type を返す
+    ddbj_annotation: UploadFile = File(None),
     submitter_id: str = Form(None),
     submission_id: str = Form(None),
     package: str = Form(None),
@@ -256,6 +258,8 @@ async def create_validation(
     record_db: str = Form(
         None, description="ddbj_record 専用。bioproject / biosample / dra。"
                           "省略時は record の top-level から推測する（同居していると決まらない）"),
+    # ddbj_annotation 専用。common = COMMON だけ（既定）、source = COMMON と source（autofix 済み .ann を fixed に出す）
+    scope: str = Form(None, description="ddbj_annotation 専用。common（既定）/ source"),
 ):
     uploads = {
         "biosample": biosample, "bioproject": bioproject,
@@ -266,6 +270,7 @@ async def create_validation(
         # DDBJ Record（v3 JSON）は DB 別でなく形式で 1 ロール。record_db フォームか、
         # 無ければ中身を見て振り分ける（runner._plan_record）。
         "ddbj_record": ddbj_record,
+        "ddbj_annotation": ddbj_annotation,
     }
     uploads = {r: f for r, f in uploads.items() if f is not None}
     if not uploads:
@@ -283,6 +288,13 @@ async def create_validation(
         normalised_db = runner.normalise_record_db(record_db)
     except ValueError as e:
         return _err(str(e), 400)
+
+    try:
+        runner.normalise_ddbj_scope(scope)
+    except ValueError as e:
+        return _err(str(e), 400)
+    if scope and "ddbj_annotation" not in uploads:
+        return _err("scope は ddbj_annotation と一緒にのみ指定できます", 400)
 
     mismatch = runner.submission_id_mismatch(normalised_db, submission_id)
     if mismatch:
@@ -318,7 +330,7 @@ async def create_validation(
         return _err(f"検証を受け付けられません（保存先エラー）: {e}.{hint}", 503)
 
     params = {"account": submitter_id, "submission_id": submission_id,
-              "package": package, "profile": profile, "record_db": record_db,
+              "package": package, "profile": profile, "record_db": record_db, "scope": scope,
               "start_time": start}   # mode は db 固定（引数で受けない）
     background.add_task(runner.run_validation, rdir, saved, params)
 
