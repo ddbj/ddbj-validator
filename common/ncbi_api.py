@@ -10,6 +10,15 @@ logger = logging.getLogger(__name__)
 _NCBI_TOOL = "ddbj-validator"
 # key/email なし利用の警告は 1 回だけ出す
 _ncbi_no_id_warned = False
+# リトライしても失敗した NCBI リクエスト（このプロセス内）。NCBI に届かなかったことは検証エラーではないので、
+# レポートと画面に「届かなかった」と別に出すために記録する（2026-11-05。リリースの E2E が NCBI の
+# 一時的な HTTP 500 で mismatch になり止まったため）。NCBI への問い合わせはフェーズ 1（メインプロセス）だけ
+_failed_requests = []
+
+
+def ncbi_failures():
+    """これまでにリトライしても失敗した NCBI リクエストの一覧（"URL: 例外" の文字列）。"""
+    return list(_failed_requests)
 
 
 def ncbi_identity_params():
@@ -63,6 +72,7 @@ def ncbi_request(method, url, *, retries=4, backoff_base=1.0, **kwargs):
             # リトライ対象: 429 / 5xx / ネットワーク系(status 不明)。4xx(429以外)は即送出。
             retryable = status is None or status == 429 or 500 <= status < 600
             if attempt >= retries or not retryable:
+                _failed_requests.append(f"{url}: {e}")
                 raise
             wait = backoff_base * (2 ** attempt)
             # 429 の Retry-After ヘッダがあれば尊重

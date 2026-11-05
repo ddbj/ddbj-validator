@@ -2958,6 +2958,103 @@ class ANN2552(BaseRule):
         return results
 
 
+class ANN2553(BaseRule):
+    """完全に同じ exon を持つ CDS / mRNA の locus_tag が違えば warning（2026-11-05）。
+
+    - exon は location の各区間（join の各区間。join でなければ location 全体）。start・end・strand が
+      全部同じなら同じ exon とみなす（< / > は無視）。逆鎖で座標が同じものは別の遺伝子なので一致としない。
+    - exon を共有する feature を推移的につないでセットにし（A-B、B-C なら A・B・C）、セットの中に
+      locus_tag の値が 2 種類以上あれば、同じ遺伝子に別の locus_tag を付けた可能性があるとして 1 件出す。
+      行はセットの中で最初の feature。本番では 1 ファイルで 1,000 セットを超える例があるので feature ごとには出さない。
+    - CDS 同士・mRNA 同士の共有も含む。どちらが正しいかは決められないので autofix はしない。
+    - 対象外: locus_tag の無い feature、trans_splicing を持つ feature（別の転写産物の exon をつなぐため）。
+    - readthrough や融合遺伝子のように別の遺伝子が正当に exon を共有することもあるので warning。
+    """
+    rule_id = "ANN2553"
+    alternate_id = ""
+    target = "feature"
+    description = "CDS and mRNA features sharing an identical exon have different locus_tag values."
+    requires_rdb = False
+    is_file_level = False
+
+    # メッセージに並べる feature の上限
+    MAX_LISTED = 5
+
+    @staticmethod
+    def _exon_keys(location):
+        return {(int(p.start), int(p.end), p.strand) for p in getattr(location, "parts", [location])}
+
+    @staticmethod
+    def _exon_str(key):
+        start, end, strand = key
+        loc = f"{start + 1}..{end}"
+        return f"complement({loc})" if strand == -1 else loc
+
+    def validate(self, record, context):
+        results = []
+        if record.id == "COMMON":
+            return results
+
+        feats = []
+        for f_type in ("CDS", "mRNA"):
+            for feature in self.get_features(record, f_type):
+                lts = feature.qualifiers.get("locus_tag", [])
+                if feature.location is None or not lts or "trans_splicing" in feature.qualifiers:
+                    continue
+                feats.append((feature, lts[0].strip()))
+        if len(feats) < 2:
+            return results
+
+        # exon → それを持つ feature の番号。同じ exon を持つ feature を union-find でつなぐ
+        owners = defaultdict(list)
+        for i, (feature, _) in enumerate(feats):
+            for key in self._exon_keys(feature.location):
+                owners[key].append(i)
+        parent = list(range(len(feats)))
+
+        def find(x):
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+
+        for idx in owners.values():
+            for j in idx[1:]:
+                parent[find(j)] = find(idx[0])
+
+        groups = defaultdict(list)
+        for i in range(len(feats)):
+            groups[find(i)].append(i)
+        # 異なる locus_tag の間で共有している exon（メッセージに 1 つ示す）。座標順で最初のもの
+        shared_by_group = {}
+        for key in sorted(owners, key=lambda k: (k[0], k[1])):
+            idx = owners[key]
+            if len({feats[i][1] for i in idx}) > 1:
+                shared_by_group.setdefault(find(idx[0]), key)
+
+        for root, members in groups.items():
+            lts = sorted({feats[i][1] for i in members})
+            if len(lts) < 2:
+                continue
+            members.sort(key=lambda i: (getattr(feats[i][0], "line_number", None) or 0, i))
+            listed = [f"{feats[i][0].type} line {getattr(feats[i][0], 'line_number', '?')}: {feats[i][1]}"
+                      for i in members[:self.MAX_LISTED]]
+            if len(members) > self.MAX_LISTED:
+                listed.append(f"and {len(members) - self.MAX_LISTED} more")
+            # 異なる locus_tag どうしが直接共有していなくても（A-B と B-C で A≠C など）セットはできるので、
+            # その場合は同じ locus_tag 内の共有 exon は示さず、feature の一覧だけにする
+            shared = shared_by_group.get(root)
+            shared_part = f"shared exon: {self._exon_str(shared)}, " if shared else ""
+            first = feats[members[0]][0]
+            results.append(self.feature_result(
+                record, first,
+                f"CDS and mRNA features sharing an identical exon have different locus_tag values; "
+                f"they may belong to the same gene: locus_tag:{', '.join(lts)} "
+                f"({shared_part}{', '.join(listed)})",
+                level="warning", qualifier="locus_tag"))
+        return results
+
+
 class ANN2555(BaseRule):
     rule_id = "ANN2555"
     alternate_id = "SVP0200"
