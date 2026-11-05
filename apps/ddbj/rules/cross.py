@@ -14,6 +14,45 @@ from apps.ddbj.utils.translation import get_cds_translation_params, get_insdc_tr
 
 logger = logging.getLogger(__name__)
 
+# AXS5290 で探す N の連続の最短長
+MIN_N_STRETCH = 100
+_N_STRETCH_PATTERN = re.compile(r'[Nn]{%d,}' % MIN_N_STRETCH)
+# 連続の終わりを探すときに一度に比べる長さ（大きい順に試して半分ずつにする）
+_N_STRETCH_STEPS = [1 << k for k in range(12, -1, -1)]
+
+
+def _n_stretches(seq_str):
+    """配列中の N の連続（MIN_N_STRETCH 以上）を (start, end) の 0 始まり半開区間で返す。
+
+    re.finditer(r'[Nn]{100,}') と同じ結果になる。正規表現は 1 文字ずつ進むので、1.5 GB の
+    FASTA でこれだけで十数秒かかっていた（2026-11-05）。配列は小文字で持っていて N の大小が
+    混ざることはまず無いので、片方しか無ければ str.find（C の部分文字列探索）で連続の頭を探し、
+    終わりは大きな塊から startswith で比べて延ばす。大小が混ざる配列だけ正規表現で探す。
+    """
+    has_upper = 'N' in seq_str
+    has_lower = 'n' in seq_str
+    if has_upper and has_lower:
+        return [(m.start(), m.end()) for m in _N_STRETCH_PATTERN.finditer(seq_str)]
+    if not (has_upper or has_lower):
+        return []
+    c = 'N' if has_upper else 'n'
+    seed = c * MIN_N_STRETCH
+    chunks = [(c * size, size) for size in _N_STRETCH_STEPS]
+    stretches = []
+    pos = 0
+    while True:
+        start = seq_str.find(seed, pos)
+        if start < 0:
+            break
+        # 前の連続の終わり（pos）の文字は N ではないので、見つかった位置が連続の先頭になる
+        end = start + MIN_N_STRETCH
+        for chunk, size in chunks:
+            while seq_str.startswith(chunk, end):
+                end += size
+        stretches.append((start, end))
+        pos = end
+    return stretches
+
 # 翻訳ヘルパーは apps/ddbj/utils/translation.py に一本化（get_cds_translation_params / get_insdc_translation）。
 # 旧 get_conceptual_translation は未使用（transl_except 非対応の簡易版）だったため削除した。
 
@@ -200,12 +239,11 @@ class AXS5290(BaseRule):
         if record.id == "COMMON":
             return results
 
-        # 配列は小文字で持っているので upper() で全長をコピーせず、大小どちらの N も拾う
         seq_str = str(record.seq)
         if not seq_str:
             return results
 
-        n_stretches = [(m.start(), m.end()) for m in re.finditer(r'[Nn]{100,}', seq_str)]
+        n_stretches = _n_stretches(seq_str)
         if not n_stretches:
             return results
 

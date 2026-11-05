@@ -23,10 +23,15 @@ class FASTA_FORMAT_VALIDATOR(BaseRule):
         results = []
         if not seq_path: return results
 
-        if fasta_content is not None:
-            lines = fasta_content.splitlines()
-        else:
-            return results            
+        if fasta_content is None:
+            return results
+        if any(c in fasta_content for c in _EXTRA_LINE_BREAKS):
+            return self._validate_lines(fasta_content.splitlines())
+        return self._validate_scan(fasta_content)
+
+    def _validate_lines(self, lines):
+        """行に分けて全行を見る版。\n 以外の改行文字（\v や \x1c など）を含む FASTA だけで使う。"""
+        results = []
 
         # ---------------------------------------------------
         # SEQ0080: 最初の非空行が '>' で始まっているか
@@ -90,6 +95,87 @@ class FASTA_FORMAT_VALIDATOR(BaseRule):
 
         return results
 
+    def _validate_scan(self, content):
+        """_validate_lines と同じ結果を、定義行（'>' の行）とその直前だけを見て出す（2026-11-05）。
+
+        以前は全行（大きいゲノムで数千万行）を strip / startswith で 3 回なめていて、
+        1.5 GB の FASTA でこのルールだけで 20 秒かかっていた。改行が \n だけの FASTA で使う
+        （テキストモードで読むので \r は \n になっている）。
+        """
+        results = []
+
+        # SEQ0080: 最初の非空行が '>' で始まっているか（先頭の空白・空行を飛ばした最初の文字）
+        i = 0
+        n = len(content)
+        while i < n and content[i].isspace():
+            i += 1
+        if i < n and content[i] != '>':
+            msg = "Missing FASTA definition line (>Entry name)."
+            results.append(self.format_result(entry_id="ALL", message=msg, level="error", feature_type="sequence", rule="SEQ0080", target="sequence"))
+
+        def_lines = _definition_lines(content)
+
+        # SEQ0080: エントリ名の無い定義行
+        for line_no, _, _, stripped in def_lines:
+            if fasta_entry_name(stripped): continue
+            msg = "Missing FASTA definition line (>Entry name). (Found a definition line with no entry name)"
+            results.append(self.format_result(entry_id="ALL", message=msg, level="error", feature_type="sequence", rule="SEQ0080", target="sequence", line_number=line_no))
+
+        # SEQ0100: 各エントリの最後の非空行が '//' か
+        for k, (_, _, line_end, stripped) in enumerate(def_lines):
+            seg_end = def_lines[k + 1][1] if k + 1 < len(def_lines) else n
+            if _ends_with_terminator(content, line_end, seg_end): continue
+            current_entry = fasta_entry_name(stripped) or "UNKNOWN"
+            msg = "[Auto-cleanup] Missing sequence terminator (\"//\") was automatically appended."
+            res = self.format_result(entry_id=current_entry, message=msg, level="warning", feature_type="sequence", rule="SEQ0100", target="sequence")
+            # alternate_id = "JP0015"
+            res["autofix"] = True
+            res["is_cleanup"] = True
+            results.append(res)
+
+        return results
+
+
+# splitlines が改行として扱う文字のうち \n 以外。これを含む FASTA は行に分けて見る
+_EXTRA_LINE_BREAKS = ('\r', '\v', '\f', '\x1c', '\x1d', '\x1e', '\x85', '\u2028', '\u2029')
+
+
+def _definition_lines(content):
+    """'>' で始まる行（行頭の空白は無視）を (行番号, 行頭の位置, 行末の位置, strip した行) で順に返す。改行は \n だけの前提。"""
+    found = []
+    pos = 0
+    line_no = 1
+    counted_to = 0
+    while True:
+        pos = content.find('>', pos)
+        if pos < 0:
+            break
+        line_start = content.rfind('\n', 0, pos) + 1
+        line_end = content.find('\n', pos)
+        if line_end < 0:
+            line_end = len(content)
+        if not content[line_start:pos].strip():
+            line_no += content.count('\n', counted_to, line_start)
+            counted_to = line_start
+            found.append((line_no, line_start, line_end, content[line_start:line_end].strip()))
+        # 同じ行の残りに '>' があっても定義行ではないので、次の行から探す
+        pos = line_end
+    return found
+
+
+def _ends_with_terminator(content, seg_start, seg_end):
+    """content[seg_start:seg_end]（定義行の行末から次の定義行の行頭まで）の最後の非空行が '//' か。"""
+    j = seg_end
+    while j > seg_start and content[j - 1].isspace():
+        j -= 1
+    if j - seg_start < 2 or content[j - 2:j] != '//':
+        return False
+    k = j - 2
+    # '//' の前が行頭まで空白だけなら、その行は strip すると '//'
+    while k > seg_start and content[k - 1] != '\n' and content[k - 1].isspace():
+        k -= 1
+    return k == seg_start or content[k - 1] == '\n'
+
 
 class SEQ0090(BaseRule):
     rule_id = "SEQ0090"
@@ -111,24 +197,32 @@ class SEQ0090(BaseRule):
         # 小文字のリストに加えて、大文字に変換したリストも結合してSetにする
         allowed_chars = set(nucleic_acids + [b.upper() for b in nucleic_acids])
 
-        # 集合(set)の差分を使った事前チェック
-        invalid_chars = set(seq_str) - allowed_chars
-        
+        # 使える文字を str.translate で消し、残った文字が不正な文字（2026-11-05）。
+        # 以前は set(seq_str) で配列全体の集合を作っていて、1.5 GB の FASTA で十数秒かかっていた
+        invalid_chars = set(seq_str.translate(self._delete_table(allowed_chars)))
+
         if invalid_chars:
             # 不正な文字が含まれている場合のみ、最初に出現する位置を特定する
-            for i, char in enumerate(seq_str):
-                if char not in allowed_chars:
-                    msg = f"Invalid nucleotide code '{char}' at {i+1} position."
-                    # 配列レベルのエラーなので format_result でスッキリ出力
-                    results.append(self.format_result(
-                        entry_id=record.id, 
-                        message=msg, 
-                        level="error", 
-                        feature_type="sequence"
-                    ))
-                    break 
+            i = min(seq_str.find(c) for c in invalid_chars)
+            char = seq_str[i]
+            msg = f"Invalid nucleotide code '{char}' at {i+1} position."
+            # 配列レベルのエラーなので format_result でスッキリ出力
+            results.append(self.format_result(
+                entry_id=record.id,
+                message=msg,
+                level="error",
+                feature_type="sequence"
+            ))
 
         return results
+
+    def _delete_table(self, allowed_chars):
+        # エントリごとに作り直さないよう、使える文字の集合ごとに 1 つ持つ
+        key = frozenset(allowed_chars)
+        if getattr(self, "_table_key", None) != key:
+            self._table_key = key
+            self._table = str.maketrans("", "", "".join(key))
+        return self._table
 
         
 class SEQ5010(BaseRule):
