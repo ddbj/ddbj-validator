@@ -420,11 +420,14 @@ def _run(args, pairs, report_out_dir, target_dirs_for_report, skip_db, skip_ncbi
         target_dir = report_out_dir if args.out_dir else (target_dirs_for_report[0] if target_dirs_for_report else Path(report_out_dir))
         reporter = ValidationReporter(out_dir=target_dir)
         scope = {"common": "common_only", "source": "common_source"}.get(args.scope)
+        # NCBI API に届かなかったリクエストの数（検証エラーではないのでレポートのヘッダーと画面に別に出す）
+        from common.ncbi_api import ncbi_failures
+        ncbi_failed = len(ncbi_failures())
         if args.json:
-            reporter.write_json_report(jsonl_paths, version=tool_version, scope=scope)
+            reporter.write_json_report(jsonl_paths, version=tool_version, scope=scope, ncbi_failed=ncbi_failed)
             report_files = ["validation_report.json"]
         else:
-            reporter.generate_report(jsonl_paths, print_console=True, start_time=start_time, end_time=end_time, version=tool_version, scope=scope)
+            reporter.generate_report(jsonl_paths, print_console=True, start_time=start_time, end_time=end_time, version=tool_version, scope=scope, ncbi_failed=ncbi_failed)
             report_files = ["validation_report_summary.txt", "validation_report_details.txt"]
 
         # 3. Autofix の承認と適用（--common-only はレポートのみ。fixed/ aa/ は作らない）
@@ -438,6 +441,10 @@ def _run(args, pairs, report_out_dir, target_dirs_for_report, skip_db, skip_ncbi
         # --- 変更点: 表示用パスに reports ディレクトリを追加 ---
         reports_dir = target_dir / "reports"
         print(f"\n\n[ All reports successfully generated to {reports_dir} ]")
+        if ncbi_failed:
+            req = "request" if ncbi_failed == 1 else "requests"
+            print(f"\n[WARNING] NCBI API could not be reached ({ncbi_failed} {req} failed after retries). "
+                  f"Checks that use NCBI were not fully done; run again later.")
         for _f in report_files:
             print(f"  {_f}")
         print()

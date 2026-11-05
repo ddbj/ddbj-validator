@@ -20,7 +20,7 @@ from apps.biosample.context import ValidationContext
 from apps.biosample import xml_reader, tsv_to_xml, record_reader
 from apps.biosample.validator import Validator
 
-GREEN = "\033[92m"; RED = "\033[91m"; END = "\033[0m"
+GREEN = "\033[92m"; RED = "\033[91m"; YELLOW = "\033[93m"; END = "\033[0m"
 
 # 決定的テストのための mock taxonomy（DB/NCBI に依存しない）。
 # fixture が使う organism を網羅すること。
@@ -342,16 +342,16 @@ def _build_bs_cmd(mode, fixture, out_dir, use_pip, docker_image, project_root, p
 
 
 def _fired_from_cli(cmd, out_dir):
-    """CLI を実行し、JSON レポートから発火 rule_id 集合を返す。レポート未生成なら None。"""
+    """CLI を実行し、JSON レポートから (発火 rule_id 集合, NCBI に届かなかったか) を返す。レポート未生成なら (None, False)。"""
     subprocess.run(cmd, capture_output=True, text=True)
     jp = out_dir / "reports" / "validation_report.json"
     if not jp.exists():
-        return None
+        return None, False
     try:
         d = json.loads(jp.read_text(encoding="utf-8"))
     except Exception:
-        return None
-    return {msg["id"] for msg in d.get("messages", [])}
+        return None, False
+    return {msg["id"] for msg in d.get("messages", [])}, bool(d.get("ncbi_unreachable"))
 
 
 def run_cli_mode(mode, skip_only, target, use_pip, docker_image):
@@ -365,6 +365,8 @@ def run_cli_mode(mode, skip_only, target, use_pip, docker_image):
     tmp_root = Path(tempfile.mkdtemp(prefix="bs_e2e_", dir=str(project_root)))
     passed = mismatched = skipped = 0
     errors = []
+    # NCBI API に届かなかった実行の不一致は mismatch に数えず別に出す（検証エラーではない。2026-11-05）
+    ncbi_unreachable = []
     label = f"{mode.upper()}{' (SKIP ONLY)' if skip_only else ''}"
     runner = f"Docker ({docker_image})" if docker_image else ("pip CLI" if use_pip else "main.py")
     print(f"\n{'=' * 60}")
@@ -402,7 +404,7 @@ def run_cli_mode(mode, skip_only, target, use_pip, docker_image):
                 out_dir.mkdir(parents=True, exist_ok=True)
                 cmd = _build_bs_cmd(mode, fx, out_dir, use_pip, docker_image,
                                     project_root, python_bin, main_py)
-                fired = _fired_from_cli(cmd, out_dir)
+                fired, ncbi_down = _fired_from_cli(cmd, out_dir)
                 if fired is None:
                     print(f"  [{RED}ERROR{END}]   {fx.name}: レポート未生成 (CLI 実行失敗)")
                     mismatched += 1
@@ -420,6 +422,9 @@ def run_cli_mode(mode, skip_only, target, use_pip, docker_image):
                 if ok:
                     print(f"  [{GREEN}Matched{END}]  {fx.name} ({rid} {desc})")
                     passed += 1
+                elif ncbi_down and not skipmode:
+                    print(f"  [{YELLOW}NCBI UNREACHABLE{END}] {fx.name} ({rid} {desc}; NCBI API could not be reached, not counted)")
+                    ncbi_unreachable.append(f"{rid}/{fx.name}")
                 else:
                     print(f"  [{RED}MISMATCH{END}] {fx.name} ({rid} {desc})")
                     mismatched += 1
@@ -432,6 +437,11 @@ def run_cli_mode(mode, skip_only, target, use_pip, docker_image):
           f"Mismatched: {RED if mismatched else GREEN}{mismatched}{END}   Skipped: {skipped}")
     for e in errors:
         print(f"    - {e}")
+    if ncbi_unreachable:
+        print(f"  [{label}] NCBI unreachable: {YELLOW}{len(ncbi_unreachable)}{END} "
+              f"(not counted as mismatches: NCBI API could not be reached)")
+        for e in ncbi_unreachable:
+            print(f"    - {e}")
     print("=" * 60)
     if mismatched == 0:
         print(f"{GREEN}[OK] {label} passed.{END}")
