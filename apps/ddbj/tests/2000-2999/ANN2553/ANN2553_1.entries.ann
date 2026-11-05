@@ -1,0 +1,116 @@
+COMMON	SUBMITTER		ab_name	Mishima,H.
+			contact	Hanako Mishima
+			email	mishima@ddbj.nig.ac.jp
+			institute	National Institute of Genetics
+			department	DNA Data Bank of Japan
+			country	Japan
+			state	Shizuoka
+			city	Mishima
+			street	Yata 1111
+			zip	411-8540
+	REFERENCE		title	Test
+			ab_name	Mishima,H.
+			year	2026
+			status	Unpublished
+mm	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	join(101..300,401..500,601..800)	locus_tag	LTA1
+			note	ANN2553 fail two mRNAs share an internal exon
+			product	hypothetical protein
+	mRNA	join(201..300,401..500,651..900)	locus_tag	LTB1
+			product	hypothetical protein
+cm	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	CDS	join(150..300,401..500,601..700)	locus_tag	LTA2
+			note	ANN2553 fail CDS and mRNA share an exon
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+	mRNA	join(101..300,401..500,601..800)	locus_tag	LTB2
+			product	hypothetical protein
+cc	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	CDS	101..400	locus_tag	LTA3
+			note	ANN2553 fail the same single-part CDS with two locus_tags
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+	CDS	101..400	locus_tag	LTB3
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+tr	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	join(101..200,301..400)	locus_tag	LTA4
+			note	ANN2553 fail chained sharing A-B and B-C, A and C differ
+			product	hypothetical protein
+	mRNA	join(301..400,501..600)	locus_tag	LTA4
+			product	hypothetical protein
+	mRNA	join(501..600,701..800)	locus_tag	LTC4
+			product	hypothetical protein
+pa	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	join(<101..300,401..500)	locus_tag	LTA5
+			note	ANN2553 fail partial marks are ignored
+			product	hypothetical protein
+	mRNA	join(201..300,401..>500)	locus_tag	LTB5
+			product	hypothetical protein
+iso	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	join(101..300,401..500,601..800)	locus_tag	LTA6
+			note	ANN2553 pass isoforms with the same locus_tag share exons
+			product	hypothetical protein
+	mRNA	join(101..300,601..800)	locus_tag	LTA6
+			product	hypothetical protein
+	CDS	join(150..300,401..500,601..700)	locus_tag	LTA6
+			transl_table	1
+			codon_start	1
+			product	hypothetical protein
+st	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	join(101..300,401..500)	locus_tag	LTA7
+			note	ANN2553 pass the same coordinates on opposite strands
+			product	hypothetical protein
+	mRNA	complement(join(101..300,401..500))	locus_tag	LTB7
+			product	hypothetical protein
+ts	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	join(101..300,401..500)	locus_tag	LTA8
+			note	ANN2553 pass trans_splicing is not checked
+			product	hypothetical protein
+	mRNA	join(401..500,601..800)	locus_tag	LTB8
+			trans_splicing	
+			product	hypothetical protein
+ov	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	join(101..300,401..500)	locus_tag	LTA9
+			note	ANN2553 pass overlapping but no identical exon
+			product	hypothetical protein
+	mRNA	join(201..300,401..501)	locus_tag	LTB9
+			product	hypothetical protein
+nl	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	join(101..300,401..500)	locus_tag	LTA10
+			note	ANN2553 pass a feature without locus_tag
+			product	hypothetical protein
+	mRNA	join(201..300,401..500)	product	hypothetical protein

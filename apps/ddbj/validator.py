@@ -129,6 +129,7 @@ class Validator:
             ANN2544(), # [WARNING] Invalid locus_tag length or digit format
             ANN2545(), # [WARNING] DFAST-generated 'LOCUS' detected
             ANN2552(), # [WARNING] CDS and mRNA with the same locus_tag: strand differs or CDS outside mRNA
+            ANN2553(), # [WARNING] CDS/mRNA sharing an identical exon have different locus_tag values
             ANN2555(), # [WARNING] Invalid CDS:mRNA or CDS:misc_feature ratio
             ANN2556(), # [WARNING] mRNA exon is not present in paired CDS
             ANN2560(), # [ERROR] Invalid chromosome name
