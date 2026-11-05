@@ -115,6 +115,18 @@ def parse_details_report(report_path):
 # fixed/ には現れない出力なので、必要なときだけ別途ゴールデン突合する。
 CONFIRMATION_SUMMARY_FILENAME = "autofix_confirmation_summary.txt"
 
+# NCBI API に届かなかった実行のレポートのヘッダーにある印（apps/ddbj/reporter.py の NCBI_UNREACHABLE_MARK）。
+# NCBI に届かないのは検証エラーではないので、この印があるディレクトリの不一致は mismatch に数えず、
+# 「NCBI unreachable」として別に出す。終了コードにも数えない（release.sh を止めない。2026-11-05）
+NCBI_UNREACHABLE_MARK = "NCBI API: unreachable"
+
+
+def _report_ncbi_unreachable(report_path):
+    try:
+        return NCBI_UNREACHABLE_MARK in report_path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+
 # ==============================================================================
 # ファイル直接比較 (Diff)
 # ==============================================================================
@@ -217,7 +229,8 @@ def get_empty_result():
         "autofix_fixed": 0, "autofix_not_fixed": 0, "autofix_errors": [],
         "autocleanup_cleaned": 0, "autocleanup_not_cleaned": 0, "autocleanup_errors": [],
         "translation_passed": 0, "translation_mismatched": 0, "translation_errors": [],
-        "confirmation_passed": 0, "confirmation_mismatched": 0, "confirmation_errors": []
+        "confirmation_passed": 0, "confirmation_mismatched": 0, "confirmation_errors": [],
+        "ncbi_unreachable": 0, "ncbi_unreachable_errors": []
     }
 
 # ==============================================================================
@@ -411,7 +424,45 @@ def run_e2e_tests(target_rule_id=None, mode="curator", skip_only=False, docker_i
         msg += f" [{Colors.OKCYAN}BIOSAMPLE MODE (-b ann->bs TSV; requires internal DB){Colors.ENDC}]"
     print(f"{msg}...")
 
+    # NCBI API に届かなかったディレクトリの不一致は mismatch から外して別に数える。
+    # ディレクトリの判定の前に数を控えておき、次のディレクトリへ移る前（とループの後）に精算する。
+    # スキップされるべきルールが出た（not_skipped_errors）ものは NCBI と関係ないので外さない。
+    ncbi_unreachable = 0
+    ncbi_unreachable_errors = []
+    ncbi_pending = None
+
+    def _ncbi_settle():
+        nonlocal ncbi_pending, ncbi_unreachable, mismatched_count, translation_mismatched, \
+            confirmation_mismatched, autofix_not_fixed, autocleanup_not_cleaned
+        if ncbi_pending is None:
+            return
+        label, snap = ncbi_pending
+        ncbi_pending = None
+        not_skipped_new = len(not_skipped_errors) - snap["not_skipped"]
+        moved = (mismatched_count - snap["mismatched"] - not_skipped_new
+                 + translation_mismatched - snap["translation"]
+                 + confirmation_mismatched - snap["confirmation"])
+        if moved <= 0:
+            return
+        kept = set(not_skipped_errors[snap["not_skipped"]:])
+        moved_msgs = [e for e in errors[snap["errors"]:] if e not in kept]
+        mismatched_count = snap["mismatched"] + not_skipped_new
+        translation_mismatched = snap["translation"]
+        confirmation_mismatched = snap["confirmation"]
+        autofix_not_fixed = snap["autofix_not_fixed"]
+        autocleanup_not_cleaned = snap["autocleanup_not_cleaned"]
+        del errors[snap["errors"]:]
+        errors.extend(kept)
+        for lst, key in ((autofix_errors, "autofix_errors"), (autocleanup_errors, "autocleanup_errors"),
+                         (translation_errors, "translation_errors"), (confirmation_errors, "confirmation_errors")):
+            del lst[snap[key]:]
+        ncbi_unreachable += moved
+        ncbi_unreachable_errors.extend(moved_msgs)
+        print(f"  [{Colors.WARNINGYEL}NCBI UNREACHABLE{Colors.ENDC}] {label}: NCBI API could not be reached in this run; "
+              f"{moved} mismatch(es) above are not counted.")
+
     for target_dir in target_dirs:
+        _ncbi_settle()
         dir_label = str(target_dir.relative_to(project_root))
         print(f"Testing directory: {dir_label}")
 
@@ -439,6 +490,14 @@ def run_e2e_tests(target_rule_id=None, mode="curator", skip_only=False, docker_i
             continue
 
         triggered_rules_by_file, triggered_rules_by_entry = parse_details_report(report_path)
+        if _report_ncbi_unreachable(report_path):
+            ncbi_pending = (dir_label, {
+                "mismatched": mismatched_count, "translation": translation_mismatched,
+                "confirmation": confirmation_mismatched, "autofix_not_fixed": autofix_not_fixed,
+                "autocleanup_not_cleaned": autocleanup_not_cleaned, "errors": len(errors),
+                "not_skipped": len(not_skipped_errors), "autofix_errors": len(autofix_errors),
+                "autocleanup_errors": len(autocleanup_errors), "translation_errors": len(translation_errors),
+                "confirmation_errors": len(confirmation_errors)})
 
         for ann_path in target_dir.glob("*.ann"):
             filename = ann_path.name
@@ -765,7 +824,11 @@ def run_e2e_tests(target_rule_id=None, mode="curator", skip_only=False, docker_i
                                 confirmation_errors.append(err_msg)
                                 confirmation_mismatched += 1
 
+    _ncbi_settle()
+
     return {
+        "ncbi_unreachable": ncbi_unreachable,
+        "ncbi_unreachable_errors": ncbi_unreachable_errors,
         "passed": passed_count,
         "mismatched": mismatched_count,
         "errors": errors,
@@ -882,7 +945,11 @@ def run_common_only_tests(target_rule_id=None, use_pip=False, jobs=8, scope="com
                     res["errors"].append(f"{rel}: --scope {scope} report lacks the '{scope_header}' header")
                     continue
                 extra = sorted(common - normal)
-                if extra:
+                if extra and (_report_ncbi_unreachable(outs["normal"]) or _report_ncbi_unreachable(outs["common"])):
+                    res["ncbi_unreachable"] += 1
+                    res["ncbi_unreachable_errors"].append(f"{rel}: results differ but NCBI API could not be reached in this run")
+                    print(f"{Colors.WARNINGYEL}[NCBI UNREACHABLE] {rel}{Colors.ENDC}")
+                elif extra:
                     res["mismatched"] += 1
                     for fs, rule, level, entry, ln in extra:
                         res["errors"].append(f"{rel} {fs}: {rule}:{level}:{entry}{(' Line[' + ln + ']') if ln else ''} only with --scope {scope} (needs {scope_flag}?)")
@@ -947,6 +1014,12 @@ def print_summary(results_list, docker_image=None):
             for e in general_errors:
                 print(f"    - {e}")
                 
+        if res.get("ncbi_unreachable"):
+            print(f"  NCBI unreachable:       {Colors.WARNINGYEL}{res['ncbi_unreachable']}{Colors.ENDC} "
+                  f"(not counted as mismatches: NCBI API could not be reached)")
+            for e in res.get("ncbi_unreachable_errors", []):
+                print(f"    - {e}")
+
         if not any(t in title for t in ("CURATOR MODE", "WEB APP MODE", "COMMON ONLY", "SOURCE SCOPE")):
             print(f"  Expectedly Skipped:     {Colors.OKGREEN}{res['skipped']}{Colors.ENDC}")
             print(f"  Not Skipped (Error!):   {Colors.FAILRED if len(res['not_skipped_errors']) > 0 else Colors.OKGREEN}{len(res['not_skipped_errors'])}{Colors.ENDC}")
@@ -1094,9 +1167,16 @@ if __name__ == "__main__":
             has_errors = True
             total_mismatches += mode_errors
 
+    ncbi_total = sum(res.get("ncbi_unreachable", 0) for _, res, _ in results_to_print)
+
     if has_errors:
         print(f"\n{Colors.FAILRED}[ABORT] Test failures detected (Total mismatch/errors). Exiting with status code 1.{Colors.ENDC}\n")
         sys.exit(1)
+    elif ncbi_total:
+        # NCBI に届かなかっただけなら検証の不具合ではないので止めない（release.sh を続ける）
+        print(f"\n{Colors.WARNINGYEL}[WARNING] NCBI API could not be reached in some runs; {ncbi_total} result(s) were not checked "
+              f"(not counted as failures). Other tests passed. Exiting with status code 0.{Colors.ENDC}\n")
+        sys.exit(0)
     else:
         print(f"\n{Colors.OKGREEN}[SUCCESS] All tests passed successfully! Exiting with status code 0.{Colors.ENDC}\n")
         sys.exit(0)

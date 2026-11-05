@@ -91,8 +91,11 @@ def _finalize(args, results, records, in_path, out_dir, submission_id, package, 
     reports_dir = Path(out_dir) / "reports"
 
     summary_text = build_summary(results, sample_count, in_path.name, submission_id, package, version, when, elapsed)
+    # NCBI API に届かなかったリクエストの数（検証エラーではないので JSON と画面に別に出す）
+    from common.ncbi_api import ncbi_failures
+    ncbi_failed = len(ncbi_failures())
     if args.json:
-        write_json_report(results, out_dir, in_path.name, version)
+        write_json_report(results, out_dir, in_path.name, version, ncbi_failed=ncbi_failed)
         report_files = ["validation_report.json"]
     else:
         details_text = build_details(results, records, sample_count, in_path.name, submission_id, package, version, when, elapsed)
@@ -111,6 +114,10 @@ def _finalize(args, results, records, in_path, out_dir, submission_id, package, 
             parts.append(f"=> Auto-fixed {_fixed_label(fixed_path)} saved to: {fixed_path}")
     parts.append(f"[ All reports successfully generated to {reports_dir} ]\n"
                  + "\n".join(f"  {f}" for f in report_files))
+    if ncbi_failed:
+        req = "request" if ncbi_failed == 1 else "requests"
+        parts.append(f"[WARNING] NCBI API could not be reached ({ncbi_failed} {req} failed after retries). "
+                     f"Checks that use NCBI were not fully done; run again later.")
     print("\n" + "\n\n".join(parts))   # DB チェック/Found 行との間に空行
 
     return {"error": sum(1 for r in results if r.get("level") == "error")}

@@ -304,9 +304,15 @@ def build_result_json(results, input_name, version="unknown"):
     }
 
 
-def write_json_report(results, out_dir, input_name, version="unknown"):
-    """<out_dir>/reports/validation_report.json に result.json 互換の JSON を出力。戻り値: 結果 dict。"""
+def write_json_report(results, out_dir, input_name, version="unknown", ncbi_failed=0):
+    """<out_dir>/reports/validation_report.json に result.json 互換の JSON を出力。戻り値: 結果 dict。
+
+    ncbi_failed: NCBI API に届かなかったリクエストの数。あれば ncbi_unreachable を足す（検証エラーではないので
+    validity には影響しない。E2E ハーネスはこれでその実行の不一致を「NCBI に届かなかった」に分ける）。
+    """
     result = build_result_json(results, input_name, version)
+    if ncbi_failed:
+        result["ncbi_unreachable"] = {"failed_requests": ncbi_failed}
     if out_dir:
         reports = Path(out_dir) / "reports"
         reports.mkdir(parents=True, exist_ok=True)

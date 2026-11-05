@@ -17,6 +17,20 @@ def _scope_line(scope):
     return _SCOPE_LINES.get(scope, "") if scope else ""
 
 
+# NCBI API に届かなかったときにヘッダーに足す行の頭。E2E ハーネスはこの印でその実行の不一致を
+# 「NCBI に届かなかった」に分ける（apps/ddbj/tests/run_tests.py）
+NCBI_UNREACHABLE_MARK = "NCBI API: unreachable"
+
+
+def _ncbi_line(ncbi_failed):
+    """NCBI API に届かなかったリクエストがあればヘッダーに 1 行出す。検証エラーではない。"""
+    if not ncbi_failed:
+        return ""
+    req = "request" if ncbi_failed == 1 else "requests"
+    return (f"{NCBI_UNREACHABLE_MARK} ({ncbi_failed} {req} failed after retries). "
+            f"Checks that use NCBI were not fully done; run again later.\n")
+
+
 def read_submission_types(jsonl_paths):
     """ワーカー JSONL の submission_type レコード（--common-only のとき）をファイル順に返す。"""
     out = []
@@ -56,7 +70,7 @@ class ValidationReporter:
         self.out_dir.mkdir(parents=True, exist_ok=True)
         self.show_location = False
 
-    def write_json_report(self, jsonl_paths, version=None, scope=None):
+    def write_json_report(self, jsonl_paths, version=None, scope=None, ncbi_failed=0):
         """JSON レポート出力（--json）。biosample/bioproject/dra と揃えたスキーマ＋ddbj 固有粒度。
 
         messages[] に entry/feature_type/qualifier/location/line_number を含める（ddbj は feature/entry 単位）。
@@ -96,6 +110,8 @@ class ValidationReporter:
             # --common-only のときだけ "common_only"（エントリ部・配列は未検証であることを示す）
             **({"scope": scope} if scope else {}),
             **({"submission_type": overall_submission_type(types), "submission_types": types} if types else {}),
+            # NCBI API に届かなかったときだけ。検証エラーではないので validity には影響しない
+            **({"ncbi_unreachable": {"failed_requests": ncbi_failed}} if ncbi_failed else {}),
             "validity": counts.get("error", 0) == 0,
             "stats": {"error": counts.get("error", 0), "warning": counts.get("warning", 0),
                       "info": counts.get("info", 0), "auto-cleanup": counts.get("auto-cleanup", 0)},
@@ -105,7 +121,7 @@ class ValidationReporter:
         out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         return out_path
 
-    def generate_report(self, jsonl_paths, print_console=True, start_time=None, end_time=None, version=None, scope=None):
+    def generate_report(self, jsonl_paths, print_console=True, start_time=None, end_time=None, version=None, scope=None, ncbi_failed=0):
         """レポート出力の統括メソッド (JSONLストリーミング対応版)"""
         report_summary_path = self.out_dir / "validation_report_summary.txt"
         report_details_path = self.out_dir / "validation_report_details.txt"
@@ -114,7 +130,7 @@ class ValidationReporter:
         num_sets = len(actual_sets)
 
         if not jsonl_paths or num_sets == 0:
-            self._write_empty_report(report_summary_path, report_details_path, print_console, start_time=start_time, end_time=end_time, version=version, scope=scope)
+            self._write_empty_report(report_summary_path, report_details_path, print_console, start_time=start_time, end_time=end_time, version=version, scope=scope, ncbi_failed=ncbi_failed)
             return report_summary_path, report_details_path
 
         # ヘッダー情報の生成
@@ -140,7 +156,7 @@ class ValidationReporter:
             f"Validation Date: {exec_date}\n"
             f"Process Time: {process_time_str}\n"
             f"Version: {version_str}\n"
-        ) + _scope_line(scope)
+        ) + _scope_line(scope) + _ncbi_line(ncbi_failed)
         type_lines = _submission_type_lines(read_submission_types(jsonl_paths))
         header_info += type_lines
         if print_console and type_lines:
@@ -359,7 +375,7 @@ class ValidationReporter:
         if qual: parts.append(qual)
         return ":".join(str(p) for p in parts)
 
-    def _write_empty_report(self, sum_path, det_path, print_console, start_time=None, end_time=None, version=None, scope=None):
+    def _write_empty_report(self, sum_path, det_path, print_console, start_time=None, end_time=None, version=None, scope=None, ncbi_failed=0):
         import datetime
         import time
         exec_date = datetime.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
@@ -380,7 +396,7 @@ class ValidationReporter:
             f"Validation Date: {exec_date}\n"
             f"Process Time: {process_time_str}\n"
             f"Version: {version_str}\n"
-        ) + _scope_line(scope)
+        ) + _scope_line(scope) + _ncbi_line(ncbi_failed)
 
         empty_msg_sum = f"\n=== Validation Summary (0 file sets) ===\n{header_info}No errors found.\n"
         empty_msg_det = f"\n=== Validation Details (0 file sets) ===\n{header_info}No errors found.\n"
