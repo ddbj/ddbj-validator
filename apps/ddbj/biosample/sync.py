@@ -94,6 +94,19 @@ def _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, an
                         "attr": attr, "values": bs_values
                     })
 
+                elif _matches_missing(ann_val, bs_missing := _bs_missing_values(valid_samds, bs_data, attr)):
+                    # BioSample 側の missing 値と ann の値が完全一致 → 一致
+                    # （missing の理由は term ごとに違うので、別の missing 値や空は不一致として下で warn）
+                    continue
+
+                elif (not emit_additions) and bs_missing:
+                    # BioSample 側が missing 値で ann の値（空・別の missing 値を含む）と異なる。
+                    # missing 値は ann へ書き写さないので autofix は提案せず warning だけ出す。
+                    validation_warnings.append(_sync_warning(
+                        ann_path, entry_id, feature, attr,
+                        f"The '{attr}' qualifier value does not match the BioSample attribute value. "
+                        f"(ann: '{ann_val}', BioSample: '{', '.join(sorted(bs_missing))}')"))
+
                 elif emit_additions and ann_val:
                     # ann にのみ値があり BioSample 側が空 → 属性追加候補（bs_addition）。
                     # パッケージ定義に含まれるかの判定は phase-3 で行う。
@@ -161,6 +174,25 @@ def _bs_values(valid_samds, bs_data, attr):
     return values, samd_of
 
 
+def _bs_missing_values(valid_samds, bs_data, attr):
+    """valid_samds の BioSample 属性 attr のうち missing 値（"missing: human-identifiable" 等）の集合。"""
+    vals = set()
+    for s in valid_samds:
+        val = bs_data[s].get(attr)
+        if val is not None and is_missing_value(str(val)):
+            vals.add(str(val).strip())
+    return vals
+
+
+def _matches_missing(ann_val, bs_missing):
+    """ann の値が BioSample 側の missing 値と完全一致するなら True。
+
+    missing 値どうしでも term が違えば値が無い理由が違う（"missing: human-identifiable" と
+    "missing: control sample"、"missing" と "not collected" など）ので一致にしない。空とも一致しない。
+    """
+    return bool(ann_val) and ann_val.strip() in bs_missing
+
+
 def _unique_bs_value(valid_samds, bs_data, attr):
     """attr の値が 1 つに定まるなら (値, その SAMD) を返す。定まらなければ (None, None)。"""
     values, samd_of = _bs_values(valid_samds, bs_data, attr)
@@ -195,6 +227,14 @@ def _propose_missing_qualifier_additions(record, entry_id, valid_samds, bs_data,
                 continue
             bs_val, source_samd = _unique_bs_value(valid_samds, bs_data, attr)
             if not bs_val:
+                bs_missing = _bs_missing_values(valid_samds, bs_data, attr)
+                if bs_missing and not _bs_values(valid_samds, bs_data, attr)[0]:
+                    # BioSample 側が missing 値だけ。missing 値は ann へ書き写さない（null 値ルールに掛かる）ので
+                    # 追加提案はせず、空と missing 値は違うことを warning で知らせる。
+                    validation_warnings.append(_sync_warning(
+                        ann_path, entry_id, feature, attr,
+                        f"The '{attr}' qualifier is missing but the BioSample attribute has a value. "
+                        f"(ann: '', BioSample: '{', '.join(sorted(bs_missing))}')"))
                 continue
             validation_warnings.append(_sync_warning(
                 ann_path, entry_id, feature, attr,

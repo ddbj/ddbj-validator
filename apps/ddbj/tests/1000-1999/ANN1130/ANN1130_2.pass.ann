@@ -31,6 +31,7 @@ chromosome	source	1..4924793	organism	Escherichia coli
 			mol_type	genomic DNA
 			ff_definition	@@[organism]@@ @@[strain]@@ DNA, complete genome
 			geo_loc_name	Japan
+			lat_lon	missing
 			collection_date	2025
 			host	Homo sapiens
 			serovar	OUT:H18
