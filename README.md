@@ -134,6 +134,7 @@ ddbj-validator [オプション] [検証対象ディレクトリ]
 * `--clean` 実行の前に、出力ディレクトリの `fixed/`・`aa/`・`reports/` の中身を消します。指定しない場合は、同じ名前のファイルを上書きするだけで、ほかのファイルは残ります。これらのディレクトリに自分のファイルを置いている場合は、付けないでください。
 * `--scope {common,source,all}` 検証する範囲を選びます。`common` は COMMON だけ（`--common-only` と同じ）、`source` は COMMON と各エントリの source feature だけ、`all`（既定）はすべてです。`common` と `source` は FASTA を読みません。下の「検証する範囲を絞る」を参照してください。
 * `--common-only` `--scope common` と同じです（後方互換）。アノテーションファイルの COMMON エントリだけを検証します（SUBMITTER / REFERENCE / DBLINK / ST_COMMENT / KEYWORD / DATATYPE / DIVISION など）。エントリ部と FASTA は読まないため、大きなファイルでもすぐに終わり、FASTA が無くても実行できます。レポートだけを出力し、自動修正（`fixed/`）は行いません（`-f` は無視されます）。エントリ部が無いと判定できないチェック（DBLINK や organism がファイル内のどこにも無い、など）は行いません。
+* `--summary-table` 複数のファイルをまとめて見るための表を `reports/` に追加で出力します。`validation_report_table.txt` には、rule id ごとに何ファイル・何件出たかと、同じ出方をしたファイルをまとめた一覧（全 entry に出た rule は `all entries`）を書きます。`validation_report_table.tsv` は、ファイル × rule id の件数の表です（Excel で開けます）。
 * `--ncbi-api-key` NCBI API へのリクエスト制限を緩和するための API キーを指定します。
 * `--help` 利用可能なすべてのオプションと詳細を確認します。
 
@@ -721,6 +722,7 @@ If the virtual environment is not activated, you must specify the direct path to
 * `--clean`: Empties `fixed/`, `aa/` and `reports/` in the output directory before running. Without it, only files with the same names are overwritten and other files remain. Do not use it if you keep your own files in these directories.
 * `--scope {common,source,all}`: Selects what to validate. `common` is the COMMON entry only (same as `--common-only`), `source` is COMMON and the source feature of each entry, and `all` (default) is everything. `common` and `source` do not read FASTA files. See "Narrowing the scope" below.
 * `--common-only`: Same as `--scope common` (kept for backward compatibility). Validates only the COMMON entry of the annotation files (SUBMITTER, REFERENCE, DBLINK, ST_COMMENT, KEYWORD, DATATYPE, DIVISION, etc.). Entries and FASTA files are not read, so it finishes quickly even for large files and runs without FASTA files. Only reports are written; no auto-fix is applied (`-f` is ignored). Checks that need the entries, such as a DBLINK or organism missing from the whole file, are not run.
+* `--summary-table`: Also writes tables for looking at many files at once to `reports/`. `validation_report_table.txt` gives, for each rule id, the number of files and messages, and lists the files that got the same pattern of messages together (a rule reported in every entry is shown as `all entries`). `validation_report_table.tsv` is a table of message counts by file and rule id, for spreadsheets.
 * `--ncbi-api-key`: Specifies an API key to ease request limits to the NCBI API.
 * `--help`: Displays all available options and details.
 

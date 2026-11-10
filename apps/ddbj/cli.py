@@ -56,6 +56,13 @@ def _build_parser():
     parser.add_argument("--clean", action=argparse.BooleanOptionalAction,
                         default=os.environ.get("DDBJ_VALIDATOR_CLEAN") == "1",
                         help="Empty fixed/, aa/ and reports/ in the output directory before running (default: overwrite same-name files only)")
+    # ファイル横断の表（rule id ごとの集計・同じ出方のファイルのまとめ・ファイル × rule id の行列）を reports/ に追加で出す。
+    # curator は wrapper（ddbj-validator.sh）が DDBJ_VALIDATOR_SUMMARY_TABLE=1 を設定して既定を有効にする（--clean と同じ）。
+    # --no-summary-table で打ち消せる
+    parser.add_argument("--summary-table", action=argparse.BooleanOptionalAction,
+                        default=os.environ.get("DDBJ_VALIDATOR_SUMMARY_TABLE") == "1",
+                        help="Also write reports/validation_report_table.txt and .tsv: counts by rule id across files, "
+                             "files grouped by the same pattern of messages, and a file x rule id matrix")
     # 関連 BioSample を SSUB 単位の更新用 TSV として出力（内部使用のみ・要内部DB）
     parser.add_argument("-b", "--biosample", action="store_true", help="Generate SSUB-unit BioSample update TSV from DBLINK biosample accessions (internal use; requires internal DB)")
     # -f -b 時の同期方向（内部/テスト用）。ann2bs は「全 [b]（ann 値で BioSample を更新）」を非対話で再現する。
@@ -426,9 +433,16 @@ def _run(args, pairs, report_out_dir, target_dirs_for_report, skip_db, skip_ncbi
         if args.json:
             reporter.write_json_report(jsonl_paths, version=tool_version, scope=scope, ncbi_failed=ncbi_failed)
             report_files = ["validation_report.json"]
+            if args.summary_table:
+                reporter.write_table_report(jsonl_paths, header_info=f"Version: {tool_version}\n",
+                                            set_str=f"{sum(1 for p in jsonl_paths if 'Submission_Cross_File' not in str(p))} file sets")
+                report_files += ["validation_report_table.txt", "validation_report_table.tsv"]
         else:
-            reporter.generate_report(jsonl_paths, print_console=True, start_time=start_time, end_time=end_time, version=tool_version, scope=scope, ncbi_failed=ncbi_failed)
+            reporter.generate_report(jsonl_paths, print_console=True, start_time=start_time, end_time=end_time, version=tool_version, scope=scope, ncbi_failed=ncbi_failed,
+                                     table=args.summary_table)
             report_files = ["validation_report_summary.txt", "validation_report_details.txt"]
+            if args.summary_table:
+                report_files += ["validation_report_table.txt", "validation_report_table.tsv"]
 
         # 3. Autofix の承認と適用（--common-only はレポートのみ。fixed/ aa/ は作らない）
         if not args.common_only:

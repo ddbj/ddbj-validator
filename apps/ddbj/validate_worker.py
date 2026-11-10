@@ -133,7 +133,7 @@ def _validate_single_file_set(task):
         sub_type = {"file": Path(ann_path).name, **detect_submission_type(records, context.ddbj_dict)}
     if common_only:
         return _write_worker_jsonl(ann_path, tmp_dir_str, is_web_mode, file_results, [], [], [], [],
-                                   submission_type=sub_type)
+                                   submission_type=sub_type, entry_count=None)
 
     for res in val_results:
         if res.get("autofix") and "new_value" in res:
@@ -274,11 +274,13 @@ def _validate_single_file_set(task):
 
     return _write_worker_jsonl(ann_path, tmp_dir_str, is_web_mode, file_results, file_proposals,
                                file_locus_tags, file_skipped_autofixes, file_updq_data,
-                               submission_type=sub_type)
+                               submission_type=sub_type,
+                               entry_count=sum(1 for e in records if e != "COMMON"))
 
 
 def _write_worker_jsonl(ann_path, tmp_dir_str, is_web_mode, file_results, file_proposals,
-                        file_locus_tags, file_skipped_autofixes, file_updq_data, submission_type=None):
+                        file_locus_tags, file_skipped_autofixes, file_updq_data, submission_type=None,
+                        entry_count=None):
     # ====================================================
     # メインプロセスにデータを返さず、専用のテンポラリJSONLに書き捨てる
     # ====================================================
@@ -305,6 +307,9 @@ def _write_worker_jsonl(ann_path, tmp_dir_str, is_web_mode, file_results, file_p
 
         if submission_type is not None:
             write_record("submission_type", submission_type)
+
+        # ファイルの entry 数（--summary-table の「全 entry に出ているか」用。--common-only は entry を読まないので None）
+        write_record("file_meta", {"file": Path(ann_path).name, "entries": entry_count})
             
     return {
         "jsonl_path": str(tmp_jsonl_path),

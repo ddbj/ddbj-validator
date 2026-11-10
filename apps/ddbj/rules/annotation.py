@@ -239,6 +239,38 @@ class ANN0230(BaseRule):
         return results
         
 
+class ANN0240(BaseRule):
+    """country が Japan の SUBMITTER に city / zip が無い（2026-11-10）。
+
+    シンガポール・香港のように city / zip が無い国があるので、必須にするのは Japan だけ。
+    autofix はしない（street からの切り出しなどは行わない）。
+    """
+    rule_id = "ANN0240"
+    alternate_id = "JP0074"
+    target = "SUBMITTER"
+    description = "'city' and 'zip' are required for 'SUBMITTER' when 'country' is Japan."
+    requires_rdb = False
+    is_file_level = True
+    internal_ignore = True
+
+    @staticmethod
+    def _first(feature, qualifier):
+        vals = feature.qualifiers.get(qualifier, [])
+        return str(vals[0]).strip() if vals else ""
+
+    def validate_file(self, records, context):
+        results = []
+        for record in records.values():
+            for feature in self.get_features(record, "SUBMITTER"):
+                if self._first(feature, "country").lower() != "japan":
+                    continue
+                for qualifier in ("city", "zip"):
+                    if not self._first(feature, qualifier):
+                        msg = f"'{qualifier}' is required for 'SUBMITTER' when 'country' is Japan."
+                        results.append(self.feature_result(record, feature, msg, level="error", qualifier=qualifier))
+        return results
+
+
 class ANN0250(BaseRule):
     rule_id = "ANN0250"
     alternate_id = "CMC0020"
