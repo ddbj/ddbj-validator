@@ -1,0 +1,71 @@
+COMMON	SUBMITTER		ab_name	Mishima,H.
+			contact	Hanako Mishima
+			email	mishima@ddbj.nig.ac.jp
+			institute	National Institute of Genetics
+			department	DNA Data Bank of Japan
+			country	Japan
+			state	Shizuoka
+			city	Mishima
+			street	Yata 1111
+			zip	411-8540
+	REFERENCE		title	Test
+			ab_name	Mishima,H.
+			year	2026
+			status	Unpublished
+mr	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	mRNA	join(101..300,401..500)	locus_tag	LT1
+			note	ANN2680 fail two mRNAs with the same location and the same locus_tag
+	mRNA	join(101..300,401..500)	locus_tag	LT1
+us	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	3'UTR	801..900	locus_tag	LT2
+			note	ANN2680 pass isoforms share a 3'UTR with the same locus_tag
+	3'UTR	801..900	locus_tag	LT2
+ud	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	3'UTR	801..900	locus_tag	LT3A
+			note	ANN2680 fail the same 3'UTR with different locus_tags
+	3'UTR	801..900	locus_tag	LT3B
+un	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	5'UTR	101..150	note	ANN2680 fail the same 5'UTR without locus_tag or gene
+	5'UTR	101..150	note	test
+gs	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	exon	101..300	gene	abcA
+			note	ANN2680 pass the same exon with the same gene and no locus_tag
+	exon	101..300	gene	abcA
+lg	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	5'UTR	101..150	locus_tag	LT6A
+			gene	abcF
+			note	ANN2680 fail different locus_tags decide even if the gene is the same
+	5'UTR	101..150	locus_tag	LT6B
+			gene	abcF
+mx	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	3'UTR	801..900	locus_tag	LT7
+			note	ANN2680 fail two 3'UTRs of one locus_tag and a third one without locus_tag
+	3'UTR	801..900	locus_tag	LT7
+	3'UTR	801..900	note	test
+ns	source	1..1500	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	3'UTR	801..900	note	ANN2680 pass 3'UTRs with different locations
+	3'UTR	851..900	note	test
