@@ -3704,28 +3704,75 @@ class ANN2680(BaseRule):
     description = "Identical {f_type} feature and location."
     requires_rdb = False
 
+    # 同じ遺伝子の isoform（複数の mRNA）で共有されうる feature。
+    # locus_tag（無ければ /gene）が同じものどうしの重複は当然なので出さない（2026-11-10）。
+    # それ以外（mRNA, gene, rRNA 等）は同じ遺伝子でも重複はありえないので常に出す。
+    ISOFORM_SHARED_TYPES = {"5'UTR", "3'UTR", "CDS", "exon", "intron"}
+
+    @staticmethod
+    def _gene_ids(feature):
+        """(locus_tag, gene) を返す。無い方は None。"""
+        q = feature.qualifiers
+        lt = q.get("locus_tag", [""])[0].strip() or None
+        gene = q.get("gene", [""])[0].strip() or None
+        return lt, gene
+
+    @classmethod
+    def _same_gene(cls, a, b):
+        """a と b が同じ遺伝子に属すると言えるなら True。
+
+        両方に locus_tag があれば locus_tag で決める（違えば別遺伝子＝本当の重複の可能性があるので対象）。
+        locus_tag で決められないときは、両方にある /gene で決める。どちらも無ければ判定できない（False）。
+        """
+        lt_a, gene_a = cls._gene_ids(a)
+        lt_b, gene_b = cls._gene_ids(b)
+        if lt_a and lt_b:
+            return lt_a == lt_b
+        if gene_a and gene_b:
+            return gene_a == gene_b
+        return False
+
+    @classmethod
+    def _id_note(cls, a, b):
+        """メッセージに添える locus_tag / gene（両方にあって値が違うときだけ）。"""
+        lt_a, gene_a = cls._gene_ids(a)
+        lt_b, gene_b = cls._gene_ids(b)
+        if lt_a and lt_b:
+            return f", locus_tag: '{lt_a}' and '{lt_b}'" if lt_a != lt_b else ""
+        if gene_a and gene_b and gene_a != gene_b:
+            return f", gene: '{gene_a}' and '{gene_b}'"
+        return ""
+
     def validate(self, record, context):
         results = []
-        if record.id == "COMMON": 
+        if record.id == "COMMON":
             return results
-        
-        seen_features = set()
-        
+
+        # (type, location) -> それまでに出た feature（行順）
+        seen_features = defaultdict(list)
+
         for feature in self.get_features(record):
             f_type = feature.type
             loc_str = getattr(feature, 'original_location', "")
-            
+
             if not loc_str:
                 continue
-            
-            feat_key = (f_type, loc_str)
-            
-            if feat_key in seen_features:
-                msg = f"Identical {f_type} feature and location."
-                results.append(self.feature_result(record, feature, msg, level="warning"))
-            else:
-                seen_features.add(feat_key)
-                
+
+            earlier = seen_features[(f_type, loc_str)]
+            if earlier:
+                if f_type in self.ISOFORM_SHARED_TYPES:
+                    # 同じ遺伝子の feature と重なっているだけなら isoform の共有。異なる（または判定できない）相手を探す
+                    others = [e for e in earlier if not self._same_gene(e, feature)]
+                else:
+                    others = earlier
+                if others:
+                    first = others[0]
+                    first_line = getattr(first, 'line_number', None)
+                    msg = (f"Identical {f_type} feature and location: same as the {f_type} at line {first_line}. "
+                           f"(location: {loc_str}{self._id_note(first, feature)})")
+                    results.append(self.feature_result(record, feature, msg, level="warning"))
+            earlier.append(feature)
+
         return results
 
 
