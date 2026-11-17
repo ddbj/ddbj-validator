@@ -11,7 +11,7 @@ from apps.biosample.rules.value_format import BS_R0007, BS_R0009, BS_R0011, BS_R
 from apps.biosample.rules.consistency import BS_R0024, BS_R0036, BS_R0062, BS_R0073, BS_R0135, BS_R0137, BS_R0132, BS_R0133, BS_R0001
 from apps.biosample.rules.value_ascii import BS_R0058, BS_R0100, BS_R0012, BS_R0013, BS_R0142
 from apps.biosample.rules.identifier import BS_R0005, BS_R0069, BS_R0099, BS_R0102, BS_R0122, BS_R0109, BS_R0091
-from apps.biosample.rules.geo import BS_R0008, BS_R0041, BS_R0094
+from apps.biosample.rules.geo import BS_R0008, BS_R0041, BS_R0094, BS_R0147
 from apps.biosample.rules.taxonomy import BS_R0004, BS_R0096, BS_R0059, BS_R0115, BS_R0106, BS_R0141, BS_R0045, BS_R0105, BS_R0134, BS_R0140, BS_R0104, BS_R0015, BS_R0145
 from apps.biosample.rules.package_organism import PackageOrganismValidator
 from apps.biosample.rules.voucher import CultureCollectionValidator, SpecimenVoucherValidator, BioMaterialValidator
@@ -89,6 +89,7 @@ class Validator(SimpleValidator):
             BS_R0024(),  # 同一属性（区別情報なし）
             BS_R0008(),  # 不正 country（geo_loc_name）
             BS_R0094(),  # geo_loc_name 形式整形（autofix）
+            BS_R0147(),  # 'Japan:' の右の地名が国名（warning）
             BS_R0041(),  # lat_lon ↔ country 矛盾（geopandas。common/geo）
             BS_R0069(),  # BioProject 連番
             BS_R0062(),  # voucher 同一機関重複

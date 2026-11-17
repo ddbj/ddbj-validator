@@ -1768,8 +1768,7 @@ class ANN1250(BaseRule):
                         if country_part == "Japan" and len(parts) > 1:
                             place = parts[1].split(",", 1)[0].strip()
                             if place in valid_set:
-                                msg = (f"The place name after 'Japan:' in 'geo_loc_name' is a country name. "
-                                       f"(Found: '{val_str}')")
+                                msg = f"The location name after 'Japan' includes a country name. (Found: '{val_str}')"
                                 results.append(self.feature_result(record, feature, msg, level="warning", qualifier="geo_loc_name"))
                         continue
 
