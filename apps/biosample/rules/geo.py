@@ -4,6 +4,7 @@
   country CV は common/resources/definitions.json の cv_terms.countries / historical_countries を使用。
 - BS_R0041: lat_lon と geo_loc_name（国名部分）の矛盾。common/geo.py（ddbj ANN1275 と共通ロジック）を利用。
   geopandas/shapely 未導入時は検証スキップ。
+- BS_R0147: 'Japan:' の右の地名が国名（DDBJ 独自。ddbj ANN1250 と同じ判定）
 """
 from apps.biosample.rules.base import BsRule
 from apps.biosample.rules._util import is_missing_value, is_empty
@@ -37,6 +38,36 @@ class BS_R0008(BsRule):
                 out.append(self.result(sample=rec.sample_id,
                                        attribute="geo_loc_name", old_value=v,
                                        message=f"Entered country is not in controlled terms. (Found: '{country}')"))
+        return out
+
+
+class BS_R0147(BsRule):
+    rule_id = "BS_R0147"
+    level = "warning"
+    target = "geo_loc_name"
+    description = "The place name after 'Japan:' in geo_loc_name is a country name."
+
+    def validate(self, submission, context):
+        # Japan に限り、':' の右の最初の地名（',' か行末まで）が国名と完全一致
+        # （case-sensitive）なら warning（例: 'Japan:Indonesia'）。ddbj ANN1250 と同じ判定。
+        # 他国は Jordan や USA のように国名と同じ地名が多いので対象にしない。
+        # case-sensitive にするのは宇佐（Usa）や東郷（togo）などを拾わないため。
+        countries = context.country_terms()
+        if not countries:
+            return []
+        out = []
+        for rec in submission.records:
+            v = rec.attr("geo_loc_name")
+            if not v or is_missing_value(v):
+                continue
+            parts = v.split(":", 1)
+            if parts[0].strip() != "Japan" or len(parts) == 1:
+                continue
+            place = parts[1].split(",", 1)[0].strip()
+            if place in countries:
+                out.append(self.result(sample=rec.sample_id,
+                                       attribute="geo_loc_name", old_value=v,
+                                       message=f"{self.description} (Found: '{v}')"))
         return out
 
 
