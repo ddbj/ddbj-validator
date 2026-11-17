@@ -45,7 +45,7 @@ class BS_R0147(BsRule):
     rule_id = "BS_R0147"
     level = "warning"
     target = "geo_loc_name"
-    description = "The place name after 'Japan:' in geo_loc_name is a country name."
+    description = "The location name after 'Japan' includes a country name."
 
     def validate(self, submission, context):
         # Japan に限り、':' の右の最初の地名（',' か行末まで）が国名と完全一致
