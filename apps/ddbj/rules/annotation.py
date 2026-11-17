@@ -1761,6 +1761,16 @@ class ANN1250(BaseRule):
                     # 1. まず完全一致（Case-sensitive）をチェック。countries/historical のいずれかに
                     #    一致すれば有効な国名なので何もしない。
                     if country_part in valid_set:
+                        # Japan に限り、':' の右の最初の地名（',' か行末まで）が国名と完全一致
+                        # （case-sensitive）なら warning（例: 'Japan:Indonesia'）。
+                        # 他国は Jordan や USA のように国名と同じ地名が多いので対象にしない。
+                        # case-sensitive にするのは宇佐（Usa）や東郷（Togo）などを拾わないため。
+                        if country_part == "Japan" and len(parts) > 1:
+                            place = parts[1].split(",", 1)[0].strip()
+                            if place in valid_set:
+                                msg = (f"The place name after 'Japan:' in 'geo_loc_name' is a country name. "
+                                       f"(Found: '{val_str}')")
+                                results.append(self.feature_result(record, feature, msg, level="warning", qualifier="geo_loc_name"))
                         continue
 
                     # 2. 完全一致しなかった場合、Case-insensitiveで照合する

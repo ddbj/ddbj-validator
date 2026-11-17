@@ -1,0 +1,49 @@
+COMMON	SUBMITTER		ab_name	Mishima,H.
+			contact	Hanako Mishima
+			email	mishima@ddbj.nig.ac.jp
+			institute	National Institute of Genetics
+			department	DNA Data Bank of Japan
+			country	Japan
+			state	Shizuoka
+			city	Mishima
+			street	Yata 1111
+			zip	411-8540
+	REFERENCE		title	Test
+			ab_name	Mishima,H.
+			year	2026
+			status	Unpublished
+ci	source	1..300	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Indonesia
+			note	ANN1250 fail a country name after Japan:
+cc	source	1..300	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Indonesia, Bali
+			note	ANN1250 fail a country name before a comma
+us	source	1..300	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Oita, Usa
+			note	ANN1250 pass Usa (Usa city) is not the country USA
+tg	source	1..300	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Togo
+			note	ANN1250 fail Togo with the same case as the country name
+sh	source	1..300	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+			note	ANN1250 pass an ordinary place name
+jo	source	1..300	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Jordan:Jordan Valley
+			note	ANN1250 pass only Japan is checked
+lc	source	1..300	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:indonesia
+			note	ANN1250 pass case-sensitive
