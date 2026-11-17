@@ -121,7 +121,8 @@ class ValidationReporter:
         out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         return out_path
 
-    def generate_report(self, jsonl_paths, print_console=True, start_time=None, end_time=None, version=None, scope=None, ncbi_failed=0):
+    def generate_report(self, jsonl_paths, print_console=True, start_time=None, end_time=None, version=None, scope=None, ncbi_failed=0,
+                        table=False):
         """レポート出力の統括メソッド (JSONLストリーミング対応版)"""
         report_summary_path = self.out_dir / "validation_report_summary.txt"
         report_details_path = self.out_dir / "validation_report_details.txt"
@@ -177,7 +178,176 @@ class ValidationReporter:
             if not is_cross:
                 set_idx += 1
 
+        # --summary-table: ファイル横断の表（validation_report_table.txt / .tsv）
+        if table:
+            self.write_table_report(jsonl_paths, header_info=header_info, set_str=set_str)
+
         return report_summary_path, report_details_path
+
+    # ==============================================================
+    # --summary-table: ファイル横断の表（2026-11-10、キュレータの要望）
+    # ==============================================================
+    _TABLE_LEVELS = ["FATAL", "ERROR", "WARNING", "INFO", "AUTO-CLEANUP"]
+
+    @staticmethod
+    def _table_file_label(name, is_cross):
+        if is_cross:
+            return "(across files)"
+        stem = Path(str(name)).name
+        return stem[:-4] if stem.endswith(".ann") else stem
+
+    def _collect_table(self, jsonl_paths):
+        """表の材料を JSONL から集める。
+
+        戻り値: (files, keys, counts, entries_hit, entry_counts)
+          files        : ファイルのラベル（処理順。across files は最後）
+          keys         : (level, rule, target) -> 代表メッセージ
+          counts       : file -> key -> 件数
+          entries_hit  : file -> key -> その key が出た entry の集合
+          entry_counts : file -> entry 数（不明なら None）
+        """
+        files, keys = [], {}
+        counts = defaultdict(lambda: defaultdict(int))
+        entries_hit = defaultdict(lambda: defaultdict(set))
+        entry_counts = {}
+        for j_path in jsonl_paths:
+            is_cross = "Submission_Cross_File" in str(j_path)
+            label = None
+            try:
+                with open(j_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        rec = json.loads(line)
+                        r_type, data = rec.get("type"), rec.get("data", {})
+                        if r_type == "file_meta":
+                            label = label or self._table_file_label(data.get("file", ""), is_cross)
+                            entry_counts[label] = data.get("entries")
+                            continue
+                        if r_type != "result":
+                            continue
+                        label = label or self._table_file_label(data.get("file", ""), is_cross)
+                        level = "AUTO-CLEANUP" if data.get("is_cleanup") else str(data.get("level", "WARNING")).upper()
+                        target = data.get("feature_type", "") or data.get("target", "")
+                        if data.get("qualifier"):
+                            target = f"{target}:{data['qualifier']}" if target else data["qualifier"]
+                        key = (level, data.get("rule", "UNKNOWN"), target)
+                        if key not in keys:
+                            msg = data.get("message", "")
+                            if data.get("line_number") is None:
+                                msg = re.sub(r"^Line \d+:\s*", "", msg)
+                            keys[key] = msg.split("\n")[0]
+                        counts[label][key] += 1
+                        entry = data.get("entry")
+                        if entry and entry not in ("ALL", "COMMON"):
+                            entries_hit[label][key].add(entry)
+            except FileNotFoundError:
+                continue
+            if label and label not in files:
+                files.append(label)
+        # across files は表の最後に置く
+        files.sort(key=lambda x: x == "(across files)")
+        return files, keys, counts, entries_hit, entry_counts
+
+    def _sorted_table_keys(self, keys, counts, files):
+        """Level 順 → 出たファイル数の多い順 → 件数の多い順 → rule id。"""
+        def sort_key(k):
+            n_files = sum(1 for f in files if counts[f].get(k))
+            total = sum(counts[f].get(k, 0) for f in files)
+            lvl = self._TABLE_LEVELS.index(k[0]) if k[0] in self._TABLE_LEVELS else len(self._TABLE_LEVELS)
+            return (lvl, -n_files, -total, k[1], k[2])
+        return sorted(keys, key=sort_key)
+
+    @staticmethod
+    def _text_table(header, rows):
+        """固定幅の表（列は ' | ' 区切り、最後の列は幅をそろえない）。"""
+        widths = [max(len(str(r[i])) for r in [header] + rows) for i in range(len(header) - 1)]
+        def fmt(r):
+            cells = [str(c).ljust(w) for c, w in zip(r[:-1], widths)] + [str(r[-1])]
+            return " | ".join(cells).rstrip()
+        sep = "-+-".join("-" * w for w in widths) + "-+-" + "-" * len(str(header[-1]))
+        return "\n".join([fmt(header), sep] + [fmt(r) for r in rows]) + "\n"
+
+    def write_table_report(self, jsonl_paths, header_info="", set_str=""):
+        """reports/validation_report_table.txt（rule id ごとの集計＋同じ出方のファイルをまとめた一覧）と
+        reports/validation_report_table.tsv（ファイル × rule id の件数行列。Excel 用）を書く。"""
+        files, keys, counts, entries_hit, entry_counts = self._collect_table(jsonl_paths)
+        real_files = [f for f in files if f != "(across files)"]
+        n_files = len(real_files)
+        ordered = self._sorted_table_keys(keys, counts, files)
+
+        # pattern 表示用の短い名前（同じ rule id が複数の target で出るときだけ target を付ける）
+        rule_targets = defaultdict(set)
+        for k in ordered:
+            rule_targets[k[1]].add((k[0], k[2]))
+        short = {k: (k[1] if len(rule_targets[k[1]]) == 1 else f"{k[1]}({k[2]})") for k in ordered}
+
+        # ---------- Summary by rule id ----------
+        rows = []
+        for k in ordered:
+            hit = [f for f in real_files if counts[f].get(k)]
+            total = sum(counts[f].get(k, 0) for f in files)
+            files_str = f"{len(hit)}/{n_files}" if hit else "-"
+            rows.append([k[0], k[1], k[2], files_str, total, keys[k]])
+        by_rule = self._text_table(["Level", "Rule ID", "Target", "Files", "Total", "Message"], rows) if rows else "(no messages)\n"
+
+        # ---------- Files by pattern（同じ出方のファイルを 1 つにまとめる） ----------
+        # 全 entry に出ている rule は「all entries」とし件数で分けない（entry 数の違うファイルも同じ pattern にする）。
+        # それ以外は件数ごと比べる。ファイルごとの件数は TSV にある。
+        def mark(f, k):
+            ent, n_ent = len(entries_hit[f].get(k, ())), entry_counts.get(f)
+            if ent and n_ent and ent == n_ent:
+                return "all entries"
+            c = counts[f][k]
+            return f"{c}" + (f" ({ent}/{n_ent} entries)" if ent and n_ent else "")
+
+        patterns = defaultdict(list)
+        for f in real_files:
+            sig = tuple((k, mark(f, k)) for k in ordered if counts[f].get(k))
+            patterns[sig].append(f)
+        pattern_of = {}
+        pat_lines = []
+        for i, (sig, members) in enumerate(sorted(patterns.items(), key=lambda kv: (-len(kv[1]), kv[1][0])), 1):
+            for f in members:
+                pattern_of[f] = i
+            n_label = "1 file" if len(members) == 1 else f"{len(members)} files"
+            ents = sorted(e for e in {entry_counts.get(f) for f in members} if e is not None)
+            if ents:
+                rng = f"{ents[0]}" if len(ents) == 1 else f"{ents[0]}-{ents[-1]}"
+                n_label += f", {rng} entr{'y' if rng == '1' else 'ies'}" + (" each" if len(members) > 1 and len(ents) == 1 else "")
+            body = ", ".join(f"{short[k]} {m}" for k, m in sig) if sig else "no messages"
+            pat_lines.append(f"Pattern {i} ({n_label}): {body}")
+            pat_lines.append("  " + ", ".join(sorted(members)))
+        if "(across files)" in files:
+            across = ", ".join(f"{short[k]} {counts['(across files)'][k]}" for k in ordered if counts["(across files)"].get(k))
+            pat_lines.append(f"Across files: {across}")
+
+        # ---------- ファイル × rule id の行列（TSV と txt の両方に出す） ----------
+        level_abbr = {"FATAL": "FAT", "ERROR": "ERR", "WARNING": "WAR", "INFO": "INFO", "AUTO-CLEANUP": "CLEAN"}
+        matrix = []
+        for i, f in enumerate(files, 1):
+            by_level = defaultdict(int)
+            for k, c in counts[f].items():
+                by_level[k[0]] += c
+            ent = entry_counts.get(f)
+            matrix.append(([str(i), f, "" if ent is None else str(ent), str(pattern_of.get(f, ""))],
+                           [counts[f].get(k, 0) for k in ordered],
+                           [by_level.get(lv, 0) for lv in self._TABLE_LEVELS]))
+        # txt は rule id（pattern と同じ短い名前）を列名にし、0 は '-' にする（rule の Level / Target は上の表にある）
+        txt_head = ["#", "File", "Entries", "Pattern"] + [short[k] for k in ordered] + [level_abbr[lv] for lv in self._TABLE_LEVELS]
+        txt_rows = [lead + [str(c) if c else "-" for c in rule_cells + level_cells] for lead, rule_cells, level_cells in matrix]
+        by_file = self._text_table(txt_head, txt_rows) if txt_rows else "(no files)\n"
+
+        txt = [f"\n=== Validation Table ({set_str}) ===\n", header_info,
+               f"\n## Summary by rule id ({n_files} file{'s' if n_files != 1 else ''})\n", by_rule,
+               "\n## Files by pattern\n", "\n".join(pat_lines) + "\n",
+               "\n## File x rule id (count)\n", by_file]
+        (self.out_dir / "validation_report_table.txt").write_text("".join(txt), encoding="utf-8")
+
+        head = ["#", "File", "Entries", "Pattern"] + [f"{k[1]} ({k[0]}, {k[2]})" for k in ordered] + self._TABLE_LEVELS
+        lines = ["\t".join(head)]
+        for lead, rule_cells, level_cells in matrix:
+            lines.append("\t".join(lead + [str(c) if c else "" for c in rule_cells] + [str(c) for c in level_cells]))
+        (self.out_dir / "validation_report_table.tsv").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
 
     def _process_and_append_report(self, jsonl_path, set_idx, sum_path, det_path, print_console, is_cross):
         detailed_lines = {"FATAL": [], "ERROR": [], "WARNING": [], "INFO": [], "AUTO-CLEANUP": []}

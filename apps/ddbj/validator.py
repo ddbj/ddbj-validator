@@ -89,6 +89,7 @@ class Validator:
 
             # 【フェーズ8】アノテーション・メタデータ詳細
             ANN0230(), # [ERROR] At least one submitter's 'ab_name' must match the contact person.
+            ANN0240(), # [ERROR] city / zip required for SUBMITTER when country is Japan
             ANN0250(), # [WARNING] Contact person not included in the associated BioSample.
             ANN0260(), # [WARNING] Contact person email not included in the associated BioSample
             ANN0270(), # [WARNING] No submitter ab_name shared with the associated BioSample
