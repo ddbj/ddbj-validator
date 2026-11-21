@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ddbj-validator"
-version = "1.0.96"
+version = "1.0.97"
 description = "Validation tools for DDBJ, BioProject, BioSample etc."
 dependencies = [
     "biopython",
@@ -17,7 +17,8 @@ dependencies = [
     "geopandas",
     "pyarrow",
     "shapely",
-    "lxml"
+    "lxml",
+    "orjson"
 ]
 
 [project.optional-dependencies]

@@ -9,7 +9,7 @@
 主要シンボルはここから再エクスポートする。
 """
 import shutil
-import json
+from common.jsonl import dumps_line, loads as jsonl_loads
 import logging
 from pathlib import Path
 from collections import defaultdict
@@ -129,9 +129,9 @@ class ValidatorPipeline(ExternalFetchMixin, BiosampleTsvMixin):
         all_interactive_proposals = []
 
         for j_path in jsonl_paths:
-            with open(j_path, "r", encoding="utf-8") as f:
+            with open(j_path, "rb") as f:
                 for line in f:
-                    rec = json.loads(line)
+                    rec = jsonl_loads(line)
                     r_type = rec["type"]
                     data = rec["data"]
                     if r_type == "locus_tag":
@@ -166,9 +166,9 @@ class ValidatorPipeline(ExternalFetchMixin, BiosampleTsvMixin):
         # クロスファイルのチェック結果も専用の JSONL に書き出して先頭に追加
         if cross_file_results:
             cross_jsonl = self.tmp_dir / "Submission_Cross_File.jsonl"
-            with open(cross_jsonl, "w", encoding="utf-8") as f:
+            with open(cross_jsonl, "wb") as f:
                 for res in cross_file_results:
-                    f.write(json.dumps({"type": "result", "data": res}) + "\n")
+                    f.write(dumps_line({"type": "result", "data": res}))
             jsonl_paths.insert(0, str(cross_jsonl))
 
         # 後続フェーズのために状態を保存

@@ -1,5 +1,6 @@
 import re
 import json
+from common.jsonl import loads as jsonl_loads
 import logging
 from pathlib import Path
 from collections import defaultdict
@@ -36,9 +37,9 @@ def read_submission_types(jsonl_paths):
     out = []
     for jsonl_path in jsonl_paths:
         try:
-            with open(jsonl_path, "r", encoding="utf-8") as f:
+            with open(jsonl_path, "rb") as f:
                 for line in f:
-                    rec = json.loads(line)
+                    rec = jsonl_loads(line)
                     if rec.get("type") == "submission_type":
                         out.append(rec["data"])
         except FileNotFoundError:
@@ -80,9 +81,9 @@ class ValidationReporter:
         messages = []
         for jsonl_path in jsonl_paths:
             try:
-                with open(jsonl_path, "r", encoding="utf-8") as f:
+                with open(jsonl_path, "rb") as f:
                     for line in f:
-                        rec = json.loads(line)
+                        rec = jsonl_loads(line)
                         if rec.get("type") != "result":
                             continue
                         res = rec["data"]
@@ -214,9 +215,9 @@ class ValidationReporter:
             is_cross = "Submission_Cross_File" in str(j_path)
             label = None
             try:
-                with open(j_path, "r", encoding="utf-8") as f:
+                with open(j_path, "rb") as f:
                     for line in f:
-                        rec = json.loads(line)
+                        rec = jsonl_loads(line)
                         r_type, data = rec.get("type"), rec.get("data", {})
                         if r_type == "file_meta":
                             label = label or self._table_file_label(data.get("file", ""), is_cross)
@@ -357,9 +358,9 @@ class ValidationReporter:
         base_group = ""
 
         try:
-            with open(jsonl_path, "r", encoding="utf-8") as f:
+            with open(jsonl_path, "rb") as f:
                 for line in f:
-                    rec = json.loads(line)
+                    rec = jsonl_loads(line)
                     if rec["type"] == "result":
                         res = rec["data"]
                         
