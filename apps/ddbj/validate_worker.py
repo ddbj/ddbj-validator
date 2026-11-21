@@ -5,7 +5,7 @@ ProcessPoolExecutor に渡すため、`ValidateTask` と `_validate_single_file_
 結果はメモリで返さず `<tmp>/<ann>.jsonl` に書き捨て、親（orchestrator._validate_files）が読み戻す。
 2026-09-15 に apps/ddbj/orchestrator.py から移動（中身は不変）。
 """
-import json
+from common.jsonl import dumps_line
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -292,9 +292,9 @@ def _write_worker_jsonl(ann_path, tmp_dir_str, is_web_mode, file_results, file_p
 
     tmp_jsonl_path = Path(tmp_dir_str) / f"{Path(ann_path).name}.jsonl"
 
-    with open(tmp_jsonl_path, "w", encoding="utf-8") as f_jsonl:
+    with open(tmp_jsonl_path, "wb") as f_jsonl:
         def write_record(rec_type, data):
-            f_jsonl.write(json.dumps({"type": rec_type, "data": data}) + "\n")
+            f_jsonl.write(dumps_line({"type": rec_type, "data": data}))
             
         for res in file_results:
             write_record("result", res)

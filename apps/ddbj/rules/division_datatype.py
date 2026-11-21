@@ -234,7 +234,7 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
                         missing_kw_groups.append(or_group_str)
                         
                 if missing_kw_groups:
-                    tags_str = ", ".join(active_tags)
+                    tags_str = ", ".join(sorted(active_tags))
                     combined_missing = " AND ".join([f"({g})" if " or " in g else g for g in missing_kw_groups])
                     msg = f"Missing required keyword(s): {combined_missing} (required for DATATYPE {tags_str})"
                     
@@ -259,12 +259,12 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
                     break
                     
             if not found_tagset:
-                tags_str = ", ".join(active_tags)
+                tags_str = ", ".join(sorted(active_tags))
                 msg = f"tagset_id qualifier is required for DATATYPE '{tags_str}' (Expected: '{req_tagset}')."
                 res = self.format_result(entry_id="COMMON", message=msg, level="error", feature_type="ST_COMMENT", qualifier="tagset_id", rule="ANN0905", target="ST_COMMENT")
                 results.append(res)
             elif found_tagset != req_tagset:
-                tags_str = ", ".join(active_tags)
+                tags_str = ", ".join(sorted(active_tags))
                 msg = f"Invalid tagset_id '{found_tagset}' for DATATYPE '{tags_str}'. Expected: '{req_tagset}'."
                 res = self.format_result(entry_id="COMMON", message=msg, level="error", feature_type="ST_COMMENT", qualifier="tagset_id", rule="ANN0905", target="ST_COMMENT")
                 results.append(res)
@@ -279,9 +279,9 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
             for feat in self.get_features(common_rec, "ST_COMMENT"):
                 existing_stcs.update(feat.qualifiers.keys())
             
-            missing_stcs = [stc for stc in req_stcs if stc not in existing_stcs]
+            missing_stcs = sorted(stc for stc in req_stcs if stc not in existing_stcs)
             if missing_stcs:
-                tags_str = ", ".join(active_tags)
+                tags_str = ", ".join(sorted(active_tags))
                 msg = f"Missing required structured comment(s): {', '.join(missing_stcs)} (required for DATATYPE {tags_str})"
                 res = self.format_result(entry_id="COMMON", message=msg, level="error", feature_type="ST_COMMENT", rule="ANN4003", target="ST_COMMENT")
                 results.append(res)
@@ -317,8 +317,8 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
                     missing_dblinks.append(req_db)
                     
             if missing_dblinks:
-                tags_str = ", ".join(active_tags)
-                msg = f"Missing required DBLINK(s): {', '.join(missing_dblinks)} (required for DATATYPE {tags_str})"
+                tags_str = ", ".join(sorted(active_tags))
+                msg = f"Missing required DBLINK(s): {', '.join(sorted(missing_dblinks))} (required for DATATYPE {tags_str})"
                 res = self.format_result(entry_id="COMMON", message=msg, level="error", feature_type="DBLINK", rule="ANN0910", target="DBLINK")
                 results.append(res)
         return results
@@ -331,7 +331,7 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
         unsupported_quals = compiled_rule["unsupported_qualifiers"]
         
         if req_quals or rec_quals or unsupported_quals:
-            tags_str = ", ".join(active_tags)
+            tags_str = ", ".join(sorted(active_tags))
             for entry_id, record in records.items():
                 if entry_id == "COMMON": continue
                 
@@ -344,15 +344,15 @@ class DIV_TYPE_STATIC_VALIDATOR(BaseRule):
                 
                 if not source_quals: continue
                 
-                # 必須 (FATAL)
-                missing_req = [rq for rq in req_quals if rq not in source_quals]
+                # 必須 (FATAL)。定義は set なので、メッセージの並びが実行ごとに変わらないようアルファベット順にする
+                missing_req = sorted(rq for rq in req_quals if rq not in source_quals)
                 if missing_req:
                     msg = f"Missing required qualifier(s) in source: {', '.join(missing_req)} (required for DATATYPE {tags_str})"
                     res = self.feature_result(record, source_feats[0], msg, level="error", rule="ANN4004", target="source")
                     results.append(res)
                     
                 # 推奨
-                missing_rec = [rq for rq in rec_quals if rq not in source_quals]
+                missing_rec = sorted(rq for rq in rec_quals if rq not in source_quals)
                 if missing_rec:
                     msg = f"Missing recommended qualifier(s) in source: {', '.join(missing_rec)} (required for DATATYPE {tags_str}). If these are not appropriate, please ignore this message."
                     res = self.feature_result(record, source_feats[0], msg, level="warning", rule="ANN4005", target="source")
