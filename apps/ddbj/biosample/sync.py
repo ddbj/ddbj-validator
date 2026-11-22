@@ -60,6 +60,18 @@ def _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, an
                         if ann_country == bs_country:
                             is_mismatch = False
 
+                    # MAG の DBLINK が元のメタゲノム試料の BioSample のとき、organism を
+                    # `... metagenome` に書き換えない（#17）。MAG には MAG 用の BioSample が要る
+                    if (attr == "organism" and is_mismatch
+                            and bs_val.lower().endswith(" metagenome")
+                            and not ann_val.lower().endswith(" metagenome")):
+                        validation_warnings.append(_sync_warning(
+                            ann_path, entry_id, feature, attr,
+                            f"The 'organism' qualifier value does not match the BioSample attribute value. "
+                            f"(ann: '{ann_val}', BioSample: '{bs_val}') The BioSample is a metagenome sample; "
+                            f"a MAG needs its own BioSample (MIMAG, derived_from the metagenome sample)."))
+                        continue
+
                     if is_mismatch:
                         msg = f"The '{attr}' qualifier value does not match the BioSample attribute value. (ann: '{ann_val}', BioSample: '{bs_val}')"
                         validation_warnings.append({
