@@ -162,15 +162,22 @@ def preprocess_files(ann_path_str: str, fasta_path_str, common_only: bool = Fals
         if num_cols not in (3, 4, 5):
             entry_name = cols[0].strip() if cols[0].strip() else "ALL"
             base_msg = f"Invalid column count (Expected 3, 4 or 5, Found {num_cols})."
-            msg = f"{base_msg} Columns 6 and beyond will be ignored." if num_cols > 5 else base_msg
+            # 6 列目以降が空（末尾タブ）なら切り詰めて先へ進む。値があるとき（行頭のタブが多く
+            # 列がずれた行など）に切ると、その値が fixed/ から消えるので行をそのまま残す（#15）
+            trailing_empty = num_cols > 5 and all(not c.strip() for c in cols[5:])
+            if trailing_empty:
+                msg = f"{base_msg} Empty columns 6 and beyond will be ignored."
+            elif num_cols > 5:
+                msg = f"{base_msg} Columns 6 and beyond have values; the line is kept as is."
+            else:
+                msg = base_msg
 
             _add_warn("ERROR", "ANN0140", "file", entry_name, msg, "annotation")
-            
-            if num_cols > 5:
-                # 6カラム以上の場合は、先頭5カラムに切り詰めて後続の処理へ進む
+
+            if trailing_empty:
                 cols = cols[:5]
             else:
-                # 3カラム未満の場合は正常に処理できないため、元のまま追加してスキップ
+                # 正常に処理できないため、元のまま追加してスキップ
                 cleaned_ann_lines.append(clean_line)
                 continue
                                                                 
