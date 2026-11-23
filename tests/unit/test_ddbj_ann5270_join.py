@@ -57,3 +57,22 @@ def test_existing_partial_marks_are_kept():
 def test_single_interval_unchanged_behavior():
     assert _fix("1050..1700") == ["<1101..1700"]
     assert _fix("complement(800..1050)") == ["complement(800..>1000)"]
+
+
+def test_origin_spanning_join_is_not_autofixed():
+    # 環状配列の origin をまたぐ join は区間が座標順でない。並べ替えると誤った location になるので警告だけ
+    from Bio.SeqFeature import CompoundLocation, FeatureLocation
+    from intervaltree import IntervalTree
+    from types import SimpleNamespace
+
+    def trimmed(parts, gap_start, gap_end):
+        tree = IntervalTree()
+        tree.addi(gap_start - 1, gap_end, {"part": FeatureLocation(gap_start - 1, gap_end)})
+        return ANN5270._trimmed_location(SimpleNamespace(location=CompoundLocation(parts)), tree)
+
+    plus = [FeatureLocation(2899, 3000, 1), FeatureLocation(0, 100, 1)]       # join(2900..3000,1..100)
+    minus = [FeatureLocation(0, 100, -1), FeatureLocation(2899, 3000, -1)]    # complement(join(2900..3000,1..100))
+    for parts in (plus, minus):
+        assert trimmed(parts, 1, 50) is None
+        assert trimmed(parts, 2951, 3000) is None
+        assert trimmed(parts, 51, 150) is None

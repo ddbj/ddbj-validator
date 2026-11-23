@@ -28,7 +28,7 @@ from apps.ddbj.biosample.sync import (
     _propose_locus_tag_prefix_sync,
     _propose_bioproject_sync,
 )
-from apps.ddbj.biosample.tsv import load_biosample_sync_targets
+from apps.ddbj.biosample.tsv import load_biosample_sync_targets, load_mag_keywords
 
 
 def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None, sync_attrs=None, emit_additions=False, mapping_keys=None):
@@ -53,6 +53,16 @@ def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None,
     common_samds = []
     if "COMMON" in records:
         common_samds = _extract_samd_from_single_record(records["COMMON"])
+
+    # MAG の登録か（KEYWORD で申告。COMMON と entry のどちらに書かれていてもよい）。
+    # MAG では organism をメタゲノム試料の名前に書き換えない（_propose_biosample_qualifier_sync）
+    mag_keywords = load_mag_keywords()
+
+    def _is_mag(record):
+        recs = [record, records["COMMON"]] if "COMMON" in records else [record]
+        return any(kw.strip() in mag_keywords
+                   for rec in recs for f in get_features(rec, "KEYWORD")
+                   for kw in f.qualifiers.get("keyword", []))
 
     all_valid_samds = set()
     # COMMON テンプレート（COMMON の source 1..E）の qualifier はパーサが全 entry へ複製するが、
@@ -82,7 +92,7 @@ def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None,
         if not valid_samds: continue
 
         # source qualifier 群を BioSample 値と突合（COMMON テンプレート由来は除く）
-        p, w, s = _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, ann_path, target_attrs, emit_additions=emit_additions, common_only=False)
+        p, w, s = _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, ann_path, target_attrs, emit_additions=emit_additions, common_only=False, is_mag=_is_mag(record))
         proposals.extend(p)
         validation_warnings.extend(w)
         skipped_warnings.extend(s)
@@ -105,7 +115,7 @@ def propose_qualifiers_updates(records, bs_data, ann_path, unauthorized_bs=None,
     if common_record is not None:
         p, w, s = _propose_biosample_qualifier_sync(
             common_record, "COMMON", sorted(common_samds_union), bs_data, ann_path, target_attrs,
-            emit_additions=emit_additions, common_only=True)
+            emit_additions=emit_additions, common_only=True, is_mag=_is_mag(common_record))
         proposals.extend(p)
         validation_warnings.extend(w)
         skipped_warnings.extend(s)

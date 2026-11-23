@@ -23,8 +23,14 @@ def _source_features(record, common_only):
     return [f for f in get_features(record, "source") if is_common_template_feature(f) == common_only]
 
 
+def _is_metagenome_sample_name(organism):
+    """メタゲノム試料の organism 名（`... metagenome` / `uncultured ...`）か。"""
+    name = organism.strip().lower()
+    return name.endswith(" metagenome") or name.startswith("uncultured")
+
+
 def _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, ann_path, target_attrs,
-                                      emit_additions=False, common_only=False):
+                                      emit_additions=False, common_only=False, is_mag=False):
     """source qualifier 群を BioSample 属性値と突合し、不一致なら修正提案を作る。
 
     emit_additions=True (-b 時) の場合、ann にのみ値があり BioSample 側が空の qualifier を
@@ -60,16 +66,18 @@ def _propose_biosample_qualifier_sync(record, entry_id, valid_samds, bs_data, an
                         if ann_country == bs_country:
                             is_mismatch = False
 
-                    # MAG の DBLINK が元のメタゲノム試料の BioSample のとき、organism を
-                    # `... metagenome` に書き換えない（#17）。MAG には MAG 用の BioSample が要る
-                    if (attr == "organism" and is_mismatch
-                            and bs_val.lower().endswith(" metagenome")
-                            and not ann_val.lower().endswith(" metagenome")):
+                    # MAG（KEYWORD で申告）の DBLINK が元のメタゲノム試料の BioSample のとき、organism を
+                    # 試料の名前（`... metagenome` / `uncultured ...`）に書き換えない（#17）。
+                    # MAG には MAG 用の BioSample が要る。MAG 以外は従来どおり突合する
+                    if (attr == "organism" and is_mismatch and is_mag
+                            and _is_metagenome_sample_name(bs_val)
+                            and not _is_metagenome_sample_name(ann_val)):
                         validation_warnings.append(_sync_warning(
                             ann_path, entry_id, feature, attr,
                             f"The 'organism' qualifier value does not match the BioSample attribute value. "
-                            f"(ann: '{ann_val}', BioSample: '{bs_val}') The BioSample is a metagenome sample; "
-                            f"a MAG needs its own BioSample (MIMAG, derived_from the metagenome sample)."))
+                            f"(ann: '{ann_val}', BioSample: '{bs_val}') The MAG entry requires its own BioSample, "
+                            f"with the organism name identifying the MAG's organism (e.g., \"Agrobacterium tumefaciens\"), "
+                            f"not the metagenome sample's organism name (e.g., \"uncultured ...\" or \"... metagenome\")."))
                         continue
 
                     if is_mismatch:

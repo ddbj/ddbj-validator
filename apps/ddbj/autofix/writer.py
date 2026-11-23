@@ -197,7 +197,8 @@ def write_autofix_to_file(ann_lines, updates, out_path):
                 
             active_entry = current_entry
 
-            if len(cols) < 3:
+            # 列数が合わない行（ANN0140）は解釈せず、そのまま書く
+            if len(cols) not in (3, 4, 5):
                 fout.write(line + "\n")
                 continue
                                 
@@ -299,10 +300,9 @@ def write_clean_ann(ann_lines, out_path):
 
             if not clean_line or clean_line.isspace():
                 continue
-                
-            cols = clean_line.split("\t")
-            if len(cols) not in (3, 4, 5):
-                continue
+
+            # 列数が合わない行（ANN0140 の ERROR が出ている行）もそのまま書く。以前はここで捨てていて、
+            # 自動修正が無い実行のときだけ fixed/ から行が消えていた（write_autofix_to_file は残す。#15）
             fout.write(line + "\n")
 
 def write_aa_fasta(records, out_path, tax_data=None, cv_terms=None):

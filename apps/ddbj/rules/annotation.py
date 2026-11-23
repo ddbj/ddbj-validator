@@ -4081,7 +4081,9 @@ class ANN3240(BaseRule):
             context.is_wgs or 
             context.is_tsa or 
             ("WGS" in context.active_divisions) or 
-            ("TSA" in context.active_divisions)
+            ("TSA" in context.active_divisions) or
+            # GNM（完全長ゲノム）もゲノムスケールのアノテーション（#13）
+            ("GNM" in context.active_datatypes)
         )
 
         if is_genome_scale:
@@ -4815,6 +4817,8 @@ class ANN5270(BaseRule):
 
         `<` / `>` は feature 全体の左端・右端の区間にだけ付ける。内部の区間の端が gap に
         重なるとき（エキソンの途中が切れる）と、鎖の混ざった join は自動修正しない。
+        区間が座標の順に並んでいない join（環状配列の origin をまたぐ `join(2900..3000,1..100)` など）も
+        自動修正しない。下で座標順に並べ替えるので、順が入れ替わった location になるため。
         """
         loc = target.location
         parts = list(getattr(loc, "parts", [loc]))
@@ -4822,6 +4826,10 @@ class ANN5270(BaseRule):
         if len(strands) != 1:
             return None
         complement = strands.pop() == -1
+        # parser は minus 鎖の parts を逆順に並べる（complement(join(a,b)) → [b, a]）
+        starts = [int(p.start) for p in parts]
+        if starts != sorted(starts, reverse=complement) or len(set(starts)) != len(starts):
+            return None
         parts.sort(key=lambda p: int(p.start))
         out = []
         changed = False
