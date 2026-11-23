@@ -82,7 +82,13 @@ def keep_source_scope_lines(lines):
 # source_only=True（--scope source）のときは .ann を最後まで読むが COMMON と source だけを残し、FASTA は読まない。
 # read_fasta=False は .ann を全部読んで FASTA だけ読まない（--scope source のフェーズ 3。fixed/ の .ann を書く）
 def preprocess_files(ann_path_str: str, fasta_path_str, common_only: bool = False,
-                     source_only: bool = False, read_fasta=None) -> tuple[list, str, list]:
+                     source_only: bool = False, read_fasta=None, cleanup: bool = True) -> tuple[list, str, list]:
+    """cleanup=False は値に手を入れない読み方（patent 用）。
+
+    値の前後の空白・引用符を取らない、連続する空白を詰めない、空白に似た文字を置き換えない、
+    二重引用符を ANN0185 にしない。見出し行は報告せずに読み飛ばす。CRLF も報告しない。
+    列数（ANN0140）・非 ASCII（ANN0040）・行の長さ（ANN0050）の検査は同じ。
+    """
     if read_fasta is None:
         read_fasta = not (common_only or source_only)
     ann_path = Path(ann_path_str)
@@ -135,7 +141,7 @@ def preprocess_files(ann_path_str: str, fasta_path_str, common_only: bool = Fals
         # 空白に似た文字（NBSP・全角空白・ゼロ幅空白など）を半角空白へ（2026-10-03）。
         # ANN0040（非 ASCII で fatal）の判定より前に行い、これだけで fatal にしない。
         # 表は common/cleanup（GEA / MetaboBank / BioSample / BioProject と共通）。
-        spaced = normalize_space_like(clean_line)
+        spaced = normalize_space_like(clean_line) if cleanup else clean_line
         if spaced != clean_line:
             space_like_count += 1
             clean_line = spaced
@@ -148,9 +154,10 @@ def preprocess_files(ann_path_str: str, fasta_path_str, common_only: bool = Fals
         
         # 前方一致でヘッダーをキャッチする
         if normalized_line.startswith("entryfeature"):
-            _add_warn("warning", "ANN0190", "file/format", "ALL", 
-                      f"[Auto-cleanup] Header line was detected and automatically removed. (Line {line_no})", 
-                      "annotation", is_cleanup=True)
+            if cleanup:
+                _add_warn("warning", "ANN0190", "file/format", "ALL",
+                          f"[Auto-cleanup] Header line was detected and automatically removed. (Line {line_no})",
+                          "annotation", is_cleanup=True)
             
             # データは破棄しつつ、下流での行番号ズレを防ぐために「空行」を格納する
             cleaned_ann_lines.append("") 
@@ -183,7 +190,8 @@ def preprocess_files(ann_path_str: str, fasta_path_str, common_only: bool = Fals
                                                                 
         # ANN0180, ANN0170, ANN0185 の処理
         cleaned_cols = []
-        for i, val in enumerate(cols):
+        # cleanup=False は値をそのまま通す（前後の空白・引用符・連続する空白に手を入れない）
+        for i, val in enumerate(cols if cleanup else ()):
             if val:
                 # 正規表現ではなく組み込みメソッドで高速に前後の空白・クォートを除去
                 cleaned_val = val.strip(STRIP_CHARS)
@@ -202,7 +210,9 @@ def preprocess_files(ann_path_str: str, fasta_path_str, common_only: bool = Fals
                         ann0185_count += 1
                     
             cleaned_cols.append(val)
-            
+        if not cleanup:
+            cleaned_cols = cols
+
         entry_id = cleaned_cols[0] if cleaned_cols[0] else "UNKNOWN"
 
         if not clean_line.isascii():

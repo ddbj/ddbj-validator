@@ -1,0 +1,39 @@
+Entry	Feature	Location	Qualifier	Value
+COMMON	DIVISION		division	PAT
+1	KEYWORD		keyword	JP 2026524816-A/1
+	REFERENCE	1..22	ab_name	Doe,J.
+			title	EXAMPLE METHOD FOR NUCLEIC ACID SEQUENCING
+			journal	Patent: JP 2026524816-A 1 24-JUL-2026;
+			journal	Example Pharma AG
+	COMMENT		line	OS   synthetic construct
+			line	PN   JP 2026524816-A/1
+			line	PD   24-JUL-2026
+			line	PF   11-JUN-2024 JP 2025-572656
+			line	PR   14-JUN-2023 US 63/472,951
+			line	PA   Example Pharma AG
+			line	PT   EXAMPLE METHOD FOR NUCLEIC ACID SEQUENCING
+			line	PS   1
+			line	FH   Key             Location/Qualifiers
+			line	FT   misc_feature    1..10
+			line	FT                   /note="example"
+	source	1..22	organism	synthetic construct
+			ff_definition	JP 2026524816-A/1: EXAMPLE METHOD FOR NUCLEIC ACID SEQUENCING.
+	CDS	1..9	product	example protein
+2	KEYWORD		keyword	JP 2026524816-A/2
+	REFERENCE	1..13	ab_name	Doe,J.
+			title	EXAMPLE METHOD FOR NUCLEIC ACID SEQUENCING
+			journal	Patent: JP 2026524816-A 2 24-JUL-2026;
+			journal	Example Pharma AG
+	COMMENT		line	OS   synthetic construct
+			line	PN   JP 2026524816-A/2
+			line	PD   24-JUL-2026
+			line	PF   11-JUN-2024 JP 2025-572656
+			line	PR   14-JUN-2023 US 63/472,951
+			line	PA   Example Pharma AG
+			line	PT   EXAMPLE METHOD FOR NUCLEIC ACID SEQUENCING
+			line	PS   2
+			line	FH   Key             Location/Qualifiers
+			line	FT   misc_feature    1..10
+			line	FT                   /note="example"
+	source	1..13	organism	synthetic construct
+			ff_definition	JP 2026524816-A/2: EXAMPLE METHOD FOR NUCLEIC ACID SEQUENCING.
