@@ -4081,7 +4081,9 @@ class ANN3240(BaseRule):
             context.is_wgs or 
             context.is_tsa or 
             ("WGS" in context.active_divisions) or 
-            ("TSA" in context.active_divisions)
+            ("TSA" in context.active_divisions) or
+            # GNM（完全長ゲノム）もゲノムスケールのアノテーション（#13）
+            ("GNM" in context.active_datatypes)
         )
 
         if is_genome_scale:
@@ -4809,6 +4811,57 @@ class ANN5270(BaseRule):
     requires_rdb = False
     is_file_level = False
 
+    @staticmethod
+    def _trimmed_location(target, gap_tree):
+        """gap に端が重なった区間を gap の手前まで縮めた location 文字列を返す。直せなければ None。
+
+        `<` / `>` は feature 全体の左端・右端の区間にだけ付ける。内部の区間の端が gap に
+        重なるとき（エキソンの途中が切れる）と、鎖の混ざった join は自動修正しない。
+        区間が座標の順に並んでいない join（環状配列の origin をまたぐ `join(2900..3000,1..100)` など）も
+        自動修正しない。下で座標順に並べ替えるので、順が入れ替わった location になるため。
+        """
+        loc = target.location
+        parts = list(getattr(loc, "parts", [loc]))
+        strands = {getattr(p, "strand", None) for p in parts}
+        if len(strands) != 1:
+            return None
+        complement = strands.pop() == -1
+        # parser は minus 鎖の parts を逆順に並べる（complement(join(a,b)) → [b, a]）
+        starts = [int(p.start) for p in parts]
+        if starts != sorted(starts, reverse=complement) or len(set(starts)) != len(starts):
+            return None
+        parts.sort(key=lambda p: int(p.start))
+        out = []
+        changed = False
+        for idx, part in enumerate(parts):
+            s, e = int(part.start), int(part.end)
+            lt = isinstance(part.start, BeforePosition)
+            gt = isinstance(part.end, AfterPosition)
+            ns, ne = s, e
+            for interval in gap_tree.overlap(s, e):
+                g_start_0 = int(interval.data["part"].start)
+                g_end_0 = int(interval.data["part"].end)
+                if g_start_0 <= ns < g_end_0 and ne > g_end_0:
+                    ns = g_end_0
+                if ns < g_start_0 and g_start_0 < ne <= g_end_0:
+                    ne = g_start_0
+            if ns != s:
+                if idx != 0:
+                    return None
+                lt = True
+            if ne != e:
+                if idx != len(parts) - 1:
+                    return None
+                gt = True
+            changed = changed or (ns, ne) != (s, e)
+            out.append(f"{'<' if lt else ''}{ns + 1}..{'>' if gt else ''}{ne}")
+        if not changed:
+            return None
+        loc_str = ",".join(out)
+        if len(out) > 1:
+            loc_str = f"{getattr(loc, 'operator', None) or 'join'}({loc_str})"
+        return f"complement({loc_str})" if complement else loc_str
+
     def validate(self, record, context):
         results = []
         if record.id == "COMMON":
@@ -4835,56 +4888,26 @@ class ANN5270(BaseRule):
                 continue
             
             is_autofix_target = target.type in ("CDS", "mRNA")
-            
-            orig_loc = getattr(target, 'original_location', "")
+
+            # 自動修正は feature 全体で 1 つ作る。重なった区間だけを縮め、ほかの区間と
+            # join / complement は残す（以前は重なった 1 区間だけの location になっていた。#14）
+            new_loc_str = self._trimmed_location(target, gap_tree) if is_autofix_target else None
+            autofix_possible = new_loc_str is not None
+            autofix_attached = False
+            old_loc_str = getattr(target, 'original_location', "")
+            if autofix_possible and not old_loc_str:
+                old_loc_str = str(target.location)
+
             t_parts = getattr(target.location, "parts", [target.location])
-            
+
             for t_part in t_parts:
                 t_start_0 = int(t_part.start)
                 t_end_0 = int(t_part.end)
-                
+
                 overlapping_gaps = gap_tree.overlap(t_start_0, t_end_0)
-                
+
                 if not overlapping_gaps:
                     continue
-                    
-                autofix_possible = False
-                new_loc_str = ""
-                old_loc_str = getattr(target, 'original_location', "")
-                
-                if is_autofix_target:
-                    new_start_0 = t_start_0
-                    new_end_0 = t_end_0
-                    new_start_lt = ""
-                    new_end_gt = ""
-                    
-                    for interval in overlapping_gaps:
-                        g_part = interval.data["part"]
-                        g_start_0 = int(g_part.start)
-                        g_end_0 = int(g_part.end)
-
-                        if g_start_0 <= new_start_0 < g_end_0 and new_end_0 > g_end_0:
-                            new_start_0 = g_end_0
-                            new_start_lt = "<"
-                            
-                        if new_start_0 < g_start_0 and g_start_0 < new_end_0 <= g_end_0:
-                            new_end_0 = g_start_0
-                            new_end_gt = ">"
-
-                    autofix_possible = (new_start_0 != t_start_0) or (new_end_0 != t_end_0)
-
-                    if autofix_possible:
-                        if not old_loc_str:
-                            old_loc_str = f"{t_start_0+1}..{t_end_0}"
-                            if getattr(target.location, 'strand', 1) == -1:
-                                old_loc_str = f"complement({old_loc_str})"
-                                
-                        is_complement = "complement" in old_loc_str
-                        n_start_1 = new_start_0 + 1
-                        n_end_1 = new_end_0
-                        prefix = "complement(" if is_complement else ""
-                        suffix = ")" if is_complement else ""
-                        new_loc_str = f"{prefix}{new_start_lt}{n_start_1}..{new_end_gt}{n_end_1}{suffix}"
 
                 # =======================================================
                 # 3. 警告と Auto-fix の登録
@@ -4909,7 +4932,8 @@ class ANN5270(BaseRule):
                     res["description"] = dynamic_desc
                     
                     # autofix対象であり、かつ最初の警告(i == 0)の場合のみ情報を紐付ける
-                    if is_autofix_target and autofix_possible and i == 0:
+                    if autofix_possible and not autofix_attached:
+                        autofix_attached = True
                         res["autofix"] = True
                         res["fix_target"] = "location"
                         res["old_value"] = old_loc_str

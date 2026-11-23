@@ -75,3 +75,27 @@ seq7	source	1..120	organism	Mus musculus
 	3'UTR	31..90	transl_table	1
 			product	hypothetical protein
 			note	ANN5270 fail (assembly_gap is fully inside 3'UTR)
+seq8	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	assembly_gap	51..70	estimated_length	known
+			gap_type	within scaffold
+	mRNA	join(11..20,31..>50)	product	hypothetical protein
+			note	ANN5270 fail (3' end of the last exon is in assembly_gap; autofix keeps the other exon)
+seq9	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	assembly_gap	51..70	estimated_length	known
+			gap_type	within scaffold
+	mRNA	complement(join(<71..80,91..110))	product	hypothetical protein
+			note	ANN5270 fail (complement join; autofix keeps join and complement)
+seq10	source	1..120	organism	Mus musculus
+			mol_type	genomic DNA
+			collection_date	2020-01-01
+			geo_loc_name	Japan:Shizuoka, Mishima
+	assembly_gap	51..70	estimated_length	known
+			gap_type	within scaffold
+	mRNA	join(11..20,41..60,91..110)	product	hypothetical protein
+			note	ANN5270 fail (inner exon end is in assembly_gap; warning only, no autofix)

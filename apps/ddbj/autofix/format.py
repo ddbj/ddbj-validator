@@ -131,7 +131,8 @@ def propose_format_errors(records, ann_path):
                             is_valid = False
                             match = _FIX_METHOD_PATTERN.match(part)
                             if match:
-                                software = match.group(1).strip()
+                                # `Flye_v2.9.6` のように v の直前の `_` / `-` は区切りなので落とす（#16）
+                                software = match.group(1).strip().rstrip("_-").strip()
                                 version = match.group(2).strip()
                                 if software and version:
                                     fixed_parts.append(f"{software} v. {version}")

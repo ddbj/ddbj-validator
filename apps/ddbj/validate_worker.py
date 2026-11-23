@@ -97,6 +97,10 @@ def _validate_single_file_set(task):
     file_skipped_autofixes = []
     file_updq_data = []
 
+    # 列数の誤り（ANN0140）は前処理が全行を見て報告する。パーサも同じ行を報告するので、
+    # 前処理が出しているときはパーサの分を外す（同じ行に 2 回出さない）
+    if any(w.get("rule") == "ANN0140" for w in pre_warnings):
+        parse_errors = [e for e in parse_errors if e.get("rule") != "ANN0140"]
     file_results.extend(pre_warnings + parse_errors)
 
     # ====================================================

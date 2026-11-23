@@ -57,6 +57,20 @@ def load_biosample_sync_targets():
     return list(_SYNC_TARGETS_CACHE)
 
 
+_MAG_KEYWORDS_CACHE = None
+
+
+def load_mag_keywords():
+    """MAG の登録を示す KEYWORD の集合（definitions.json の submission_types.MAG.required_keywords）。"""
+    global _MAG_KEYWORDS_CACHE
+    if _MAG_KEYWORDS_CACHE is None:
+        path = _resource_path("ddbj", "resources", "definitions.json")
+        data = json.loads(path.read_text(encoding="utf-8"))
+        groups = data.get("submission_types", {}).get("MAG", {}).get("required_keywords", [])
+        _MAG_KEYWORDS_CACHE = frozenset(kw for group in groups for kw in group)
+    return _MAG_KEYWORDS_CACHE
+
+
 def resolve_package_key(package, env_package, package_group, packages):
     """DB の (package, env_package, package_group) から attributes_packages.json のキーを解決する。
 
