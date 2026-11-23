@@ -66,6 +66,13 @@ def _submission_type_lines(types):
 
 
 class ValidationReporter:
+    # レポートに出すレベルの並びと略称。app がレベルを足すときはサブクラスで差し替える
+    # （patent は WARNING と INFO の間に FLAG を入れる。ddbj の出力はこの既定のまま）
+    LEVELS = ["FATAL", "ERROR", "WARNING", "INFO", "AUTO-CLEANUP"]
+    LEVEL_ABBR = {"FATAL": "FAT", "ERROR": "ERR", "WARNING": "WAR", "INFO": "INFO", "AUTO-CLEANUP": "CLEAN"}
+    # JSON の stats に足すレベル（小文字）。既定は無し
+    EXTRA_STATS = ()
+
     def __init__(self, out_dir):
         self.out_dir = Path(out_dir) / "reports" if out_dir else Path(".") / "reports"
         self.out_dir.mkdir(parents=True, exist_ok=True)
@@ -104,6 +111,10 @@ class ValidationReporter:
                         })
             except FileNotFoundError:
                 continue
+        # FATAL も error に数える（messages の level は "fatal" のまま）。以前は level="error" だけを
+        # 数えていて、FATAL しか無い報告（非 ASCII・二重引用符・ann と FASTA の不一致など）が
+        # validity: true / error: 0 になっていた（2026-11-23）
+        errors = counts.get("error", 0) + counts.get("fatal", 0)
         # --common-only のときだけ submission type を返す（COMMON の申告から決まる）
         types = read_submission_types(jsonl_paths)
         payload = {
@@ -113,8 +124,9 @@ class ValidationReporter:
             **({"submission_type": overall_submission_type(types), "submission_types": types} if types else {}),
             # NCBI API に届かなかったときだけ。検証エラーではないので validity には影響しない
             **({"ncbi_unreachable": {"failed_requests": ncbi_failed}} if ncbi_failed else {}),
-            "validity": counts.get("error", 0) == 0,
-            "stats": {"error": counts.get("error", 0), "warning": counts.get("warning", 0),
+            "validity": errors == 0,
+            "stats": {"error": errors, "warning": counts.get("warning", 0),
+                      **{lv: counts.get(lv, 0) for lv in self.EXTRA_STATS},
                       "info": counts.get("info", 0), "auto-cleanup": counts.get("auto-cleanup", 0)},
             "messages": messages,
         }
@@ -188,7 +200,9 @@ class ValidationReporter:
     # ==============================================================
     # --summary-table: ファイル横断の表（2026-11-10、キュレータの要望）
     # ==============================================================
-    _TABLE_LEVELS = ["FATAL", "ERROR", "WARNING", "INFO", "AUTO-CLEANUP"]
+    @property
+    def _TABLE_LEVELS(self):
+        return self.LEVELS
 
     @staticmethod
     def _table_file_label(name, is_cross):
@@ -322,7 +336,7 @@ class ValidationReporter:
             pat_lines.append(f"Across files: {across}")
 
         # ---------- ファイル × rule id の行列（TSV と txt の両方に出す） ----------
-        level_abbr = {"FATAL": "FAT", "ERROR": "ERR", "WARNING": "WAR", "INFO": "INFO", "AUTO-CLEANUP": "CLEAN"}
+        level_abbr = self.LEVEL_ABBR
         matrix = []
         for i, f in enumerate(files, 1):
             by_level = defaultdict(int)
@@ -351,7 +365,7 @@ class ValidationReporter:
 
 
     def _process_and_append_report(self, jsonl_path, set_idx, sum_path, det_path, print_console, is_cross):
-        detailed_lines = {"FATAL": [], "ERROR": [], "WARNING": [], "INFO": [], "AUTO-CLEANUP": []}
+        detailed_lines = {lv: [] for lv in self.LEVELS}
         summary_stats = {} # key -> {"res": res, "items": []}
         summary_messages = {} # key -> msg
 
@@ -407,7 +421,7 @@ class ValidationReporter:
             fd.write(header)
             
             is_first_group = True
-            for level_name in ["FATAL", "ERROR", "WARNING", "INFO", "AUTO-CLEANUP"]:
+            for level_name in self.LEVELS:
                 if detailed_lines.get(level_name):
                     if not is_first_group:
                         fd.write("\n")
@@ -423,7 +437,7 @@ class ValidationReporter:
         header = f"\n0. {base_group}\n" if is_cross else f"\n{set_idx}. {base_group}\n"
         sum_text += header
         
-        level_groups = {"FATAL": [], "ERROR": [], "WARNING": [], "INFO": [], "AUTO-CLEANUP": []}
+        level_groups = {lv: [] for lv in self.LEVELS}
         for key, stats in summary_stats.items():
             first_res = stats["res"]
             level = "AUTO-CLEANUP" if first_res.get('is_cleanup') else first_res.get('level', 'WARNING').upper()
@@ -432,7 +446,7 @@ class ValidationReporter:
             level_groups[level].append((key, stats["items"]))
 
         is_first_sum_group = True
-        for level_name in ["FATAL", "ERROR", "WARNING", "INFO", "AUTO-CLEANUP"]:
+        for level_name in self.LEVELS:
             if level_groups.get(level_name):
                 # エラーレベルが変わる時（WARNING -> ERRORなど）だけ空行を入れる
                 if not is_first_sum_group:
@@ -520,9 +534,8 @@ class ValidationReporter:
                 line_str = "[ENTRY]"
         
         rule_id = res.get('rule', 'UNKNOWN')
-        level_map = {"WARNING": "WAR", "ERROR": "ERR", "FATAL": "FAT", "INFO": "INFO"}            
         level_upper = res.get('level', 'WARNING').upper()
-        short_level = level_map.get(level_upper, "WAR")
+        short_level = self.LEVEL_ABBR.get(level_upper, "WAR") if level_upper != "AUTO-CLEANUP" else "WAR"
                     
         parts = [rule_id, short_level]
 
@@ -534,9 +547,8 @@ class ValidationReporter:
 
     def _format_summary_key(self, res):
         rule_id = res.get('rule', 'UNKNOWN')
-        level_map = {"WARNING": "WAR", "ERROR": "ERR", "FATAL": "FAT", "INFO": "INFO"}
         level_upper = res.get('level', 'WARNING').upper()
-        short_level = level_map.get(level_upper, "WAR")
+        short_level = self.LEVEL_ABBR.get(level_upper, "WAR") if level_upper != "AUTO-CLEANUP" else "WAR"
         
         parts = [rule_id, short_level]
             

@@ -7,7 +7,7 @@ import argparse
 # app を増やすときは 3 箇所を揃える: (1) この集合と下の add_parser/dispatch、
 # (2) apps/webapi/runner.py の UPLOAD_ROLES と build_args（HTTP のロール名 → CLI 引数）、
 # (3) apps/webapi/definitions.py の DBS（definitions.json を配る DB）。役割が違うので統合はしない。
-KNOWN_COMMANDS = {"ddbj", "biosample", "bioproject", "dra", "metabobank", "mb", "gea"}
+KNOWN_COMMANDS = {"ddbj", "biosample", "bioproject", "dra", "metabobank", "mb", "gea", "patent"}
 
 def main():
     parser = argparse.ArgumentParser(
@@ -22,6 +22,7 @@ def main():
     subparsers.add_parser("metabobank", help="Run MetaboBank Validator")
     subparsers.add_parser("mb", help="Run MetaboBank Validator (alias)")
     subparsers.add_parser("gea", help="Run GEA Validator")
+    subparsers.add_parser("patent", help="Run Patent (ST.26) Validator")
 
     # --- 'ddbj' サブコマンドの省略を許可する ---
     # 第1引数が既知のサブコマンドでなければ、暗黙的に 'ddbj' を補完する。
@@ -61,6 +62,11 @@ def main():
         sys.argv = [f"{sys.argv[0]} gea"] + unknown
         from apps.gea.cli import main as gea_main
         gea_main()
+    elif args.command == "patent":
+        # HTTP からは呼ばないので apps/webapi には登録していない（CLI だけ）
+        sys.argv = [f"{sys.argv[0]} patent"] + unknown
+        from apps.patent.cli import main as patent_main
+        patent_main()
     else:
         parser.print_help()
 
