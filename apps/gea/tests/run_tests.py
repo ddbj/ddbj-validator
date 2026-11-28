@@ -72,6 +72,10 @@ EXPECTED = {
     "rawless-craft": {"GEA_SR0003", "GEA_PN0001"},
     # crafted fixture（E-GEAD-1104 派生）: Raw Data File を magic word none にして SR0003 を担保
     "SR0003-craft": {"GEA_SR0003"},
+    # crafted fixture（E-GEAD-1114 派生・2026-11-28 追加）: Raw Data File を全行 none にするが
+    # Comment[SRA_RUN] の Run accession は残す。raw は DRA にあるので SR0003 は **出ない**
+    # （Run accession の無い none は上の SR0003-craft / rawless-craft が担保する）
+    "SR0003-run-craft": set(),
     # crafted fixture（E-GEAD-1104 派生・2026-09-24 追加）: ヘッダー行の形の 2 ケース。
     # どちらも「書いた値が黙って捨てられる」ため、以前は 0 error 0 warning で素通りしていた。
     "SR0014-craft": {"GEA_SR0014"},   # Raw Data File の右に名前の無い列（値あり）

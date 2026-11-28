@@ -465,6 +465,27 @@ class GEA_RC0002(GeaRule):
 #: 気づけないため大文字小文字は区別しない。
 RAW_NONE_MAGIC_WORD = "none"
 
+#: Run accession を書く列。`Comment[DRA Run]` は旧 GEA の列名。
+#: ddbj-apps の `apps/magetab/parsers.py`（`SDRF_RUN_COLS`）と同じ並びにしておく（判定を食い違わせない）。
+SDRF_RUN_COLUMNS = ("Comment[SRA_RUN]", "Comment[DRA Run]")
+
+#: Run accession の形（DRR / ERR / SRR）。セルのどこかにあれば可（search）。
+#: Experiment（DRX…）は Run ではないので当たらない。ddbj-apps の `has_run_accession` と同じ正規表現。
+_RUN_ACCESSION = re.compile(r"\b[DES]RR\d+\b")
+
+
+def _rows_with_run_accession(sdrf):
+    """Run accession が書いてある行の番号（0 始まり）の集合。
+
+    Run 列が複数（同名列の重複・新旧の列名の併存）あっても、どれか 1 つに書いてあればその行は可。
+    行単位で見る（ほかの行の Run accession は数えない）。
+    """
+    idxs = [i for col in SDRF_RUN_COLUMNS for i in sdrf.col_indices(col)]
+    if not idxs:
+        return set()
+    return {ri for ri, row in enumerate(sdrf.rows)
+            if any(i < len(row) and _RUN_ACCESSION.search(row[i]) for i in idxs)}
+
 
 class GEA_SR0003(GeaRule):
     """raw data file に magic word `none` が書かれている行を知らせる（2026-09-18）。
@@ -475,6 +496,12 @@ class GEA_SR0003(GeaRule):
     対象列は `sdrf.raw_none_columns`（= `Raw Data File`）。旧名 `Array Data File` / `Array Data Matrix File` は移行で `Raw Data File` に
     変換されるので対象にしない（変換後の列を見る）。
     空セルは対象外（値が無いこと自体は別のルールの担当）。同名列が複数あってもセル単位で判定する。
+
+    **同じ行に Run accession がある `none` は対象にしない**（2026-11-28、ddbj-apps からの依頼）。
+    sequencing の raw は DRA にあり Run accession で参照するので、その行は「raw が無い」行ではない
+    （登録者が手で `none` と書くことがある）。ddbj-apps は `none` の行がある submission の採番を
+    キュレータの承認まで止めるが、Run accession のある行は数えない。warning もそれに揃える。
+    Run 列が空・`missing` などの null 値・Experiment（DRX）だけの行は、今までどおり warning。
     """
     rule_id = "GEA_SR0003"; level = "warning"; target = "SDRF"
     description = "Raw data file is missing."
@@ -484,9 +511,12 @@ class GEA_SR0003(GeaRule):
             return []
         from common.magetab.biosample import assay_name
         out = []
+        has_run = _rows_with_run_accession(sub.sdrf)
         for col in _sdrf_def(context).get("raw_none_columns", []):
             for i in sub.sdrf.col_indices(col):
                 for ri, row in enumerate(sub.sdrf.rows):
+                    if ri in has_run:
+                        continue                       # raw は DRA にある（Run accession で参照）
                     v = (row[i] if i < len(row) else "").strip()
                     if v.lower() == RAW_NONE_MAGIC_WORD:
                         out.append(self.result(
